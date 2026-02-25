@@ -1,1 +1,1 @@
-{\n  "name": "finlly",\n  "private": true,\n  "workspaces": [\n    "packages/*"\n  ],\n  "scripts": {\n    "dev": "pnpm run dev",\n    "build": "pnpm run build",\n    "test": "pnpm run test"\n  }\n}
+{"name": "finlly", "version": "1.0.0", "description": "A valid package file", "main": "index.js", "scripts": { "test": "echo 'Error: no test specified' && exit 1" }, "author": "andreyssouza", "license": "MIT"}
