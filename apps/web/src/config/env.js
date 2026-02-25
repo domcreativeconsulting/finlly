@@ -1,7 +1,7 @@
-const requiredVars = ['VITE_API_URL'] as const;
+const requiredVars = ['VITE_API_URL'];
 
 function loadConfig() {
-  const errors: string[] = [];
+  const errors = [];
 
   for (const key of requiredVars) {
     if (!import.meta.env[key]) {
@@ -19,7 +19,7 @@ function loadConfig() {
   }
 
   return {
-    VITE_API_URL: import.meta.env.VITE_API_URL as string,
+    VITE_API_URL: import.meta.env.VITE_API_URL,
   };
 }
 

@@ -1,6 +1,4 @@
 const js = require('@eslint/js');
-const tsPlugin = require('@typescript-eslint/eslint-plugin');
-const tsParser = require('@typescript-eslint/parser');
 const reactPlugin = require('eslint-plugin-react');
 const reactHooksPlugin = require('eslint-plugin-react-hooks');
 const prettierConfig = require('eslint-config-prettier');
@@ -18,9 +16,8 @@ module.exports = [
     ],
   },
   {
-    files: ['apps/**/*.{ts,tsx,js,jsx}'],
+    files: ['apps/**/*.{js,jsx}'],
     languageOptions: {
-      parser: tsParser,
       parserOptions: {
         ecmaVersion: 2020,
         sourceType: 'module',
@@ -36,13 +33,11 @@ module.exports = [
       },
     },
     plugins: {
-      '@typescript-eslint': tsPlugin,
       react: reactPlugin,
       'react-hooks': reactHooksPlugin,
     },
     rules: {
       ...js.configs.recommended.rules,
-      ...tsPlugin.configs.recommended.rules,
       ...reactPlugin.configs.recommended.rules,
       ...reactHooksPlugin.configs.recommended.rules,
       ...prettierConfig.rules,
@@ -56,7 +51,7 @@ module.exports = [
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',
       'react/no-deprecated': 'warn',
-      '@typescript-eslint/no-unused-vars': [
+      'no-unused-vars': [
         'warn',
         {
           argsIgnorePattern: '^_',
@@ -70,7 +65,7 @@ module.exports = [
     },
   },
   {
-    files: ['apps/api/**/*.ts'],
+    files: ['apps/api/**/*.js'],
     rules: {
       'no-console': ['warn'],
     },

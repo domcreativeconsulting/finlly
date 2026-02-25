@@ -3,10 +3,10 @@ const requiredVars = [
   'REDIS_URL',
   'JWT_SECRET',
   'REFRESH_SECRET',
-] as const;
+];
 
 function loadConfig() {
-  const errors: string[] = [];
+  const errors = [];
 
   for (const key of requiredVars) {
     if (!process.env[key]) {
@@ -24,11 +24,11 @@ function loadConfig() {
   }
 
   return {
-    DATABASE_URL: process.env.DATABASE_URL as string,
-    REDIS_URL: process.env.REDIS_URL as string,
+    DATABASE_URL: process.env.DATABASE_URL,
+    REDIS_URL: process.env.REDIS_URL,
     PORT: process.env.PORT ? Number(process.env.PORT) : 3000,
-    JWT_SECRET: process.env.JWT_SECRET as string,
-    REFRESH_SECRET: process.env.REFRESH_SECRET as string,
+    JWT_SECRET: process.env.JWT_SECRET,
+    REFRESH_SECRET: process.env.REFRESH_SECRET,
     ASAAS_API_KEY: process.env.ASAAS_API_KEY,
   };
 }
