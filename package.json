@@ -1,1 +1,1 @@
-{"name": "finlly", "version": "1.0.0", "description": "A valid package file", "main": "index.js", "scripts": { "test": "echo 'Error: no test specified' && exit 1" }, "author": "andreyssouza", "license": "MIT"}
+{"name": "finlly", "private": true, "version": "1.0.0", "description": "Monorepo with pnpm workspaces", "workspaces": ["apps/*", "packages/*"], "scripts": {"dev": "pnpm -r run dev", "build": "pnpm -r run build", "test": "pnpm -r run test"}}
