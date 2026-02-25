@@ -2,6 +2,7 @@
   "name": "api",
   "version": "1.0.0",
   "description": "API for the application using Express",
+  "type": "module",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
