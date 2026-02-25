@@ -1,1 +1,17 @@
-{\n  "name": "api",\n  "version": "1.0.0",\n  "description": "API for the application using Express",\n  "main": "index.js",\n  "scripts": {\n    "start": "node index.js",\n    "dev": "nodemon index.js",\n    "build": "echo 'Building...'"\n  },\n  "dependencies": {\n    "express": "^4.17.1"\n  },\n  "devDependencies": {\n    "nodemon": "^2.0.7"\n  }\n}
+{
+  "name": "api",
+  "version": "1.0.0",
+  "description": "API for the application using Express",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "build": "echo 'Building...'"
+  },
+  "dependencies": {
+    "express": "^4.17.1"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.7"
+  }
+}
