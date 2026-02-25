@@ -1,12 +1,15 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
+import ReactDOM from 'react-dom/client';
+import App from './App.tsx';
+import './index.css';
 
-const App = () => {
-  return (
-    <div>
-      <h1>Welcome to the Finlly App!</h1>
-    </div>
-  );
-};
+const rootElement = document.getElementById('root');
+if (!rootElement) {
+  throw new Error('Root element not found');
+}
 
-ReactDOM.render(<App />, document.getElementById('root'));
+ReactDOM.createRoot(rootElement).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);

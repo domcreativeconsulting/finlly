@@ -6,15 +6,8 @@
     "module": "ESNext",
     "skipLibCheck": true,
     "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "strict": true,
-    "moduleResolution": "node",
-    "allowImportingTsExtensions": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "jsx": "react-jsx"
+    "allowSyntheticDefaultImports": true
   },
-  "include": ["apps/**/*.ts", "apps/**/*.tsx", "src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": [],
+  "references": [{ "path": "./apps/api" }, { "path": "./apps/web" }]
 }

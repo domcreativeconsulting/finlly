@@ -6,9 +6,25 @@
   "scripts": {
     "dev": "cd apps/api && npm run dev & cd ../web && npm run dev",
     "build": "cd apps/api && npm run build && cd ../web && npm run build",
-    "test": "echo 'Running tests...'"
+    "test": "echo 'Running tests...'",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"apps/**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --check \"apps/**/*.{ts,tsx,js,jsx,json,md}\"",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^5.1.4"
+  },
+  "dependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint": "^9.11.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-react": "^7.37.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.7",
+    "prettier": "^3.3.3"
   }
 }
