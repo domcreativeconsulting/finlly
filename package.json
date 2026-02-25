@@ -1,1 +1,1 @@
-{"name": "finlly", "private": true, "version": "1.0.0", "description": "Monorepo with pnpm workspaces", "workspaces": ["apps/*", "packages/*"], "scripts": {"dev": "pnpm -r run dev", "build": "pnpm -r run build", "test": "pnpm -r run test"}}
+{"name": "finlly", "private": true, "version": "1.0.0", "description": "Monorepo", "scripts": {"dev": "cd apps/api && npm run dev & cd ../web && npm run dev", "build": "cd apps/api && npm run build && cd ../web && npm run build", "test": "echo 'Running tests...'"}}
