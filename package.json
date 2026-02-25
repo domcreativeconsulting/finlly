@@ -1,0 +1,1 @@
+{\n  "name": "finlly",\n  "private": true,\n  "workspaces": [\n    "packages/*"\n  ],\n  "scripts": {\n    "dev": "pnpm run dev",\n    "build": "pnpm run build",\n    "test": "pnpm run test"\n  }\n}
