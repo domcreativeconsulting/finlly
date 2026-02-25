@@ -27,8 +27,9 @@ This repository is set up as a monorepo that allows for managing multiple projec
    ```
 
 ## Folder Structure
-- `packages/`
-  - Contains the individual projects.
+- `apps/`
+  - `api/` - Express API server
+  - `web/` - React/Vite web application
 
 ## Additional Information
 For more detailed instructions about each project, please refer to their respective README files within the project folders.
