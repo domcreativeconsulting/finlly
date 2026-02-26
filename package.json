@@ -3,8 +3,12 @@
   "private": true,
   "version": "1.0.0",
   "description": "Monorepo",
+  "workspaces": [
+    "apps/api",
+    "apps/web"
+  ],
   "scripts": {
-    "dev": "concurrently \"cd apps/api && npm run dev\" \"cd apps/web && npm run dev\"",
+    "dev": "npm run dev --workspaces",
     "build": "cd apps/api && npm run build && cd ../web && npm run build",
     "test": "echo 'Running tests...'",
     "lint": "eslint .",
