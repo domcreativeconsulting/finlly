@@ -7,12 +7,14 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "build": "echo 'Building...'"
+    "build": "echo 'Building...'",
+    "test": "node --test src/config/config.test.js"
   },
   "dependencies": {
     "express": "^4.17.1",
     "pg": "^8.11.3",
-    "redis": "^4.6.12"
+    "redis": "^4.6.12",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
