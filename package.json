@@ -2,15 +2,15 @@
   "name": "finlly",
   "private": true,
   "version": "1.0.0",
-  "description": "Monorepo",
+  "workspaces": ["apps/api", "apps/web"],
   "scripts": {
-    "dev": "concurrently \"cd apps/api && npm run dev\" \"cd apps/web && npm run dev\"",
-    "build": "cd apps/api && npm run build && cd ../web && npm run build",
-    "test": "echo 'Running tests...'",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "format": "prettier --write \"apps/**/*.{ts,tsx,js,jsx,json,md}\"",
-    "format:check": "prettier --check \"apps/**/*.{ts,tsx,js,jsx,json,md}\"",
+    "dev": "concurrently \"npm --workspace=apps/api run dev\" \"npm --workspace=apps/web run dev\"",
+    "build": "npm --workspace=apps/api run build && npm --workspace=apps/web run build",
+    "lint": "npm --workspace=apps/api run lint && npm --workspace=apps/web run lint",
+    "lint:fix": "npm --workspace=apps/api run lint:fix && npm --workspace=apps/web run lint:fix",
+    "format": "npm --workspace=apps/api run format && npm --workspace=apps/web run format",
+    "format:check": "npm --workspace=apps/api run format:check && npm --workspace=apps/web run format:check",
+    "test": "npm --workspace=apps/api run test && npm --workspace=apps/web run test",
     "prepare": "husky"
   },
   "devDependencies": {
