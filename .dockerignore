@@ -1,0 +1,33 @@
+# Dependencies
+node_modules
+**/node_modules
+
+# Environment variables
+.env
+.env.*
+**/.env
+**/.env.*
+
+# Version control
+.git
+.gitignore
+
+# Build artifacts
+dist
+**/dist
+build
+**/build
+
+# Logs
+*.log
+logs
+**/logs
+
+# IDE / OS
+.vscode
+.idea
+.DS_Store
+
+# Test artifacts
+coverage
+**/coverage
