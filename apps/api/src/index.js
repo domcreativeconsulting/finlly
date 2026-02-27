@@ -10,6 +10,6 @@ app.get('/', (req, res) => {
   res.send('Hello World!');
 });
 
-app.listen(config.PORT, () => {
-  console.log(`Server is running on http://localhost:${config.PORT}`);
+app.listen(config.API_PORT, () => {
+  console.log(`Server is running on http://localhost:${config.API_PORT}`);
 });
