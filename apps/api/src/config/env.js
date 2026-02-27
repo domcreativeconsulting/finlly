@@ -1,36 +1,58 @@
-const requiredVars = [
-  'DATABASE_URL',
-  'REDIS_URL',
-  'JWT_SECRET',
-  'REFRESH_SECRET',
-];
+import { z } from 'zod';
+
+const envSchema = z.object({
+  // API
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  API_PORT: z.coerce.number().int().positive().default(3001),
+  APP_URL: z.string().url().default('http://localhost:5173'),
+
+  // Database
+  DATABASE_URL: z.string().min(1),
+
+  // Redis
+  REDIS_URL: z.string().min(1),
+
+  // Auth
+  JWT_SECRET: z.string().min(32),
+  JWT_EXPIRES_IN: z.string().default('15m'),
+  JWT_REFRESH_SECRET: z.string().min(32),
+  JWT_REFRESH_EXPIRES_IN: z.string().default('30d'),
+
+  // Billing - Asaas (optional)
+  ASAAS_ENV: z.enum(['sandbox', 'production']).default('sandbox'),
+  ASAAS_API_KEY: z.string().optional(),
+  ASAAS_WEBHOOK_SECRET: z.string().optional(),
+  ASAAS_BASE_URL: z.preprocess((v) => v || undefined, z.string().url().optional()),
+
+  // WhatsApp Agent (optional)
+  WA_PROVIDER: z.string().optional(),
+  WA_BASE_URL: z.preprocess((v) => v || undefined, z.string().url().optional()),
+  WA_TOKEN: z.string().optional(),
+  WA_PHONE_NUMBER_ID: z.string().optional(),
+
+  // Rate Limiting (optional)
+  RATE_LIMIT_STORE: z.enum(['memory', 'redis']).default('memory'),
+  RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10),
+  RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(600000),
+});
+
+/**
+ * @typedef {z.infer<typeof envSchema>} Env
+ */
 
 function loadConfig() {
-  const errors = [];
+  const result = envSchema.safeParse(process.env);
 
-  for (const key of requiredVars) {
-    if (!process.env[key]) {
-      errors.push(`Missing required environment variable: ${key}`);
-    }
-  }
-
-  if (errors.length > 0) {
+  if (!result.success) {
+    const missing = result.error.issues.map((issue) => `- ${issue.path.join('.')}: ${issue.message}`);
     console.error('[ERROR] Configuration validation failed:');
-    errors.forEach((err) => console.error(`- ${err}`));
-    console.error(
-      '\nPlease check your .env file and ensure all required variables are set.',
-    );
+    missing.forEach((msg) => console.error(msg));
+    console.error('\nPlease check your .env file and ensure all required variables are set.');
     process.exit(1);
   }
 
-  return {
-    DATABASE_URL: process.env.DATABASE_URL,
-    REDIS_URL: process.env.REDIS_URL,
-    PORT: process.env.PORT ? Number(process.env.PORT) : 3000,
-    JWT_SECRET: process.env.JWT_SECRET,
-    REFRESH_SECRET: process.env.REFRESH_SECRET,
-    ASAAS_API_KEY: process.env.ASAAS_API_KEY,
-  };
+  return result.data;
 }
 
+/** @type {Env} */
 export const config = loadConfig();
