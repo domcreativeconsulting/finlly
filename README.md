@@ -79,5 +79,175 @@ Copy `.env.example` to `.env` and fill in the values before starting the applica
 
 > **Never** commit your `.env` file to version control. It is already listed in `.gitignore`.
 
+## Testing Health Endpoint
+
+The application includes a health check endpoint that verifies the status of all critical services:
+
+### Quick Test
+
+```bash
+curl http://localhost:3001/health
+```
+
+### Response Format
+
+```json
+{
+  "status": "ok|degraded|down",
+  "db": "ok|down",
+  "redis": "ok|down",
+  "timestamp": "2026-02-27T10:30:45.123Z"
+}
+```
+
+### Status Meanings
+
+- **ok**: All services are healthy (HTTP 200)
+- **degraded**: At least one service is unavailable (HTTP 503)
+- **down**: All services are unavailable (HTTP 503)
+
+### Example Responses
+
+#### All services healthy
+
+```bash
+$ curl http://localhost:3001/health
+{
+  "status": "ok",
+  "db": "ok",
+  "redis": "ok",
+  "timestamp": "2026-02-27T10:30:45.123Z"
+}
+```
+
+#### Database down
+
+```bash
+{
+  "status": "degraded",
+  "db": "down",
+  "redis": "ok",
+  "timestamp": "2026-02-27T10:30:45.123Z"
+}
+```
+
+#### All services down
+
+```bash
+{
+  "status": "down",
+  "db": "down",
+  "redis": "down",
+  "timestamp": "2026-02-27T10:30:45.123Z"
+}
+```
+
+## Troubleshooting
+
+### Port Already in Use
+
+**Problem**: `Error: listen EADDRINUSE: address already in use :::3001`
+
+**Solution**:
+
+```bash
+# Find process using the port
+lsof -i :3001
+# Kill the process
+kill -9 <PID>
+
+# Or use a different port
+API_PORT=3002 npm run dev
+```
+
+### Docker Containers Won't Start
+
+**Problem**: `docker compose up` fails or containers exit
+
+**Solution**:
+
+```bash
+# Check container logs
+docker compose logs postgres
+docker compose logs redis
+
+# Remove stopped containers and try again
+docker compose down
+docker compose up -d
+
+# Ensure port 5432 and 6379 are not in use
+lsof -i :5432
+lsof -i :6379
+```
+
+### Database Connection Refused
+
+**Problem**: Health endpoint shows `"db": "down"`
+
+**Solution**:
+
+```bash
+# Verify Postgres is running
+docker compose ps postgres
+
+# Check if it's ready (wait for healthcheck to pass)
+docker compose logs postgres | grep "database system is ready"
+
+# Test connection directly
+psql postgresql://user:password@localhost:5432/finlly
+```
+
+### Health Check Always Returns 300ms Timeout
+
+**Problem**: Health endpoint is slow or times out
+
+**Solution**:
+
+```bash
+# Check if database and redis are responding
+docker compose exec postgres pg_isready -U user
+docker compose exec redis redis-cli ping
+
+# Check container resource usage
+docker stats
+
+# Restart services
+docker compose restart postgres redis
+```
+
+### Node_modules Issues
+
+**Problem**: `npm install` fails or modules are corrupted
+
+**Solution**:
+
+```bash
+# Clear npm cache
+npm cache clean --force
+
+# Remove node_modules and lock files
+rm -rf node_modules package-lock.json
+rm -rf apps/*/node_modules
+
+# Reinstall
+npm install
+```
+
+### ESLint or Prettier Errors in CI
+
+**Problem**: PR fails with lint or format errors
+
+**Solution**:
+
+```bash
+# Fix automatically
+npm run lint:fix
+npm run format
+
+# Commit fixed files
+git add .
+git commit -m "chore: fix linting and formatting"
+```
+
 ## Additional Information
 For more detailed instructions about each project, please refer to their respective README files within the project folders.
