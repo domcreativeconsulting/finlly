@@ -138,13 +138,94 @@ All unhandled errors return a consistent JSON payload:
 }
 ```
 
-| Field       | Description                                           |
-| ----------- | ----------------------------------------------------- |
-| `code`      | Machine-readable error code (e.g. `NOT_FOUND`)        |
-| `message`   | Human-readable description (safe for display)         |
-| `requestId` | The request trace ID for debugging                    |
+| Field       | Description                                              |
+| ----------- | -------------------------------------------------------- |
+| `code`      | Machine-readable error code (e.g. `NOT_FOUND`)           |
+| `message`   | Human-readable description (safe for display)            |
+| `requestId` | The request trace ID for debugging                       |
+| `details`   | Optional field with extra context (e.g. validation info) |
 
 Stack traces are never included in production responses.
+
+### Error Codes
+
+| Code                   | HTTP Status | Description                              |
+| ---------------------- | ----------- | ---------------------------------------- |
+| `BAD_REQUEST`          | 400         | Malformed request or invalid input       |
+| `UNAUTHORIZED`         | 401         | Missing or invalid authentication        |
+| `FORBIDDEN`            | 403         | Authenticated but not authorized         |
+| `NOT_FOUND`            | 404         | Resource does not exist                  |
+| `CONFLICT`             | 409         | Duplicate or conflicting resource        |
+| `VALIDATION_ERROR`     | 422         | Schema validation failed (Zod)           |
+| `INTERNAL_SERVER_ERROR`| 500         | Unexpected server-side error             |
+
+### Throwing Application Errors
+
+Use the `AppError` class (and its factory helpers) to throw structured errors from route handlers or services:
+
+```javascript
+import { AppError } from '../errors/AppError.js';
+
+// 404
+throw AppError.notFound('User not found');
+
+// 401
+throw AppError.unauthorized();
+
+// 403
+throw AppError.forbidden('Insufficient permissions');
+
+// 409
+throw AppError.conflict('Email already in use');
+
+// 400 with details
+throw AppError.badRequest('Invalid payload', { reason: 'missing field' });
+
+// 500
+throw AppError.internal();
+```
+
+### Validation Errors (Zod)
+
+Use `toValidationError` to convert a Zod parse error into a structured `422` response:
+
+```javascript
+import { z } from 'zod';
+import { toValidationError } from '../errors/toValidationError.js';
+
+const schema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8),
+});
+
+const result = schema.safeParse(req.body);
+if (!result.success) {
+  throw toValidationError(result.error);
+}
+```
+
+The client receives:
+
+```json
+{
+  "code": "VALIDATION_ERROR",
+  "message": "Validation failed",
+  "requestId": "abc-123",
+  "details": {
+    "fields": {
+      "email": "Invalid email format",
+      "password": "Must be at least 8 characters"
+    }
+  }
+}
+```
+
+### Error Log Differentiation
+
+- **4xx errors** (client errors) are logged at `warn` level with minimal context.
+- **5xx errors** (server errors) are logged at `error` level with the full stack trace (non-production only).
+- All log entries include the `requestId` for tracing.
+- Sensitive data (e.g. `Authorization` header, cookies, passwords) is never logged.
 
 ### ErrorBoundary (Web)
 
