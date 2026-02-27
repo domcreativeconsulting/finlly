@@ -1,4 +1,4 @@
-const requiredVars = ['VITE_API_URL'];
+const requiredVars = ['VITE_API_BASE_URL'];
 
 function loadConfig() {
   const errors = [];
@@ -19,7 +19,7 @@ function loadConfig() {
   }
 
   return {
-    VITE_API_URL: import.meta.env.VITE_API_URL,
+    VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
   };
 }
 

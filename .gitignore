@@ -4,7 +4,6 @@ node_modules/
 npm-debug.log*
 yarn-error.log
 
-
 # Environment variables
 .env
 .env.local
@@ -17,3 +16,24 @@ yarn-error.log
 *.sublime-workspace
 *.sublime-project
 *.iml
+*.swp
+*.swo
+
+# Build outputs
+dist/
+build/
+.next/
+
+# Package manager lock files (generated)
+yarn.lock
+
+# Testing
+coverage/
+.nyc_output/
+
+# Runtime
+tmp/
+temp/
+
+# OS
+Thumbs.db
