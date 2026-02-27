@@ -1,98 +1,137 @@
-# Legacy MySQL Database Mapping Document
+# Legacy MySQL Database Schema Mapping Template
 
-## Executive Summary
-This document provides a comprehensive mapping of the legacy MySQL database covering 20 tables across 8 domains:
+This template is designed to document the legacy MySQL database schema mapping comprehensively. Each section below should be filled out with detailed information pertinent to the specific domain.
 
-1. **Usuarios**  
-   - `usuarios`
+## 1. Users (Usuarios)
+### Tables Overview
+| Table Name | Columns | Primary Keys (PK) | Foreign Keys (FK) | Indexes |
+|------------|---------|--------------------|--------------------|---------|
+|            |         |                    |                    |         |
 
-2. **Billing**  
-   - `assinantes`  
-   - `assinantes_pagamentos`  
-   - `cupons`  
-   - `webhook_events`
+### Dependency Matrix
+| Dependency | Description |
+|-------------|-------------|
+|             |             |
 
-3. **Financeiro**  
-   - `contas`  
-   - `categorias`  
-   - `contas_pagar`  
-   - `contas_receber`  
-   - `movimentacoes_caixa`
+### Legacy Problems Checklist
+- [ ] Problem 1 description
+- [ ] Problem 2 description
 
-4. **Investimentos**  
-   - `tipos_investimento`  
-   - `instituicoes_financeiras`  
-   - `investimentos`  
-   - `investimentos_eventos`
+---
 
-5. **Metas**  
-   - `metas`  
-   - `metas_movimentos`
+## 2. Billing
+### Tables Overview
+| Table Name | Columns | Primary Keys (PK) | Foreign Keys (FK) | Indexes |
+|------------|---------|--------------------|--------------------|---------|
+|            |         |                    |                    |         |
 
-6. **Anexos**  
-   - `anexos`  
-   - `anexos_vinculos`
+### Dependency Matrix
+| Dependency | Description |
+|-------------|-------------|
+|             |             |
 
-7. **WhatsApp**  
-   - `whatsapp_logs`
+### Legacy Problems Checklist
+- [ ] Problem 1 description
+- [ ] Problem 2 description
 
-8. **Sistema**  
-   - `jobs`
+---
 
-## Complete Technical Inventory for Each Table
+## 3. Financeiro
+### Tables Overview
+| Table Name | Columns | Primary Keys (PK) | Foreign Keys (FK) | Indexes |
+|------------|---------|--------------------|--------------------|---------|
+|            |         |                    |                    |         |
 
-### Usuarios
-- **Table Name**: usuarios  
-- **Purpose**: Store user information.
-- **Column Definitions**:  
-  - `id`: INT, NOT NULL, PRIMARY KEY  
-  - `nome`: VARCHAR(255), NOT NULL  
-  - `email`: VARCHAR(255), NOT NULL, UNIQUE
-- **Primary Key**: `id`  
-- **Foreign Keys**: None  
-- **Indexes/Unique Constraints**: UNIQUE (email)  
-- **Data Volume Estimate**: ~10,000  
-- **Primary Operations**: SELECT, INSERT, UPDATE
+### Dependency Matrix
+| Dependency | Description |
+|-------------|-------------|
+|             |             |
 
-### Billing (Assinantes)
-... (continue defining remaining tables)
+### Legacy Problems Checklist
+- [ ] Problem 1 description
+- [ ] Problem 2 description
 
-## Domain-based Organization
-1. **Usuarios**  
-   - usuarios
-2. **Billing**  
-   - assinantes, assinantes_pagamentos, cupons, webhook_events
-3. **Financeiro**  
-   - contas, categorias, contas_pagar, contas_receber, movimentacoes_caixa
-4. **Investimentos**  
-   - tipos_investimento, instituicoes_financeiras, investimentos, investimentos_eventos
-5. **Metas**  
-   - metas, metas_movimentos
-6. **Anexos**  
-   - anexos, anexos_vinculos
-7. **WhatsApp**  
-   - whatsapp_logs
-8. **Sistema**  
-   - jobs
+---
 
-## Relationship Dependency Matrix
-| Table  | Depends On | Cascade Rules | Critical Paths |
-|--------|------------|---------------|-----------------|
-| ...    | ...        | ...           | ...             |
+## 4. Categories (Categorias)
+### Tables Overview
+| Table Name | Columns | Primary Keys (PK) | Foreign Keys (FK) | Indexes |
+|------------|---------|--------------------|--------------------|---------|
+|            |         |                    |                    |         |
 
-## Legacy Inconsistencies
-- **Redundant Columns**: tipo_investimento + tipo_investimento_id
-- **Duplicated Timestamp Fields**: created_at + criado_em
-- **Missing Constraints**: Foreign keys not properly constrained.
-- **Status Fields**: Varchar for status without ENUM.
-- **Calculated Fields**: metas.valor_atual should be derived.
-- **Missing NOT NULL Constraints**: Several fields lack proper constraints.
-- **Poor Index Strategy**: Inconsistent indexing practices.
-- **Data Type Inconsistencies**: Various fields have type mismatches.
-- **Missing Business Logic Constraints**: Fields without adequate validation rules.
+### Dependency Matrix
+| Dependency | Description |
+|-------------|-------------|
+|             |             |
 
-## Non-Repetition Checklist for Postgres Migration
-- (Checklist items go here)
+### Legacy Problems Checklist
+- [ ] Problem 1 description
+- [ ] Problem 2 description
 
----  
-Document created on 2026-02-27 17:58:42 UTC by andreyssouza.
+---
+
+## 5. Investments (Investimentos)
+### Tables Overview
+| Table Name | Columns | Primary Keys (PK) | Foreign Keys (FK) | Indexes |
+|------------|---------|--------------------|--------------------|---------|
+|            |         |                    |                    |         |
+
+### Dependency Matrix
+| Dependency | Description |
+|-------------|-------------|
+|             |             |
+
+### Legacy Problems Checklist
+- [ ] Problem 1 description
+- [ ] Problem 2 description
+
+---
+
+## 6. Goals (Metas)
+### Tables Overview
+| Table Name | Columns | Primary Keys (PK) | Foreign Keys (FK) | Indexes |
+|------------|---------|--------------------|--------------------|---------|
+|            |         |                    |                    |         |
+
+### Dependency Matrix
+| Dependency | Description |
+|-------------|-------------|
+|             |             |
+
+### Legacy Problems Checklist
+- [ ] Problem 1 description
+- [ ] Problem 2 description
+
+---
+
+## 7. Attachments (Anexos)
+### Tables Overview
+| Table Name | Columns | Primary Keys (PK) | Foreign Keys (FK) | Indexes |
+|------------|---------|--------------------|--------------------|---------|
+|            |         |                    |                    |         |
+
+### Dependency Matrix
+| Dependency | Description |
+|-------------|-------------|
+|             |             |
+
+### Legacy Problems Checklist
+- [ ] Problem 1 description
+- [ ] Problem 2 description
+
+---
+
+## 8. WhatsApp/Logs
+### Tables Overview
+| Table Name | Columns | Primary Keys (PK) | Foreign Keys (FK) | Indexes |
+|------------|---------|--------------------|--------------------|---------|
+|            |         |                    |                    |         |
+
+### Dependency Matrix
+| Dependency | Description |
+|-------------|-------------|
+|             |             |
+
+### Legacy Problems Checklist
+- [ ] Problem 1 description
+- [ ] Problem 2 description
