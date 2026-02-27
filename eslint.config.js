@@ -72,4 +72,19 @@ module.exports = [
       'no-console': ['warn'],
     },
   },
+  {
+    files: ['apps/api/src/**/__tests__/**/*.js'],
+    languageOptions: {
+      globals: {
+        describe: 'readonly',
+        test: 'readonly',
+        expect: 'readonly',
+        beforeAll: 'readonly',
+        beforeEach: 'readonly',
+        afterAll: 'readonly',
+        afterEach: 'readonly',
+        it: 'readonly',
+      },
+    },
+  },
 ];
