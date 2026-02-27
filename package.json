@@ -15,7 +15,7 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"apps/**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --check \"apps/**/*.{ts,tsx,js,jsx,json,md}\"",
-    "prepare": "husky"
+    "prepare": "test -n \"$CI\" || husky"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^5.1.4",
