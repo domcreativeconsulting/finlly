@@ -79,5 +79,51 @@ Copy `.env.example` to `.env` and fill in the values before starting the applica
 
 > **Never** commit your `.env` file to version control. It is already listed in `.gitignore`.
 
+## Health Endpoint Testing
+
+Once the API is running, verify it is healthy with:
+
+```bash
+curl http://localhost:3001/health
+```
+
+Expected response (HTTP 200):
+
+```json
+{
+  "status": "ok",
+  "db": "ok",
+  "redis": "ok",
+  "timestamp": "2024-01-01T00:00:00.000Z"
+}
+```
+
+If a dependency is unavailable the endpoint returns HTTP 503 with `"status": "down"`.
+
+## Troubleshooting
+
+| Problem | Solution |
+| ------- | -------- |
+| `ECONNREFUSED` connecting to DB | Ensure Docker Compose is running: `docker-compose up -d` |
+| `Missing required environment variable` on startup | Copy `.env.example` to `.env` and fill in all required values |
+| Port already in use | Change `API_PORT` in `.env` or stop the conflicting process |
+| Husky hooks not running | Run `npm run prepare` to reinstall git hooks |
+| Stale npm cache causing build errors | Run `npm cache clean --force` then `npm ci` |
+
+## Docker Compose
+
+To start all infrastructure services locally:
+
+```bash
+# Start Postgres and Redis in the background
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop all services
+docker-compose down
+```
+
 ## Additional Information
 For more detailed instructions about each project, please refer to their respective README files within the project folders.
