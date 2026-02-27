@@ -79,6 +79,57 @@ Copy `.env.example` to `.env` and fill in the values before starting the applica
 
 > **Never** commit your `.env` file to version control. It is already listed in `.gitignore`.
 
+## Observability
+
+### Structured Logging
+
+All API logs are emitted as JSON (structured logging via [pino](https://getpino.io)). In development, logs are pretty-printed; in production they are plain JSON.
+
+**Example request log:**
+```json
+{
+  "level": 30,
+  "time": "2026-02-27T12:00:00.000Z",
+  "pid": 1234,
+  "hostname": "api",
+  "requestId": "abc-123-def",
+  "method": "GET",
+  "path": "/health",
+  "statusCode": 200,
+  "durationMs": 45,
+  "msg": "request completed"
+}
+```
+
+### x-request-id Header
+
+Every request is assigned a unique `requestId` (UUID v4). Clients may supply their own via the `x-request-id` request header; the same value is echoed back in the `x-request-id` response header and appears in all log entries for that request.
+
+### Standard Error Format
+
+All API errors respond with a consistent JSON payload:
+
+```json
+{
+  "code": "ERROR_CODE",
+  "message": "Human-readable message",
+  "requestId": "uuid-here"
+}
+```
+
+In **development**, 500 errors additionally include `stack` and `details` fields. In **production** those fields are omitted and the message is a generic `"Erro interno do servidor"`.
+
+Common error codes: `INTERNAL_ERROR`, `VALIDATION_ERROR`, `NOT_FOUND`, `UNAUTHORIZED`.
+
+### Development vs Production Logs
+
+| Feature | Development | Production |
+|---------|-------------|------------|
+| Log format | Pretty-printed (pino-pretty) | JSON |
+| Log level | `debug` | `info` |
+| Stack traces in errors | Yes | No |
+| Client-side console | All levels | `error` only |
+
 ## Additional Information
 For more detailed instructions about each project, please refer to their respective README files within the project folders.
 
