@@ -53,11 +53,13 @@ export function calculateOverallStatus(db, redis) {
 }
 
 export async function performHealthChecks() {
+  const startTime = Date.now();
   const [db, redis] = await Promise.all([checkDatabase(), checkRedis()]);
   return {
     status: calculateOverallStatus(db, redis),
     db,
     redis,
     timestamp: new Date().toISOString(),
+    responseTime: Date.now() - startTime,
   };
 }
