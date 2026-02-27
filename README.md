@@ -81,3 +81,37 @@ Copy `.env.example` to `.env` and fill in the values before starting the applica
 
 ## Additional Information
 For more detailed instructions about each project, please refer to their respective README files within the project folders.
+
+## Testing Health Endpoint
+
+With the API running, verify the health endpoint:
+
+```bash
+curl http://localhost:3001/health
+```
+
+Expected response:
+```json
+{
+  "status": "ok",
+  "db": "ok",
+  "redis": "ok",
+  "timestamp": "2024-01-01T00:00:00.000Z"
+}
+```
+
+## Troubleshooting
+
+### Missing environment variables
+If the API fails to start with a configuration error, ensure all required variables in `.env` are set (see [Environment Variables](#environment-variables)).
+
+### Docker Compose issues
+If PostgreSQL or Redis containers fail to start:
+```bash
+docker-compose down -v
+docker-compose up -d
+```
+
+### Port conflicts
+- API default port: `3001` (override with `API_PORT` in `.env`)
+- Web default port: `5173` (override in `apps/web/vite.config.js`)
