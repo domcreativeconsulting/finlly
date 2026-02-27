@@ -7,7 +7,7 @@ module.exports = [
   {
     ignores: [
       'node_modules',
-      'dist',
+      '**/dist',
       '.next',
       '.vscode',
       '.git',

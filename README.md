@@ -82,6 +82,85 @@ Copy `.env.example` to `.env` and fill in the values before starting the applica
 ## Additional Information
 For more detailed instructions about each project, please refer to their respective README files within the project folders.
 
+## Observability
+
+### Log Format
+
+API logs are structured JSON (via [Pino](https://getpino.io)). Each log entry includes at minimum:
+
+```json
+{
+  "level": "info",
+  "time": "2024-01-01T00:00:00.000Z",
+  "msg": "GET /health 200 12ms",
+  "requestId": "a1b2c3d4-...",
+  "method": "GET",
+  "path": "/health",
+  "statusCode": 200,
+  "durationMs": 12
+}
+```
+
+### `x-request-id` Header
+
+Every request to the API is tracked with a unique `requestId`:
+
+- If the client sends an `x-request-id` header, the API uses that value.
+- If not, the API generates a new UUID v4.
+- The `requestId` is returned in every response via the `x-request-id` header.
+- The `requestId` appears in all logs related to that request.
+
+```bash
+# Example: pass your own request ID
+curl -H "x-request-id: my-trace-id" http://localhost:3001/health
+# Response headers will include: x-request-id: my-trace-id
+```
+
+### Standard Error Format
+
+All unhandled errors return a consistent JSON payload:
+
+```json
+{
+  "code": "INTERNAL_SERVER_ERROR",
+  "message": "An unexpected error occurred",
+  "requestId": "a1b2c3d4-..."
+}
+```
+
+| Field       | Description                                           |
+| ----------- | ----------------------------------------------------- |
+| `code`      | Machine-readable error code (e.g. `NOT_FOUND`)        |
+| `message`   | Human-readable description (safe for display)         |
+| `requestId` | The request trace ID for debugging                    |
+
+Stack traces are never included in production responses.
+
+### ErrorBoundary (Web)
+
+The web app uses a React `ErrorBoundary` to catch unexpected runtime errors and show a friendly fallback UI instead of a blank screen.
+
+**Default usage** (already applied at root in `main.jsx`):
+
+```jsx
+import ErrorBoundary from './components/ErrorBoundary.jsx';
+
+<ErrorBoundary>
+  <YourComponent />
+</ErrorBoundary>
+```
+
+**Custom fallback UI:**
+
+```jsx
+<ErrorBoundary fallback={<p>Something went wrong.</p>}>
+  <YourComponent />
+</ErrorBoundary>
+```
+
+- In development: detailed error info is logged to the console.
+- In production: only critical errors are logged; no sensitive details exposed.
+
 ## Testing Health Endpoint
 
 With the API running, verify the health endpoint:
