@@ -105,15 +105,25 @@ API logs are structured JSON (via [Pino](https://getpino.io)). Each log entry in
 
 Every request to the API is tracked with a unique `requestId`:
 
-- If the client sends an `x-request-id` header, the API uses that value.
-- If not, the API generates a new UUID v4.
+- If the client sends an `x-request-id` header with a **valid** value, the API reuses it.
+- If the client sends an `x-correlation-id` header (and no `x-request-id`), the API uses that value instead — for proxy/gateway compatibility.
+- Invalid headers (wrong characters or longer than 64 chars) are rejected and a new UUID v4 is generated.
+- If no header is sent, the API generates a new UUID v4.
 - The `requestId` is returned in every response via the `x-request-id` header.
 - The `requestId` appears in all logs related to that request.
+
+**Validation rules for accepted headers:**
+- Maximum 64 characters
+- Allowed characters: `[A-Za-z0-9-_]`
 
 ```bash
 # Example: pass your own request ID
 curl -H "x-request-id: my-trace-id" http://localhost:3001/health
 # Response headers will include: x-request-id: my-trace-id
+
+# Example: pass a correlation ID (gateway/proxy compatibility)
+curl -H "x-correlation-id: gateway-trace-123" http://localhost:3001/health
+# Response headers will include: x-request-id: gateway-trace-123
 ```
 
 ### Standard Error Format

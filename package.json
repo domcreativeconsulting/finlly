@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "npm run dev --workspaces",
     "build": "cd apps/api && npm run build && cd ../web && npm run build",
-    "test": "echo 'Running tests...'",
+    "test": "npm run test --workspace=apps/api",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"apps/**/*.{ts,tsx,js,jsx,json,md}\"",
