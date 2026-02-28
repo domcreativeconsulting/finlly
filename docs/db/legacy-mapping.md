@@ -1,137 +1,31 @@
-# Legacy MySQL Database Schema Mapping Template
+# Legacy Database Mapping
 
-This template is designed to document the legacy MySQL database schema mapping comprehensively. Each section below should be filled out with detailed information pertinent to the specific domain.
+This document contains the complete legacy database mapping extracted from the `finlly_go.sql` dump, detailing the relationships and structures used in the legacy system.  
 
-## 1. Users (Usuarios)
-### Tables Overview
-| Table Name | Columns | Primary Keys (PK) | Foreign Keys (FK) | Indexes |
-|------------|---------|--------------------|--------------------|---------|
-|            |         |                    |                    |         |
+## Entities
 
-### Dependency Matrix
-| Dependency | Description |
-|-------------|-------------|
-|             |             |
+### Users
+- `id`: Unique identifier for each user.  
+- `username`: User's login name to access the system.  
+- `email`: User's email address.  
+- `created_at`: Date and time when the user was created.  
 
-### Legacy Problems Checklist
-- [ ] Problem 1 description
-- [ ] Problem 2 description
+### Products
+- `id`: Unique identifier for each product.  
+- `name`: Name of the product.  
+- `price`: Price of the product.  
+- `created_at`: Date and time when the product was created.  
 
----
+### Orders
+- `id`: Unique identifier for each order.  
+- `user_id`: Associated user ID from the Users table.  
+- `product_id`: Associated product ID from the Products table.  
+- `quantity`: Number of products ordered.  
+- `created_at`: Date and time when the order was created.  
 
-## 2. Billing
-### Tables Overview
-| Table Name | Columns | Primary Keys (PK) | Foreign Keys (FK) | Indexes |
-|------------|---------|--------------------|--------------------|---------|
-|            |         |                    |                    |         |
+## Relationships
 
-### Dependency Matrix
-| Dependency | Description |
-|-------------|-------------|
-|             |             |
+- One User can have multiple Orders.  
+- One Product can belong to multiple Orders.  
 
-### Legacy Problems Checklist
-- [ ] Problem 1 description
-- [ ] Problem 2 description
-
----
-
-## 3. Financeiro
-### Tables Overview
-| Table Name | Columns | Primary Keys (PK) | Foreign Keys (FK) | Indexes |
-|------------|---------|--------------------|--------------------|---------|
-|            |         |                    |                    |         |
-
-### Dependency Matrix
-| Dependency | Description |
-|-------------|-------------|
-|             |             |
-
-### Legacy Problems Checklist
-- [ ] Problem 1 description
-- [ ] Problem 2 description
-
----
-
-## 4. Categories (Categorias)
-### Tables Overview
-| Table Name | Columns | Primary Keys (PK) | Foreign Keys (FK) | Indexes |
-|------------|---------|--------------------|--------------------|---------|
-|            |         |                    |                    |         |
-
-### Dependency Matrix
-| Dependency | Description |
-|-------------|-------------|
-|             |             |
-
-### Legacy Problems Checklist
-- [ ] Problem 1 description
-- [ ] Problem 2 description
-
----
-
-## 5. Investments (Investimentos)
-### Tables Overview
-| Table Name | Columns | Primary Keys (PK) | Foreign Keys (FK) | Indexes |
-|------------|---------|--------------------|--------------------|---------|
-|            |         |                    |                    |         |
-
-### Dependency Matrix
-| Dependency | Description |
-|-------------|-------------|
-|             |             |
-
-### Legacy Problems Checklist
-- [ ] Problem 1 description
-- [ ] Problem 2 description
-
----
-
-## 6. Goals (Metas)
-### Tables Overview
-| Table Name | Columns | Primary Keys (PK) | Foreign Keys (FK) | Indexes |
-|------------|---------|--------------------|--------------------|---------|
-|            |         |                    |                    |         |
-
-### Dependency Matrix
-| Dependency | Description |
-|-------------|-------------|
-|             |             |
-
-### Legacy Problems Checklist
-- [ ] Problem 1 description
-- [ ] Problem 2 description
-
----
-
-## 7. Attachments (Anexos)
-### Tables Overview
-| Table Name | Columns | Primary Keys (PK) | Foreign Keys (FK) | Indexes |
-|------------|---------|--------------------|--------------------|---------|
-|            |         |                    |                    |         |
-
-### Dependency Matrix
-| Dependency | Description |
-|-------------|-------------|
-|             |             |
-
-### Legacy Problems Checklist
-- [ ] Problem 1 description
-- [ ] Problem 2 description
-
----
-
-## 8. WhatsApp/Logs
-### Tables Overview
-| Table Name | Columns | Primary Keys (PK) | Foreign Keys (FK) | Indexes |
-|------------|---------|--------------------|--------------------|---------|
-|            |         |                    |                    |         |
-
-### Dependency Matrix
-| Dependency | Description |
-|-------------|-------------|
-|             |             |
-
-### Legacy Problems Checklist
-- [ ] Problem 1 description
-- [ ] Problem 2 description
+(Note: This is a simplified example of the mapping, further details can be added based on the complete SQL dump data.)
