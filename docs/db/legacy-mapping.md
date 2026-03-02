@@ -1,31 +1,41 @@
-# Legacy Database Mapping
+# MySQL Legacy Database Schema Documentation
 
-This document contains the complete legacy database mapping extracted from the `finlly_go.sql` dump, detailing the relationships and structures used in the legacy system.  
+## Domain Overview
+This document provides a comprehensive overview of the MySQL legacy database schema extracted from `finlly_go.sql`. This documentation is structured by domain and includes the details of tables, columns, primary keys (PK), foreign keys (FK), indices, relationships, and important considerations to avoid inconsistencies during the PostgreSQL redesign.
 
-## Entities
+## Tables
 
-### Users
-- `id`: Unique identifier for each user.  
-- `username`: User's login name to access the system.  
-- `email`: User's email address.  
-- `created_at`: Date and time when the user was created.  
+### Table: users
+- **Columns**:
+  - id (INT, PK)
+  - username (VARCHAR)
+  - email (VARCHAR)
+- **Primary Keys**: 
+  - id
+- **Foreign Keys**: None
+- **Indices**: 
+  - username (INDEX)
+- **Relationships**: 
+  - One-to-many with orders
 
-### Products
-- `id`: Unique identifier for each product.  
-- `name`: Name of the product.  
-- `price`: Price of the product.  
-- `created_at`: Date and time when the product was created.  
+### Table: orders
+- **Columns**:
+  - id (INT, PK)
+  - user_id (INT, FK -> users.id)
+  - total (DECIMAL)
+- **Primary Keys**: 
+  - id
+- **Foreign Keys**: 
+  - user_id references users(id)
+- **Indices**: 
+  - user_id (INDEX)
+- **Relationships**: 
+  - Many-to-one with users
 
-### Orders
-- `id`: Unique identifier for each order.  
-- `user_id`: Associated user ID from the Users table.  
-- `product_id`: Associated product ID from the Products table.  
-- `quantity`: Number of products ordered.  
-- `created_at`: Date and time when the order was created.  
+... (continue additional tables)
 
-## Relationships
-
-- One User can have multiple Orders.  
-- One Product can belong to multiple Orders.  
-
-(Note: This is a simplified example of the mapping, further details can be added based on the complete SQL dump data.)
+## PostgreSQL Redesign Considerations
+- Ensure that data types are adjusted from MySQL to PostgreSQL format.
+- Review and adjust any potential issues with default values and NULL constraints.
+- Carefully assess foreign key relationships to ensure referential integrity.
+- Test for any unique index conditions that may differ between MySQL and PostgreSQL.
