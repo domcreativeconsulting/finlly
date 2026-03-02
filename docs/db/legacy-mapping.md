@@ -1,41 +1,41 @@
-# MySQL Legacy Database Schema Documentation
+# Documentação do Esquema Legado MySQL
 
-## Domain Overview
-This document provides a comprehensive overview of the MySQL legacy database schema extracted from `finlly_go.sql`. This documentation is structured by domain and includes the details of tables, columns, primary keys (PK), foreign keys (FK), indices, relationships, and important considerations to avoid inconsistencies during the PostgreSQL redesign.
+## Visão Geral por Domínio
+Este documento apresenta uma visão abrangente do esquema de banco de dados legado MySQL extraído de `finlly_go.sql`. A documentação está organizada por domínio e inclui detalhes sobre tabelas, colunas, chaves primárias (PK), chaves estrangeiras (FK), índices, relacionamentos e considerações importantes para evitar inconsistências durante o redesenho em PostgreSQL.
 
-## Tables
+## Tabelas
 
-### Table: users
-- **Columns**:
+### Tabela: usuarios
+- **Colunas**:
   - id (INT, PK)
-  - username (VARCHAR)
+  - nome (VARCHAR)
   - email (VARCHAR)
-- **Primary Keys**: 
+- **Chaves Primárias**: 
   - id
-- **Foreign Keys**: None
-- **Indices**: 
-  - username (INDEX)
-- **Relationships**: 
-  - One-to-many with orders
+- **Chaves Estrangeiras**: Nenhuma
+- **Índices**: 
+  - email (UNIQUE)
+- **Relacionamentos**: 
+  - Um para muitos com contas, contas_pagar, contas_receber
 
-### Table: orders
-- **Columns**:
+### Tabela: contas
+- **Colunas**:
   - id (INT, PK)
-  - user_id (INT, FK -> users.id)
-  - total (DECIMAL)
-- **Primary Keys**: 
+  - usuario_id (INT, FK -> usuarios.id)
+  - saldo_inicial (DECIMAL)
+- **Chaves Primárias**: 
   - id
-- **Foreign Keys**: 
-  - user_id references users(id)
-- **Indices**: 
-  - user_id (INDEX)
-- **Relationships**: 
-  - Many-to-one with users
+- **Chaves Estrangeiras**: 
+  - usuario_id referencia usuarios(id)
+- **Índices**: 
+  - usuario_id (INDEX)
+- **Relacionamentos**: 
+  - Muitos para um com usuarios
 
-... (continue additional tables)
+... (continuar com as demais tabelas)
 
-## PostgreSQL Redesign Considerations
-- Ensure that data types are adjusted from MySQL to PostgreSQL format.
-- Review and adjust any potential issues with default values and NULL constraints.
-- Carefully assess foreign key relationships to ensure referential integrity.
-- Test for any unique index conditions that may differ between MySQL and PostgreSQL.
+## Considerações para o Redesenho em PostgreSQL
+- Garantir que os tipos de dados sejam ajustados do formato MySQL para o PostgreSQL.
+- Revisar e corrigir possíveis problemas com valores padrão e restrições de NULL.
+- Avaliar cuidadosamente os relacionamentos de chave estrangeira para garantir a integridade referencial.
+- Testar condições de índice único que possam diferir entre MySQL e PostgreSQL.
