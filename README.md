@@ -31,10 +31,27 @@ This repository is set up as a monorepo that allows for managing multiple projec
    docker-compose up -d
    ```
 
-5. **Run the projects**
+5. **Run database migrations and seed**
+   ```bash
+   npm run db:migrate   # Creates all tables, indexes and constraints
+   npm run db:seed      # Populates initial data (idempotent)
+   ```
+
+6. **Run the projects**
    ```bash
    pnpm dev
    ```
+
+## Database Scripts
+
+| Command              | Description                                              |
+| -------------------- | -------------------------------------------------------- |
+| `npm run db:migrate` | Apply pending migrations + generate Prisma Client        |
+| `npm run db:seed`    | Populate initial data (idempotent — safe to run again)   |
+| `npm run db:reset`   | ⚠️ Drop + migrate + seed (destroys all data)             |
+| `npm run db:studio`  | Open Prisma Studio GUI (dev only)                        |
+
+> See [docs/setup-postgres.md](docs/setup-postgres.md) for the full database setup guide.
 
 ## Folder Structure
 - `apps/`

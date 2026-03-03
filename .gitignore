@@ -37,3 +37,6 @@ temp/
 
 # OS
 Thumbs.db
+
+# Prisma generated client
+generated/

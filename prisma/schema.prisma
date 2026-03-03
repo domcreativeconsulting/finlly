@@ -1,0 +1,606 @@
+// Prisma schema — Finlly v2
+// Docs: https://pris.ly/d/prisma-schema
+// DATABASE_URL configured in prisma.config.ts via .env
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================
+// ENUMs
+// ============================================================
+
+enum StatusAssinante {
+  trial
+  ativo
+  inativo
+  cancelado
+  inadimplente
+
+  @@map("status_assinante")
+}
+
+enum StatusPagamento {
+  pendente
+  pago
+  cancelado
+  estornado
+  falhou
+
+  @@map("status_pagamento")
+}
+
+enum StatusConta {
+  ativa
+  inativa
+  arquivada
+
+  @@map("status_conta")
+}
+
+enum StatusMeta {
+  ativa
+  concluida
+  cancelada
+
+  @@map("status_meta")
+}
+
+enum TipoConta {
+  corrente
+  poupanca
+  cartao_credito
+  cartao_debito
+  dinheiro
+  investimento
+  outro
+
+  @@map("tipo_conta")
+}
+
+enum TipoMovimentacao {
+  entrada
+  saida
+  transferencia
+
+  @@map("tipo_movimentacao")
+}
+
+enum TipoMeta {
+  economia
+  despesa
+  investimento
+
+  @@map("tipo_meta")
+}
+
+enum TipoEventoInvestimento {
+  aporte
+  resgate
+  rendimento
+  taxa
+  dividendo
+
+  @@map("tipo_evento_investimento")
+}
+
+enum TipoRecorrencia {
+  diario
+  semanal
+  quinzenal
+  mensal
+  bimestral
+  trimestral
+  semestral
+  anual
+
+  @@map("tipo_recorrencia")
+}
+
+// ============================================================
+// DOMAIN: USUÁRIOS & AUTENTICAÇÃO
+// ============================================================
+
+/// Usuários do sistema. Soft-delete via deleted_at (LGPD).
+model Usuario {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nome             String    @db.VarChar(255)
+  email            String    @db.VarChar(255)
+  senha_hash       String    @db.VarChar(255)
+  telefone         String?   @db.VarChar(20)
+  avatar_url       String?
+  email_verificado Boolean   @default(false)
+  created_at       DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime  @default(now()) @db.Timestamptz(6)
+  deleted_at       DateTime? @db.Timestamptz(6)
+
+  assinante             Assinante?
+  pagamentos            AssinantePagamento[]
+  contas                Conta[]
+  categorias            Categoria[]
+  contas_pagar          ContaPagar[]
+  contas_receber        ContaReceber[]
+  movimentacoes         MovimentacaoCaixa[]
+  investimentos         Investimento[]
+  investimentos_eventos InvestimentoEvento[]
+  metas                 Meta[]
+  metas_movimentos      MetaMovimento[]
+  anexos                Anexo[]
+  whatsapp_logs         WhatsappLog[]
+
+  @@unique([email], map: "uq_usuarios_email")
+  @@map("usuarios")
+}
+
+// ============================================================
+// DOMAIN: BILLING & ASSINATURAS
+// ============================================================
+
+/// Cupons de desconto para assinatura. Soft-delete.
+model Cupom {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  codigo              String    @db.VarChar(50)
+  desconto_percentual Decimal?  @db.Decimal(5, 2)
+  desconto_fixo       Decimal?  @db.Decimal(10, 2)
+  valido_ate          DateTime? @db.Timestamptz(6)
+  uso_maximo          Int?
+  uso_atual           Int       @default(0)
+  ativo               Boolean   @default(true)
+  created_at          DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime  @default(now()) @db.Timestamptz(6)
+  deleted_at          DateTime? @db.Timestamptz(6)
+
+  assinantes Assinante[]
+
+  @@unique([codigo], map: "uq_cupons_codigo")
+  @@map("cupons")
+}
+
+/// Assinatura do usuário — um por usuário. Soft-delete.
+model Assinante {
+  id                       String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id               String          @db.Uuid
+  status                   StatusAssinante @default(trial)
+  plano                    String          @default("free") @db.VarChar(50)
+  provider                 String?         @db.VarChar(50)
+  provider_customer_id     String?         @db.VarChar(100)
+  provider_subscription_id String?         @db.VarChar(100)
+  cupom_id                 String?         @db.Uuid
+  trial_inicio             DateTime?       @db.Timestamptz(6)
+  trial_fim                DateTime?       @db.Timestamptz(6)
+  proxima_cobranca         DateTime?       @db.Timestamptz(6)
+  created_at               DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at               DateTime        @default(now()) @db.Timestamptz(6)
+  deleted_at               DateTime?       @db.Timestamptz(6)
+
+  usuario    Usuario              @relation(fields: [usuario_id], references: [id], onDelete: Cascade, map: "fk_assinantes_usuario")
+  cupom      Cupom?               @relation(fields: [cupom_id], references: [id], onDelete: SetNull, map: "fk_assinantes_cupom")
+  pagamentos AssinantePagamento[]
+
+  @@unique([usuario_id], map: "uq_assinantes_usuario")
+  @@map("assinantes")
+}
+
+/// Histórico de cobranças por assinante. Soft-delete.
+model AssinantePagamento {
+  id                  String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  assinante_id        String          @db.Uuid
+  usuario_id          String          @db.Uuid
+  status              StatusPagamento @default(pendente)
+  valor               Decimal         @db.Decimal(10, 2)
+  provider            String?         @db.VarChar(50)
+  provider_payment_id String?         @db.VarChar(100)
+  descricao           String?
+  data_pagamento      DateTime?       @db.Timestamptz(6)
+  data_vencimento     DateTime?       @db.Timestamptz(6)
+  created_at          DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime        @default(now()) @db.Timestamptz(6)
+  deleted_at          DateTime?       @db.Timestamptz(6)
+
+  assinante Assinante @relation(fields: [assinante_id], references: [id], onDelete: Cascade, map: "fk_apagamentos_assinante")
+  usuario   Usuario   @relation(fields: [usuario_id], references: [id], onDelete: Restrict, map: "fk_apagamentos_usuario")
+
+  @@index([assinante_id], map: "idx_apagamentos_assinante")
+  @@index([usuario_id, status], map: "idx_apagamentos_usuario")
+  @@map("assinantes_pagamentos")
+}
+
+/// Eventos de webhook recebidos de provedores externos. BIGSERIAL, hard-delete.
+model WebhookEvent {
+  id            BigInt    @id @default(autoincrement())
+  provider      String    @db.VarChar(50)
+  event_id      String    @db.VarChar(255)
+  event_type    String    @db.VarChar(100)
+  payload       Json      @db.JsonB
+  processado    Boolean   @default(false)
+  processado_em DateTime? @db.Timestamptz(6)
+  erro          String?
+  created_at    DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@unique([provider, event_id], map: "uq_webhook_provider_event")
+  @@index([processado], map: "idx_webhook_processado")
+  @@map("webhook_events")
+}
+
+// ============================================================
+// DOMAIN: FINANCEIRO — CONTAS & MOVIMENTAÇÃO
+// ============================================================
+
+/// Lookup: bancos e instituições financeiras. Soft-delete.
+model InstituicaoFinanceira {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nome               String    @db.VarChar(255)
+  codigo_compensacao String?   @db.VarChar(10)
+  logo_url           String?
+  created_at         DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime  @default(now()) @db.Timestamptz(6)
+  deleted_at         DateTime? @db.Timestamptz(6)
+
+  contas        Conta[]
+  investimentos Investimento[]
+
+  @@unique([nome], map: "uq_instituicoes_nome")
+  @@map("instituicoes_financeiras")
+}
+
+/// Contas financeiras do usuário. Saldo calculado via movimentacoes_caixa. Soft-delete.
+model Conta {
+  id                        String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id                String      @db.Uuid
+  nome                      String      @db.VarChar(255)
+  tipo                      TipoConta
+  instituicao_financeira_id String?     @db.Uuid
+  cor                       String?     @db.VarChar(7)
+  icone                     String?     @db.VarChar(50)
+  incluir_total             Boolean     @default(true)
+  status                    StatusConta @default(ativa)
+  created_at                DateTime    @default(now()) @db.Timestamptz(6)
+  updated_at                DateTime    @default(now()) @db.Timestamptz(6)
+  deleted_at                DateTime?   @db.Timestamptz(6)
+
+  usuario     Usuario                @relation(fields: [usuario_id], references: [id], onDelete: Cascade, map: "fk_contas_usuario")
+  instituicao InstituicaoFinanceira? @relation(fields: [instituicao_financeira_id], references: [id], onDelete: SetNull, map: "fk_contas_instituicao")
+
+  movimentacoes         MovimentacaoCaixa[] @relation("ContaOrigem")
+  movimentacoes_destino MovimentacaoCaixa[] @relation("ContaDestino")
+  contas_pagar          ContaPagar[]
+  contas_receber        ContaReceber[]
+
+  @@index([usuario_id, status], map: "idx_contas_usuario_status")
+  @@map("contas")
+}
+
+/// Categorias de transações com hierarquia. usuario_id NULL = sistema. Soft-delete.
+model Categoria {
+  id         String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id String?          @db.Uuid
+  nome       String           @db.VarChar(255)
+  tipo       TipoMovimentacao
+  icone      String?          @db.VarChar(50)
+  cor        String?          @db.VarChar(7)
+  pai_id     String?          @db.Uuid
+  is_sistema Boolean          @default(false)
+  created_at DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at DateTime         @default(now()) @db.Timestamptz(6)
+  deleted_at DateTime?        @db.Timestamptz(6)
+
+  usuario Usuario?    @relation(fields: [usuario_id], references: [id], onDelete: Cascade, map: "fk_categorias_usuario")
+  pai     Categoria?  @relation("CategoriaPai", fields: [pai_id], references: [id], onDelete: SetNull, map: "fk_categorias_pai")
+  filhos  Categoria[] @relation("CategoriaPai")
+
+  contas_pagar   ContaPagar[]
+  contas_receber ContaReceber[]
+  movimentacoes  MovimentacaoCaixa[]
+
+  @@index([usuario_id, tipo], map: "idx_categorias_usuario_tipo")
+  @@index([pai_id], map: "idx_categorias_pai")
+  @@map("categorias")
+}
+
+/// Contas a pagar com suporte a recorrência e parcelamento. Soft-delete.
+model ContaPagar {
+  id                   String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id           String           @db.Uuid
+  descricao            String           @db.VarChar(500)
+  valor                Decimal          @db.Decimal(10, 2)
+  data_vencimento      DateTime         @db.Date
+  data_pagamento       DateTime?        @db.Date
+  status               StatusPagamento  @default(pendente)
+  categoria_id         String?          @db.Uuid
+  conta_id             String?          @db.Uuid
+  recorrente           Boolean          @default(false)
+  recorrencia          TipoRecorrencia?
+  parcela_atual        Int?
+  total_parcelas       Int?
+  grupo_recorrencia_id String?          @db.Uuid
+  observacoes          String?
+  created_at           DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime         @default(now()) @db.Timestamptz(6)
+  deleted_at           DateTime?        @db.Timestamptz(6)
+
+  usuario   Usuario    @relation(fields: [usuario_id], references: [id], onDelete: Cascade, map: "fk_cpagar_usuario")
+  categoria Categoria? @relation(fields: [categoria_id], references: [id], onDelete: SetNull, map: "fk_cpagar_categoria")
+  conta     Conta?     @relation(fields: [conta_id], references: [id], onDelete: SetNull, map: "fk_cpagar_conta")
+
+  movimentacoes MovimentacaoCaixa[]
+
+  @@index([usuario_id, data_vencimento], map: "idx_cpagar_usuario_vencimento")
+  @@index([usuario_id, status], map: "idx_cpagar_usuario_status")
+  @@index([grupo_recorrencia_id], map: "idx_cpagar_grupo_recorrencia")
+  @@map("contas_pagar")
+}
+
+/// Contas a receber com suporte a recorrência e parcelamento. Soft-delete.
+model ContaReceber {
+  id                   String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id           String           @db.Uuid
+  descricao            String           @db.VarChar(500)
+  valor                Decimal          @db.Decimal(10, 2)
+  data_vencimento      DateTime         @db.Date
+  data_recebimento     DateTime?        @db.Date
+  status               StatusPagamento  @default(pendente)
+  categoria_id         String?          @db.Uuid
+  conta_id             String?          @db.Uuid
+  recorrente           Boolean          @default(false)
+  recorrencia          TipoRecorrencia?
+  parcela_atual        Int?
+  total_parcelas       Int?
+  grupo_recorrencia_id String?          @db.Uuid
+  observacoes          String?
+  created_at           DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime         @default(now()) @db.Timestamptz(6)
+  deleted_at           DateTime?        @db.Timestamptz(6)
+
+  usuario   Usuario    @relation(fields: [usuario_id], references: [id], onDelete: Cascade, map: "fk_creceber_usuario")
+  categoria Categoria? @relation(fields: [categoria_id], references: [id], onDelete: SetNull, map: "fk_creceber_categoria")
+  conta     Conta?     @relation(fields: [conta_id], references: [id], onDelete: SetNull, map: "fk_creceber_conta")
+
+  movimentacoes MovimentacaoCaixa[]
+
+  @@index([usuario_id, data_vencimento], map: "idx_creceber_usuario_vencimento")
+  @@index([usuario_id, status], map: "idx_creceber_usuario_status")
+  @@index([grupo_recorrencia_id], map: "idx_creceber_grupo_recorrencia")
+  @@map("contas_receber")
+}
+
+/// Fonte de verdade do saldo. Lançamentos financeiros reais. Soft-delete.
+model MovimentacaoCaixa {
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id       String           @db.Uuid
+  conta_id         String           @db.Uuid
+  tipo             TipoMovimentacao
+  valor            Decimal          @db.Decimal(10, 2)
+  descricao        String           @db.VarChar(500)
+  data             DateTime         @db.Date
+  categoria_id     String?          @db.Uuid
+  conta_destino_id String?          @db.Uuid
+  conta_pagar_id   String?          @db.Uuid
+  conta_receber_id String?          @db.Uuid
+  observacoes      String?
+  created_at       DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime         @default(now()) @db.Timestamptz(6)
+  deleted_at       DateTime?        @db.Timestamptz(6)
+
+  usuario       Usuario       @relation(fields: [usuario_id], references: [id], onDelete: Cascade, map: "fk_movim_usuario")
+  conta         Conta         @relation("ContaOrigem", fields: [conta_id], references: [id], onDelete: Restrict, map: "fk_movim_conta")
+  categoria     Categoria?    @relation(fields: [categoria_id], references: [id], onDelete: SetNull, map: "fk_movim_categoria")
+  conta_destino Conta?        @relation("ContaDestino", fields: [conta_destino_id], references: [id], onDelete: SetNull, map: "fk_movim_conta_destino")
+  conta_pagar   ContaPagar?   @relation(fields: [conta_pagar_id], references: [id], onDelete: SetNull, map: "fk_movim_conta_pagar")
+  conta_receber ContaReceber? @relation(fields: [conta_receber_id], references: [id], onDelete: SetNull, map: "fk_movim_conta_receber")
+
+  metas_movimentos MetaMovimento[]
+
+  @@index([usuario_id, data], map: "idx_movimentacoes_usuario_data")
+  @@index([usuario_id, tipo], map: "idx_movimentacoes_usuario_tipo")
+  @@index([conta_id, data], map: "idx_movimentacoes_conta_data")
+  @@map("movimentacoes_caixa")
+}
+
+// ============================================================
+// DOMAIN: INVESTIMENTOS
+// ============================================================
+
+/// Lookup: CDB, LCI, LCA, Tesouro Direto, Ações, FII, etc. Soft-delete.
+model TipoInvestimento {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nome       String    @db.VarChar(100)
+  descricao  String?
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at DateTime  @default(now()) @db.Timestamptz(6)
+  deleted_at DateTime? @db.Timestamptz(6)
+
+  investimentos Investimento[]
+
+  @@unique([nome], map: "uq_tipos_investimento_nome")
+  @@map("tipos_investimento")
+}
+
+/// Posições de investimento do usuário. Valor atual via eventos. Soft-delete.
+model Investimento {
+  id              String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id      String      @db.Uuid
+  nome            String      @db.VarChar(255)
+  tipo_id         String      @db.Uuid
+  instituicao_id  String?     @db.Uuid
+  valor_inicial   Decimal     @default(0) @db.Decimal(10, 2)
+  data_inicio     DateTime    @db.Date
+  data_vencimento DateTime?   @db.Date
+  status          StatusConta @default(ativa)
+  observacoes     String?
+  created_at      DateTime    @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime    @default(now()) @db.Timestamptz(6)
+  deleted_at      DateTime?   @db.Timestamptz(6)
+
+  usuario     Usuario                @relation(fields: [usuario_id], references: [id], onDelete: Cascade, map: "fk_invest_usuario")
+  tipo        TipoInvestimento       @relation(fields: [tipo_id], references: [id], onDelete: Restrict, map: "fk_invest_tipo")
+  instituicao InstituicaoFinanceira? @relation(fields: [instituicao_id], references: [id], onDelete: SetNull, map: "fk_invest_instituicao")
+
+  eventos InvestimentoEvento[]
+
+  @@index([usuario_id, status], map: "idx_investimentos_usuario_status")
+  @@index([usuario_id, tipo_id], map: "idx_investimentos_usuario_tipo")
+  @@map("investimentos")
+}
+
+/// Eventos de investimento (aportes, resgates, rendimentos). Soft-delete.
+model InvestimentoEvento {
+  id              String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  investimento_id String                 @db.Uuid
+  usuario_id      String                 @db.Uuid
+  tipo            TipoEventoInvestimento
+  valor           Decimal                @db.Decimal(10, 2)
+  data            DateTime               @db.Date
+  descricao       String?
+  created_at      DateTime               @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime               @default(now()) @db.Timestamptz(6)
+  deleted_at      DateTime?              @db.Timestamptz(6)
+
+  investimento Investimento @relation(fields: [investimento_id], references: [id], onDelete: Cascade, map: "fk_inv_evento_investimento")
+  usuario      Usuario      @relation(fields: [usuario_id], references: [id], onDelete: Cascade, map: "fk_inv_evento_usuario")
+
+  @@index([investimento_id, data], map: "idx_inv_eventos_investimento_data")
+  @@index([usuario_id, data], map: "idx_inv_eventos_usuario_data")
+  @@map("investimentos_eventos")
+}
+
+// ============================================================
+// DOMAIN: METAS & OBJETIVOS
+// ============================================================
+
+/// Metas financeiras do usuário. valor_atual = SUM(metas_movimentos). Soft-delete.
+model Meta {
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id  String     @db.Uuid
+  nome        String     @db.VarChar(255)
+  tipo        TipoMeta   @default(economia)
+  valor_alvo  Decimal    @db.Decimal(10, 2)
+  data_inicio DateTime   @db.Date
+  data_fim    DateTime?  @db.Date
+  status      StatusMeta @default(ativa)
+  icone       String?    @db.VarChar(50)
+  cor         String?    @db.VarChar(7)
+  observacoes String?
+  created_at  DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime   @default(now()) @db.Timestamptz(6)
+  deleted_at  DateTime?  @db.Timestamptz(6)
+
+  usuario    Usuario         @relation(fields: [usuario_id], references: [id], onDelete: Cascade, map: "fk_metas_usuario")
+  movimentos MetaMovimento[]
+
+  @@index([usuario_id, status], map: "idx_metas_usuario_status")
+  @@map("metas")
+}
+
+/// Aportes e resgates em metas financeiras. Soft-delete.
+model MetaMovimento {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  meta_id         String    @db.Uuid
+  usuario_id      String    @db.Uuid
+  valor           Decimal   @db.Decimal(10, 2)
+  data            DateTime  @db.Date
+  descricao       String?
+  movimentacao_id String?   @db.Uuid
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime  @default(now()) @db.Timestamptz(6)
+  deleted_at      DateTime? @db.Timestamptz(6)
+
+  meta         Meta               @relation(fields: [meta_id], references: [id], onDelete: Cascade, map: "fk_mm_meta")
+  usuario      Usuario            @relation(fields: [usuario_id], references: [id], onDelete: Cascade, map: "fk_mm_usuario")
+  movimentacao MovimentacaoCaixa? @relation(fields: [movimentacao_id], references: [id], onDelete: SetNull, map: "fk_mm_movimentacao")
+
+  @@index([meta_id, data], map: "idx_metas_mov_meta_data")
+  @@map("metas_movimentos")
+}
+
+// ============================================================
+// DOMAIN: ANEXOS & DOCUMENTOS
+// ============================================================
+
+/// Arquivos anexados. Deduplicação via hash_sha256. Soft-delete.
+model Anexo {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id    String    @db.Uuid
+  nome_original String    @db.VarChar(255)
+  nome_arquivo  String    @db.VarChar(255)
+  mime_type     String    @db.VarChar(100)
+  tamanho_bytes BigInt
+  url           String
+  hash_sha256   String?   @db.VarChar(64)
+  created_at    DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime  @default(now()) @db.Timestamptz(6)
+  deleted_at    DateTime? @db.Timestamptz(6)
+
+  usuario  Usuario        @relation(fields: [usuario_id], references: [id], onDelete: Cascade, map: "fk_anexos_usuario")
+  vinculos AnexoVinculo[]
+
+  @@index([usuario_id, hash_sha256], map: "idx_anexos_usuario_hash")
+  @@map("anexos")
+}
+
+/// Vínculo polimórfico anexo ↔ entidade. Sem soft-delete.
+/// entidade_tipo: contas_pagar | contas_receber | investimentos | metas | movimentacoes_caixa
+model AnexoVinculo {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  anexo_id      String   @db.Uuid
+  entidade_tipo String   @db.VarChar(50)
+  entidade_id   String   @db.Uuid
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+
+  anexo Anexo @relation(fields: [anexo_id], references: [id], onDelete: Cascade, map: "fk_avinculos_anexo")
+
+  @@index([entidade_tipo, entidade_id], map: "idx_avinculos_entidade")
+  @@index([anexo_id], map: "idx_avinculos_anexo")
+  @@map("anexos_vinculos")
+}
+
+// ============================================================
+// DOMAIN: COMUNICAÇÃO & LOGS
+// ============================================================
+
+/// Logs WhatsApp. BIGSERIAL, hard-delete.
+model WhatsappLog {
+  id                  BigInt   @id @default(autoincrement())
+  usuario_id          String?  @db.Uuid
+  provider            String   @db.VarChar(50)
+  telefone            String   @db.VarChar(20)
+  direcao             String   @db.VarChar(10)
+  tipo_mensagem       String   @db.VarChar(50)
+  conteudo            String?
+  status              String?  @db.VarChar(50)
+  provider_message_id String?  @db.VarChar(255)
+  created_at          DateTime @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime @default(now()) @db.Timestamptz(6)
+
+  usuario Usuario? @relation(fields: [usuario_id], references: [id], onDelete: SetNull, map: "fk_wa_usuario")
+
+  @@index([usuario_id, created_at], map: "idx_wa_logs_usuario_data")
+  @@map("whatsapp_logs")
+}
+
+// ============================================================
+// DOMAIN: SISTEMA
+// ============================================================
+
+/// Fila de jobs assíncronos. BIGSERIAL, hard-delete.
+model Job {
+  id             BigInt    @id @default(autoincrement())
+  tipo           String    @db.VarChar(100)
+  payload        Json?     @db.JsonB
+  status         String    @default("pendente") @db.VarChar(50)
+  tentativas     Int       @default(0)
+  max_tentativas Int       @default(3)
+  erro           String?
+  agendado_para  DateTime? @db.Timestamptz(6)
+  iniciado_em    DateTime? @db.Timestamptz(6)
+  concluido_em   DateTime? @db.Timestamptz(6)
+  created_at     DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([status, agendado_para], map: "idx_jobs_status_agendado")
+  @@map("jobs")
+}
