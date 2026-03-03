@@ -40,5 +40,3 @@ Thumbs.db
 
 # Prisma generated client
 generated/
-
-/generated/prisma
