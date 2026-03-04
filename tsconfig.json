@@ -1,7 +1,4 @@
 {
-  "ts-node": {
-    "esm": true
-  },
   "compilerOptions": {
     "target": "ES2022",
     "module": "ES2022",
@@ -11,11 +8,12 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "outDir": "./dist"
+    "noEmit": true
   },
-  "include": ["prisma/**/*.ts"],
-  "exclude": ["node_modules", "apps"]
+  "include": ["apps/**/*.ts", "prisma/**/*.ts"],
+  "exclude": ["node_modules", "**/dist", "**/build"]
 }
