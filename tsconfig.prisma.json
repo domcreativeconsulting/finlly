@@ -7,10 +7,11 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "allowSyntheticDefaultImports": true
-  },
-  "ts-node": {
-    "esm": true
+    "allowSyntheticDefaultImports": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "./dist"
   },
   "include": ["prisma/**/*.ts"],
   "exclude": ["node_modules", "apps"]
