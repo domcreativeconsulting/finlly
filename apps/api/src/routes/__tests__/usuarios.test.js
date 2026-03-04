@@ -1,4 +1,5 @@
 import { jest } from '@jest/globals';
+<<<<<<< copilot/add-default-categories-on-registration
 
 const mockRegisterUser = jest.fn();
 
@@ -137,3 +138,9 @@ describe('POST /usuarios', () => {
     expect(res.body.code).toBe('VALIDATION_ERROR');
   });
 });
+=======
+import { Buffer } from 'buffer';
+
+// Existing content of the file
+
+>>>>>>> main
