@@ -1,5 +1,6 @@
 {
   "name": "finlly",
+  "type": "module",
   "private": true,
   "version": "1.0.0",
   "description": "Monorepo",
@@ -22,7 +23,7 @@
     "db:studio": "prisma studio"
   },
   "prisma": {
-    "seed": "ts-node --project tsconfig.prisma.json prisma/seed.ts"
+    "seed": "ts-node --esm --project tsconfig.prisma.json prisma/seed.ts"
   },
   "devDependencies": {
     "@types/pg": "^8.18.0",
