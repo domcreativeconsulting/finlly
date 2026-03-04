@@ -36,9 +36,7 @@ export function transformContaReceber(row: MysqlReceivable): PostgresContaRecebe
     conta_id: mapIdOptional(row.account_id as number | null | undefined, 'accounts'),
     recorrente: toBoolean(row.recurring),
     recorrencia: toTipoRecorrencia(row.recurrence as string | undefined),
-    parcela_atual: undefined,
-    total_parcelas: undefined,
-    grupo_recorrencia_id: undefined,
+    // parcela_atual, total_parcelas, grupo_recorrencia_id are new v2 fields with no legacy source
     observacoes: row.notes ? String(row.notes) : undefined,
     created_at: toTimestamptz(row.created_at) ?? new Date(),
     updated_at: toTimestamptz(row.updated_at) ?? new Date(),

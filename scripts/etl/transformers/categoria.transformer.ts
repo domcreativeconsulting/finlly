@@ -24,8 +24,7 @@ export function transformCategoria(row: MysqlCategory): PostgresCategoria {
     tipo: toTipoMovimentacao(row.type),
     icone: row.icon ? String(row.icon) : undefined,
     cor: toHexColor(row.color as string | undefined),
-    // pai_id is not present in legacy MySQL — default to no parent
-    pai_id: undefined,
+    pai_id: undefined, // TODO: legacy MySQL had no category hierarchy; future import could map parent categories
     is_sistema: row.user_id == null,
     created_at: toTimestamptz(row.created_at) ?? new Date(),
     updated_at: toTimestamptz(row.updated_at) ?? new Date(),

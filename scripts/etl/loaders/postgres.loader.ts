@@ -110,17 +110,17 @@ export class PostgresLoader {
   }
 
   async loadUsuarios(rows: PostgresUsuario[], batchSize: number, dryRun: boolean): Promise<number> {
-    console.log('   🗑️  Limpando usuarios...');
+    console.log('   📥 Carregando usuarios...');
     return this.insertBatches('usuarios', rows, batchSize, this.prisma.usuario as unknown as PrismaDelegate, dryRun);
   }
 
   async loadCupons(rows: PostgresCupom[], batchSize: number, dryRun: boolean): Promise<number> {
-    console.log('   🗑️  Limpando cupons...');
+    console.log('   📥 Carregando cupons...');
     return this.insertBatches('cupons', rows, batchSize, this.prisma.cupom as unknown as PrismaDelegate, dryRun);
   }
 
   async loadAssinantes(rows: PostgresAssinante[], batchSize: number, dryRun: boolean): Promise<number> {
-    console.log('   🗑️  Limpando assinantes...');
+    console.log('   📥 Carregando assinantes...');
     return this.insertBatches('assinantes', rows, batchSize, this.prisma.assinante as unknown as PrismaDelegate, dryRun);
   }
 
@@ -129,7 +129,7 @@ export class PostgresLoader {
     batchSize: number,
     dryRun: boolean,
   ): Promise<number> {
-    console.log('   🗑️  Limpando assinantes_pagamentos...');
+    console.log('   📥 Carregando assinantes_pagamentos...');
     return this.insertBatches(
       'assinantes_pagamentos',
       rows,
@@ -144,7 +144,7 @@ export class PostgresLoader {
     batchSize: number,
     dryRun: boolean,
   ): Promise<number> {
-    console.log('   🗑️  Limpando webhook_events...');
+    console.log('   📥 Carregando webhook_events...');
     return this.insertBatches(
       'webhook_events',
       rows,
@@ -159,7 +159,7 @@ export class PostgresLoader {
     batchSize: number,
     dryRun: boolean,
   ): Promise<number> {
-    console.log('   🗑️  Limpando instituicoes_financeiras...');
+    console.log('   📥 Carregando instituicoes_financeiras...');
     return this.insertBatches(
       'instituicoes_financeiras',
       rows,
@@ -170,7 +170,7 @@ export class PostgresLoader {
   }
 
   async loadContas(rows: PostgresConta[], batchSize: number, dryRun: boolean): Promise<number> {
-    console.log('   🗑️  Limpando contas...');
+    console.log('   📥 Carregando contas...');
     return this.insertBatches('contas', rows, batchSize, this.prisma.conta as unknown as PrismaDelegate, dryRun);
   }
 
@@ -179,7 +179,7 @@ export class PostgresLoader {
     batchSize: number,
     dryRun: boolean,
   ): Promise<number> {
-    console.log('   🗑️  Limpando categorias...');
+    console.log('   📥 Carregando categorias...');
     return this.insertBatches(
       'categorias',
       rows,
@@ -194,7 +194,7 @@ export class PostgresLoader {
     batchSize: number,
     dryRun: boolean,
   ): Promise<number> {
-    console.log('   🗑️  Limpando contas_pagar...');
+    console.log('   📥 Carregando contas_pagar...');
     return this.insertBatches(
       'contas_pagar',
       rows,
@@ -209,7 +209,7 @@ export class PostgresLoader {
     batchSize: number,
     dryRun: boolean,
   ): Promise<number> {
-    console.log('   🗑️  Limpando contas_receber...');
+    console.log('   📥 Carregando contas_receber...');
     return this.insertBatches(
       'contas_receber',
       rows,
@@ -224,7 +224,7 @@ export class PostgresLoader {
     batchSize: number,
     dryRun: boolean,
   ): Promise<number> {
-    console.log('   🗑️  Limpando movimentacoes_caixa...');
+    console.log('   📥 Carregando movimentacoes_caixa...');
     return this.insertBatches(
       'movimentacoes_caixa',
       rows,
@@ -239,7 +239,7 @@ export class PostgresLoader {
     batchSize: number,
     dryRun: boolean,
   ): Promise<number> {
-    console.log('   🗑️  Limpando tipos_investimento...');
+    console.log('   📥 Carregando tipos_investimento...');
     return this.insertBatches(
       'tipos_investimento',
       rows,
@@ -254,7 +254,7 @@ export class PostgresLoader {
     batchSize: number,
     dryRun: boolean,
   ): Promise<number> {
-    console.log('   🗑️  Limpando investimentos...');
+    console.log('   📥 Carregando investimentos...');
     return this.insertBatches(
       'investimentos',
       rows,
@@ -269,7 +269,7 @@ export class PostgresLoader {
     batchSize: number,
     dryRun: boolean,
   ): Promise<number> {
-    console.log('   🗑️  Limpando investimentos_eventos...');
+    console.log('   📥 Carregando investimentos_eventos...');
     return this.insertBatches(
       'investimentos_eventos',
       rows,
@@ -280,7 +280,7 @@ export class PostgresLoader {
   }
 
   async loadMetas(rows: PostgresMeta[], batchSize: number, dryRun: boolean): Promise<number> {
-    console.log('   🗑️  Limpando metas...');
+    console.log('   📥 Carregando metas...');
     return this.insertBatches('metas', rows, batchSize, this.prisma.meta as unknown as PrismaDelegate, dryRun);
   }
 
@@ -289,7 +289,7 @@ export class PostgresLoader {
     batchSize: number,
     dryRun: boolean,
   ): Promise<number> {
-    console.log('   🗑️  Limpando metas_movimentos...');
+    console.log('   📥 Carregando metas_movimentos...');
     return this.insertBatches(
       'metas_movimentos',
       rows,
@@ -300,7 +300,7 @@ export class PostgresLoader {
   }
 
   async loadAnexos(rows: PostgresAnexo[], batchSize: number, dryRun: boolean): Promise<number> {
-    console.log('   🗑️  Limpando anexos...');
+    console.log('   📥 Carregando anexos...');
     return this.insertBatches('anexos', rows, batchSize, this.prisma.anexo as unknown as PrismaDelegate, dryRun);
   }
 
@@ -309,7 +309,7 @@ export class PostgresLoader {
     batchSize: number,
     dryRun: boolean,
   ): Promise<number> {
-    console.log('   🗑️  Limpando anexos_vinculos...');
+    console.log('   📥 Carregando anexos_vinculos...');
     return this.insertBatches(
       'anexos_vinculos',
       rows,
@@ -324,7 +324,7 @@ export class PostgresLoader {
     batchSize: number,
     dryRun: boolean,
   ): Promise<number> {
-    console.log('   🗑️  Limpando whatsapp_logs...');
+    console.log('   📥 Carregando whatsapp_logs...');
     return this.insertBatches(
       'whatsapp_logs',
       rows,
@@ -335,7 +335,7 @@ export class PostgresLoader {
   }
 
   async loadJobs(rows: PostgresJob[], batchSize: number, dryRun: boolean): Promise<number> {
-    console.log('   🗑️  Limpando jobs...');
+    console.log('   📥 Carregando jobs...');
     return this.insertBatches('jobs', rows, batchSize, this.prisma.job as unknown as PrismaDelegate, dryRun);
   }
 }

@@ -32,7 +32,7 @@ Crie um arquivo `.env.local` na raiz do projeto (ou configure no seu ambiente):
 LEGACY_MYSQL_HOST=localhost
 LEGACY_MYSQL_PORT=3306
 LEGACY_MYSQL_USER=finlly_go
-LEGACY_MYSQL_PASSWORD=Vd$rxie%6kJH
+LEGACY_MYSQL_PASSWORD=change_me
 LEGACY_MYSQL_DATABASE=finlly_go
 
 # Banco de dados v2 (Postgres)
