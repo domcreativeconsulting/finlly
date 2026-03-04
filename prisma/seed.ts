@@ -82,6 +82,14 @@ async function main() {
   // ----------------------------------------------------------
   // 2. categorias do sistema — idempotente por verificação
   // ----------------------------------------------------------
+  // Essas 16 categorias servem como template (is_sistema=true, usuario_id=NULL).
+  // Quando um novo usuário se registra, essas 16 são copiadas para ele
+  // via createDefaultCategories em registerUser (categoriaService).
+  //
+  // A idempotência é garantida por:
+  // - Constraint UNIQUE (usuario_id, nome, tipo) no banco
+  // - createMany({ skipDuplicates: true }) no serviço
+  // ----------------------------------------------------------
   const existentes = await prisma.categoria.findMany({
     where: { is_sistema: true },
     select: { nome: true, tipo: true },

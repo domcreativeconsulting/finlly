@@ -297,6 +297,7 @@ model Categoria {
   contas_receber ContaReceber[]
   movimentacoes  MovimentacaoCaixa[]
 
+  @@unique([usuario_id, nome, tipo], map: "uq_categoria_usuario_nome_tipo")
   @@index([usuario_id, tipo], map: "idx_categorias_usuario_tipo")
   @@index([pai_id], map: "idx_categorias_pai")
   @@map("categorias")
