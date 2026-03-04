@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
-const adapter = new PrismaPg({ connectionString: process.env['DATABASE_URL'] });
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
 
 // ============================================================
@@ -14,14 +14,23 @@ const tiposInvestimento = [
   { nome: 'LCI', descricao: 'Letra de Crédito Imobiliário' },
   { nome: 'LCA', descricao: 'Letra de Crédito do Agronegócio' },
   { nome: 'Tesouro Direto', descricao: 'Títulos públicos federais' },
-  { nome: 'Ações', descricao: 'Renda variável — ações de empresas listadas em bolsa' },
+  {
+    nome: 'Ações',
+    descricao: 'Renda variável — ações de empresas listadas em bolsa',
+  },
   { nome: 'FII', descricao: 'Fundos de Investimento Imobiliário' },
   { nome: 'ETF', descricao: 'Exchange Traded Fund — fundo negociado em bolsa' },
   { nome: 'Poupança', descricao: 'Caderneta de poupança' },
   { nome: 'Debêntures', descricao: 'Títulos de dívida corporativa' },
   { nome: 'Criptomoedas', descricao: 'Ativos digitais descentralizados' },
-  { nome: 'Fundo de Renda Fixa', descricao: 'Fundos de investimento em renda fixa' },
-  { nome: 'Fundo Multimercado', descricao: 'Fundos com estratégia em múltiplos mercados' },
+  {
+    nome: 'Fundo de Renda Fixa',
+    descricao: 'Fundos de investimento em renda fixa',
+  },
+  {
+    nome: 'Fundo Multimercado',
+    descricao: 'Fundos com estratégia em múltiplos mercados',
+  },
 ];
 
 // Categorias do sistema (usuario_id = NULL, is_sistema = TRUE)
@@ -78,9 +87,7 @@ async function main() {
     select: { nome: true, tipo: true },
   });
 
-  const existentesSet = new Set(
-    existentes.map((c) => `${c.nome}::${c.tipo}`)
-  );
+  const existentesSet = new Set(existentes.map((c) => `${c.nome}::${c.tipo}`));
 
   let categoriasInseridas = 0;
   for (const cat of categoriasSistema) {
