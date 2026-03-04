@@ -1,0 +1,45 @@
+import { MysqlReceivable } from '../extractors/contas-receber.extractor.js';
+import { mapId, mapIdOptional } from './id-mapper.js';
+import { toTimestamptz, toDateOnly, toStatusPagamento, toTipoRecorrencia, toBoolean } from './type-converter.js';
+
+export interface PostgresContaReceber {
+  id: string;
+  usuario_id: string;
+  descricao: string;
+  valor: number;
+  data_vencimento: Date;
+  data_recebimento?: Date;
+  status: 'pendente' | 'pago' | 'cancelado' | 'estornado' | 'falhou';
+  categoria_id?: string;
+  conta_id?: string;
+  recorrente: boolean;
+  recorrencia?: 'diario' | 'semanal' | 'quinzenal' | 'mensal' | 'bimestral' | 'trimestral' | 'semestral' | 'anual';
+  parcela_atual?: number;
+  total_parcelas?: number;
+  grupo_recorrencia_id?: string;
+  observacoes?: string;
+  created_at: Date;
+  updated_at: Date;
+  deleted_at?: Date;
+}
+
+export function transformContaReceber(row: MysqlReceivable): PostgresContaReceber {
+  return {
+    id: mapId(row.id, 'receivables'),
+    usuario_id: mapId(row.user_id, 'users'),
+    descricao: String(row.description ?? ''),
+    valor: Number(row.amount ?? 0),
+    data_vencimento: toDateOnly(row.due_date) ?? new Date(),
+    data_recebimento: toDateOnly(row.received_date),
+    status: toStatusPagamento(row.status),
+    categoria_id: mapIdOptional(row.category_id as number | null | undefined, 'categories'),
+    conta_id: mapIdOptional(row.account_id as number | null | undefined, 'accounts'),
+    recorrente: toBoolean(row.recurring),
+    recorrencia: toTipoRecorrencia(row.recurrence as string | undefined),
+    // parcela_atual, total_parcelas, grupo_recorrencia_id are new v2 fields with no legacy source
+    observacoes: row.notes ? String(row.notes) : undefined,
+    created_at: toTimestamptz(row.created_at) ?? new Date(),
+    updated_at: toTimestamptz(row.updated_at) ?? new Date(),
+    deleted_at: toTimestamptz(row.deleted_at),
+  };
+}
