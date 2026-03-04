@@ -1,9 +1,9 @@
-const js = require('@eslint/js');
-const reactPlugin = require('eslint-plugin-react');
-const reactHooksPlugin = require('eslint-plugin-react-hooks');
-const prettierConfig = require('eslint-config-prettier');
+import js from '@eslint/js';
+import reactPlugin from 'eslint-plugin-react';
+import reactHooksPlugin from 'eslint-plugin-react-hooks';
+import prettierConfig from 'eslint-config-prettier';
 
-module.exports = [
+export default [
   {
     ignores: [
       'node_modules',
