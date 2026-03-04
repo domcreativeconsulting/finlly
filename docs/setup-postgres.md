@@ -83,6 +83,58 @@ Resultado esperado:
 
 ---
 
+## Onboarding automático — categorias padrão por usuário
+
+Ao cadastrar um novo usuário via `POST /usuarios`, o sistema cria automaticamente
+**16 categorias financeiras padrão** associadas exclusivamente a esse usuário:
+
+| Tipo    | Categorias |
+| ------- | ---------- |
+| Entrada | Salário, Freelance, Rendimento de Investimento, Transferência recebida, Presente, Outros — Entrada |
+| Saída   | Alimentação, Transporte, Moradia, Saúde, Educação, Lazer, Vestuário, Assinaturas e Serviços, Impostos e Taxas, Outros — Saída |
+
+A criação ocorre dentro de uma **transação atômica**: se qualquer etapa falhar, o
+usuário e as categorias são revertidos juntos.
+
+### Exemplo de requisição
+
+```http
+POST /usuarios
+Content-Type: application/json
+
+{
+  "nome": "João Silva",
+  "email": "joao@example.com",
+  "senha": "minha_senha_segura"
+}
+```
+
+### Exemplo de resposta
+
+```json
+{
+  "message": "Usuário criado com sucesso",
+  "usuario": {
+    "id": "a1b2c3d4-...",
+    "nome": "João Silva",
+    "email": "joao@example.com",
+    "created_at": "2026-03-04T17:00:00.000Z",
+    "categorias_criadas": 16
+  }
+}
+```
+
+### Idempotência
+
+A criação de categorias é idempotente — re-executar para o mesmo usuário não duplica:
+
+```http
+POST /usuarios  → 201 Created  (16 categorias criadas)
+POST /usuarios  → 409 Conflict (e-mail já cadastrado)
+```
+
+---
+
 ## Rodar o seed novamente (idempotente)
 
 O seed é idempotente — pode ser executado múltiplas vezes sem criar duplicatas:
