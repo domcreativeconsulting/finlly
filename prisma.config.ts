@@ -1,1 +1,5 @@
-migrations: {  seed: 'ts-node --project tsconfig.prisma.json prisma/seed.ts' }
+module.exports = {
+  migrations: {
+    seed: 'ts-node --project tsconfig.prisma.json prisma/seed.ts',
+  },
+};
