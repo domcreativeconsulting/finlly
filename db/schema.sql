@@ -283,6 +283,7 @@ CREATE TABLE categorias (
 COMMENT ON TABLE  categorias            IS 'Categorias com hierarquia. usuario_id NULL = sistema. Soft-delete.';
 COMMENT ON COLUMN categorias.is_sistema IS 'TRUE = categoria padrão do sistema, não editável pelo usuário.';
 
+CREATE UNIQUE INDEX uq_categoria_usuario_nome_tipo ON categorias (usuario_id, nome, tipo);
 CREATE INDEX idx_categorias_usuario_tipo ON categorias (usuario_id, tipo);
 CREATE INDEX idx_categorias_pai          ON categorias (pai_id) WHERE pai_id IS NOT NULL;
 
