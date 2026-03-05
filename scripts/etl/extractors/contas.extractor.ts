@@ -18,9 +18,9 @@ export interface MysqlAccount extends MysqlRow {
 
 export class ContasExtractor extends BaseExtractor {
   async extract(): Promise<MysqlAccount[]> {
-    return this.extractAll<MysqlAccount>('accounts', '*', 'id');
+    return this.extractAll<MysqlAccount>('contas', '*', 'id');
   }
   async getCount(): Promise<number> {
-    return this.count('accounts');
+    return this.count('contas');
   }
 }

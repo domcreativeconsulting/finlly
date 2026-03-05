@@ -17,9 +17,9 @@ export interface MysqlBackgroundJob extends MysqlRow {
 
 export class JobsExtractor extends BaseExtractor {
   async extract(): Promise<MysqlBackgroundJob[]> {
-    return this.extractAll<MysqlBackgroundJob>('background_jobs', '*', 'id');
+    return this.extractAll<MysqlBackgroundJob>('jobs', '*', 'id');
   }
   async getCount(): Promise<number> {
-    return this.count('background_jobs');
+    return this.count('jobs');
   }
 }
