@@ -15,9 +15,9 @@ export interface MysqlAttachment extends MysqlRow {
 
 export class AnexosExtractor extends BaseExtractor {
   async extract(): Promise<MysqlAttachment[]> {
-    return this.extractAll<MysqlAttachment>('attachments', '*', 'id');
+    return this.extractAll<MysqlAttachment>('anexos', '*', 'id');
   }
   async getCount(): Promise<number> {
-    return this.count('attachments');
+    return this.count('anexos');
   }
 }
