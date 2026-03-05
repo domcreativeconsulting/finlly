@@ -20,9 +20,9 @@ export interface MysqlGoal extends MysqlRow {
 
 export class MetasExtractor extends BaseExtractor {
   async extract(): Promise<MysqlGoal[]> {
-    return this.extractAll<MysqlGoal>('goals', '*', 'id');
+    return this.extractAll<MysqlGoal>('metas', '*', 'id');
   }
   async getCount(): Promise<number> {
-    return this.count('goals');
+    return this.count('metas');
   }
 }

@@ -20,9 +20,9 @@ export interface MysqlBill extends MysqlRow {
 
 export class ContasPagarExtractor extends BaseExtractor {
   async extract(): Promise<MysqlBill[]> {
-    return this.extractAll<MysqlBill>('bills', '*', 'id');
+    return this.extractAll<MysqlBill>('contas_pagar', '*', 'id');
   }
   async getCount(): Promise<number> {
-    return this.count('bills');
+    return this.count('contas_pagar');
   }
 }
