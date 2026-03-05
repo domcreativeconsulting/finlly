@@ -15,9 +15,9 @@ export interface MysqlUsuario extends MysqlRow {
 
 export class UsuariosExtractor extends BaseExtractor {
   async extract(): Promise<MysqlUsuario[]> {
-    return this.extractAll<MysqlUsuario>('users', '*', 'id');
+    return this.extractAll<MysqlUsuario>('usuarios', '*', 'id');
   }
   async getCount(): Promise<number> {
-    return this.count('users');
+    return this.count('usuarios');
   }
 }
