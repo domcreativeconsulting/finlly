@@ -26,7 +26,7 @@ export interface PostgresContaReceber {
 export function transformContaReceber(row: MysqlReceivable): PostgresContaReceber {
   return {
     id: mapId(row.id, 'receivables'),
-    usuario_id: mapId(row.user_id, 'users'),
+    usuario_id: mapId(row.user_id, 'usuarios'),
     descricao: String(row.description ?? ''),
     valor: Number(row.amount ?? 0),
     data_vencimento: toDateOnly(row.due_date) ?? new Date(),

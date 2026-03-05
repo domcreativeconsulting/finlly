@@ -22,7 +22,7 @@ export function transformAssinantePagamento(row: MysqlPayment): PostgresAssinant
   return {
     id: mapId(row.id, 'payments'),
     assinante_id: mapId(row.subscription_id, 'plans'),
-    usuario_id: mapId(row.user_id, 'users'),
+    usuario_id: mapId(row.user_id, 'usuarios'),
     status: toStatusPagamento(row.status),
     valor: Number(row.amount ?? 0),
     provider: row.provider ? String(row.provider) : undefined,

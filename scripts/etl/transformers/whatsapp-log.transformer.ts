@@ -17,7 +17,7 @@ export interface PostgresWhatsappLog {
 
 export function transformWhatsappLog(row: MysqlWhatsappMessage): PostgresWhatsappLog {
   return {
-    usuario_id: mapIdOptional(row.user_id as number | null | undefined, 'users'),
+    usuario_id: mapIdOptional(row.user_id as number | null | undefined, 'usuarios'),
     provider: String(row.provider ?? ''),
     telefone: String(row.phone ?? ''),
     direcao: String(row.direction ?? 'outbound'),

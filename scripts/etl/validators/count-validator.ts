@@ -17,7 +17,7 @@ const TABLE_PAIRS: Array<{
   postgresTable: string;
   label: string;
 }> = [
-  { mysqlTable: 'users', postgresTable: 'usuarios', label: 'usuarios' },
+  { mysqlTable: 'usuarios', postgresTable: 'usuarios', label: 'usuarios' },
   { mysqlTable: 'cupons', postgresTable: 'cupons', label: 'cupons' },
   { mysqlTable: 'plans', postgresTable: 'assinantes', label: 'assinantes' },
   {

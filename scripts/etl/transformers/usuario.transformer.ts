@@ -17,7 +17,7 @@ export interface PostgresUsuario {
 
 export function transformUsuario(row: MysqlUsuario): PostgresUsuario {
   return {
-    id: mapId(row.id, 'users'),
+    id: mapId(row.id, 'usuarios'),
     nome: String(row.name ?? ''),
     email: String(row.email ?? '').toLowerCase().trim(),
     senha_hash: String(row.password ?? ''),

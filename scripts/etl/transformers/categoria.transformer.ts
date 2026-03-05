@@ -19,7 +19,7 @@ export interface PostgresCategoria {
 export function transformCategoria(row: MysqlCategory): PostgresCategoria {
   return {
     id: mapId(row.id, 'categories'),
-    usuario_id: mapIdOptional(row.user_id as number | null | undefined, 'users'),
+    usuario_id: mapIdOptional(row.user_id as number | null | undefined, 'usuarios'),
     nome: String(row.name ?? '').trim(),
     tipo: toTipoMovimentacao(row.type),
     icone: row.icon ? String(row.icon) : undefined,

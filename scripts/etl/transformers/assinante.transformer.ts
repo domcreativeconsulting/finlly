@@ -22,7 +22,7 @@ export interface PostgresAssinante {
 export function transformAssinante(row: MysqlPlan): PostgresAssinante {
   return {
     id: mapId(row.id, 'plans'),
-    usuario_id: mapId(row.user_id, 'users'),
+    usuario_id: mapId(row.user_id, 'usuarios'),
     status: toStatusAssinante(row.status),
     plano: String(row.plan ?? 'free'),
     provider: row.provider ? String(row.provider) : undefined,

@@ -19,7 +19,7 @@ export interface PostgresAnexo {
 export function transformAnexo(row: MysqlAttachment): PostgresAnexo {
   return {
     id: mapId(row.id, 'attachments'),
-    usuario_id: mapId(row.user_id, 'users'),
+    usuario_id: mapId(row.user_id, 'usuarios'),
     nome_original: String(row.original_name ?? ''),
     nome_arquivo: String(row.file_name ?? ''),
     mime_type: String(row.mime_type ?? 'application/octet-stream'),

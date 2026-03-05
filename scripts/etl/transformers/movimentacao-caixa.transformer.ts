@@ -23,7 +23,7 @@ export interface PostgresMovimentacaoCaixa {
 export function transformMovimentacaoCaixa(row: MysqlTransaction): PostgresMovimentacaoCaixa {
   return {
     id: mapId(row.id, 'transactions'),
-    usuario_id: mapId(row.user_id, 'users'),
+    usuario_id: mapId(row.user_id, 'usuarios'),
     conta_id: mapId(row.account_id, 'accounts'),
     tipo: toTipoMovimentacao(row.type),
     valor: Number(row.amount ?? 0),

@@ -22,7 +22,7 @@ export function transformInvestimento(row: MysqlInvestment): PostgresInvestiment
   // NOTE: `current_value` is intentionally removed — it will be computed via investimentos_eventos
   return {
     id: mapId(row.id, 'investments'),
-    usuario_id: mapId(row.user_id, 'users'),
+    usuario_id: mapId(row.user_id, 'usuarios'),
     nome: String(row.name ?? '').trim(),
     tipo_id: mapId(row.type_id, 'investment_types'),
     instituicao_id: mapIdOptional(row.bank_id as number | null | undefined, 'banks'),
