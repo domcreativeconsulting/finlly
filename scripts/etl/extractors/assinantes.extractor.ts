@@ -19,9 +19,9 @@ export interface MysqlPlan extends MysqlRow {
 
 export class AssinantesExtractor extends BaseExtractor {
   async extract(): Promise<MysqlPlan[]> {
-    return this.extractAll<MysqlPlan>('plans', '*', 'id');
+    return this.extractAll<MysqlPlan>('assinantes', '*', 'id');
   }
   async getCount(): Promise<number> {
-    return this.count('plans');
+    return this.count('assinantes');
   }
 }

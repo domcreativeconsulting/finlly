@@ -20,9 +20,9 @@ export interface MysqlReceivable extends MysqlRow {
 
 export class ContasReceberExtractor extends BaseExtractor {
   async extract(): Promise<MysqlReceivable[]> {
-    return this.extractAll<MysqlReceivable>('receivables', '*', 'id');
+    return this.extractAll<MysqlReceivable>('contas_receber', '*', 'id');
   }
   async getCount(): Promise<number> {
-    return this.count('receivables');
+    return this.count('contas_receber');
   }
 }
