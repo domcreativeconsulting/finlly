@@ -23,7 +23,7 @@ export function transformMeta(row: MysqlGoal): PostgresMeta {
   // NOTE: `current_amount` is intentionally removed — computed via metas_movimentos
   return {
     id: mapId(row.id, 'goals'),
-    usuario_id: mapId(row.user_id, 'users'),
+    usuario_id: mapId(row.user_id, 'usuarios'),
     nome: String(row.name ?? '').trim(),
     tipo: toTipoMeta(row.type),
     valor_alvo: Number(row.target_amount ?? 0),

@@ -19,7 +19,7 @@ export function transformInvestimentoEvento(row: MysqlInvestmentEvent): Postgres
   return {
     id: mapId(row.id, 'investment_events'),
     investimento_id: mapId(row.investment_id, 'investments'),
-    usuario_id: mapId(row.user_id, 'users'),
+    usuario_id: mapId(row.user_id, 'usuarios'),
     tipo: toTipoEventoInvestimento(row.type),
     valor: Number(row.amount ?? 0),
     data: toDateOnly(row.date) ?? new Date(),

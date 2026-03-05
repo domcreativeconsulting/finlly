@@ -19,7 +19,7 @@ export function transformMetaMovimento(row: MysqlGoalMovement): PostgresMetaMovi
   return {
     id: mapId(row.id, 'goal_movements'),
     meta_id: mapId(row.goal_id, 'goals'),
-    usuario_id: mapId(row.user_id, 'users'),
+    usuario_id: mapId(row.user_id, 'usuarios'),
     valor: Number(row.amount ?? 0),
     data: toDateOnly(row.date) ?? new Date(),
     descricao: row.description ? String(row.description) : undefined,

@@ -36,13 +36,13 @@ export class SampleValidator {
   }
 
   async validateUsuarios(): Promise<SampleCheckResult[]> {
-    const sample = await this.randomSample('users', this.sampleSize).catch(() => []);
+    const sample = await this.randomSample('usuarios', this.sampleSize).catch(() => []);
     const results: SampleCheckResult[] = [];
 
     for (const { id } of sample) {
-      const pgId = mapId(id, 'users');
+      const pgId = mapId(id, 'usuarios');
       const [mysql, pg] = await Promise.all([
-        this.extractor['query']<Record<string, unknown>>(`SELECT * FROM users WHERE id = ?`, [id])
+        this.extractor['query']<Record<string, unknown>>(`SELECT * FROM usuarios WHERE id = ?`, [id])
           .then((r) => r[0])
           .catch(() => undefined),
         this.prisma.usuario

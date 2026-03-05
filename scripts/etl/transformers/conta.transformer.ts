@@ -21,7 +21,7 @@ export function transformConta(row: MysqlAccount): PostgresConta {
   // NOTE: `balance` is intentionally removed — it will be computed from movimentacoes_caixa
   return {
     id: mapId(row.id, 'accounts'),
-    usuario_id: mapId(row.user_id, 'users'),
+    usuario_id: mapId(row.user_id, 'usuarios'),
     nome: String(row.name ?? '').trim(),
     tipo: toTipoConta(row.type),
     instituicao_financeira_id: mapIdOptional(row.bank_id as number | null | undefined, 'banks'),

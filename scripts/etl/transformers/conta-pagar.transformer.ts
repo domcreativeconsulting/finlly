@@ -26,7 +26,7 @@ export interface PostgresContaPagar {
 export function transformContaPagar(row: MysqlBill): PostgresContaPagar {
   return {
     id: mapId(row.id, 'bills'),
-    usuario_id: mapId(row.user_id, 'users'),
+    usuario_id: mapId(row.user_id, 'usuarios'),
     descricao: String(row.description ?? ''),
     valor: Number(row.amount ?? 0),
     data_vencimento: toDateOnly(row.due_date) ?? new Date(),
