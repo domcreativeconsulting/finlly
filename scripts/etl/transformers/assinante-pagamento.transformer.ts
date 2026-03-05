@@ -20,7 +20,7 @@ export interface PostgresAssinantePagamento {
 
 export function transformAssinantePagamento(row: MysqlPayment): PostgresAssinantePagamento {
   return {
-    id: mapId(row.id, 'payments'),
+    id: mapId(row.id, 'assinantes_pagamentos'),
     assinante_id: mapId(row.subscription_id, 'plans'),
     usuario_id: mapId(row.user_id, 'users'),
     status: toStatusPagamento(row.status),

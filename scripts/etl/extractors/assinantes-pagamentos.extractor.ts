@@ -18,9 +18,9 @@ export interface MysqlPayment extends MysqlRow {
 
 export class AssinantesPagamentosExtractor extends BaseExtractor {
   async extract(): Promise<MysqlPayment[]> {
-    return this.extractAll<MysqlPayment>('payments', '*', 'id');
+    return this.extractAll<MysqlPayment>('assinantes_pagamentos', '*', 'id');
   }
   async getCount(): Promise<number> {
-    return this.count('payments');
+    return this.count('assinantes_pagamentos');
   }
 }
