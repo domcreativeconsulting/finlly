@@ -1,12 +1,14 @@
+import 'dotenv/config';
 import mysql from 'mysql2/promise';
 import { Pool } from 'pg';
-import { config } from './config.js';
+import { config } from './config.ts';
 
 async function testMysqlConnection(): Promise<boolean> {
   let connection: mysql.Connection | null = null;
   try {
     connection = await mysql.createConnection(config.mysql);
-    const [rows] = await connection.query<mysql.RowDataPacket[]>('SELECT 1 AS ok');
+    const [rows] =
+      await connection.query<mysql.RowDataPacket[]>('SELECT 1 AS ok');
     const ok = Array.isArray(rows) && rows[0]?.['ok'] === 1;
     if (ok) {
       console.log('✅ MySQL: conexão bem-sucedida');
@@ -46,7 +48,9 @@ async function main(): Promise<void> {
     console.log('\n✨ Todas as conexões estabelecidas com sucesso!');
     process.exit(0);
   } else {
-    console.error('\n💥 Falha em uma ou mais conexões. Verifique as variáveis de ambiente.');
+    console.error(
+      '\n💥 Falha em uma ou mais conexões. Verifique as variáveis de ambiente.'
+    );
     process.exit(1);
   }
 }

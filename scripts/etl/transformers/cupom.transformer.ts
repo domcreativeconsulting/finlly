@@ -19,9 +19,12 @@ export interface PostgresCupom {
 export function transformCupom(row: MysqlCoupon): PostgresCupom {
   const discountType = String(row.discount_type ?? 'percent').toLowerCase();
   return {
-    id: mapId(row.id, 'coupons'),
-    codigo: String(row.code ?? '').trim().toUpperCase(),
-    desconto_percentual: discountType === 'percent' ? Number(row.discount) : undefined,
+    id: mapId(row.id, 'cupons'),
+    codigo: String(row.code ?? '')
+      .trim()
+      .toUpperCase(),
+    desconto_percentual:
+      discountType === 'percent' ? Number(row.discount) : undefined,
     desconto_fixo: discountType === 'fixed' ? Number(row.discount) : undefined,
     valido_ate: toTimestamptz(row.valid_until),
     uso_maximo: row.max_uses != null ? Number(row.max_uses) : undefined,

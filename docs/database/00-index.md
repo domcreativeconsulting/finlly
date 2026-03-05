@@ -33,26 +33,26 @@ funcionais. O esquema foi mapeado a partir de:
 
 ### Domínios Identificados
 
-| #  | Domínio                   | Tabelas MySQL (legado)                                                  | Qtd |
-|----|---------------------------|-------------------------------------------------------------------------|-----|
-| 1  | Usuários & Autenticação   | `users`, `webhook_logs`                                                 | 2   |
-| 2  | Billing & Assinaturas     | `plans`, `subscriptions`, `payments`, `coupons`                         | 4   |
-| 3  | Financeiro — Contas       | `accounts`, `categories`, `bills`, `receivables`, `transactions`        | 5   |
-| 4  | Investimentos             | `investment_types`, `banks`, `investments`, `investment_events`          | 4   |
-| 5  | Metas & Objetivos         | `goals`, `goal_movements`                                               | 2   |
-| 6  | Anexos & Documentos       | `attachments`, `attachment_relations`                                   | 2   |
-| 7  | Comunicação & Logs        | `whatsapp_messages`, `background_jobs`                                  | 2   |
-|    | **Total**                 |                                                                         | **21** |
+| #   | Domínio                 | Tabelas MySQL (legado)                                           | Qtd    |
+| --- | ----------------------- | ---------------------------------------------------------------- | ------ |
+| 1   | Usuários & Autenticação | `users`, `webhook_logs`                                          | 2      |
+| 2   | Billing & Assinaturas   | `plans`, `subscriptions`, `payments`, `cupons`                   | 4      |
+| 3   | Financeiro — Contas     | `accounts`, `categories`, `bills`, `receivables`, `transactions` | 5      |
+| 4   | Investimentos           | `investment_types`, `banks`, `investments`, `investment_events`  | 4      |
+| 5   | Metas & Objetivos       | `goals`, `goal_movements`                                        | 2      |
+| 6   | Anexos & Documentos     | `attachments`, `attachment_relations`                            | 2      |
+| 7   | Comunicação & Logs      | `whatsapp_messages`, `background_jobs`                           | 2      |
+|     | **Total**               |                                                                  | **21** |
 
 ### Principais Achados
 
-| Categoria             | Quantidade | Detalhe                                                                     |
-|-----------------------|:----------:|-----------------------------------------------------------------------------|
-| Tabelas mapeadas      | 21         | 100% cobertura, agrupadas nos 7 domínios acima                              |
-| Relacionamentos       | 34+        | 0 FKs explícitas no DDL; todas as relações mantidas via PHP                 |
-| Problemas identificados | 25       | 6 críticos · 7 altos · 8 médios · 4 baixos (ver `03-legacy-issues.md`)     |
-| Índices ausentes      | 7+         | Campos de filtro críticos sem índice (email, subscription_id, coupon code…) |
-| Anti-patterns críticos | 6         | Sem FKs, saldo desnormalizado, sem soft-delete, overflow INT, sem idempotência webhook, cupons duplicados |
+| Categoria               | Quantidade | Detalhe                                                                                                   |
+| ----------------------- | :--------: | --------------------------------------------------------------------------------------------------------- |
+| Tabelas mapeadas        |     21     | 100% cobertura, agrupadas nos 7 domínios acima                                                            |
+| Relacionamentos         |    34+     | 0 FKs explícitas no DDL; todas as relações mantidas via PHP                                               |
+| Problemas identificados |     25     | 6 críticos · 7 altos · 8 médios · 4 baixos (ver `03-legacy-issues.md`)                                    |
+| Índices ausentes        |     7+     | Campos de filtro críticos sem índice (email, subscription_id, coupon code…)                               |
+| Anti-patterns críticos  |     6      | Sem FKs, saldo desnormalizado, sem soft-delete, overflow INT, sem idempotência webhook, cupons duplicados |
 
 ---
 
@@ -80,10 +80,10 @@ e especifica o comportamento de **cascade esperado no Postgres v2**.
 
 **Convenções:**
 
-| Símbolo     | Significado                                           |
-|-------------|-------------------------------------------------------|
-| ✅ Explícita | FK declarada no DDL do MySQL                         |
-| ⚠️ Implícita | Relação mantida somente via código PHP               |
+| Símbolo        | Significado                                         |
+| -------------- | --------------------------------------------------- |
+| ✅ Explícita   | FK declarada no DDL do MySQL                        |
+| ⚠️ Implícita   | Relação mantida somente via código PHP              |
 | ❌ Polimórfica | Sem FK real — vínculo por `entity_type`+`entity_id` |
 
 Relacionamentos críticos documentados:
@@ -111,12 +111,12 @@ Lista estruturada de **25 problemas** com:
 
 **Distribuição de severidade:**
 
-| Severidade | Código | Qtd | Exemplos                                             |
-|------------|--------|-----|------------------------------------------------------|
-| 🔴 Crítico  | CR     | 6   | Sem FKs, saldo desnormalizado, sem soft-delete        |
-| 🟠 Alto     | AL     | 7   | Status VARCHAR livre, sem UNIQUE em email/user_id     |
-| 🟡 Médio    | ME     | 8   | DATETIME sem TZ, INT exposto em API, sem CHECK        |
-| 🟢 Baixo    | BA     | 4   | TINYINT como bool, username redundante                |
+| Severidade | Código | Qtd | Exemplos                                          |
+| ---------- | ------ | --- | ------------------------------------------------- |
+| 🔴 Crítico | CR     | 6   | Sem FKs, saldo desnormalizado, sem soft-delete    |
+| 🟠 Alto    | AL     | 7   | Status VARCHAR livre, sem UNIQUE em email/user_id |
+| 🟡 Médio   | ME     | 8   | DATETIME sem TZ, INT exposto em API, sem CHECK    |
+| 🟢 Baixo   | BA     | 4   | TINYINT como bool, username redundante            |
 
 **Use este documento quando precisar de:** justificar uma decisão de design no ERD v2, preparar um
 script de sanitização pré-migração, ou priorizar riscos para o sprint de migração (02.2).
@@ -148,45 +148,45 @@ pode iniciar com premissas corretas.
 
 ## Decisões de Nomenclatura (MySQL → Postgres)
 
-| Tabela MySQL (legado)   | Tabela Postgres v2          | Motivo da mudança                                           |
-|-------------------------|-----------------------------|-------------------------------------------------------------|
-| `users`                 | `usuarios`                  | Padronização em pt-BR                                       |
-| `plans`                 | *(unificada em `assinantes`)* | Eliminar tabela lookup desnecessária                      |
-| `subscriptions`         | `assinantes`                | Nome de domínio mais claro                                  |
-| `payments`              | `assinantes_pagamentos`     | Prefixo de domínio para clareza                             |
-| `coupons`               | `cupons`                    | Padronização em pt-BR                                       |
-| `webhook_logs`          | `webhook_events`            | Semântica mais precisa (evento, não apenas log)             |
-| `accounts`              | `contas`                    | Padronização em pt-BR                                       |
-| `categories`            | `categorias`                | Padronização em pt-BR                                       |
-| `bills`                 | `contas_pagar`              | Nome de domínio padrão do sistema financeiro BR             |
-| `receivables`           | `contas_receber`            | Nome de domínio padrão do sistema financeiro BR             |
-| `transactions`          | `movimentacoes_caixa`       | Clareza sobre tipo de registro                              |
-| `investment_types`      | `tipos_investimento`        | Padronização em pt-BR                                       |
-| `banks`                 | `instituicoes_financeiras`  | Engloba corretoras e outros (não apenas bancos)             |
-| `investments`           | `investimentos`             | Padronização em pt-BR                                       |
-| `investment_events`     | `investimentos_eventos`     | Padronização em pt-BR                                       |
-| `goals`                 | `metas`                     | Padronização em pt-BR                                       |
-| `goal_movements`        | `metas_movimentos`          | Padronização em pt-BR                                       |
-| `attachments`           | `anexos`                    | Padronização em pt-BR                                       |
-| `attachment_relations`  | `anexos_vinculos`           | Padronização em pt-BR                                       |
-| `whatsapp_messages`     | `whatsapp_logs`             | Alinhamento com outros logs do sistema                      |
-| `background_jobs`       | `jobs`                      | Simplificação do nome                                       |
+| Tabela MySQL (legado)  | Tabela Postgres v2            | Motivo da mudança                               |
+| ---------------------- | ----------------------------- | ----------------------------------------------- |
+| `users`                | `usuarios`                    | Padronização em pt-BR                           |
+| `plans`                | _(unificada em `assinantes`)_ | Eliminar tabela lookup desnecessária            |
+| `subscriptions`        | `assinantes`                  | Nome de domínio mais claro                      |
+| `payments`             | `assinantes_pagamentos`       | Prefixo de domínio para clareza                 |
+| `cupons`               | `cupons`                      | Padronização em pt-BR                           |
+| `webhook_logs`         | `webhook_events`              | Semântica mais precisa (evento, não apenas log) |
+| `accounts`             | `contas`                      | Padronização em pt-BR                           |
+| `categories`           | `categorias`                  | Padronização em pt-BR                           |
+| `bills`                | `contas_pagar`                | Nome de domínio padrão do sistema financeiro BR |
+| `receivables`          | `contas_receber`              | Nome de domínio padrão do sistema financeiro BR |
+| `transactions`         | `movimentacoes_caixa`         | Clareza sobre tipo de registro                  |
+| `investment_types`     | `tipos_investimento`          | Padronização em pt-BR                           |
+| `banks`                | `instituicoes_financeiras`    | Engloba corretoras e outros (não apenas bancos) |
+| `investments`          | `investimentos`               | Padronização em pt-BR                           |
+| `investment_events`    | `investimentos_eventos`       | Padronização em pt-BR                           |
+| `goals`                | `metas`                       | Padronização em pt-BR                           |
+| `goal_movements`       | `metas_movimentos`            | Padronização em pt-BR                           |
+| `attachments`          | `anexos`                      | Padronização em pt-BR                           |
+| `attachment_relations` | `anexos_vinculos`             | Padronização em pt-BR                           |
+| `whatsapp_messages`    | `whatsapp_logs`               | Alinhamento com outros logs do sistema          |
+| `background_jobs`      | `jobs`                        | Simplificação do nome                           |
 
 ---
 
 ## Próximos Passos (Sprint 02)
 
-| Subtask | Entregável                                     | Depende de                    |
-|---------|------------------------------------------------|-------------------------------|
-| 02.1    | ERD Postgres v2 (DBML + diagrama)              | Todos os documentos deste índice |
-| 02.2    | Migrations SQL (`db/schema.sql` inicial)       | 02.1 ERD finalizado           |
-| 02.3    | Scripts ETL (MySQL → Postgres)                 | 02.2 migrations prontas       |
-| 02.4    | Validação de dados migrados                    | 02.3 ETL executado            |
+| Subtask | Entregável                               | Depende de                       |
+| ------- | ---------------------------------------- | -------------------------------- |
+| 02.1    | ERD Postgres v2 (DBML + diagrama)        | Todos os documentos deste índice |
+| 02.2    | Migrations SQL (`db/schema.sql` inicial) | 02.1 ERD finalizado              |
+| 02.3    | Scripts ETL (MySQL → Postgres)           | 02.2 migrations prontas          |
+| 02.4    | Validação de dados migrados              | 02.3 ETL executado               |
 
 > ⚠️ **Premissa crítica para 02.1:** Os problemas CR-01 a CR-06 (ver `03-legacy-issues.md`) **devem**
 > ser corrigidos no redesenho. Não reproduzir os anti-patterns do legado.
 
 ---
 
-*Documento gerado em: 2026-03-03*  
-*Autores: Levantamento automatizado via análise de `finlly_go.sql` + código PHP*
+_Documento gerado em: 2026-03-03_  
+_Autores: Levantamento automatizado via análise de `finlly_go.sql` + código PHP_

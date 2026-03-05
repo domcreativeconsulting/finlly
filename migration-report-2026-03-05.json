@@ -1,0 +1,24 @@
+{
+  "timestamp": "2026-03-05T17:24:49.149Z",
+  "status": "error",
+  "modo": "dry_run",
+  "summary": {
+    "total_tabelas": 0,
+    "tabelas_ok": 0,
+    "tabelas_com_erro": 0,
+    "total_registros_mysql": 0,
+    "total_registros_postgres": 0,
+    "total_erros": 1,
+    "total_avisos": 0
+  },
+  "por_tabela": [],
+  "amostras": [],
+  "orphans_found": [],
+  "transformacoes_aplicadas": {
+    "ids_mapeados": 0,
+    "tipos_convertidos": [],
+    "campos_removidos": [],
+    "campos_adicionados": []
+  },
+  "erros": ["Erro fatal: Table 'finlly_go.plans' doesn't exist"]
+}

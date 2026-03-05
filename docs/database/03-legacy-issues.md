@@ -10,13 +10,13 @@
 
 ## Sumário de Severidade
 
-| Severidade | Qtd | Descrição                                                  |
-|------------|-----|------------------------------------------------------------|
-| 🔴 Crítico  | 6   | Risco de dados corrompidos ou perda irreversível de dados  |
-| 🟠 Alto     | 7   | Inconsistência de dados ou bugs silenciosos em produção    |
-| 🟡 Médio    | 8   | Degradação de performance ou manutenibilidade              |
-| 🟢 Baixo    | 4   | Melhorias de design sem impacto imediato em dados          |
-| **Total**  | **25** |                                                         |
+| Severidade | Qtd    | Descrição                                                 |
+| ---------- | ------ | --------------------------------------------------------- |
+| 🔴 Crítico | 6      | Risco de dados corrompidos ou perda irreversível de dados |
+| 🟠 Alto    | 7      | Inconsistência de dados ou bugs silenciosos em produção   |
+| 🟡 Médio   | 8      | Degradação de performance ou manutenibilidade             |
+| 🟢 Baixo   | 4      | Melhorias de design sem impacto imediato em dados         |
+| **Total**  | **25** |                                                           |
 
 ---
 
@@ -30,11 +30,13 @@
 **Anti-pattern:** Integridade referencial mantida **exclusivamente** pelo código PHP.
 
 **Impacto:**
+
 - Qualquer acesso direto ao banco (migração, script de manutenção, dashboard de BI) pode criar registros órfãos.
 - Deleção de `users` gera ~13 tabelas com registros órfãos silenciosamente.
 - Impossível auditar relacionamentos via schema — dependência total do código PHP.
 
 **Exemplo de risco:**
+
 ```sql
 -- Legado: deleta usuário sem cascade → 10+ tabelas ficam com user_id inválido
 DELETE FROM users WHERE id = 42;
@@ -53,11 +55,13 @@ Todas as relações possuem FKs explícitas com `ON DELETE CASCADE | SET NULL | 
 **Anti-pattern:** Campo `balance DECIMAL(10,2)` armazenado e atualizado via PHP.
 
 **Impacto:**
+
 - Se qualquer atualização de `balance` falhar (erro de rede, exception PHP), saldo fica inconsistente.
 - Não existe garantia de atomicidade entre `INSERT INTO transactions` e `UPDATE accounts SET balance`.
 - Inconsistências acumulam silenciosamente ao longo do tempo.
 
 **Exemplo de divergência:**
+
 ```sql
 -- PHP: insere transação, mas falha antes de atualizar balance
 INSERT INTO transactions (account_id, type, amount, ...) VALUES (1, 'expense', 150.00, ...);
@@ -66,6 +70,7 @@ INSERT INTO transactions (account_id, type, amount, ...) VALUES (1, 'expense', 1
 
 **Correção no Postgres v2:**  
 `balance` **removido** de `contas`. Saldo calculado on-demand:
+
 ```sql
 SELECT SUM(CASE tipo WHEN 'entrada' THEN valor ELSE -valor END)
 FROM movimentacoes_caixa
@@ -80,6 +85,7 @@ WHERE conta_id = ? AND deleted_at IS NULL;
 **Anti-pattern:** Deleção física (`DELETE`) sem mecanismo de recuperação.
 
 **Impacto:**
+
 - LGPD exige que dados pessoais possam ser "esquecidos" **de forma auditável**, não apagados abruptamente.
 - Histórico financeiro irrecuperável após exclusão de conta.
 - Sem trilha de auditoria de quem deletou o quê e quando.
@@ -95,11 +101,13 @@ Coluna `deleted_at TIMESTAMPTZ` adicionada em todas as entidades de negócio. Re
 **Anti-pattern:** Ausência de identificador único do evento no provedor.
 
 **Impacto:**
+
 - Redelivery de webhook (comportamento padrão Asaas/Stripe) processa o mesmo evento N vezes.
 - Pagamentos podem ser marcados como pagos múltiplas vezes.
 - Assinaturas ativadas/canceladas erroneamente por eventos duplicados.
 
 **Evidência no código (`asaas_client.php`):**
+
 - O handler de webhook não verifica se o `event_id` já foi processado antes de executar ações.
 
 **Correção no Postgres v2:**  
@@ -113,6 +121,7 @@ Coluna `deleted_at TIMESTAMPTZ` adicionada em todas as entidades de negócio. Re
 **Anti-pattern:** PK `INT AUTO_INCREMENT` (máximo ~2.1 bilhões de registros).
 
 **Impacto:**
+
 - Sistema de billing/WhatsApp com alto volume pode atingir o limite de INT em produção.
 - Após overflow: novos inserts falham com erro de constraint (sistema para).
 - Migração de INT para BIGINT em produção requer lock de tabela (downtime).
@@ -122,12 +131,13 @@ Coluna `deleted_at TIMESTAMPTZ` adicionada em todas as entidades de negócio. Re
 
 ---
 
-### CR-06: `coupons.code` Sem UNIQUE — Cupons Duplicados Aceitos
+### CR-06: `cupons.code` Sem UNIQUE — Cupons Duplicados Aceitos
 
-**Tabela afetada:** `coupons`  
+**Tabela afetada:** `cupons`  
 **Anti-pattern:** Campo `code VARCHAR(50)` sem índice UNIQUE.
 
 **Impacto:**
+
 - Dois cupons com o mesmo código podem existir simultaneamente.
 - Comportamento do PHP ao aplicar cupom é imprevisível (qual registro retorna o SELECT?).
 - Cliente pode conseguir desconto indevido ou receber erro inconsistente.
@@ -147,11 +157,13 @@ Coluna `deleted_at TIMESTAMPTZ` adicionada em todas as entidades de negócio. Re
 **Anti-pattern:** Status e tipos de campo definidos como `VARCHAR(20)` sem validação de domínio.
 
 **Impacto:**
+
 - Valores como `'Pending'`, `'PENDING'`, `'pending'` coexistem no banco (case sensitivity).
 - Queries de filtro por status exigem `LOWER()` ou falham silenciosamente.
 - Novos valores inválidos entram no banco sem erro.
 
 **Valores encontrados no legado (exemplos):**
+
 - `bills.status`: `'pending'`, `'paid'`, `'overdue'`, `'cancelled'` (e variantes com typo)
 - `transactions.type`: `'income'`, `'expense'`, `'transfer'`, `'Income'`
 
@@ -167,6 +179,7 @@ ENUMs Postgres para todos os campos de status/tipo:
 **Anti-pattern:** Valores calculáveis armazenados redundantemente.
 
 **Impacto:**
+
 - Idem ao CR-02: pode divergir dos eventos/movimentos quando atualização falha.
 - Relatórios de patrimônio e progresso de metas mostram valores incorretos.
 
@@ -181,6 +194,7 @@ Campos removidos. Calculados via `SUM()` em `investimentos_eventos` e `metas_mov
 **Anti-pattern:** Ausência de campos `installment_number`, `total_installments`, `installment_group_id`.
 
 **Impacto:**
+
 - Parcelamento implementado via lógica PHP — sem rastreabilidade no banco.
 - Impossível consultar "todas as parcelas de uma compra" via SQL sem heurísticas de texto.
 - Cancelar parcelas individuais vs. todo o grupo exige lógica frágil no PHP.
@@ -199,6 +213,7 @@ PHP gera N registros em `bills` com mesmo `description` — sem campo de agrupam
 **Anti-pattern:** `entity_type VARCHAR(50)` sem CHECK — qualquer string aceita.
 
 **Impacto:**
+
 - Vínculos para entidades inexistentes criados silenciosamente.
 - Busca de anexos por entidade falha para values com typo (ex: `'bill'` vs `'bills'`).
 - Sem FK real: a entidade referenciada pode ser deletada sem remover o vínculo.
@@ -214,6 +229,7 @@ PHP gera N registros em `bills` com mesmo `description` — sem campo de agrupam
 **Anti-pattern:** Ausência de constraint UNIQUE em `user_id`.
 
 **Impacto:**
+
 - Múltiplas assinaturas ativas por usuário possíveis.
 - PHP pode criar nova assinatura trial sem verificar se já existe uma ativa.
 - Conflito de billing: usuário cobrado múltiplas vezes.
@@ -229,6 +245,7 @@ PHP gera N registros em `bills` com mesmo `description` — sem campo de agrupam
 **Anti-pattern:** Email sem constraint de unicidade no banco.
 
 **Impacto:**
+
 - Usuários duplicados com mesmo email (race condition no cadastro).
 - Login por email retorna múltiplos registros — comportamento imprevisível.
 - Reset de senha pode afetar conta errada.
@@ -244,6 +261,7 @@ PHP gera N registros em `bills` com mesmo `description` — sem campo de agrupam
 **Anti-pattern:** JSON armazenado como `LONGTEXT` sem validação de formato.
 
 **Impacto:**
+
 - Payload inválido inserido sem erro → job falha em runtime sem diagnóstico claro.
 - Impossível indexar campos do payload para filtros de monitoramento.
 - Sem schema, impossível validar estrutura esperada por tipo de job.
@@ -263,6 +281,7 @@ PHP gera N registros em `bills` com mesmo `description` — sem campo de agrupam
 **Anti-pattern:** `DATETIME` MySQL não armazena informação de timezone.
 
 **Impacto:**
+
 - Ambiguidade em horários de verão (DST): o mesmo instante UTC pode aparecer duas vezes.
 - Relatórios financeiros com datas incorretas para usuários em fusos diferentes de UTC.
 - Ao migrar servidor entre datacenters, timestamps passados ficam errados.
@@ -278,6 +297,7 @@ PHP gera N registros em `bills` com mesmo `description` — sem campo de agrupam
 **Anti-pattern:** IDs sequenciais expostos em endpoints REST.
 
 **Impacto:**
+
 - Enumeração trivial de recursos: `GET /bills/1`, `/bills/2`, ... `GET /bills/99999`.
 - Exposição de volume de dados (concorrentes podem contar quantos clientes existem).
 - Facilita ataques de force-brute em endpoints sem autenticação adequada.
@@ -293,6 +313,7 @@ UUID v4 (`gen_random_uuid()`) para todas as entidades de negócio.
 **Anti-pattern:** Caminhos de filesystem local em vez de URLs.
 
 **Impacto:**
+
 - Não funciona em ambientes containerizados (Docker, Kubernetes) — filesystem efêmero.
 - Impossível usar CDN para servir arquivos estáticos.
 - Path traversal potencial se o campo for lido sem sanitização.
@@ -308,6 +329,7 @@ UUID v4 (`gen_random_uuid()`) para todas as entidades de negócio.
 **Anti-pattern:** Dois campos para identificar instituição (ISPB 8 dígitos e COMPE 3 dígitos).
 
 **Impacto:**
+
 - Redundância: alguns bancos têm apenas COMPE, outros apenas ISPB, outros ambos.
 - Sem CHECK de formato (ISPB deve ter 8 dígitos, COMPE 3 dígitos).
 - Queries de busca por código precisam verificar dois campos.
@@ -321,15 +343,15 @@ UUID v4 (`gen_random_uuid()`) para todas as entidades de negócio.
 
 **Tabelas afetadas:**
 
-| Tabela          | Campo sem índice      | Impacto de Performance                          |
-|-----------------|-----------------------|-------------------------------------------------|
-| `users`         | `email`               | Login por email faz full table scan             |
-| `subscriptions` | `user_id`             | Busca de assinatura por usuário sem índice      |
-| `payments`      | `subscription_id`, `user_id` | Histórico de pagamentos sem índice       |
-| `coupons`       | `code`                | Busca de cupom faz full table scan              |
-| `categories`    | `parent_id`           | Busca de subcategorias sem índice               |
-| `investment_events` | `user_id`         | Relatório de eventos sem índice                 |
-| `goal_movements`| `goal_id`             | Cálculo de progresso sem índice                 |
+| Tabela              | Campo sem índice             | Impacto de Performance                     |
+| ------------------- | ---------------------------- | ------------------------------------------ |
+| `users`             | `email`                      | Login por email faz full table scan        |
+| `subscriptions`     | `user_id`                    | Busca de assinatura por usuário sem índice |
+| `payments`          | `subscription_id`, `user_id` | Histórico de pagamentos sem índice         |
+| `cupons`            | `code`                       | Busca de cupom faz full table scan         |
+| `categories`        | `parent_id`                  | Busca de subcategorias sem índice          |
+| `investment_events` | `user_id`                    | Relatório de eventos sem índice            |
+| `goal_movements`    | `goal_id`                    | Cálculo de progresso sem índice            |
 
 **Correção no Postgres v2:**  
 Índices criados em todos os campos de filtro frequente (ver `db/schema.sql`).
@@ -342,6 +364,7 @@ UUID v4 (`gen_random_uuid()`) para todas as entidades de negócio.
 **Anti-pattern:** Campo `recurrence VARCHAR(20)` sem enum.
 
 **Impacto:**
+
 - Valores como `'monthly'`, `'mensal'`, `'mes'`, `'month'` coexistem nos dados.
 - Lógica PHP de geração de recorrência frágil: cada versão do código pode usar um valor diferente.
 
@@ -356,6 +379,7 @@ UUID v4 (`gen_random_uuid()`) para todas as entidades de negócio.
 **Anti-pattern:** Campos DECIMAL sem `CHECK (valor > 0)`.
 
 **Impacto:**
+
 - Valores negativos ou zero inseridos silenciosamente.
 - Relatórios financeiros com somas incorretas.
 
@@ -364,17 +388,19 @@ UUID v4 (`gen_random_uuid()`) para todas as entidades de negócio.
 
 ---
 
-### ME-08: `coupons.discount_type` Como String Livre
+### ME-08: `cupons.discount_type` Como String Livre
 
-**Tabela afetada:** `coupons`  
+**Tabela afetada:** `cupons`  
 **Anti-pattern:** `discount_type VARCHAR(20)` sem CHECK.
 
 **Impacto:**
+
 - Valores inválidos aceitos (ex: `'percentage'` vs `'percent'`).
 - Sem garantia de que apenas um tipo de desconto está ativo por cupom.
 
 **Correção no Postgres v2:**  
 Dois campos separados `desconto_percentual` e `desconto_fixo` com CHECK de exclusividade:
+
 ```sql
 CONSTRAINT ck_cupons_desconto CHECK (
   (desconto_percentual IS NOT NULL AND desconto_fixo IS NULL)
@@ -390,7 +416,7 @@ CONSTRAINT ck_cupons_desconto CHECK (
 
 ### BA-01: `TINYINT(1)` Usado como Boolean
 
-**Tabelas afetadas:** `accounts` (`active`), `coupons` (`active`), `investments` (`active`), `bills` (`recurring`), `receivables` (`recurring`), `webhook_logs` (`processed`)  
+**Tabelas afetadas:** `accounts` (`active`), `cupons` (`active`), `investments` (`active`), `bills` (`recurring`), `receivables` (`recurring`), `webhook_logs` (`processed`)  
 **Anti-pattern:** Boolean representado como `TINYINT(1)`.
 
 **Impacto:** Código PHP precisa comparar com `== 1` / `== 0` em vez de `=== true` / `=== false`.  
@@ -425,6 +451,7 @@ CONSTRAINT ck_cupons_desconto CHECK (
 
 **Impacto:** Valores inválidos (ex: `'red'`, `'#ZZZZZZ'`) armazenados sem erro.  
 **Correção no Postgres v2:**
+
 ```sql
 CHECK (cor ~ '^#[0-9A-Fa-f]{6}$')
 ```
@@ -435,16 +462,16 @@ CHECK (cor ~ '^#[0-9A-Fa-f]{6}$')
 
 ### Conversão de Dados
 
-| Campo Legado          | Tipo Legado       | Tipo v2          | Risco de Conversão                                      |
-|-----------------------|-------------------|------------------|---------------------------------------------------------|
-| `id` (todas tabelas)  | `INT`             | `UUID`           | **Alto:** IDs precisam ser mapeados; registros cruzados precisam ser re-vinculados via tabela de mapeamento |
-| `status` (string)     | `VARCHAR`         | `ENUM`           | **Médio:** Valores com typo ou case diferente precisam ser normalizados antes da migração |
-| `created_at`/`updated_at` | `DATETIME` | `TIMESTAMPTZ`    | **Baixo:** Assume-se UTC; confirmar timezone do servidor MySQL |
-| `balance` (accounts)  | `DECIMAL`         | *(removido)*     | **Médio:** Verificar consistência entre `balance` e soma de `transactions` antes de remover |
-| `current_value` (investments) | `DECIMAL` | *(removido)*  | **Médio:** Idem — verificar consistência com `investment_events` |
-| `current_amount` (goals) | `DECIMAL`    | *(removido)*     | **Médio:** Idem — verificar consistência com `goal_movements` |
-| `size` (attachments)  | `INT`             | `BIGINT`         | **Baixo:** Conversão direta; sem perda de dados         |
-| `payload` (jobs)      | `LONGTEXT`        | `JSONB`          | **Médio:** Validar que todos os payloads são JSON válido antes de migrar |
+| Campo Legado                  | Tipo Legado | Tipo v2       | Risco de Conversão                                                                                          |
+| ----------------------------- | ----------- | ------------- | ----------------------------------------------------------------------------------------------------------- |
+| `id` (todas tabelas)          | `INT`       | `UUID`        | **Alto:** IDs precisam ser mapeados; registros cruzados precisam ser re-vinculados via tabela de mapeamento |
+| `status` (string)             | `VARCHAR`   | `ENUM`        | **Médio:** Valores com typo ou case diferente precisam ser normalizados antes da migração                   |
+| `created_at`/`updated_at`     | `DATETIME`  | `TIMESTAMPTZ` | **Baixo:** Assume-se UTC; confirmar timezone do servidor MySQL                                              |
+| `balance` (accounts)          | `DECIMAL`   | _(removido)_  | **Médio:** Verificar consistência entre `balance` e soma de `transactions` antes de remover                 |
+| `current_value` (investments) | `DECIMAL`   | _(removido)_  | **Médio:** Idem — verificar consistência com `investment_events`                                            |
+| `current_amount` (goals)      | `DECIMAL`   | _(removido)_  | **Médio:** Idem — verificar consistência com `goal_movements`                                               |
+| `size` (attachments)          | `INT`       | `BIGINT`      | **Baixo:** Conversão direta; sem perda de dados                                                             |
+| `payload` (jobs)              | `LONGTEXT`  | `JSONB`       | **Médio:** Validar que todos os payloads são JSON válido antes de migrar                                    |
 
 ### Dados Inconsistentes a Tratar Antes da Migração
 
@@ -486,9 +513,9 @@ CHECK (cor ~ '^#[0-9A-Fa-f]{6}$')
 - `users.username` → removido (login por email)
 - `accounts.balance`, `investments.current_value`, `goals.current_amount` → removidos (calculados)
 - `banks.ispb` + `banks.compe` → unificados em `codigo_compensacao`
-- `coupons.discount` + `coupons.discount_type` → substituídos por `desconto_percentual` + `desconto_fixo`
+- `cupons.discount` + `cupons.discount_type` → substituídos por `desconto_percentual` + `desconto_fixo`
 
 ---
 
-*Documento gerado em: 2026-03-02*  
-*Documentos relacionados: `01-legacy-schema-mapping.md`, `02-relationships-matrix.md`*
+_Documento gerado em: 2026-03-02_  
+_Documentos relacionados: `01-legacy-schema-mapping.md`, `02-relationships-matrix.md`_

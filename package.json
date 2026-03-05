@@ -22,7 +22,7 @@
     "db:reset": "prisma migrate reset",
     "db:studio": "prisma studio",
     "etl:test": "ts-node --esm --project tsconfig.prisma.json scripts/etl/test-connection.ts",
-    "etl:dry-run": "ETL_DRY_RUN=true ts-node --esm --project tsconfig.prisma.json scripts/etl/etl.ts",
+    "etl:dry-run": "cross-env ETL_DRY_RUN=true tsx scripts/etl/etl.ts",
     "etl:execute": "ETL_DRY_RUN=false ts-node --esm --project tsconfig.prisma.json scripts/etl/etl.ts",
     "etl:rollback": "ts-node --esm --project tsconfig.prisma.json scripts/etl/rollback.ts"
   },
@@ -33,10 +33,12 @@
     "@types/pg": "^8.18.0",
     "@vitejs/plugin-react": "^5.1.4",
     "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
     "dotenv": "^17.3.1",
     "husky": "^9.1.7",
     "prisma": "^7.4.2",
     "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
     "typescript": "^5.7.3"
   },
   "dependencies": {
@@ -47,6 +49,7 @@
     "eslint-plugin-react": "^7.37.0",
     "eslint-plugin-react-hooks": "^5.0.0",
     "lint-staged": "^15.2.7",
+    "mysql2": "^3.18.2",
     "pg": "^8.19.0",
     "prettier": "^3.3.3",
     "uuid": "^13.0.0"

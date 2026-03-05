@@ -26,11 +26,16 @@ export function transformAssinante(row: MysqlPlan): PostgresAssinante {
     status: toStatusAssinante(row.status),
     plano: String(row.plan ?? 'free'),
     provider: row.provider ? String(row.provider) : undefined,
-    provider_customer_id: row.provider_customer_id ? String(row.provider_customer_id) : undefined,
+    provider_customer_id: row.provider_customer_id
+      ? String(row.provider_customer_id)
+      : undefined,
     provider_subscription_id: row.provider_subscription_id
       ? String(row.provider_subscription_id)
       : undefined,
-    cupom_id: mapIdOptional(row.coupon_id as number | null | undefined, 'coupons'),
+    cupom_id: mapIdOptional(
+      row.coupon_id as number | null | undefined,
+      'cupons'
+    ),
     trial_inicio: toTimestamptz(row.trial_start),
     trial_fim: toTimestamptz(row.trial_end),
     proxima_cobranca: toTimestamptz(row.next_billing),

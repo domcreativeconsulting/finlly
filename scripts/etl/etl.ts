@@ -1,4 +1,4 @@
-import { config } from './config.js';
+import { config } from './config.ts';
 import { getMappedCount, clearCache } from './transformers/id-mapper.js';
 
 // Extractors
@@ -54,7 +54,10 @@ import { SampleValidator } from './validators/sample-validator.js';
 import { OrphanDetector } from './validators/orphan-detector.js';
 
 // Reporter
-import { ReportGenerator, type MigrationStatus } from './reporters/report-generator.js';
+import {
+  ReportGenerator,
+  type MigrationStatus,
+} from './reporters/report-generator.js';
 
 async function main(): Promise<void> {
   const dryRun = config.etl.dryRun;
@@ -62,7 +65,9 @@ async function main(): Promise<void> {
   const { sampleSize } = config.etl;
 
   console.log('\n🚀 Iniciando migração MySQL → Postgres\n');
-  console.log(`⚙️  Modo: ${dryRun ? 'DRY RUN (simulação sem inserção)' : 'EXECUÇÃO REAL'}`);
+  console.log(
+    `⚙️  Modo: ${dryRun ? 'DRY RUN (simulação sem inserção)' : 'EXECUÇÃO REAL'}`
+  );
   console.log(`📊 Batch size: ${batchSize}\n`);
 
   const reporter = new ReportGenerator();
@@ -102,10 +107,26 @@ async function main(): Promise<void> {
     const jobsEx = new JobsExtractor();
 
     const allExtractors = [
-      usuariosEx, cuponsEx, assinantesEx, pagamentosEx, webhookEx,
-      instituicoesEx, contasEx, categoriasEx, contasPagarEx, contasReceberEx,
-      movimentacoesEx, tiposInvestEx, investimentosEx, investEventosEx,
-      metasEx, metasMovEx, anexosEx, anexosVinculosEx, whatsappEx, jobsEx,
+      usuariosEx,
+      cuponsEx,
+      assinantesEx,
+      pagamentosEx,
+      webhookEx,
+      instituicoesEx,
+      contasEx,
+      categoriasEx,
+      contasPagarEx,
+      contasReceberEx,
+      movimentacoesEx,
+      tiposInvestEx,
+      investimentosEx,
+      investEventosEx,
+      metasEx,
+      metasMovEx,
+      anexosEx,
+      anexosVinculosEx,
+      whatsappEx,
+      jobsEx,
     ];
 
     for (const ex of allExtractors) {
@@ -113,10 +134,26 @@ async function main(): Promise<void> {
     }
 
     const [
-      rawUsuarios, rawCupons, rawAssinantes, rawPagamentos, rawWebhooks,
-      rawInstituicoes, rawContas, rawCategorias, rawContasPagar, rawContasReceber,
-      rawMovimentacoes, rawTiposInvest, rawInvestimentos, rawInvestEventos,
-      rawMetas, rawMetasMov, rawAnexos, rawAnexosVinculos, rawWhatsapp, rawJobs,
+      rawUsuarios,
+      rawCupons,
+      rawAssinantes,
+      rawPagamentos,
+      rawWebhooks,
+      rawInstituicoes,
+      rawContas,
+      rawCategorias,
+      rawContasPagar,
+      rawContasReceber,
+      rawMovimentacoes,
+      rawTiposInvest,
+      rawInvestimentos,
+      rawInvestEventos,
+      rawMetas,
+      rawMetasMov,
+      rawAnexos,
+      rawAnexosVinculos,
+      rawWhatsapp,
+      rawJobs,
     ] = await Promise.all([
       usuariosEx.extract(),
       cuponsEx.extract(),
@@ -143,17 +180,25 @@ async function main(): Promise<void> {
     console.log(`   ✅ usuarios: ${rawUsuarios.length} extraídos`);
     console.log(`   ✅ cupons: ${rawCupons.length} extraídos`);
     console.log(`   ✅ assinantes: ${rawAssinantes.length} extraídos`);
-    console.log(`   ✅ assinantes_pagamentos: ${rawPagamentos.length} extraídos`);
+    console.log(
+      `   ✅ assinantes_pagamentos: ${rawPagamentos.length} extraídos`
+    );
     console.log(`   ✅ webhook_events: ${rawWebhooks.length} extraídos`);
-    console.log(`   ✅ instituicoes_financeiras: ${rawInstituicoes.length} extraídos`);
+    console.log(
+      `   ✅ instituicoes_financeiras: ${rawInstituicoes.length} extraídos`
+    );
     console.log(`   ✅ contas: ${rawContas.length} extraídos`);
     console.log(`   ✅ categorias: ${rawCategorias.length} extraídos`);
     console.log(`   ✅ contas_pagar: ${rawContasPagar.length} extraídos`);
     console.log(`   ✅ contas_receber: ${rawContasReceber.length} extraídos`);
-    console.log(`   ✅ movimentacoes_caixa: ${rawMovimentacoes.length} extraídos`);
+    console.log(
+      `   ✅ movimentacoes_caixa: ${rawMovimentacoes.length} extraídos`
+    );
     console.log(`   ✅ tipos_investimento: ${rawTiposInvest.length} extraídos`);
     console.log(`   ✅ investimentos: ${rawInvestimentos.length} extraídos`);
-    console.log(`   ✅ investimentos_eventos: ${rawInvestEventos.length} extraídos`);
+    console.log(
+      `   ✅ investimentos_eventos: ${rawInvestEventos.length} extraídos`
+    );
     console.log(`   ✅ metas: ${rawMetas.length} extraídos`);
     console.log(`   ✅ metas_movimentos: ${rawMetasMov.length} extraídos`);
     console.log(`   ✅ anexos: ${rawAnexos.length} extraídos`);
@@ -193,25 +238,39 @@ async function main(): Promise<void> {
     console.log(`   ✅ ${pgUsuarios.length} usuarios transformados`);
     console.log(`   ✅ ${pgCupons.length} cupons transformados`);
     console.log(`   ✅ ${pgAssinantes.length} assinantes transformados`);
-    console.log(`   ✅ ${pgPagamentos.length} assinantes_pagamentos transformados`);
+    console.log(
+      `   ✅ ${pgPagamentos.length} assinantes_pagamentos transformados`
+    );
     console.log(`   ✅ ${pgWebhooks.length} webhook_events transformados`);
-    console.log(`   ✅ ${pgInstituicoes.length} instituicoes_financeiras transformados`);
+    console.log(
+      `   ✅ ${pgInstituicoes.length} instituicoes_financeiras transformados`
+    );
     console.log(`   ✅ ${pgContas.length} contas transformados`);
     console.log(`   ✅ ${pgCategorias.length} categorias transformados`);
     console.log(`   ✅ ${pgContasPagar.length} contas_pagar transformados`);
     console.log(`   ✅ ${pgContasReceber.length} contas_receber transformados`);
-    console.log(`   ✅ ${pgMovimentacoes.length} movimentacoes_caixa transformados`);
-    console.log(`   ✅ ${pgTiposInvest.length} tipos_investimento transformados`);
+    console.log(
+      `   ✅ ${pgMovimentacoes.length} movimentacoes_caixa transformados`
+    );
+    console.log(
+      `   ✅ ${pgTiposInvest.length} tipos_investimento transformados`
+    );
     console.log(`   ✅ ${pgInvestimentos.length} investimentos transformados`);
-    console.log(`   ✅ ${pgInvestEventos.length} investimentos_eventos transformados`);
+    console.log(
+      `   ✅ ${pgInvestEventos.length} investimentos_eventos transformados`
+    );
     console.log(`   ✅ ${pgMetas.length} metas transformados`);
     console.log(`   ✅ ${pgMetasMov.length} metas_movimentos transformados`);
     console.log(`   ✅ ${pgAnexos.length} anexos transformados`);
-    console.log(`   ✅ ${pgAnexosVinculos.length} anexos_vinculos transformados`);
+    console.log(
+      `   ✅ ${pgAnexosVinculos.length} anexos_vinculos transformados`
+    );
     console.log(`   ✅ ${pgWhatsapp.length} whatsapp_logs transformados`);
     console.log(`   ✅ ${pgJobs.length} jobs transformados`);
     console.log(`   🔑 ${idsTotal} IDs mapeados (INT → UUID v5)`);
-    console.log(`   🗑️  Campos removidos: balance, current_value, current_amount`);
+    console.log(
+      `   🗑️  Campos removidos: balance, current_value, current_amount`
+    );
 
     // ── FASE 3: LOAD ───────────────────────────────────────────────────────────
     console.log('\n💾 FASE 3: LOAD\n');
@@ -244,7 +303,9 @@ async function main(): Promise<void> {
 
     const countValidator = new CountValidator(sharedExtractor, loader.prisma);
     const countResults = await countValidator.validateAll().catch((err) => {
-      reporter.addError(`Validação de contagens falhou: ${(err as Error).message}`);
+      reporter.addError(
+        `Validação de contagens falhou: ${(err as Error).message}`
+      );
       return [];
     });
 
@@ -253,23 +314,31 @@ async function main(): Promise<void> {
       migrationStatus = 'partial';
       for (const m of mismatches) {
         reporter.addError(
-          `Contagem divergente em ${m.table}: MySQL=${m.mysqlCount}, Postgres=${m.postgresCount}`,
+          `Contagem divergente em ${m.table}: MySQL=${m.mysqlCount}, Postgres=${m.postgresCount}`
         );
       }
     }
 
     let sampleResults: Awaited<ReturnType<SampleValidator['validateAll']>> = [];
     if (config.etl.validateSamples && !dryRun) {
-      const sampleValidator = new SampleValidator(sharedExtractor, loader.prisma, sampleSize);
+      const sampleValidator = new SampleValidator(
+        sharedExtractor,
+        loader.prisma,
+        sampleSize
+      );
       sampleResults = await sampleValidator.validateAll().catch((err) => {
-        reporter.addError(`Validação de amostras falhou: ${(err as Error).message}`);
+        reporter.addError(
+          `Validação de amostras falhou: ${(err as Error).message}`
+        );
         return [];
       });
     }
 
     const orphanDetector = new OrphanDetector(loader.prisma);
     const orphanResults = await orphanDetector.detectAll().catch((err) => {
-      reporter.addError(`Detecção de orphans falhou: ${(err as Error).message}`);
+      reporter.addError(
+        `Detecção de orphans falhou: ${(err as Error).message}`
+      );
       return [];
     });
 
@@ -282,18 +351,31 @@ async function main(): Promise<void> {
       orphanResults,
       {
         ids_mapeados: idsTotal,
-        tipos_convertidos: ['DATETIME → TIMESTAMPTZ', 'INT → UUID (v5)', 'VARCHAR → ENUM'],
+        tipos_convertidos: [
+          'DATETIME → TIMESTAMPTZ',
+          'INT → UUID (v5)',
+          'VARCHAR → ENUM',
+        ],
         campos_removidos: ['balance', 'current_value', 'current_amount'],
-        campos_adicionados: ['hash_sha256', 'deleted_at', 'is_sistema', 'conta_destino_id'],
-      },
+        campos_adicionados: [
+          'hash_sha256',
+          'deleted_at',
+          'is_sistema',
+          'conta_destino_id',
+        ],
+      }
     );
 
     const reportPath = reporter.save(report);
-    console.log(`\n✨ Migração concluída com status: ${migrationStatus.toUpperCase()}`);
+    console.log(
+      `\n✨ Migração concluída com status: ${migrationStatus.toUpperCase()}`
+    );
     console.log(`📄 Relatório salvo em: ${reportPath}`);
 
     if (!allMatch) {
-      console.warn('\n⚠️  Atenção: existem divergências de contagem. Verifique o relatório.');
+      console.warn(
+        '\n⚠️  Atenção: existem divergências de contagem. Verifique o relatório.'
+      );
     }
   } catch (err) {
     const message = (err as Error).message;

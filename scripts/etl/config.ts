@@ -1,11 +1,16 @@
 import 'dotenv/config';
+import { config as configDotenv } from 'dotenv';
+
+configDotenv({
+  path: '.env.local', // ← EXPLICITAMENTE CARREGAR .env.local
+});
 
 export const config = {
   mysql: {
     host: process.env['LEGACY_MYSQL_HOST'] ?? 'localhost',
     port: parseInt(process.env['LEGACY_MYSQL_PORT'] ?? '3306', 10),
     user: process.env['LEGACY_MYSQL_USER'] ?? 'finlly_go',
-    password: process.env['LEGACY_MYSQL_PASSWORD'] ?? '',
+    password: process.env['LEGACY_MYSQL_PASSWORD'],
     database: process.env['LEGACY_MYSQL_DATABASE'] ?? 'finlly_go',
     connectTimeout: 10000,
   },

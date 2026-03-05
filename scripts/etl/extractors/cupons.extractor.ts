@@ -16,9 +16,9 @@ export interface MysqlCoupon extends MysqlRow {
 
 export class CuponsExtractor extends BaseExtractor {
   async extract(): Promise<MysqlCoupon[]> {
-    return this.extractAll<MysqlCoupon>('coupons', '*', 'id');
+    return this.extractAll<MysqlCoupon>('cupons', '*', 'id');
   }
   async getCount(): Promise<number> {
-    return this.count('coupons');
+    return this.count('cupons');
   }
 }
