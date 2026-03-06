@@ -17,19 +17,19 @@ export interface PostgresCupom {
 }
 
 export function transformCupom(row: MysqlCoupon): PostgresCupom {
-  const discountType = String(row.discount_type ?? 'percent').toLowerCase();
+  const tipo = String(row.tipo ?? 'percentual').toLowerCase();
   return {
     id: mapId(row.id, 'cupons'),
-    codigo: String(row.code ?? '')
+    codigo: String(row.codigo ?? '')
       .trim()
       .toUpperCase(),
     desconto_percentual:
-      discountType === 'percent' ? Number(row.discount) : undefined,
-    desconto_fixo: discountType === 'fixed' ? Number(row.discount) : undefined,
-    valido_ate: toTimestamptz(row.valid_until),
-    uso_maximo: row.max_uses != null ? Number(row.max_uses) : undefined,
-    uso_atual: Number(row.current_uses ?? 0),
-    ativo: toBoolean(row.active),
+      tipo === 'percentual' ? Number(row.valor) : undefined,
+    desconto_fixo: tipo === 'valor' ? Number(row.valor) : undefined,
+    valido_ate: toTimestamptz(row.data_expiracao),
+    uso_maximo: row.max_usos != null ? Number(row.max_usos) : undefined,
+    uso_atual: Number(row.usos ?? 0),
+    ativo: toBoolean(row.ativo),
     created_at: toTimestamptz(row.created_at) ?? new Date(),
     updated_at: toTimestamptz(row.updated_at) ?? new Date(),
     deleted_at: toTimestamptz(row.deleted_at),
