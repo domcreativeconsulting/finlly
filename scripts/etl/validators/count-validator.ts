@@ -99,7 +99,10 @@ export class CountValidator {
     for (const pair of TABLE_PAIRS) {
       const mysqlCount = await this.extractor
         .count(pair.mysqlTable)
-        .catch(() => -1);
+        .catch((err: Error) => {
+          console.warn(`   ⚠️  Não foi possível contar ${pair.mysqlTable} no MySQL: ${err.message}`);
+          return 0;
+        });
       const pgResult = await this.prisma
         .$queryRawUnsafe<
           [{ n: bigint }]
