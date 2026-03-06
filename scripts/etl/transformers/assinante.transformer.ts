@@ -19,7 +19,11 @@ export interface PostgresAssinante {
   deleted_at?: Date;
 }
 
-export function transformAssinante(row: MysqlPlan): PostgresAssinante {
+export function transformAssinante(row: MysqlPlan): PostgresAssinante | null {
+  if (row.user_id == null) {
+    console.warn(`   ⚠️  Assinante id=${row.id} tem user_id=NULL — registro será ignorado`);
+    return null;
+  }
   return {
     id: mapId(row.id, 'plans'),
     usuario_id: mapId(row.user_id, 'users'),

@@ -214,7 +214,16 @@ async function main(): Promise<void> {
 
     const pgUsuarios = rawUsuarios.map(transformUsuario);
     const pgCupons = rawCupons.map(transformCupom);
-    const pgAssinantes = rawAssinantes.map(transformAssinante);
+    // Build a UUID → raw record lookup BEFORE filtering so the diagnostic in FASE 2.7
+    // can show the original MySQL user_id even after nulls are dropped.
+    const rawAssinanteByPgId = new Map(
+      rawAssinantes
+        .filter(r => r.user_id != null)
+        .map(r => [mapId(r.id, 'plans'), r])
+    );
+    const pgAssinantes = rawAssinantes
+      .map(transformAssinante)
+      .filter((v): v is NonNullable<typeof v> => v !== null);
     const pgPagamentos = rawPagamentos.map(transformAssinantePagamento);
     const pgWebhooks = rawWebhooks.map(transformWebhookEvent);
     const pgInstituicoes = rawInstituicoes.map(transformInstituicaoFinanceira);
@@ -299,28 +308,55 @@ async function main(): Promise<void> {
     }
 
     // ── FASE 2.7: ID MAPPING CONSISTENCY CHECK ────────────────────────────────
-    // Verify that UUID mapping is coherent between parent and child tables
-    // before attempting DB operations, so that any mismatch surfaces early
-    // as a clear diagnostic message rather than a cryptic FK violation.
-    console.log('\n🔍 ID Mapping Consistency Check\n');
-    if (pgUsuarios.length > 0) {
-      console.log(`   Usuario[0] id: ${pgUsuarios[0].id}`);
+    // Verify that every child-table FK reference (usuario_id on assinantes) resolves
+    // to an actual row that will be inserted into the parent table (usuarios).
+    // This catches the "FK constraint violated" error before hitting the DB.
+    console.log('\n🔍 DETAILED ID MAPPING CHECK\n');
+
+    // Show the first few usuarios that will be inserted
+    console.log('   Usuarios inseridos:');
+    for (let i = 0; i < Math.min(3, pgUsuarios.length); i++) {
+      const rawU = rawUsuarios[i];
+      console.log(`     [${i}] MySQL id=${rawU?.id} → Postgres UUID: ${pgUsuarios[i].id}`);
     }
-    if (pgAssinantes.length > 0 && rawAssinantes.length > 0) {
-      const firstPgAssinante = pgAssinantes[0];
-      const firstRawAssinante = rawAssinantes[0];
-      const expectedUsuarioId = mapId(firstRawAssinante.user_id, 'users');
-      console.log(`   Assinante[0] usuario_id: ${firstPgAssinante.usuario_id}`);
-      console.log(`   Expected  usuario_id:    ${expectedUsuarioId}`);
-      const match = firstPgAssinante.usuario_id === expectedUsuarioId;
-      console.log(`   Match: ${match ? '✅ true' : '❌ false — UUID mismatch detected!'}`);
-      if (!match) {
-        migrationStatus = 'partial';
-        reporter.addError(
-          `ID mapping inconsistency: assinante[0].usuario_id (${firstPgAssinante.usuario_id}) ` +
-          `does not match expected UUID for MySQL user_id=${firstRawAssinante.user_id} (${expectedUsuarioId})`,
-        );
+
+    // Build a Set of all usuario UUIDs for O(1) lookup
+    const usuarioIdSet = new Set(pgUsuarios.map(u => u.id));
+
+    // Show the first few assinantes and whether their usuario_id resolves
+    console.log('\n   Assinantes (com usuario_id):');
+    for (let i = 0; i < Math.min(3, pgAssinantes.length); i++) {
+      const assinante = pgAssinantes[i];
+      // Use the pre-built lookup map so the MySQL user_id shown always matches
+      // this exact pg record, even after null-user_id rows were filtered out.
+      const rawA = rawAssinanteByPgId.get(assinante.id);
+      const exists = usuarioIdSet.has(assinante.usuario_id);
+      console.log(
+        `     [${i}] usuario_id: ${assinante.usuario_id} (from MySQL: user_id=${rawA?.user_id})`
+      );
+      console.log(`         ├─ Existe em usuarios: ${exists ? '✅' : '❌'}`);
+      if (!exists) {
+        console.log(`         └─ ERRO: Referência FK quebrada!`);
       }
+    }
+
+    // Full validation: find all assinantes whose usuario_id has no matching usuario
+    const invalidAssinantes = pgAssinantes.filter(a => !usuarioIdSet.has(a.usuario_id));
+    if (invalidAssinantes.length > 0) {
+      console.error(
+        `\n❌ FATAL: ${invalidAssinantes.length} assinante(s) com usuario_id inválido (FK quebrada):`
+      );
+      invalidAssinantes.slice(0, 3).forEach((a, idx) => {
+        console.error(`   [${idx}] usuario_id=${a.usuario_id} (NÃO encontrado em usuarios!)`);
+      });
+      migrationStatus = 'partial';
+      reporter.addError(
+        `FK violation: ${invalidAssinantes.length} assinante(s) referenciam usuario_id inexistente em usuarios. ` +
+        `Primeiro: usuario_id=${invalidAssinantes[0].usuario_id}`
+      );
+      process.exit(1);
+    } else if (pgAssinantes.length > 0) {
+      console.log('\n   ✅ Todos os assinantes têm usuario_id válido em usuarios');
     }
 
     // ── FASE 3: LOAD ───────────────────────────────────────────────────────────

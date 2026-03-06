@@ -2,7 +2,7 @@ import { BaseExtractor, MysqlRow } from './base.extractor';
 
 export interface MysqlPlan extends MysqlRow {
   id: number;
-  user_id: number;
+  user_id: number | null;
   status: string;
   plan: string;
   provider?: string;
