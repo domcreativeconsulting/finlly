@@ -15,10 +15,20 @@ export interface PostgresMetaMovimento {
   deleted_at?: Date;
 }
 
-export function transformMetaMovimento(row: MysqlGoalMovement): PostgresMetaMovimento {
+export function transformMetaMovimento(
+  row: MysqlGoalMovement,
+  validMetaIds: Set<string>,
+): PostgresMetaMovimento | null {
+  const metaId = mapId(row.goal_id, 'goals');
+  if (!validMetaIds.has(metaId)) {
+    console.warn(
+      `   ⚠️  MetaMovimento id=${row.id} meta_id=${row.goal_id} não existe — registro será ignorado`,
+    );
+    return null;
+  }
   return {
     id: mapId(row.id, 'goal_movements'),
-    meta_id: mapId(row.goal_id, 'goals'),
+    meta_id: metaId,
     usuario_id: mapId(row.user_id, 'users'),
     valor: Number(row.amount ?? 0),
     data: toDateOnly(row.date) ?? new Date(),

@@ -18,10 +18,20 @@ export interface PostgresAssinantePagamento {
   deleted_at?: Date;
 }
 
-export function transformAssinantePagamento(row: MysqlPayment): PostgresAssinantePagamento {
+export function transformAssinantePagamento(
+  row: MysqlPayment,
+  validAssinanteIds: Set<string>,
+): PostgresAssinantePagamento | null {
+  const assinanteId = mapId(row.subscription_id, 'plans');
+  if (!validAssinanteIds.has(assinanteId)) {
+    console.warn(
+      `   ⚠️  AssinantePagamento id=${row.id} assinante_id=${row.subscription_id} não existe — registro será ignorado`,
+    );
+    return null;
+  }
   return {
     id: mapId(row.id, 'payments'),
-    assinante_id: mapId(row.subscription_id, 'plans'),
+    assinante_id: assinanteId,
     usuario_id: mapId(row.user_id, 'users'),
     status: toStatusPagamento(row.status),
     valor: Number(row.amount ?? 0),

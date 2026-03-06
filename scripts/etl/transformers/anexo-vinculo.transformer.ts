@@ -44,16 +44,26 @@ export interface PostgresAnexoVinculo {
   created_at: Date;
 }
 
-export function transformAnexoVinculo(row: MysqlAttachmentRelation): PostgresAnexoVinculo | null {
+export function transformAnexoVinculo(
+  row: MysqlAttachmentRelation,
+  validAnexoIds: Set<string>,
+): PostgresAnexoVinculo | null {
   const entidadeTipo = ENTITY_TYPE_MAP[String(row.entity_type ?? '').toLowerCase()];
   if (!entidadeTipo) {
     // Skip unknown entity types
     return null;
   }
+  const anexoId = mapId(row.attachment_id, 'attachments');
+  if (!validAnexoIds.has(anexoId)) {
+    console.warn(
+      `   ⚠️  AnexoVinculo id=${row.id} anexo_id=${row.attachment_id} não existe — registro será ignorado`,
+    );
+    return null;
+  }
   const mysqlTable = ENTITY_TABLE_MAP[entidadeTipo] ?? entidadeTipo;
   return {
     id: mapId(row.id, 'attachment_relations'),
-    anexo_id: mapId(row.attachment_id, 'attachments'),
+    anexo_id: anexoId,
     entidade_tipo: entidadeTipo,
     entidade_id: mapId(row.entity_id, mysqlTable),
     created_at: toTimestamptz(row.created_at) ?? new Date(),

@@ -15,10 +15,20 @@ export interface PostgresInvestimentoEvento {
   deleted_at?: Date;
 }
 
-export function transformInvestimentoEvento(row: MysqlInvestmentEvent): PostgresInvestimentoEvento {
+export function transformInvestimentoEvento(
+  row: MysqlInvestmentEvent,
+  validInvestimentoIds: Set<string>,
+): PostgresInvestimentoEvento | null {
+  const investimentoId = mapId(row.investment_id, 'investments');
+  if (!validInvestimentoIds.has(investimentoId)) {
+    console.warn(
+      `   ⚠️  InvestimentoEvento id=${row.id} investimento_id=${row.investment_id} não existe — registro será ignorado`,
+    );
+    return null;
+  }
   return {
     id: mapId(row.id, 'investment_events'),
-    investimento_id: mapId(row.investment_id, 'investments'),
+    investimento_id: investimentoId,
     usuario_id: mapId(row.user_id, 'users'),
     tipo: toTipoEventoInvestimento(row.type),
     // valor CHECK: > 0

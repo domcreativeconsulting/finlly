@@ -14,7 +14,10 @@ import { transformContaReceber } from '../transformers/conta-receber.transformer
 import { transformInvestimentoEvento } from '../transformers/investimento-evento.transformer';
 import { transformInvestimento } from '../transformers/investimento.transformer';
 import { transformMeta } from '../transformers/meta.transformer';
+import { transformMetaMovimento } from '../transformers/meta-movimento.transformer';
 import { transformAnexo } from '../transformers/anexo.transformer';
+import { transformAnexoVinculo } from '../transformers/anexo-vinculo.transformer';
+import { transformAssinantePagamento } from '../transformers/assinante-pagamento.transformer';
 import { transformUsuario } from '../transformers/usuario.transformer';
 import { transformAssinante } from '../transformers/assinante.transformer';
 import { transformConta } from '../transformers/conta.transformer';
@@ -25,7 +28,7 @@ import {
   validateWhatsappLogs,
   DataValidator,
 } from '../validators/data-validator';
-import { clearCache } from '../transformers/id-mapper';
+import { clearCache, mapId } from '../transformers/id-mapper';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -360,8 +363,22 @@ console.log('\n📋 investimento-evento.transformer tests');
 
 test('zero amount is clamped to 0.01', () => {
   clearCache();
-  const result = transformInvestimentoEvento({ ...BASE_MYSQL_INVESTMENT_EVENT, amount: 0 });
-  assert.ok(result.valor > 0, 'valor deve ser > 0');
+  const validIds = new Set([mapId(BASE_MYSQL_INVESTMENT_EVENT.investment_id, 'investments')]);
+  const result = transformInvestimentoEvento({ ...BASE_MYSQL_INVESTMENT_EVENT, amount: 0 }, validIds);
+  assert.ok(result !== null && result.valor > 0, 'valor deve ser > 0');
+});
+
+test('transformInvestimentoEvento returns null when investimento_id not in validIds', () => {
+  clearCache();
+  const result = transformInvestimentoEvento(BASE_MYSQL_INVESTMENT_EVENT, new Set());
+  assert.strictEqual(result, null, 'must return null when investimento_id not in validInvestimentoIds');
+});
+
+test('transformInvestimentoEvento returns record when investimento_id is valid', () => {
+  clearCache();
+  const validIds = new Set([mapId(BASE_MYSQL_INVESTMENT_EVENT.investment_id, 'investments')]);
+  const result = transformInvestimentoEvento(BASE_MYSQL_INVESTMENT_EVENT, validIds);
+  assert.ok(result !== null, 'must return a record when investimento_id is in validInvestimentoIds');
 });
 
 // ---------------------------------------------------------------------------
@@ -396,6 +413,49 @@ test('transformMeta returns null when user_id is null', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Tests: meta-movimento.transformer
+// ---------------------------------------------------------------------------
+
+console.log('\n📋 meta-movimento.transformer tests');
+
+const BASE_MYSQL_GOAL_MOVEMENT = {
+  id: 1,
+  goal_id: 1,
+  user_id: 1,
+  amount: 500,
+  date: new Date(),
+  created_at: new Date(),
+  updated_at: new Date(),
+};
+
+test('transformMetaMovimento returns null when meta_id not in validMetaIds', () => {
+  clearCache();
+  const result = transformMetaMovimento(BASE_MYSQL_GOAL_MOVEMENT, new Set());
+  assert.strictEqual(result, null, 'must return null when meta_id not in validMetaIds');
+});
+
+test('transformMetaMovimento returns record when meta_id is valid', () => {
+  clearCache();
+  const validIds = new Set([mapId(BASE_MYSQL_GOAL_MOVEMENT.goal_id, 'goals')]);
+  const result = transformMetaMovimento(BASE_MYSQL_GOAL_MOVEMENT, validIds);
+  assert.ok(result !== null, 'must return a record when meta_id is in validMetaIds');
+});
+
+test('orphaned meta movimentos are filtered out (simulated pipeline)', () => {
+  clearCache();
+  // Simulate: 2 metas, both filtered (NULL user_id) → validMetaIds is empty
+  const validIds = new Set<string>();
+  const rawMovs = [
+    { ...BASE_MYSQL_GOAL_MOVEMENT, id: 1, goal_id: 1 },
+    { ...BASE_MYSQL_GOAL_MOVEMENT, id: 2, goal_id: 2 },
+  ];
+  const result = rawMovs
+    .map(m => transformMetaMovimento(m, validIds))
+    .filter((v): v is NonNullable<typeof v> => v !== null);
+  assert.strictEqual(result.length, 0, 'all orphaned metas_movimentos must be filtered out');
+});
+
+// ---------------------------------------------------------------------------
 // Tests: anexo.transformer
 // ---------------------------------------------------------------------------
 
@@ -411,6 +471,83 @@ test('transformAnexo returns null when user_id is null', () => {
   clearCache();
   const result = transformAnexo({ ...BASE_MYSQL_ATTACHMENT, user_id: null });
   assert.strictEqual(result, null, 'transformAnexo must return null for null user_id');
+});
+
+// ---------------------------------------------------------------------------
+// Tests: anexo-vinculo.transformer
+// ---------------------------------------------------------------------------
+
+console.log('\n📋 anexo-vinculo.transformer tests');
+
+const BASE_MYSQL_ATTACHMENT_RELATION = {
+  id: 1,
+  attachment_id: 1,
+  entity_type: 'bill',
+  entity_id: 10,
+  created_at: new Date(),
+};
+
+test('transformAnexoVinculo returns null when anexo_id not in validAnexoIds', () => {
+  clearCache();
+  const result = transformAnexoVinculo(BASE_MYSQL_ATTACHMENT_RELATION, new Set());
+  assert.strictEqual(result, null, 'must return null when anexo_id not in validAnexoIds');
+});
+
+test('transformAnexoVinculo returns record when anexo_id is valid', () => {
+  clearCache();
+  const validIds = new Set([mapId(BASE_MYSQL_ATTACHMENT_RELATION.attachment_id, 'attachments')]);
+  const result = transformAnexoVinculo(BASE_MYSQL_ATTACHMENT_RELATION, validIds);
+  assert.ok(result !== null, 'must return a record when anexo_id is in validAnexoIds');
+});
+
+test('transformAnexoVinculo returns null for unknown entity_type regardless of validAnexoIds', () => {
+  clearCache();
+  const validIds = new Set([mapId(BASE_MYSQL_ATTACHMENT_RELATION.attachment_id, 'attachments')]);
+  const result = transformAnexoVinculo({ ...BASE_MYSQL_ATTACHMENT_RELATION, entity_type: 'unknown_type' }, validIds);
+  assert.strictEqual(result, null, 'unknown entity_type must be skipped');
+});
+
+// ---------------------------------------------------------------------------
+// Tests: assinante-pagamento.transformer
+// ---------------------------------------------------------------------------
+
+console.log('\n📋 assinante-pagamento.transformer tests');
+
+const BASE_MYSQL_PAYMENT = {
+  id: 1,
+  subscription_id: 7,
+  user_id: 42,
+  status: 'pago',
+  amount: 99.90,
+  created_at: new Date(),
+  updated_at: new Date(),
+};
+
+test('transformAssinantePagamento returns null when assinante_id not in validAssinanteIds', () => {
+  clearCache();
+  const result = transformAssinantePagamento(BASE_MYSQL_PAYMENT, new Set());
+  assert.strictEqual(result, null, 'must return null when assinante_id not in validAssinanteIds');
+});
+
+test('transformAssinantePagamento returns record when assinante_id is valid', () => {
+  clearCache();
+  const validIds = new Set([mapId(BASE_MYSQL_PAYMENT.subscription_id, 'plans')]);
+  const result = transformAssinantePagamento(BASE_MYSQL_PAYMENT, validIds);
+  assert.ok(result !== null, 'must return a record when assinante_id is in validAssinanteIds');
+});
+
+test('orphaned assinante_pagamentos are filtered out (simulated pipeline)', () => {
+  clearCache();
+  // Simulate: assinante has NULL user_id → filtered → validAssinanteIds is empty
+  const validIds = new Set<string>();
+  const rawPagamentos = [
+    { ...BASE_MYSQL_PAYMENT, id: 1, subscription_id: 7 },
+    { ...BASE_MYSQL_PAYMENT, id: 2, subscription_id: 8 },
+  ];
+  const result = rawPagamentos
+    .map(p => transformAssinantePagamento(p, validIds))
+    .filter((v): v is NonNullable<typeof v> => v !== null);
+  assert.strictEqual(result.length, 0, 'all orphaned assinantes_pagamentos must be filtered out');
 });
 
 // ---------------------------------------------------------------------------
