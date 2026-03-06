@@ -28,7 +28,8 @@ export function transformContaPagar(row: MysqlBill): PostgresContaPagar {
     id: mapId(row.id, 'bills'),
     usuario_id: mapId(row.user_id, 'users'),
     descricao: String(row.description ?? ''),
-    valor: Number(row.amount ?? 0),
+    // valor CHECK: > 0
+    valor: Math.max(0.01, Math.abs(Number(row.amount ?? 0.01))),
     data_vencimento: toDateOnly(row.due_date) ?? new Date(),
     data_pagamento: toDateOnly(row.payment_date),
     status: toStatusPagamento(row.status),

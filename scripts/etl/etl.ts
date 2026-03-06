@@ -52,6 +52,7 @@ import { PostgresLoader } from './loaders/postgres.loader.js';
 import { CountValidator } from './validators/count-validator.js';
 import { SampleValidator } from './validators/sample-validator.js';
 import { OrphanDetector } from './validators/orphan-detector.js';
+import { DataValidator } from './validators/data-validator.js';
 
 // Reporter
 import {
@@ -272,6 +273,31 @@ async function main(): Promise<void> {
       `   🗑️  Campos removidos: balance, current_value, current_amount`
     );
 
+    // ── FASE 2.5: DATA VALIDATION ──────────────────────────────────────────────
+    console.log('\n🔍 FASE 2.5: DATA VALIDATION\n');
+
+    const dataValidator = new DataValidator();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const dataValidationResult = dataValidator.validateAll({
+      cupons: pgCupons as unknown as Record<string, unknown>[],
+      assinantesPagamentos: pgPagamentos as unknown as Record<string, unknown>[],
+      contasPagar: pgContasPagar as unknown as Record<string, unknown>[],
+      contasReceber: pgContasReceber as unknown as Record<string, unknown>[],
+      movimentacoesCaixa: pgMovimentacoes as unknown as Record<string, unknown>[],
+      investimentosEventos: pgInvestEventos as unknown as Record<string, unknown>[],
+      metas: pgMetas as unknown as Record<string, unknown>[],
+      anexos: pgAnexos as unknown as Record<string, unknown>[],
+      jobs: pgJobs as unknown as Record<string, unknown>[],
+      whatsappLogs: pgWhatsapp as unknown as Record<string, unknown>[],
+    });
+
+    if (dataValidationResult.totalViolations > 0) {
+      migrationStatus = 'partial';
+      reporter.addError(
+        `DataValidator: ${dataValidationResult.totalViolations} violação(ões) detectada(s) antes do LOAD`
+      );
+    }
+
     // ── FASE 3: LOAD ───────────────────────────────────────────────────────────
     console.log('\n💾 FASE 3: LOAD\n');
 
@@ -363,7 +389,9 @@ async function main(): Promise<void> {
           'is_sistema',
           'conta_destino_id',
         ],
-      }
+      },
+      dataValidationResult,
+      loader.failedRows,
     );
 
     const reportPath = reporter.save(report);

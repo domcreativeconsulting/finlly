@@ -26,7 +26,8 @@ export function transformMovimentacaoCaixa(row: MysqlTransaction): PostgresMovim
     usuario_id: mapId(row.user_id, 'users'),
     conta_id: mapId(row.account_id, 'accounts'),
     tipo: toTipoMovimentacao(row.type),
-    valor: Number(row.amount ?? 0),
+    // valor CHECK: > 0 — use absolute value to handle sign-encoded direction in legacy data
+    valor: Math.max(0.01, Math.abs(Number(row.amount ?? 0.01))),
     descricao: String(row.description ?? ''),
     data: toDateOnly(row.date) ?? new Date(),
     categoria_id: mapIdOptional(row.category_id as number | null | undefined, 'categories'),

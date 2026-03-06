@@ -28,7 +28,8 @@ export function transformContaReceber(row: MysqlReceivable): PostgresContaRecebe
     id: mapId(row.id, 'receivables'),
     usuario_id: mapId(row.user_id, 'users'),
     descricao: String(row.description ?? ''),
-    valor: Number(row.amount ?? 0),
+    // valor CHECK: > 0
+    valor: Math.max(0.01, Math.abs(Number(row.amount ?? 0.01))),
     data_vencimento: toDateOnly(row.due_date) ?? new Date(),
     data_recebimento: toDateOnly(row.received_date),
     status: toStatusPagamento(row.status),

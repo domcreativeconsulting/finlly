@@ -3,6 +3,7 @@ import { join } from 'path';
 import type { TableCountResult } from '../validators/count-validator.js';
 import type { SampleCheckResult } from '../validators/sample-validator.js';
 import type { OrphanResult } from '../validators/orphan-detector.js';
+import type { DataValidationSummary } from '../validators/data-validator.js';
 
 export type MigrationStatus = 'success' | 'error' | 'partial';
 
@@ -11,6 +12,17 @@ export interface TransformacaoInfo {
   tipos_convertidos: string[];
   campos_removidos: string[];
   campos_adicionados: string[];
+}
+
+export interface DataQualityMetrics {
+  total_violacoes: number;
+  linhas_sanitizadas: number;
+  linhas_ignoradas: number;
+  por_tabela: Array<{
+    tabela: string;
+    total_linhas: number;
+    violacoes: number;
+  }>;
 }
 
 export interface MigrationReport {
@@ -47,6 +59,12 @@ export interface MigrationReport {
     quantidade: number;
     exemplos: string[];
   }>;
+  qualidade_dados: DataQualityMetrics;
+  linhas_com_falha: Array<{
+    tabela: string;
+    indice_linha: number;
+    erro: string;
+  }>;
   transformacoes_aplicadas: TransformacaoInfo;
   erros: string[];
 }
@@ -65,6 +83,8 @@ export class ReportGenerator {
     sampleResults: SampleCheckResult[],
     orphanResults: OrphanResult[],
     transformacaoInfo: TransformacaoInfo,
+    dataValidation?: DataValidationSummary,
+    failedRows?: Array<{ table: string; rowIndex: number; error: string }>,
   ): MigrationReport {
     const totalMysql = countResults.reduce((s, r) => s + (r.mysqlCount >= 0 ? r.mysqlCount : 0), 0);
     const totalPostgres = countResults.reduce(
@@ -78,6 +98,27 @@ export class ReportGenerator {
       (r) => !r.found || r.fieldChecks.some((c) => !c.match),
     );
 
+    const qualidade_dados: DataQualityMetrics = dataValidation
+      ? {
+          total_violacoes: dataValidation.totalViolations,
+          linhas_sanitizadas: dataValidation.tableResults.reduce(
+            (s, r) => s + r.violationsFound,
+            0,
+          ),
+          linhas_ignoradas: failedRows?.length ?? 0,
+          por_tabela: dataValidation.tableResults.map((r) => ({
+            tabela: r.table,
+            total_linhas: r.totalRows,
+            violacoes: r.violationsFound,
+          })),
+        }
+      : {
+          total_violacoes: 0,
+          linhas_sanitizadas: 0,
+          linhas_ignoradas: failedRows?.length ?? 0,
+          por_tabela: [],
+        };
+
     return {
       timestamp: new Date().toISOString(),
       status,
@@ -89,7 +130,7 @@ export class ReportGenerator {
         total_registros_mysql: totalMysql,
         total_registros_postgres: totalPostgres,
         total_erros: this.errors.length,
-        total_avisos: orphansFound.length + sampleErros.length,
+        total_avisos: orphansFound.length + sampleErros.length + (dataValidation?.totalViolations ?? 0),
       },
       por_tabela: countResults.map((r) => ({
         tabela: r.table,
@@ -114,6 +155,12 @@ export class ReportGenerator {
           quantidade: r.orphanCount,
           exemplos: r.sampleIds,
         })),
+      qualidade_dados,
+      linhas_com_falha: (failedRows ?? []).map((r) => ({
+        tabela: r.table,
+        indice_linha: r.rowIndex,
+        erro: r.error,
+      })),
       transformacoes_aplicadas: transformacaoInfo,
       erros: this.errors,
     };
