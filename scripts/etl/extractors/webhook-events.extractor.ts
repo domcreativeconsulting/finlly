@@ -14,9 +14,9 @@ export interface MysqlWebhookLog extends MysqlRow {
 
 export class WebhookEventsExtractor extends BaseExtractor {
   async extract(): Promise<MysqlWebhookLog[]> {
-    return this.extractAll<MysqlWebhookLog>('webhook_logs', '*', 'id');
+    return this.extractAll<MysqlWebhookLog>('webhook_events', '*', 'id');
   }
   async getCount(): Promise<number> {
-    return this.count('webhook_logs');
+    return this.count('webhook_events');
   }
 }
