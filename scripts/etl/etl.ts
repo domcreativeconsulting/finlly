@@ -1,5 +1,5 @@
 import { config } from './config';
-import { getMappedCount, clearCache } from './transformers/id-mapper';
+import { getMappedCount, clearCache, mapId } from './transformers/id-mapper';
 
 // Extractors
 import { UsuariosExtractor } from './extractors/usuarios.extractor';
@@ -296,6 +296,31 @@ async function main(): Promise<void> {
       reporter.addError(
         `DataValidator: ${dataValidationResult.totalViolations} violação(ões) detectada(s) antes do LOAD`
       );
+    }
+
+    // ── FASE 2.7: ID MAPPING CONSISTENCY CHECK ────────────────────────────────
+    // Verify that UUID mapping is coherent between parent and child tables
+    // before attempting DB operations, so that any mismatch surfaces early
+    // as a clear diagnostic message rather than a cryptic FK violation.
+    console.log('\n🔍 ID Mapping Consistency Check\n');
+    if (pgUsuarios.length > 0) {
+      console.log(`   Usuario[0] id: ${pgUsuarios[0].id}`);
+    }
+    if (pgAssinantes.length > 0 && rawAssinantes.length > 0) {
+      const firstPgAssinante = pgAssinantes[0];
+      const firstRawAssinante = rawAssinantes[0];
+      const expectedUsuarioId = mapId(firstRawAssinante.user_id, 'users');
+      console.log(`   Assinante[0] usuario_id: ${firstPgAssinante.usuario_id}`);
+      console.log(`   Expected  usuario_id:    ${expectedUsuarioId}`);
+      const match = firstPgAssinante.usuario_id === expectedUsuarioId;
+      console.log(`   Match: ${match ? '✅ true' : '❌ false — UUID mismatch detected!'}`);
+      if (!match) {
+        migrationStatus = 'partial';
+        reporter.addError(
+          `ID mapping inconsistency: assinante[0].usuario_id (${firstPgAssinante.usuario_id}) ` +
+          `does not match expected UUID for MySQL user_id=${firstRawAssinante.user_id} (${expectedUsuarioId})`,
+        );
+      }
     }
 
     // ── FASE 3: LOAD ───────────────────────────────────────────────────────────
