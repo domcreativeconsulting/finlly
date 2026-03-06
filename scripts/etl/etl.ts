@@ -303,25 +303,36 @@ async function main(): Promise<void> {
 
     await loader.truncateAll(dryRun);
 
+    // Parent tables (no FK dependencies) first
     await loader.loadUsuarios(pgUsuarios, batchSize, dryRun);
     await loader.loadCupons(pgCupons, batchSize, dryRun);
-    await loader.loadAssinantes(pgAssinantes, batchSize, dryRun);
-    await loader.loadAssinantesPagamentos(pgPagamentos, batchSize, dryRun);
-    await loader.loadWebhookEvents(pgWebhooks, batchSize, dryRun);
+    await loader.loadTiposInvestimento(pgTiposInvest, batchSize, dryRun);
     await loader.loadInstituicoesFinanceiras(pgInstituicoes, batchSize, dryRun);
-    await loader.loadContas(pgContas, batchSize, dryRun);
+    await loader.loadWebhookEvents(pgWebhooks, batchSize, dryRun);
+
+    // Level-1 children (FK to parent tables only)
     await loader.loadCategorias(pgCategorias, batchSize, dryRun);
+    await loader.loadAssinantes(pgAssinantes, batchSize, dryRun);
+    await loader.loadContas(pgContas, batchSize, dryRun);
+
+    // Level-2 children (FK to level-1 tables)
+    await loader.loadAssinantesPagamentos(pgPagamentos, batchSize, dryRun);
     await loader.loadContasPagar(pgContasPagar, batchSize, dryRun);
     await loader.loadContasReceber(pgContasReceber, batchSize, dryRun);
-    await loader.loadMovimentacoesCaixa(pgMovimentacoes, batchSize, dryRun);
-    await loader.loadTiposInvestimento(pgTiposInvest, batchSize, dryRun);
     await loader.loadInvestimentos(pgInvestimentos, batchSize, dryRun);
-    await loader.loadInvestimentosEventos(pgInvestEventos, batchSize, dryRun);
     await loader.loadMetas(pgMetas, batchSize, dryRun);
-    await loader.loadMetasMovimentos(pgMetasMov, batchSize, dryRun);
     await loader.loadAnexos(pgAnexos, batchSize, dryRun);
-    await loader.loadAnexosVinculos(pgAnexosVinculos, batchSize, dryRun);
     await loader.loadWhatsappLogs(pgWhatsapp, batchSize, dryRun);
+
+    // Level-3 children (FK to level-2 tables)
+    await loader.loadMovimentacoesCaixa(pgMovimentacoes, batchSize, dryRun);
+    await loader.loadInvestimentosEventos(pgInvestEventos, batchSize, dryRun);
+    await loader.loadAnexosVinculos(pgAnexosVinculos, batchSize, dryRun);
+
+    // Level-4 children (FK to level-3 tables)
+    await loader.loadMetasMovimentos(pgMetasMov, batchSize, dryRun);
+
+    // No-FK tables
     await loader.loadJobs(pgJobs, batchSize, dryRun);
 
     // ── FASE 4: VALIDATE ───────────────────────────────────────────────────────

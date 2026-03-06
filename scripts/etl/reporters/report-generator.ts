@@ -60,11 +60,15 @@ export interface MigrationReport {
     exemplos: string[];
   }>;
   qualidade_dados: DataQualityMetrics;
-  linhas_com_falha: Array<{
-    tabela: string;
-    indice_linha: number;
-    erro: string;
-  }>;
+  linhas_com_falha: {
+    total: number;
+    por_tabela: {
+      [table: string]: {
+        count: number;
+        motivo: string;
+      };
+    };
+  };
   transformacoes_aplicadas: TransformacaoInfo;
   erros: string[];
 }
@@ -156,11 +160,19 @@ export class ReportGenerator {
           exemplos: r.sampleIds,
         })),
       qualidade_dados,
-      linhas_com_falha: (failedRows ?? []).map((r) => ({
-        tabela: r.table,
-        indice_linha: r.rowIndex,
-        erro: r.error,
-      })),
+      linhas_com_falha: (() => {
+        const rows = failedRows ?? [];
+        const porTabela: { [table: string]: { count: number; motivo: string } } = {};
+        for (const r of rows) {
+          if (!porTabela[r.table]) {
+            porTabela[r.table] = { count: 0, motivo: r.error };
+          } else if (!porTabela[r.table]!.motivo.includes(r.error)) {
+            porTabela[r.table]!.motivo += `; ${r.error}`;
+          }
+          porTabela[r.table]!.count += 1;
+        }
+        return { total: rows.length, por_tabela: porTabela };
+      })(),
       transformacoes_aplicadas: transformacaoInfo,
       erros: this.errors,
     };
