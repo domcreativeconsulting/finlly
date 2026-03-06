@@ -465,6 +465,7 @@ test('assinante.usuario_id matches the corresponding usuario.id', () => {
   clearCache();
   const usuario = transformUsuario(BASE_MYSQL_USER);
   const assinante = transformAssinante(BASE_MYSQL_PLAN);
+  assert.ok(assinante !== null, 'transformAssinante must return a record for a valid user_id');
   assert.strictEqual(
     assinante.usuario_id,
     usuario.id,
@@ -497,9 +498,39 @@ test('FK references remain consistent with shared cache', () => {
   // No clearCache() here — transforms run in the same cache context, just like etl.ts
   const assinante = transformAssinante(BASE_MYSQL_PLAN);
   assert.strictEqual(
-    assinante.usuario_id,
+    assinante?.usuario_id,
     usuario.id,
     'FK references must be consistent when clearCache is not called between parent and child transforms',
+  );
+});
+
+test('transformAssinante returns null when user_id is null', () => {
+  clearCache();
+  const result = transformAssinante({ ...BASE_MYSQL_PLAN, user_id: null });
+  assert.strictEqual(result, null, 'transformAssinante must return null for null user_id');
+});
+
+test('transformAssinante returns null when user_id is undefined', () => {
+  clearCache();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const result = transformAssinante({ ...BASE_MYSQL_PLAN, user_id: undefined as any });
+  assert.strictEqual(result, null, 'transformAssinante must return null for undefined user_id');
+});
+
+test('null-user_id assinantes are filtered out before LOAD (simulated)', () => {
+  clearCache();
+  const rawPlans = [
+    { ...BASE_MYSQL_PLAN, id: 1, user_id: 42 },
+    { ...BASE_MYSQL_PLAN, id: 2, user_id: null },
+    { ...BASE_MYSQL_PLAN, id: 3, user_id: 42 },
+  ];
+  const pgAssinantes = rawPlans
+    .map(transformAssinante)
+    .filter((v): v is NonNullable<typeof v> => v !== null);
+  assert.strictEqual(pgAssinantes.length, 2, 'null-user_id records must be filtered out');
+  assert.ok(
+    pgAssinantes.every(a => a.usuario_id !== null && a.usuario_id !== undefined),
+    'All remaining assinantes must have a valid usuario_id',
   );
 });
 
