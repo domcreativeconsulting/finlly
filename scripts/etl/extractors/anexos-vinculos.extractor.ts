@@ -10,9 +10,9 @@ export interface MysqlAttachmentRelation extends MysqlRow {
 
 export class AnexosVinculosExtractor extends BaseExtractor {
   async extract(): Promise<MysqlAttachmentRelation[]> {
-    return this.extractAll<MysqlAttachmentRelation>('attachment_relations', '*', 'id');
+    return this.extractAll<MysqlAttachmentRelation>('anexos_vinculos', '*', 'id');
   }
   async getCount(): Promise<number> {
-    return this.count('attachment_relations');
+    return this.count('anexos_vinculos');
   }
 }

@@ -13,9 +13,9 @@ export interface MysqlBank extends MysqlRow {
 
 export class InstituicoesFinanceirasExtractor extends BaseExtractor {
   async extract(): Promise<MysqlBank[]> {
-    return this.extractAll<MysqlBank>('banks', '*', 'id');
+    return this.extractAll<MysqlBank>('instituicoes_financeiras', '*', 'id');
   }
   async getCount(): Promise<number> {
-    return this.count('banks');
+    return this.count('instituicoes_financeiras');
   }
 }

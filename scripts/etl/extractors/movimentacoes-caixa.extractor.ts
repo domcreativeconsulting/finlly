@@ -20,9 +20,9 @@ export interface MysqlTransaction extends MysqlRow {
 
 export class MovimentacoesCaixaExtractor extends BaseExtractor {
   async extract(): Promise<MysqlTransaction[]> {
-    return this.extractAll<MysqlTransaction>('transactions', '*', 'id');
+    return this.extractAll<MysqlTransaction>('movimentacoes_caixa', '*', 'id');
   }
   async getCount(): Promise<number> {
-    return this.count('transactions');
+    return this.count('movimentacoes_caixa');
   }
 }

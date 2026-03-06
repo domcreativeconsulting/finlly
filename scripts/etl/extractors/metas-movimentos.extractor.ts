@@ -15,9 +15,9 @@ export interface MysqlGoalMovement extends MysqlRow {
 
 export class MetasMovimentosExtractor extends BaseExtractor {
   async extract(): Promise<MysqlGoalMovement[]> {
-    return this.extractAll<MysqlGoalMovement>('goal_movements', '*', 'id');
+    return this.extractAll<MysqlGoalMovement>('metas_movimentos', '*', 'id');
   }
   async getCount(): Promise<number> {
-    return this.count('goal_movements');
+    return this.count('metas_movimentos');
   }
 }

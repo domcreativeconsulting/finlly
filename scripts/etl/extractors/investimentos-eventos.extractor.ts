@@ -15,9 +15,9 @@ export interface MysqlInvestmentEvent extends MysqlRow {
 
 export class InvestimentosEventosExtractor extends BaseExtractor {
   async extract(): Promise<MysqlInvestmentEvent[]> {
-    return this.extractAll<MysqlInvestmentEvent>('investment_events', '*', 'id');
+    return this.extractAll<MysqlInvestmentEvent>('investimentos_eventos', '*', 'id');
   }
   async getCount(): Promise<number> {
-    return this.count('investment_events');
+    return this.count('investimentos_eventos');
   }
 }
