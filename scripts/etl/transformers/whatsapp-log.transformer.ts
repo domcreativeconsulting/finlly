@@ -15,12 +15,25 @@ export interface PostgresWhatsappLog {
   updated_at: Date;
 }
 
+const DIRECAO_MAP: Record<string, string> = {
+  inbound: 'entrada',
+  entrada: 'entrada',
+  received: 'entrada',
+  outbound: 'saida',
+  saida: 'saida',
+  sent: 'saida',
+};
+
 export function transformWhatsappLog(row: MysqlWhatsappMessage): PostgresWhatsappLog {
+  const rawDirecao = String(row.direction ?? 'saida').toLowerCase();
+  // direcao CHECK: IN ('entrada', 'saida')
+  const direcao = DIRECAO_MAP[rawDirecao] ?? 'saida';
+
   return {
     usuario_id: mapIdOptional(row.user_id as number | null | undefined, 'users'),
     provider: String(row.provider ?? ''),
     telefone: String(row.phone ?? ''),
-    direcao: String(row.direction ?? 'outbound'),
+    direcao,
     tipo_mensagem: String(row.message_type ?? 'text'),
     conteudo: row.content ? String(row.content) : undefined,
     status: row.status ? String(row.status) : undefined,

@@ -23,7 +23,8 @@ export function transformAnexo(row: MysqlAttachment): PostgresAnexo {
     nome_original: String(row.original_name ?? ''),
     nome_arquivo: String(row.file_name ?? ''),
     mime_type: String(row.mime_type ?? 'application/octet-stream'),
-    tamanho_bytes: BigInt(Math.max(0, Number(row.size_bytes ?? 0))),
+    // tamanho_bytes CHECK: > 0
+    tamanho_bytes: BigInt(Math.max(1, Number(row.size_bytes ?? 1))),
     url: String(row.url ?? ''),
     // Generate SHA-256 hash from the URL as a proxy when the original hash is not stored
     hash_sha256: generateHash(String(row.url ?? row.file_name ?? '')),

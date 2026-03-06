@@ -26,7 +26,8 @@ export function transformMeta(row: MysqlGoal): PostgresMeta {
     usuario_id: mapId(row.user_id, 'users'),
     nome: String(row.name ?? '').trim(),
     tipo: toTipoMeta(row.type),
-    valor_alvo: Number(row.target_amount ?? 0),
+    // valor_alvo CHECK: > 0
+    valor_alvo: Math.max(0.01, Number(row.target_amount ?? 0.01)),
     data_inicio: toDateOnly(row.start_date) ?? new Date(),
     data_fim: toDateOnly(row.end_date),
     status: toStatusMeta(row.status),

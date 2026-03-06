@@ -21,7 +21,8 @@ export function transformInvestimentoEvento(row: MysqlInvestmentEvent): Postgres
     investimento_id: mapId(row.investment_id, 'investments'),
     usuario_id: mapId(row.user_id, 'users'),
     tipo: toTipoEventoInvestimento(row.type),
-    valor: Number(row.amount ?? 0),
+    // valor CHECK: > 0
+    valor: Math.max(0.01, Math.abs(Number(row.amount ?? 0.01))),
     data: toDateOnly(row.date) ?? new Date(),
     descricao: row.description ? String(row.description) : undefined,
     created_at: toTimestamptz(row.created_at) ?? new Date(),

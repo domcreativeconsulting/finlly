@@ -22,14 +22,26 @@ import type { PostgresAnexoVinculo } from '../transformers/anexo-vinculo.transfo
 import type { PostgresWhatsappLog } from '../transformers/whatsapp-log.transformer.js';
 import type { PostgresJob } from '../transformers/job.transformer.js';
 
-/** A minimal interface matching any Prisma model delegate that supports createMany */
+/** A minimal interface matching any Prisma model delegate that supports createMany and create */
 interface PrismaDelegate {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   createMany(args: { data: any[]; skipDuplicates: boolean }): Promise<{ count: number }>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  create(args: { data: any }): Promise<unknown>;
+}
+
+/** Tracks rows that failed to insert for reporting and manual review */
+export interface FailedRow {
+  table: string;
+  rowIndex: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  data: any;
+  error: string;
 }
 
 export class PostgresLoader {
   public prisma: PrismaClient;
+  public failedRows: FailedRow[] = [];
 
   constructor() {
     const adapter = new PrismaPg({ connectionString: config.postgres.connectionString });
@@ -51,6 +63,8 @@ export class PostgresLoader {
 
   /**
    * Inserts rows in batches using the given Prisma delegate.
+   * On batch-level failure, falls back to row-by-row insertion so that a single
+   * bad record does not block the rest of the batch.
    * In dry-run mode the insertion is skipped but the count is still calculated.
    */
   private async insertBatches<T>(
@@ -66,8 +80,33 @@ export class PostgresLoader {
     for (let i = 0; i < batches.length; i++) {
       const batch = batches[i]!;
       if (!dryRun) {
-        const result = await delegate.createMany({ data: batch, skipDuplicates: true });
-        total += result.count;
+        try {
+          const result = await delegate.createMany({ data: batch, skipDuplicates: true });
+          total += result.count;
+        } catch (batchErr) {
+          // Batch failed — fall back to inserting rows individually
+          console.warn(
+            `   ⚠️  ${label}: lote ${i + 1} falhou (${(batchErr as Error).message}), tentando linha a linha…`,
+          );
+          for (let j = 0; j < batch.length; j++) {
+            const row = batch[j]!;
+            try {
+              await delegate.create({ data: row });
+              total += 1;
+            } catch (rowErr) {
+              const errorMsg = (rowErr as Error).message;
+              console.error(
+                `   ❌ ${label}: lote ${i + 1} linha ${j + 1} ignorada — ${errorMsg}`,
+              );
+              this.failedRows.push({
+                table: label,
+                rowIndex: i * batchSize + j,
+                data: row,
+                error: errorMsg,
+              });
+            }
+          }
+        }
       } else {
         total += batch.length;
       }
