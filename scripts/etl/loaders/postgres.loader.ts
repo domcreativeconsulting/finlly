@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { config } from '../config';
 import type { PostgresUsuario } from '../transformers/usuario.transformer';
@@ -98,7 +98,7 @@ export class PostgresLoader {
           total += result.count;
         } else {
           try {
-            const result = await this.prisma.$transaction(async (innerTx: PrismaClient) => {
+            const result = await this.prisma.$transaction(async (innerTx: Prisma.TransactionClient) => {
               await innerTx.$executeRaw`SET CONSTRAINTS ALL DEFERRED`;
               return getDelegate(innerTx, modelName).createMany({ data: batch, skipDuplicates: true });
             });
@@ -111,7 +111,7 @@ export class PostgresLoader {
             for (let j = 0; j < batch.length; j++) {
               const row = batch[j]!;
               try {
-                await this.prisma.$transaction(async (innerTx: PrismaClient) => {
+                await this.prisma.$transaction(async (innerTx: Prisma.TransactionClient) => {
                   await innerTx.$executeRaw`SET CONSTRAINTS ALL DEFERRED`;
                   return getDelegate(innerTx, modelName).create({ data: row });
                 });

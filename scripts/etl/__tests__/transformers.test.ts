@@ -129,6 +129,7 @@ const BASE_MYSQL_GOAL = {
   name: 'Meta test',
   type: 'economia',
   target_amount: 5000,
+  current_amount: 0,
   start_date: new Date(),
   status: 'ativa',
   created_at: new Date(),
