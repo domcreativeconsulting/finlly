@@ -21,13 +21,13 @@
     "db:seed": "prisma db seed",
     "db:reset": "prisma migrate reset",
     "db:studio": "prisma studio",
-    "etl:test": "ts-node --esm --project tsconfig.prisma.json scripts/etl/test-connection.ts",
-    "etl:dry-run": "cross-env ETL_DRY_RUN=true tsx scripts/etl/etl.ts",
-    "etl:execute": "ETL_DRY_RUN=false ts-node --esm --project tsconfig.prisma.json scripts/etl/etl.ts",
-    "etl:rollback": "ts-node --esm --project tsconfig.prisma.json scripts/etl/rollback.ts"
+    "etl:test": "ts-node --transpile-only=false --project tsconfig.prisma.json scripts/etl/test-connection.ts",
+    "etl:dry-run": "cross-env ETL_DRY_RUN=true ts-node --transpile-only=false --project tsconfig.prisma.json scripts/etl/etl.ts",
+    "etl:execute": "cross-env ETL_DRY_RUN=false ts-node --transpile-only=false --project tsconfig.prisma.json scripts/etl/etl.ts",
+    "etl:rollback": "ts-node --transpile-only=false --project tsconfig.prisma.json scripts/etl/rollback.ts"
   },
   "prisma": {
-    "seed": "ts-node --esm --project tsconfig.prisma.json prisma/seed.ts"
+    "seed": "ts-node --transpile-only=false --project tsconfig.prisma.json prisma/seed.ts"
   },
   "devDependencies": {
     "@types/pg": "^8.18.0",

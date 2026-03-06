@@ -1,6 +1,6 @@
-import { MysqlGoalMovement } from '../extractors/metas-movimentos.extractor.js';
-import { mapId, mapIdOptional } from './id-mapper.js';
-import { toTimestamptz, toDateOnly } from './type-converter.js';
+import { MysqlGoalMovement } from '../extractors/metas-movimentos.extractor';
+import { mapId, mapIdOptional } from './id-mapper';
+import { toTimestamptz, toDateOnly } from './type-converter';
 
 export interface PostgresMetaMovimento {
   id: string;

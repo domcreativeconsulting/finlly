@@ -1,6 +1,6 @@
-import { MysqlInvestmentType } from '../extractors/tipos-investimento.extractor.js';
-import { mapId } from './id-mapper.js';
-import { toTimestamptz } from './type-converter.js';
+import { MysqlInvestmentType } from '../extractors/tipos-investimento.extractor';
+import { mapId } from './id-mapper';
+import { toTimestamptz } from './type-converter';
 
 export interface PostgresTipoInvestimento {
   id: string;

@@ -1,4 +1,4 @@
-import { BaseExtractor } from '../extractors/base.extractor.js';
+import { BaseExtractor } from '../extractors/base.extractor';
 import { PrismaClient } from '@prisma/client';
 
 export interface TableCountResult {

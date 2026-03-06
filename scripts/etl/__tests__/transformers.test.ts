@@ -5,23 +5,23 @@
  */
 
 import assert from 'assert';
-import { transformCupom } from '../transformers/cupom.transformer.js';
-import { transformJob } from '../transformers/job.transformer.js';
-import { transformWhatsappLog } from '../transformers/whatsapp-log.transformer.js';
-import { transformMovimentacaoCaixa } from '../transformers/movimentacao-caixa.transformer.js';
-import { transformContaPagar } from '../transformers/conta-pagar.transformer.js';
-import { transformContaReceber } from '../transformers/conta-receber.transformer.js';
-import { transformInvestimentoEvento } from '../transformers/investimento-evento.transformer.js';
-import { transformMeta } from '../transformers/meta.transformer.js';
-import { transformAnexo } from '../transformers/anexo.transformer.js';
+import { transformCupom } from '../transformers/cupom.transformer';
+import { transformJob } from '../transformers/job.transformer';
+import { transformWhatsappLog } from '../transformers/whatsapp-log.transformer';
+import { transformMovimentacaoCaixa } from '../transformers/movimentacao-caixa.transformer';
+import { transformContaPagar } from '../transformers/conta-pagar.transformer';
+import { transformContaReceber } from '../transformers/conta-receber.transformer';
+import { transformInvestimentoEvento } from '../transformers/investimento-evento.transformer';
+import { transformMeta } from '../transformers/meta.transformer';
+import { transformAnexo } from '../transformers/anexo.transformer';
 import {
   validateCupons,
   validateMovimentacoesCaixa,
   validateJobs,
   validateWhatsappLogs,
   DataValidator,
-} from '../validators/data-validator.js';
-import { clearCache } from '../transformers/id-mapper.js';
+} from '../validators/data-validator';
+import { clearCache } from '../transformers/id-mapper';
 
 // ---------------------------------------------------------------------------
 // Helpers

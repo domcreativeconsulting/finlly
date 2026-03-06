@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import mysql from 'mysql2/promise';
 import { Pool } from 'pg';
-import { config } from './config.ts';
+import { config } from './config';
 
 async function testMysqlConnection(): Promise<boolean> {
   let connection: mysql.Connection | null = null;

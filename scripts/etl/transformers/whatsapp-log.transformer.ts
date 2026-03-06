@@ -1,6 +1,6 @@
-import { MysqlWhatsappMessage } from '../extractors/whatsapp-logs.extractor.js';
-import { mapIdOptional } from './id-mapper.js';
-import { toTimestamptz } from './type-converter.js';
+import { MysqlWhatsappMessage } from '../extractors/whatsapp-logs.extractor';
+import { mapIdOptional } from './id-mapper';
+import { toTimestamptz } from './type-converter';
 
 export interface PostgresWhatsappLog {
   usuario_id?: string;

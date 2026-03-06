@@ -1,6 +1,6 @@
-import { MysqlCoupon } from '../extractors/cupons.extractor.js';
-import { mapId } from './id-mapper.js';
-import { toTimestamptz, toBoolean } from './type-converter.js';
+import { MysqlCoupon } from '../extractors/cupons.extractor';
+import { mapId } from './id-mapper';
+import { toTimestamptz, toBoolean } from './type-converter';
 
 export interface PostgresCupom {
   id: string;

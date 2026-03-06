@@ -1,6 +1,6 @@
-import { BaseExtractor } from '../extractors/base.extractor.js';
+import { BaseExtractor } from '../extractors/base.extractor';
 import { PrismaClient } from '@prisma/client';
-import { mapId } from '../transformers/id-mapper.js';
+import { mapId } from '../transformers/id-mapper';
 
 export interface SampleCheckResult {
   table: string;

@@ -1,6 +1,6 @@
-import { MysqlAttachment } from '../extractors/anexos.extractor.js';
-import { mapId } from './id-mapper.js';
-import { toTimestamptz, generateHash } from './type-converter.js';
+import { MysqlAttachment } from '../extractors/anexos.extractor';
+import { mapId } from './id-mapper';
+import { toTimestamptz, generateHash } from './type-converter';
 
 export interface PostgresAnexo {
   id: string;

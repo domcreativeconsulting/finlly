@@ -1,6 +1,6 @@
-import { MysqlCategory } from '../extractors/categorias.extractor.js';
-import { mapId, mapIdOptional } from './id-mapper.js';
-import { toTimestamptz, toTipoMovimentacao, toHexColor } from './type-converter.js';
+import { MysqlCategory } from '../extractors/categorias.extractor';
+import { mapId, mapIdOptional } from './id-mapper';
+import { toTimestamptz, toTipoMovimentacao, toHexColor } from './type-converter';
 
 export interface PostgresCategoria {
   id: string;

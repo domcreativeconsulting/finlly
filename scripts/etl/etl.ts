@@ -1,64 +1,64 @@
-import { config } from './config.ts';
-import { getMappedCount, clearCache } from './transformers/id-mapper.js';
+import { config } from './config';
+import { getMappedCount, clearCache } from './transformers/id-mapper';
 
 // Extractors
-import { UsuariosExtractor } from './extractors/usuarios.extractor.js';
-import { CuponsExtractor } from './extractors/cupons.extractor.js';
-import { AssinantesExtractor } from './extractors/assinantes.extractor.js';
-import { AssinantesPagamentosExtractor } from './extractors/assinantes-pagamentos.extractor.js';
-import { WebhookEventsExtractor } from './extractors/webhook-events.extractor.js';
-import { InstituicoesFinanceirasExtractor } from './extractors/instituicoes-financeiras.extractor.js';
-import { ContasExtractor } from './extractors/contas.extractor.js';
-import { CategoriasExtractor } from './extractors/categorias.extractor.js';
-import { ContasPagarExtractor } from './extractors/contas-pagar.extractor.js';
-import { ContasReceberExtractor } from './extractors/contas-receber.extractor.js';
-import { MovimentacoesCaixaExtractor } from './extractors/movimentacoes-caixa.extractor.js';
-import { TiposInvestimentoExtractor } from './extractors/tipos-investimento.extractor.js';
-import { InvestimentosExtractor } from './extractors/investimentos.extractor.js';
-import { InvestimentosEventosExtractor } from './extractors/investimentos-eventos.extractor.js';
-import { MetasExtractor } from './extractors/metas.extractor.js';
-import { MetasMovimentosExtractor } from './extractors/metas-movimentos.extractor.js';
-import { AnexosExtractor } from './extractors/anexos.extractor.js';
-import { AnexosVinculosExtractor } from './extractors/anexos-vinculos.extractor.js';
-import { WhatsappLogsExtractor } from './extractors/whatsapp-logs.extractor.js';
-import { JobsExtractor } from './extractors/jobs.extractor.js';
+import { UsuariosExtractor } from './extractors/usuarios.extractor';
+import { CuponsExtractor } from './extractors/cupons.extractor';
+import { AssinantesExtractor } from './extractors/assinantes.extractor';
+import { AssinantesPagamentosExtractor } from './extractors/assinantes-pagamentos.extractor';
+import { WebhookEventsExtractor } from './extractors/webhook-events.extractor';
+import { InstituicoesFinanceirasExtractor } from './extractors/instituicoes-financeiras.extractor';
+import { ContasExtractor } from './extractors/contas.extractor';
+import { CategoriasExtractor } from './extractors/categorias.extractor';
+import { ContasPagarExtractor } from './extractors/contas-pagar.extractor';
+import { ContasReceberExtractor } from './extractors/contas-receber.extractor';
+import { MovimentacoesCaixaExtractor } from './extractors/movimentacoes-caixa.extractor';
+import { TiposInvestimentoExtractor } from './extractors/tipos-investimento.extractor';
+import { InvestimentosExtractor } from './extractors/investimentos.extractor';
+import { InvestimentosEventosExtractor } from './extractors/investimentos-eventos.extractor';
+import { MetasExtractor } from './extractors/metas.extractor';
+import { MetasMovimentosExtractor } from './extractors/metas-movimentos.extractor';
+import { AnexosExtractor } from './extractors/anexos.extractor';
+import { AnexosVinculosExtractor } from './extractors/anexos-vinculos.extractor';
+import { WhatsappLogsExtractor } from './extractors/whatsapp-logs.extractor';
+import { JobsExtractor } from './extractors/jobs.extractor';
 
 // Transformers
-import { transformUsuario } from './transformers/usuario.transformer.js';
-import { transformCupom } from './transformers/cupom.transformer.js';
-import { transformAssinante } from './transformers/assinante.transformer.js';
-import { transformAssinantePagamento } from './transformers/assinante-pagamento.transformer.js';
-import { transformWebhookEvent } from './transformers/webhook-event.transformer.js';
-import { transformInstituicaoFinanceira } from './transformers/instituicao-financeira.transformer.js';
-import { transformConta } from './transformers/conta.transformer.js';
-import { transformCategoria } from './transformers/categoria.transformer.js';
-import { transformContaPagar } from './transformers/conta-pagar.transformer.js';
-import { transformContaReceber } from './transformers/conta-receber.transformer.js';
-import { transformMovimentacaoCaixa } from './transformers/movimentacao-caixa.transformer.js';
-import { transformTipoInvestimento } from './transformers/tipo-investimento.transformer.js';
-import { transformInvestimento } from './transformers/investimento.transformer.js';
-import { transformInvestimentoEvento } from './transformers/investimento-evento.transformer.js';
-import { transformMeta } from './transformers/meta.transformer.js';
-import { transformMetaMovimento } from './transformers/meta-movimento.transformer.js';
-import { transformAnexo } from './transformers/anexo.transformer.js';
-import { transformAnexoVinculo } from './transformers/anexo-vinculo.transformer.js';
-import { transformWhatsappLog } from './transformers/whatsapp-log.transformer.js';
-import { transformJob } from './transformers/job.transformer.js';
+import { transformUsuario } from './transformers/usuario.transformer';
+import { transformCupom } from './transformers/cupom.transformer';
+import { transformAssinante } from './transformers/assinante.transformer';
+import { transformAssinantePagamento } from './transformers/assinante-pagamento.transformer';
+import { transformWebhookEvent } from './transformers/webhook-event.transformer';
+import { transformInstituicaoFinanceira } from './transformers/instituicao-financeira.transformer';
+import { transformConta } from './transformers/conta.transformer';
+import { transformCategoria } from './transformers/categoria.transformer';
+import { transformContaPagar } from './transformers/conta-pagar.transformer';
+import { transformContaReceber } from './transformers/conta-receber.transformer';
+import { transformMovimentacaoCaixa } from './transformers/movimentacao-caixa.transformer';
+import { transformTipoInvestimento } from './transformers/tipo-investimento.transformer';
+import { transformInvestimento } from './transformers/investimento.transformer';
+import { transformInvestimentoEvento } from './transformers/investimento-evento.transformer';
+import { transformMeta } from './transformers/meta.transformer';
+import { transformMetaMovimento } from './transformers/meta-movimento.transformer';
+import { transformAnexo } from './transformers/anexo.transformer';
+import { transformAnexoVinculo } from './transformers/anexo-vinculo.transformer';
+import { transformWhatsappLog } from './transformers/whatsapp-log.transformer';
+import { transformJob } from './transformers/job.transformer';
 
 // Loader
-import { PostgresLoader } from './loaders/postgres.loader.js';
+import { PostgresLoader } from './loaders/postgres.loader';
 
 // Validators
-import { CountValidator } from './validators/count-validator.js';
-import { SampleValidator } from './validators/sample-validator.js';
-import { OrphanDetector } from './validators/orphan-detector.js';
-import { DataValidator } from './validators/data-validator.js';
+import { CountValidator } from './validators/count-validator';
+import { SampleValidator } from './validators/sample-validator';
+import { OrphanDetector } from './validators/orphan-detector';
+import { DataValidator } from './validators/data-validator';
 
 // Reporter
 import {
   ReportGenerator,
   type MigrationStatus,
-} from './reporters/report-generator.js';
+} from './reporters/report-generator';
 
 async function main(): Promise<void> {
   const dryRun = config.etl.dryRun;

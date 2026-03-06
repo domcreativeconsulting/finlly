@@ -1,6 +1,6 @@
-import { MysqlInvestmentEvent } from '../extractors/investimentos-eventos.extractor.js';
-import { mapId } from './id-mapper.js';
-import { toTimestamptz, toDateOnly, toTipoEventoInvestimento } from './type-converter.js';
+import { MysqlInvestmentEvent } from '../extractors/investimentos-eventos.extractor';
+import { mapId } from './id-mapper';
+import { toTimestamptz, toDateOnly, toTipoEventoInvestimento } from './type-converter';
 
 export interface PostgresInvestimentoEvento {
   id: string;

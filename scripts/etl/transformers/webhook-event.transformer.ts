@@ -1,5 +1,5 @@
-import { MysqlWebhookLog } from '../extractors/webhook-events.extractor.js';
-import { toTimestamptz, toBoolean, parseJson } from './type-converter.js';
+import { MysqlWebhookLog } from '../extractors/webhook-events.extractor';
+import { toTimestamptz, toBoolean, parseJson } from './type-converter';
 
 export interface PostgresWebhookEvent {
   provider: string;

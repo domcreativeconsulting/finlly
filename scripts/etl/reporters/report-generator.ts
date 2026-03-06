@@ -1,9 +1,9 @@
 import { writeFileSync } from 'fs';
 import { join } from 'path';
-import type { TableCountResult } from '../validators/count-validator.js';
-import type { SampleCheckResult } from '../validators/sample-validator.js';
-import type { OrphanResult } from '../validators/orphan-detector.js';
-import type { DataValidationSummary } from '../validators/data-validator.js';
+import type { TableCountResult } from '../validators/count-validator';
+import type { SampleCheckResult } from '../validators/sample-validator';
+import type { OrphanResult } from '../validators/orphan-detector';
+import type { DataValidationSummary } from '../validators/data-validator';
 
 export type MigrationStatus = 'success' | 'error' | 'partial';
 

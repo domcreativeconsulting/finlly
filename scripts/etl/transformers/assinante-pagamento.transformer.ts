@@ -1,6 +1,6 @@
-import { MysqlPayment } from '../extractors/assinantes-pagamentos.extractor.js';
-import { mapId } from './id-mapper.js';
-import { toTimestamptz, toStatusPagamento } from './type-converter.js';
+import { MysqlPayment } from '../extractors/assinantes-pagamentos.extractor';
+import { mapId } from './id-mapper';
+import { toTimestamptz, toStatusPagamento } from './type-converter';
 
 export interface PostgresAssinantePagamento {
   id: string;

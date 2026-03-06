@@ -1,6 +1,6 @@
-import { MysqlGoal } from '../extractors/metas.extractor.js';
-import { mapId } from './id-mapper.js';
-import { toTimestamptz, toDateOnly, toStatusMeta, toTipoMeta, toHexColor } from './type-converter.js';
+import { MysqlGoal } from '../extractors/metas.extractor';
+import { mapId } from './id-mapper';
+import { toTimestamptz, toDateOnly, toStatusMeta, toTipoMeta, toHexColor } from './type-converter';
 
 export interface PostgresMeta {
   id: string;
