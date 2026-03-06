@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-03-05T18:35:56.651Z",
+  "timestamp": "2026-03-06T01:08:13.886Z",
   "status": "error",
-  "modo": "dry_run",
+  "modo": "execucao_real",
   "summary": {
     "total_tabelas": 0,
     "tabelas_ok": 0,
@@ -15,10 +15,12 @@
   "amostras": [],
   "orphans_found": [],
   "transformacoes_aplicadas": {
-    "ids_mapeados": 0,
+    "ids_mapeados": 56,
     "tipos_convertidos": [],
     "campos_removidos": [],
     "campos_adicionados": []
   },
-  "erros": ["Erro fatal: Table 'finlly_go.webhook_logs' doesn't exist"]
+  "erros": [
+    "Erro fatal: new row for relation \"cupons\" violates check constraint \"ck_cupons_desconto\""
+  ]
 }
