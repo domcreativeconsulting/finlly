@@ -11,80 +11,80 @@ export interface TableCountResult {
   discrepancy: number;
 }
 
-/** The 20 entity tables that hold migrated data (excludes BIGSERIAL tables like jobs/whatsapp_logs) */
+/** The 20 entity tables that hold migrated data — MySQL and Postgres use the same table names */
 const TABLE_PAIRS: Array<{
   mysqlTable: string;
   postgresTable: string;
   label: string;
 }> = [
-  { mysqlTable: 'users', postgresTable: 'usuarios', label: 'usuarios' },
+  { mysqlTable: 'usuarios', postgresTable: 'usuarios', label: 'usuarios' },
   { mysqlTable: 'cupons', postgresTable: 'cupons', label: 'cupons' },
-  { mysqlTable: 'plans', postgresTable: 'assinantes', label: 'assinantes' },
+  { mysqlTable: 'assinantes', postgresTable: 'assinantes', label: 'assinantes' },
   {
-    mysqlTable: 'payments',
+    mysqlTable: 'assinantes_pagamentos',
     postgresTable: 'assinantes_pagamentos',
     label: 'assinantes_pagamentos',
   },
   {
-    mysqlTable: 'webhook_logs',
+    mysqlTable: 'webhook_events',
     postgresTable: 'webhook_events',
     label: 'webhook_events',
   },
   {
-    mysqlTable: 'banks',
+    mysqlTable: 'instituicoes_financeiras',
     postgresTable: 'instituicoes_financeiras',
     label: 'instituicoes_financeiras',
   },
-  { mysqlTable: 'accounts', postgresTable: 'contas', label: 'contas' },
+  { mysqlTable: 'contas', postgresTable: 'contas', label: 'contas' },
   {
-    mysqlTable: 'categories',
+    mysqlTable: 'categorias',
     postgresTable: 'categorias',
     label: 'categorias',
   },
-  { mysqlTable: 'bills', postgresTable: 'contas_pagar', label: 'contas_pagar' },
+  { mysqlTable: 'contas_pagar', postgresTable: 'contas_pagar', label: 'contas_pagar' },
   {
-    mysqlTable: 'receivables',
+    mysqlTable: 'contas_receber',
     postgresTable: 'contas_receber',
     label: 'contas_receber',
   },
   {
-    mysqlTable: 'transactions',
+    mysqlTable: 'movimentacoes_caixa',
     postgresTable: 'movimentacoes_caixa',
     label: 'movimentacoes_caixa',
   },
   {
-    mysqlTable: 'investment_types',
+    mysqlTable: 'tipos_investimento',
     postgresTable: 'tipos_investimento',
     label: 'tipos_investimento',
   },
   {
-    mysqlTable: 'investments',
+    mysqlTable: 'investimentos',
     postgresTable: 'investimentos',
     label: 'investimentos',
   },
   {
-    mysqlTable: 'investment_events',
+    mysqlTable: 'investimentos_eventos',
     postgresTable: 'investimentos_eventos',
     label: 'investimentos_eventos',
   },
-  { mysqlTable: 'goals', postgresTable: 'metas', label: 'metas' },
+  { mysqlTable: 'metas', postgresTable: 'metas', label: 'metas' },
   {
-    mysqlTable: 'goal_movements',
+    mysqlTable: 'metas_movimentos',
     postgresTable: 'metas_movimentos',
     label: 'metas_movimentos',
   },
-  { mysqlTable: 'attachments', postgresTable: 'anexos', label: 'anexos' },
+  { mysqlTable: 'anexos', postgresTable: 'anexos', label: 'anexos' },
   {
-    mysqlTable: 'attachment_relations',
+    mysqlTable: 'anexos_vinculos',
     postgresTable: 'anexos_vinculos',
     label: 'anexos_vinculos',
   },
   {
-    mysqlTable: 'whatsapp_messages',
+    mysqlTable: 'whatsapp_logs',
     postgresTable: 'whatsapp_logs',
     label: 'whatsapp_logs',
   },
-  { mysqlTable: 'background_jobs', postgresTable: 'jobs', label: 'jobs' },
+  { mysqlTable: 'jobs', postgresTable: 'jobs', label: 'jobs' },
 ];
 
 export class CountValidator {

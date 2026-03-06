@@ -22,6 +22,7 @@ export const config = {
     dryRun: process.env['ETL_DRY_RUN'] === 'true',
     validateSamples: process.env['ETL_VALIDATE_SAMPLES'] !== 'false',
     sampleSize: 15,
+    transactionTimeout: parseInt(process.env['ETL_TRANSACTION_TIMEOUT_MS'] ?? '120000', 10),
   },
 };
 
