@@ -14,6 +14,9 @@ import { transformContaReceber } from '../transformers/conta-receber.transformer
 import { transformInvestimentoEvento } from '../transformers/investimento-evento.transformer';
 import { transformMeta } from '../transformers/meta.transformer';
 import { transformAnexo } from '../transformers/anexo.transformer';
+import { transformUsuario } from '../transformers/usuario.transformer';
+import { transformAssinante } from '../transformers/assinante.transformer';
+import { transformConta } from '../transformers/conta.transformer';
 import {
   validateCupons,
   validateMovimentacoesCaixa,
@@ -420,6 +423,85 @@ test('DataValidator.validateAll returns summary with totalViolations', () => {
 // ---------------------------------------------------------------------------
 // Result summary
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Tests: UUID mapping consistency (prevents FK violations)
+// ---------------------------------------------------------------------------
+
+console.log('\n📋 UUID mapping consistency tests');
+
+const BASE_MYSQL_USER = {
+  id: 42,
+  name: 'Test User',
+  email: 'test@example.com',
+  password: 'hashed',
+  email_verified: 1,
+  created_at: new Date(),
+  updated_at: new Date(),
+};
+
+const BASE_MYSQL_PLAN = {
+  id: 7,
+  user_id: 42,
+  status: 'ativo',
+  plan: 'premium',
+  created_at: new Date(),
+  updated_at: new Date(),
+};
+
+const BASE_MYSQL_ACCOUNT = {
+  id: 3,
+  user_id: 42,
+  name: 'Conta Corrente',
+  type: 'corrente',
+  include_in_total: 1,
+  status: 'ativa',
+  balance: 0,
+  created_at: new Date(),
+  updated_at: new Date(),
+};
+
+test('assinante.usuario_id matches the corresponding usuario.id', () => {
+  clearCache();
+  const usuario = transformUsuario(BASE_MYSQL_USER);
+  const assinante = transformAssinante(BASE_MYSQL_PLAN);
+  assert.strictEqual(
+    assinante.usuario_id,
+    usuario.id,
+    'assinante.usuario_id must equal the UUID generated for the corresponding usuario',
+  );
+});
+
+test('conta.usuario_id matches the corresponding usuario.id', () => {
+  clearCache();
+  const usuario = transformUsuario(BASE_MYSQL_USER);
+  const conta = transformConta(BASE_MYSQL_ACCOUNT);
+  assert.strictEqual(
+    conta.usuario_id,
+    usuario.id,
+    'conta.usuario_id must equal the UUID generated for the corresponding usuario',
+  );
+});
+
+test('UUID mapping is stable across clearCache() boundaries — fresh cache returns same UUID', () => {
+  clearCache();
+  const uuid1 = transformUsuario(BASE_MYSQL_USER).id;
+  clearCache();
+  const uuid2 = transformUsuario(BASE_MYSQL_USER).id;
+  assert.strictEqual(uuid1, uuid2, 'mapId must be deterministic: same input always yields same UUID');
+});
+
+test('FK references remain consistent with shared cache', () => {
+  clearCache();
+  const usuario = transformUsuario(BASE_MYSQL_USER);
+  // No clearCache() here — transforms run in the same cache context, just like etl.ts
+  const assinante = transformAssinante(BASE_MYSQL_PLAN);
+  assert.strictEqual(
+    assinante.usuario_id,
+    usuario.id,
+    'FK references must be consistent when clearCache is not called between parent and child transforms',
+  );
+});
 
 console.log(`\n${'─'.repeat(50)}`);
 console.log(`✅ ${passed} testes passaram`);

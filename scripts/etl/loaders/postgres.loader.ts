@@ -100,7 +100,7 @@ export class PostgresLoader {
           try {
             const result = await this.prisma.$transaction(async (innerTx: Prisma.TransactionClient) => {
               await innerTx.$executeRaw`SET CONSTRAINTS ALL DEFERRED`;
-              return getDelegate(innerTx, modelName).createMany({ data: batch, skipDuplicates: true });
+              return await getDelegate(innerTx, modelName).createMany({ data: batch, skipDuplicates: true });
             });
             total += result.count;
           } catch (batchErr) {
@@ -113,7 +113,7 @@ export class PostgresLoader {
               try {
                 await this.prisma.$transaction(async (innerTx: Prisma.TransactionClient) => {
                   await innerTx.$executeRaw`SET CONSTRAINTS ALL DEFERRED`;
-                  return getDelegate(innerTx, modelName).create({ data: row });
+                  return await getDelegate(innerTx, modelName).create({ data: row });
                 });
                 total += 1;
               } catch (rowErr) {
