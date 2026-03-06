@@ -14,9 +14,9 @@ export interface MysqlCategory extends MysqlRow {
 
 export class CategoriasExtractor extends BaseExtractor {
   async extract(): Promise<MysqlCategory[]> {
-    return this.extractAll<MysqlCategory>('categories', '*', 'id');
+    return this.extractAll<MysqlCategory>('categorias', '*', 'id');
   }
   async getCount(): Promise<number> {
-    return this.count('categories');
+    return this.count('categorias');
   }
 }

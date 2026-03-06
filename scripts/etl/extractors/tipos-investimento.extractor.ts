@@ -11,9 +11,9 @@ export interface MysqlInvestmentType extends MysqlRow {
 
 export class TiposInvestimentoExtractor extends BaseExtractor {
   async extract(): Promise<MysqlInvestmentType[]> {
-    return this.extractAll<MysqlInvestmentType>('investment_types', '*', 'id');
+    return this.extractAll<MysqlInvestmentType>('tipos_investimento', '*', 'id');
   }
   async getCount(): Promise<number> {
-    return this.count('investment_types');
+    return this.count('tipos_investimento');
   }
 }
