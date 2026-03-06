@@ -224,7 +224,10 @@ async function main(): Promise<void> {
     const pgAssinantes = rawAssinantes
       .map(transformAssinante)
       .filter((v): v is NonNullable<typeof v> => v !== null);
-    const pgPagamentos = rawPagamentos.map(transformAssinantePagamento);
+    const validAssinanteIds = new Set(pgAssinantes.map(a => a.id));
+    const pgPagamentos = rawPagamentos
+      .map(p => transformAssinantePagamento(p, validAssinanteIds))
+      .filter((v): v is NonNullable<typeof v> => v !== null);
     const pgWebhooks = rawWebhooks.map(transformWebhookEvent);
     const pgInstituicoes = rawInstituicoes.map(transformInstituicaoFinanceira);
     const pgContas = rawContas
@@ -244,16 +247,23 @@ async function main(): Promise<void> {
     const pgInvestimentos = rawInvestimentos
       .map(transformInvestimento)
       .filter((v): v is NonNullable<typeof v> => v !== null);
-    const pgInvestEventos = rawInvestEventos.map(transformInvestimentoEvento);
+    const validInvestimentoIds = new Set(pgInvestimentos.map(i => i.id));
+    const pgInvestEventos = rawInvestEventos
+      .map(e => transformInvestimentoEvento(e, validInvestimentoIds))
+      .filter((v): v is NonNullable<typeof v> => v !== null);
     const pgMetas = rawMetas
       .map(transformMeta)
       .filter((v): v is NonNullable<typeof v> => v !== null);
-    const pgMetasMov = rawMetasMov.map(transformMetaMovimento);
+    const validMetaIds = new Set(pgMetas.map(m => m.id));
+    const pgMetasMov = rawMetasMov
+      .map(m => transformMetaMovimento(m, validMetaIds))
+      .filter((v): v is NonNullable<typeof v> => v !== null);
     const pgAnexos = rawAnexos
       .map(transformAnexo)
       .filter((v): v is NonNullable<typeof v> => v !== null);
+    const validAnexoIds = new Set(pgAnexos.map(a => a.id));
     const pgAnexosVinculos = rawAnexosVinculos
-      .map(transformAnexoVinculo)
+      .map(av => transformAnexoVinculo(av, validAnexoIds))
       .filter((v): v is NonNullable<typeof v> => v !== null);
     const pgWhatsapp = rawWhatsapp.map(transformWhatsappLog);
     const pgJobs = rawJobs.map(transformJob);
