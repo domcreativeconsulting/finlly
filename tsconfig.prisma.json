@@ -1,22 +1,28 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "module": "commonjs",
     "target": "ES2020",
+    "module": "commonjs",
     "moduleResolution": "node",
+    "lib": ["ES2020"],
+    "strict": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
+    "resolveJsonModule": true,
     "declaration": true,
+    "declarationMap": true,
     "sourceMap": true,
-    "strict": true
+    "noEmit": false,
+    "outDir": "./dist"
   },
   "ts-node": {
     "transpileOnly": false,
     "compilerOptions": {
-      "module": "commonjs"
+      "module": "commonjs",
+      "moduleResolution": "node"
     }
   },
-  "include": ["scripts/etl/**/*"],
-  "exclude": ["node_modules"]
+  "include": ["prisma/**/*.ts", "scripts/**/*.ts"],
+  "exclude": ["node_modules", "apps", "dist"]
 }
