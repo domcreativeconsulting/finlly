@@ -1,6 +1,6 @@
-import { MysqlTransaction } from '../extractors/movimentacoes-caixa.extractor.js';
-import { mapId, mapIdOptional } from './id-mapper.js';
-import { toTimestamptz, toDateOnly, toTipoMovimentacao } from './type-converter.js';
+import { MysqlTransaction } from '../extractors/movimentacoes-caixa.extractor';
+import { mapId, mapIdOptional } from './id-mapper';
+import { toTimestamptz, toDateOnly, toTipoMovimentacao } from './type-converter';
 
 export interface PostgresMovimentacaoCaixa {
   id: string;

@@ -1,6 +1,6 @@
-import { MysqlBill } from '../extractors/contas-pagar.extractor.js';
-import { mapId, mapIdOptional } from './id-mapper.js';
-import { toTimestamptz, toDateOnly, toStatusPagamento, toTipoRecorrencia, toBoolean } from './type-converter.js';
+import { MysqlBill } from '../extractors/contas-pagar.extractor';
+import { mapId, mapIdOptional } from './id-mapper';
+import { toTimestamptz, toDateOnly, toStatusPagamento, toTipoRecorrencia, toBoolean } from './type-converter';
 
 export interface PostgresContaPagar {
   id: string;

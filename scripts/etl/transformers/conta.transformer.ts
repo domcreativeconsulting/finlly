@@ -1,6 +1,6 @@
-import { MysqlAccount } from '../extractors/contas.extractor.js';
-import { mapId, mapIdOptional } from './id-mapper.js';
-import { toTimestamptz, toTipoConta, toStatusConta, toHexColor, toBoolean } from './type-converter.js';
+import { MysqlAccount } from '../extractors/contas.extractor';
+import { mapId, mapIdOptional } from './id-mapper';
+import { toTimestamptz, toTipoConta, toStatusConta, toHexColor, toBoolean } from './type-converter';
 
 export interface PostgresConta {
   id: string;

@@ -1,6 +1,6 @@
-import { MysqlUsuario } from '../extractors/usuarios.extractor.js';
-import { mapId, mapIdOptional } from './id-mapper.js';
-import { toTimestamptz, toBoolean } from './type-converter.js';
+import { MysqlUsuario } from '../extractors/usuarios.extractor';
+import { mapId, mapIdOptional } from './id-mapper';
+import { toTimestamptz, toBoolean } from './type-converter';
 
 export interface PostgresUsuario {
   id: string;

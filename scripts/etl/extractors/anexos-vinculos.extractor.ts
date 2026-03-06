@@ -1,4 +1,4 @@
-import { BaseExtractor, MysqlRow } from './base.extractor.js';
+import { BaseExtractor, MysqlRow } from './base.extractor';
 
 export interface MysqlAttachmentRelation extends MysqlRow {
   id: number;

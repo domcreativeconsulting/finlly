@@ -1,6 +1,6 @@
-import { MysqlReceivable } from '../extractors/contas-receber.extractor.js';
-import { mapId, mapIdOptional } from './id-mapper.js';
-import { toTimestamptz, toDateOnly, toStatusPagamento, toTipoRecorrencia, toBoolean } from './type-converter.js';
+import { MysqlReceivable } from '../extractors/contas-receber.extractor';
+import { mapId, mapIdOptional } from './id-mapper';
+import { toTimestamptz, toDateOnly, toStatusPagamento, toTipoRecorrencia, toBoolean } from './type-converter';
 
 export interface PostgresContaReceber {
   id: string;

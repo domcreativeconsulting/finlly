@@ -1,6 +1,6 @@
-import { MysqlBank } from '../extractors/instituicoes-financeiras.extractor.js';
-import { mapId } from './id-mapper.js';
-import { toTimestamptz } from './type-converter.js';
+import { MysqlBank } from '../extractors/instituicoes-financeiras.extractor';
+import { mapId } from './id-mapper';
+import { toTimestamptz } from './type-converter';
 
 export interface PostgresInstituicaoFinanceira {
   id: string;

@@ -1,4 +1,4 @@
-import { BaseExtractor, MysqlRow } from './base.extractor.js';
+import { BaseExtractor, MysqlRow } from './base.extractor';
 
 export interface MysqlCategory extends MysqlRow {
   id: number;

@@ -1,6 +1,6 @@
-import { MysqlAttachmentRelation } from '../extractors/anexos-vinculos.extractor.js';
-import { mapId } from './id-mapper.js';
-import { toTimestamptz } from './type-converter.js';
+import { MysqlAttachmentRelation } from '../extractors/anexos-vinculos.extractor';
+import { mapId } from './id-mapper';
+import { toTimestamptz } from './type-converter';
 
 /**
  * Maps legacy MySQL entity_type strings to the allowed Postgres CHECK constraint values.

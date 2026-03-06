@@ -1,6 +1,6 @@
-import { MysqlPlan } from '../extractors/assinantes.extractor.js';
-import { mapId, mapIdOptional } from './id-mapper.js';
-import { toTimestamptz, toStatusAssinante } from './type-converter.js';
+import { MysqlPlan } from '../extractors/assinantes.extractor';
+import { mapId, mapIdOptional } from './id-mapper';
+import { toTimestamptz, toStatusAssinante } from './type-converter';
 
 export interface PostgresAssinante {
   id: string;

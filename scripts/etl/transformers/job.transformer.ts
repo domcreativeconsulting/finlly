@@ -1,5 +1,5 @@
-import { MysqlBackgroundJob } from '../extractors/jobs.extractor.js';
-import { toTimestamptz, parseJson } from './type-converter.js';
+import { MysqlBackgroundJob } from '../extractors/jobs.extractor';
+import { toTimestamptz, parseJson } from './type-converter';
 
 export interface PostgresJob {
   tipo: string;

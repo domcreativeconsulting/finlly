@@ -1,26 +1,26 @@
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { config } from '../config.js';
-import type { PostgresUsuario } from '../transformers/usuario.transformer.js';
-import type { PostgresCupom } from '../transformers/cupom.transformer.js';
-import type { PostgresAssinante } from '../transformers/assinante.transformer.js';
-import type { PostgresAssinantePagamento } from '../transformers/assinante-pagamento.transformer.js';
-import type { PostgresWebhookEvent } from '../transformers/webhook-event.transformer.js';
-import type { PostgresInstituicaoFinanceira } from '../transformers/instituicao-financeira.transformer.js';
-import type { PostgresConta } from '../transformers/conta.transformer.js';
-import type { PostgresCategoria } from '../transformers/categoria.transformer.js';
-import type { PostgresContaPagar } from '../transformers/conta-pagar.transformer.js';
-import type { PostgresContaReceber } from '../transformers/conta-receber.transformer.js';
-import type { PostgresMovimentacaoCaixa } from '../transformers/movimentacao-caixa.transformer.js';
-import type { PostgresTipoInvestimento } from '../transformers/tipo-investimento.transformer.js';
-import type { PostgresInvestimento } from '../transformers/investimento.transformer.js';
-import type { PostgresInvestimentoEvento } from '../transformers/investimento-evento.transformer.js';
-import type { PostgresMeta } from '../transformers/meta.transformer.js';
-import type { PostgresMetaMovimento } from '../transformers/meta-movimento.transformer.js';
-import type { PostgresAnexo } from '../transformers/anexo.transformer.js';
-import type { PostgresAnexoVinculo } from '../transformers/anexo-vinculo.transformer.js';
-import type { PostgresWhatsappLog } from '../transformers/whatsapp-log.transformer.js';
-import type { PostgresJob } from '../transformers/job.transformer.js';
+import { config } from '../config';
+import type { PostgresUsuario } from '../transformers/usuario.transformer';
+import type { PostgresCupom } from '../transformers/cupom.transformer';
+import type { PostgresAssinante } from '../transformers/assinante.transformer';
+import type { PostgresAssinantePagamento } from '../transformers/assinante-pagamento.transformer';
+import type { PostgresWebhookEvent } from '../transformers/webhook-event.transformer';
+import type { PostgresInstituicaoFinanceira } from '../transformers/instituicao-financeira.transformer';
+import type { PostgresConta } from '../transformers/conta.transformer';
+import type { PostgresCategoria } from '../transformers/categoria.transformer';
+import type { PostgresContaPagar } from '../transformers/conta-pagar.transformer';
+import type { PostgresContaReceber } from '../transformers/conta-receber.transformer';
+import type { PostgresMovimentacaoCaixa } from '../transformers/movimentacao-caixa.transformer';
+import type { PostgresTipoInvestimento } from '../transformers/tipo-investimento.transformer';
+import type { PostgresInvestimento } from '../transformers/investimento.transformer';
+import type { PostgresInvestimentoEvento } from '../transformers/investimento-evento.transformer';
+import type { PostgresMeta } from '../transformers/meta.transformer';
+import type { PostgresMetaMovimento } from '../transformers/meta-movimento.transformer';
+import type { PostgresAnexo } from '../transformers/anexo.transformer';
+import type { PostgresAnexoVinculo } from '../transformers/anexo-vinculo.transformer';
+import type { PostgresWhatsappLog } from '../transformers/whatsapp-log.transformer';
+import type { PostgresJob } from '../transformers/job.transformer';
 
 /** A minimal interface matching any Prisma model delegate that supports createMany and create */
 interface PrismaDelegate {

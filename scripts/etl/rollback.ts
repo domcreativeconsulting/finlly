@@ -1,4 +1,4 @@
-import { PostgresLoader } from './loaders/postgres.loader.js';
+import { PostgresLoader } from './loaders/postgres.loader';
 
 async function rollback(): Promise<void> {
   console.log('🔄 Iniciando rollback — limpando todas as tabelas...\n');
