@@ -69,10 +69,11 @@ export class PostgresLoader {
 
   /**
    * Inserts rows in batches using the given Prisma model name.
-   * Each batch is wrapped in an interactive transaction with SET CONSTRAINTS ALL DEFERRED
-   * so that self-referential and cross-row FK checks are deferred until commit.
-   * On batch-level failure, falls back to row-by-row insertion so that a single
-   * bad record does not block the rest of the batch.
+   * When an external `tx` is provided (single-transaction load), inserts are made
+   * directly against that transaction client; FK constraints are expected to be
+   * deferred by the caller via SET CONSTRAINTS ALL DEFERRED.
+   * Without an external `tx`, each batch is wrapped in its own transaction with
+   * SET CONSTRAINTS ALL DEFERRED; on batch failure, falls back to row-by-row.
    * In dry-run mode the insertion is skipped but the count is still calculated.
    */
   private async insertBatches<T>(
@@ -81,6 +82,8 @@ export class PostgresLoader {
     items: T[],
     batchSize: number,
     dryRun: boolean,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    tx?: any,
   ): Promise<number> {
     if (items.length === 0) return 0;
     const batches = this.chunks(items, batchSize);
@@ -88,36 +91,43 @@ export class PostgresLoader {
     for (let i = 0; i < batches.length; i++) {
       const batch = batches[i]!;
       if (!dryRun) {
-        try {
-          const result = await this.prisma.$transaction(async (tx: PrismaClient) => {
-            await tx.$executeRaw`SET CONSTRAINTS ALL DEFERRED`;
-            return getDelegate(tx, modelName).createMany({ data: batch, skipDuplicates: true });
-          });
+        if (tx) {
+          // External transaction — insert directly; caller is responsible for
+          // SET CONSTRAINTS ALL DEFERRED.  Any error propagates to the caller.
+          const result = await getDelegate(tx, modelName).createMany({ data: batch, skipDuplicates: true });
           total += result.count;
-        } catch (batchErr) {
-          // Batch failed — fall back to inserting rows individually
-          console.warn(
-            `   ⚠️  ${label}: lote ${i + 1} falhou (${(batchErr as Error).message}), tentando linha a linha…`,
-          );
-          for (let j = 0; j < batch.length; j++) {
-            const row = batch[j]!;
-            try {
-              await this.prisma.$transaction(async (tx: PrismaClient) => {
-                await tx.$executeRaw`SET CONSTRAINTS ALL DEFERRED`;
-                return getDelegate(tx, modelName).create({ data: row });
-              });
-              total += 1;
-            } catch (rowErr) {
-              const errorMsg = (rowErr as Error).message;
-              console.error(
-                `   ❌ ${label}: lote ${i + 1} linha ${j + 1} ignorada — ${errorMsg}`,
-              );
-              this.failedRows.push({
-                table: label,
-                rowIndex: i * batchSize + j,
-                data: row,
-                error: errorMsg,
-              });
+        } else {
+          try {
+            const result = await this.prisma.$transaction(async (innerTx: PrismaClient) => {
+              await innerTx.$executeRaw`SET CONSTRAINTS ALL DEFERRED`;
+              return getDelegate(innerTx, modelName).createMany({ data: batch, skipDuplicates: true });
+            });
+            total += result.count;
+          } catch (batchErr) {
+            // Batch failed — fall back to inserting rows individually
+            console.warn(
+              `   ⚠️  ${label}: lote ${i + 1} falhou (${(batchErr as Error).message}), tentando linha a linha…`,
+            );
+            for (let j = 0; j < batch.length; j++) {
+              const row = batch[j]!;
+              try {
+                await this.prisma.$transaction(async (innerTx: PrismaClient) => {
+                  await innerTx.$executeRaw`SET CONSTRAINTS ALL DEFERRED`;
+                  return getDelegate(innerTx, modelName).create({ data: row });
+                });
+                total += 1;
+              } catch (rowErr) {
+                const errorMsg = (rowErr as Error).message;
+                console.error(
+                  `   ❌ ${label}: lote ${i + 1} linha ${j + 1} ignorada — ${errorMsg}`,
+                );
+                this.failedRows.push({
+                  table: label,
+                  rowIndex: i * batchSize + j,
+                  data: row,
+                  error: errorMsg,
+                });
+              }
             }
           }
         }
@@ -162,155 +172,188 @@ export class PostgresLoader {
     console.log('   🗑️  Todas as tabelas limpas (TRUNCATE CASCADE)');
   }
 
-  async loadUsuarios(rows: PostgresUsuario[], batchSize: number, dryRun: boolean): Promise<number> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async loadUsuarios(rows: PostgresUsuario[], batchSize: number, dryRun: boolean, tx?: any): Promise<number> {
     console.log('   📥 Carregando usuarios...');
-    return this.insertBatches('usuarios', 'usuario', rows, batchSize, dryRun);
+    return this.insertBatches('usuarios', 'usuario', rows, batchSize, dryRun, tx);
   }
 
-  async loadCupons(rows: PostgresCupom[], batchSize: number, dryRun: boolean): Promise<number> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async loadCupons(rows: PostgresCupom[], batchSize: number, dryRun: boolean, tx?: any): Promise<number> {
     console.log('   📥 Carregando cupons...');
-    return this.insertBatches('cupons', 'cupom', rows, batchSize, dryRun);
+    return this.insertBatches('cupons', 'cupom', rows, batchSize, dryRun, tx);
   }
 
-  async loadAssinantes(rows: PostgresAssinante[], batchSize: number, dryRun: boolean): Promise<number> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async loadAssinantes(rows: PostgresAssinante[], batchSize: number, dryRun: boolean, tx?: any): Promise<number> {
     console.log('   📥 Carregando assinantes...');
-    return this.insertBatches('assinantes', 'assinante', rows, batchSize, dryRun);
+    return this.insertBatches('assinantes', 'assinante', rows, batchSize, dryRun, tx);
   }
 
   async loadAssinantesPagamentos(
     rows: PostgresAssinantePagamento[],
     batchSize: number,
     dryRun: boolean,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    tx?: any,
   ): Promise<number> {
     console.log('   📥 Carregando assinantes_pagamentos...');
-    return this.insertBatches('assinantes_pagamentos', 'assinantePagamento', rows, batchSize, dryRun);
+    return this.insertBatches('assinantes_pagamentos', 'assinantePagamento', rows, batchSize, dryRun, tx);
   }
 
   async loadWebhookEvents(
     rows: PostgresWebhookEvent[],
     batchSize: number,
     dryRun: boolean,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    tx?: any,
   ): Promise<number> {
     console.log('   📥 Carregando webhook_events...');
-    return this.insertBatches('webhook_events', 'webhookEvent', rows, batchSize, dryRun);
+    return this.insertBatches('webhook_events', 'webhookEvent', rows, batchSize, dryRun, tx);
   }
 
   async loadInstituicoesFinanceiras(
     rows: PostgresInstituicaoFinanceira[],
     batchSize: number,
     dryRun: boolean,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    tx?: any,
   ): Promise<number> {
     console.log('   📥 Carregando instituicoes_financeiras...');
-    return this.insertBatches('instituicoes_financeiras', 'instituicaoFinanceira', rows, batchSize, dryRun);
+    return this.insertBatches('instituicoes_financeiras', 'instituicaoFinanceira', rows, batchSize, dryRun, tx);
   }
 
-  async loadContas(rows: PostgresConta[], batchSize: number, dryRun: boolean): Promise<number> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async loadContas(rows: PostgresConta[], batchSize: number, dryRun: boolean, tx?: any): Promise<number> {
     console.log('   📥 Carregando contas...');
-    return this.insertBatches('contas', 'conta', rows, batchSize, dryRun);
+    return this.insertBatches('contas', 'conta', rows, batchSize, dryRun, tx);
   }
 
   async loadCategorias(
     rows: PostgresCategoria[],
     batchSize: number,
     dryRun: boolean,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    tx?: any,
   ): Promise<number> {
     console.log('   📥 Carregando categorias...');
-    return this.insertBatches('categorias', 'categoria', rows, batchSize, dryRun);
+    return this.insertBatches('categorias', 'categoria', rows, batchSize, dryRun, tx);
   }
 
   async loadContasPagar(
     rows: PostgresContaPagar[],
     batchSize: number,
     dryRun: boolean,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    tx?: any,
   ): Promise<number> {
     console.log('   📥 Carregando contas_pagar...');
-    return this.insertBatches('contas_pagar', 'contaPagar', rows, batchSize, dryRun);
+    return this.insertBatches('contas_pagar', 'contaPagar', rows, batchSize, dryRun, tx);
   }
 
   async loadContasReceber(
     rows: PostgresContaReceber[],
     batchSize: number,
     dryRun: boolean,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    tx?: any,
   ): Promise<number> {
     console.log('   📥 Carregando contas_receber...');
-    return this.insertBatches('contas_receber', 'contaReceber', rows, batchSize, dryRun);
+    return this.insertBatches('contas_receber', 'contaReceber', rows, batchSize, dryRun, tx);
   }
 
   async loadMovimentacoesCaixa(
     rows: PostgresMovimentacaoCaixa[],
     batchSize: number,
     dryRun: boolean,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    tx?: any,
   ): Promise<number> {
     console.log('   📥 Carregando movimentacoes_caixa...');
-    return this.insertBatches('movimentacoes_caixa', 'movimentacaoCaixa', rows, batchSize, dryRun);
+    return this.insertBatches('movimentacoes_caixa', 'movimentacaoCaixa', rows, batchSize, dryRun, tx);
   }
 
   async loadTiposInvestimento(
     rows: PostgresTipoInvestimento[],
     batchSize: number,
     dryRun: boolean,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    tx?: any,
   ): Promise<number> {
     console.log('   📥 Carregando tipos_investimento...');
-    return this.insertBatches('tipos_investimento', 'tipoInvestimento', rows, batchSize, dryRun);
+    return this.insertBatches('tipos_investimento', 'tipoInvestimento', rows, batchSize, dryRun, tx);
   }
 
   async loadInvestimentos(
     rows: PostgresInvestimento[],
     batchSize: number,
     dryRun: boolean,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    tx?: any,
   ): Promise<number> {
     console.log('   📥 Carregando investimentos...');
-    return this.insertBatches('investimentos', 'investimento', rows, batchSize, dryRun);
+    return this.insertBatches('investimentos', 'investimento', rows, batchSize, dryRun, tx);
   }
 
   async loadInvestimentosEventos(
     rows: PostgresInvestimentoEvento[],
     batchSize: number,
     dryRun: boolean,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    tx?: any,
   ): Promise<number> {
     console.log('   📥 Carregando investimentos_eventos...');
-    return this.insertBatches('investimentos_eventos', 'investimentoEvento', rows, batchSize, dryRun);
+    return this.insertBatches('investimentos_eventos', 'investimentoEvento', rows, batchSize, dryRun, tx);
   }
 
-  async loadMetas(rows: PostgresMeta[], batchSize: number, dryRun: boolean): Promise<number> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async loadMetas(rows: PostgresMeta[], batchSize: number, dryRun: boolean, tx?: any): Promise<number> {
     console.log('   📥 Carregando metas...');
-    return this.insertBatches('metas', 'meta', rows, batchSize, dryRun);
+    return this.insertBatches('metas', 'meta', rows, batchSize, dryRun, tx);
   }
 
   async loadMetasMovimentos(
     rows: PostgresMetaMovimento[],
     batchSize: number,
     dryRun: boolean,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    tx?: any,
   ): Promise<number> {
     console.log('   📥 Carregando metas_movimentos...');
-    return this.insertBatches('metas_movimentos', 'metaMovimento', rows, batchSize, dryRun);
+    return this.insertBatches('metas_movimentos', 'metaMovimento', rows, batchSize, dryRun, tx);
   }
 
-  async loadAnexos(rows: PostgresAnexo[], batchSize: number, dryRun: boolean): Promise<number> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async loadAnexos(rows: PostgresAnexo[], batchSize: number, dryRun: boolean, tx?: any): Promise<number> {
     console.log('   📥 Carregando anexos...');
-    return this.insertBatches('anexos', 'anexo', rows, batchSize, dryRun);
+    return this.insertBatches('anexos', 'anexo', rows, batchSize, dryRun, tx);
   }
 
   async loadAnexosVinculos(
     rows: PostgresAnexoVinculo[],
     batchSize: number,
     dryRun: boolean,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    tx?: any,
   ): Promise<number> {
     console.log('   📥 Carregando anexos_vinculos...');
-    return this.insertBatches('anexos_vinculos', 'anexoVinculo', rows, batchSize, dryRun);
+    return this.insertBatches('anexos_vinculos', 'anexoVinculo', rows, batchSize, dryRun, tx);
   }
 
   async loadWhatsappLogs(
     rows: PostgresWhatsappLog[],
     batchSize: number,
     dryRun: boolean,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    tx?: any,
   ): Promise<number> {
     console.log('   📥 Carregando whatsapp_logs...');
-    return this.insertBatches('whatsapp_logs', 'whatsappLog', rows, batchSize, dryRun);
+    return this.insertBatches('whatsapp_logs', 'whatsappLog', rows, batchSize, dryRun, tx);
   }
 
-  async loadJobs(rows: PostgresJob[], batchSize: number, dryRun: boolean): Promise<number> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async loadJobs(rows: PostgresJob[], batchSize: number, dryRun: boolean, tx?: any): Promise<number> {
     console.log('   📥 Carregando jobs...');
-    return this.insertBatches('jobs', 'job', rows, batchSize, dryRun);
+    return this.insertBatches('jobs', 'job', rows, batchSize, dryRun, tx);
   }
 }

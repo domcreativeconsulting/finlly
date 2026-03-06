@@ -63,7 +63,7 @@ import {
 async function main(): Promise<void> {
   const dryRun = config.etl.dryRun;
   const batchSize = config.etl.batchSize;
-  const { sampleSize } = config.etl;
+  const { sampleSize, transactionTimeout } = config.etl;
 
   console.log('\n🚀 Iniciando migração MySQL → Postgres\n');
   console.log(
@@ -303,37 +303,58 @@ async function main(): Promise<void> {
 
     await loader.truncateAll(dryRun);
 
-    // Parent tables (no FK dependencies) first
-    await loader.loadUsuarios(pgUsuarios, batchSize, dryRun);
-    await loader.loadCupons(pgCupons, batchSize, dryRun);
-    await loader.loadTiposInvestimento(pgTiposInvest, batchSize, dryRun);
-    await loader.loadInstituicoesFinanceiras(pgInstituicoes, batchSize, dryRun);
-    await loader.loadWebhookEvents(pgWebhooks, batchSize, dryRun);
+    // Helper that runs all load operations in dependency order.
+    // When `tx` is provided, all inserts share a single DB transaction so that
+    // FK constraints (deferred via SET CONSTRAINTS ALL DEFERRED) are checked only
+    // at commit time rather than after each individual table is loaded.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const execLoad = async (tx?: any): Promise<void> => {
+      // Parent tables (no FK dependencies) first
+      await loader.loadUsuarios(pgUsuarios, batchSize, dryRun, tx);
+      await loader.loadCupons(pgCupons, batchSize, dryRun, tx);
+      await loader.loadTiposInvestimento(pgTiposInvest, batchSize, dryRun, tx);
+      await loader.loadInstituicoesFinanceiras(pgInstituicoes, batchSize, dryRun, tx);
+      await loader.loadWebhookEvents(pgWebhooks, batchSize, dryRun, tx);
 
-    // Level-1 children (FK to parent tables only)
-    await loader.loadCategorias(pgCategorias, batchSize, dryRun);
-    await loader.loadAssinantes(pgAssinantes, batchSize, dryRun);
-    await loader.loadContas(pgContas, batchSize, dryRun);
+      // Level-1 children (FK to parent tables only)
+      await loader.loadCategorias(pgCategorias, batchSize, dryRun, tx);
+      await loader.loadAssinantes(pgAssinantes, batchSize, dryRun, tx);
+      await loader.loadContas(pgContas, batchSize, dryRun, tx);
 
-    // Level-2 children (FK to level-1 tables)
-    await loader.loadAssinantesPagamentos(pgPagamentos, batchSize, dryRun);
-    await loader.loadContasPagar(pgContasPagar, batchSize, dryRun);
-    await loader.loadContasReceber(pgContasReceber, batchSize, dryRun);
-    await loader.loadInvestimentos(pgInvestimentos, batchSize, dryRun);
-    await loader.loadMetas(pgMetas, batchSize, dryRun);
-    await loader.loadAnexos(pgAnexos, batchSize, dryRun);
-    await loader.loadWhatsappLogs(pgWhatsapp, batchSize, dryRun);
+      // Level-2 children (FK to level-1 tables)
+      await loader.loadAssinantesPagamentos(pgPagamentos, batchSize, dryRun, tx);
+      await loader.loadContasPagar(pgContasPagar, batchSize, dryRun, tx);
+      await loader.loadContasReceber(pgContasReceber, batchSize, dryRun, tx);
+      await loader.loadInvestimentos(pgInvestimentos, batchSize, dryRun, tx);
+      await loader.loadMetas(pgMetas, batchSize, dryRun, tx);
+      await loader.loadAnexos(pgAnexos, batchSize, dryRun, tx);
+      await loader.loadWhatsappLogs(pgWhatsapp, batchSize, dryRun, tx);
 
-    // Level-3 children (FK to level-2 tables)
-    await loader.loadMovimentacoesCaixa(pgMovimentacoes, batchSize, dryRun);
-    await loader.loadInvestimentosEventos(pgInvestEventos, batchSize, dryRun);
-    await loader.loadAnexosVinculos(pgAnexosVinculos, batchSize, dryRun);
+      // Level-3 children (FK to level-2 tables)
+      await loader.loadMovimentacoesCaixa(pgMovimentacoes, batchSize, dryRun, tx);
+      await loader.loadInvestimentosEventos(pgInvestEventos, batchSize, dryRun, tx);
+      await loader.loadAnexosVinculos(pgAnexosVinculos, batchSize, dryRun, tx);
 
-    // Level-4 children (FK to level-3 tables)
-    await loader.loadMetasMovimentos(pgMetasMov, batchSize, dryRun);
+      // Level-4 children (FK to level-3 tables)
+      await loader.loadMetasMovimentos(pgMetasMov, batchSize, dryRun, tx);
 
-    // No-FK tables
-    await loader.loadJobs(pgJobs, batchSize, dryRun);
+      // No-FK tables
+      await loader.loadJobs(pgJobs, batchSize, dryRun, tx);
+    };
+
+    if (!dryRun) {
+      // Wrap all inserts in a single transaction with deferred FK constraint checks.
+      await loader.prisma.$transaction(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        async (tx: any) => {
+          await tx.$executeRaw`SET CONSTRAINTS ALL DEFERRED`;
+          await execLoad(tx);
+        },
+        { timeout: transactionTimeout },
+      );
+    } else {
+      await execLoad();
+    }
 
     // ── FASE 4: VALIDATE ───────────────────────────────────────────────────────
     console.log('\n✓  FASE 4: VALIDATE\n');
