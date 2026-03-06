@@ -1,4 +1,4 @@
-import { config } from './config';
+import { config, cliFlags } from './config';
 import { getMappedCount, clearCache, mapId } from './transformers/id-mapper';
 
 // Extractors
@@ -65,11 +65,34 @@ async function main(): Promise<void> {
   const batchSize = config.etl.batchSize;
   const { sampleSize, transactionTimeout } = config.etl;
 
+  // CLI flags
+  const { tables: tableFilter, since, reset, force } = cliFlags;
+
   console.log('\n🚀 Iniciando migração MySQL → Postgres\n');
   console.log(
     `⚙️  Modo: ${dryRun ? 'DRY RUN (simulação sem inserção)' : 'EXECUÇÃO REAL'}`
   );
-  console.log(`📊 Batch size: ${batchSize}\n`);
+  console.log(`📊 Batch size: ${batchSize}`);
+  if (tableFilter) console.log(`📋 Tabelas: ${tableFilter.join(', ')}`);
+  if (since) console.log(`📅 Desde: ${since.toISOString()}`);
+  console.log();
+
+  // --reset --force: truncate all tables and exit (or continue if combined with a full run)
+  if (reset) {
+    if (!force) {
+      console.error('❌ --reset requires --force flag to prevent accidental data loss');
+      process.exit(1);
+    }
+    console.log('🗑️  Modo reset: truncando todas as tabelas Postgres...');
+    const loaderForReset = new PostgresLoader();
+    await loaderForReset.truncateAll(false);
+    await loaderForReset.prisma.$disconnect();
+    console.log('✅ Reset concluído.\n');
+    if (!tableFilter && !since) {
+      // Pure reset — nothing more to do
+      process.exit(0);
+    }
+  }
 
   const reporter = new ReportGenerator();
   let migrationStatus: MigrationStatus = 'success';
@@ -207,11 +230,29 @@ async function main(): Promise<void> {
     console.log(`   ✅ whatsapp_logs: ${rawWhatsapp.length} extraídos`);
     console.log(`   ✅ jobs: ${rawJobs.length} extraídos`);
 
+    // ── FASE 1.5: SINCE FILTER (incremental migration) ────────────────────────
+    // When --since is provided, keep only records whose created_at or updated_at
+    // is on or after that date.
+    // NOTE: Pure parent / reference tables (usuarios, cupons, tipos_investimento,
+    // instituicoes_financeiras, categorias) are always included in full so that FK
+    // references from incrementally-loaded child rows remain valid.
+    const sinceFilter = <T extends { created_at?: unknown; updated_at?: unknown }>(
+      rows: T[],
+    ): T[] => {
+      if (!since) return rows;
+      return rows.filter((r) => {
+        const ts = r.updated_at ?? r.created_at;
+        if (!ts) return true; // records without a timestamp are always included
+        return new Date(ts as string).getTime() >= since.getTime();
+      });
+    };
+
     // ── FASE 2: TRANSFORM ──────────────────────────────────────────────────────
     console.log('\n🔄 FASE 2: TRANSFORM\n');
 
     clearCache();
 
+    // Parent / reference tables are never filtered by --since to preserve FK integrity.
     const pgUsuarios = rawUsuarios.map(transformUsuario);
     const pgCupons = rawCupons.map(transformCupom);
     // Build a UUID → raw record lookup BEFORE filtering so the diagnostic in FASE 2.7
@@ -221,52 +262,54 @@ async function main(): Promise<void> {
         .filter(r => r.user_id != null)
         .map(r => [mapId(r.id, 'plans'), r])
     );
-    const pgAssinantes = rawAssinantes
+    const pgAssinantes = sinceFilter(rawAssinantes)
       .map(transformAssinante)
       .filter((v): v is NonNullable<typeof v> => v !== null);
     const validAssinanteIds = new Set(pgAssinantes.map(a => a.id));
-    const pgPagamentos = rawPagamentos
+    const pgPagamentos = sinceFilter(rawPagamentos)
       .map(p => transformAssinantePagamento(p, validAssinanteIds))
       .filter((v): v is NonNullable<typeof v> => v !== null);
-    const pgWebhooks = rawWebhooks.map(transformWebhookEvent);
+    const pgWebhooks = sinceFilter(rawWebhooks).map(transformWebhookEvent);
+    // instituicoes_financeiras and categorias are reference tables — not filtered by --since.
     const pgInstituicoes = rawInstituicoes.map(transformInstituicaoFinanceira);
-    const pgContas = rawContas
+    const pgContas = sinceFilter(rawContas)
       .map(transformConta)
       .filter((v): v is NonNullable<typeof v> => v !== null);
     const pgCategorias = rawCategorias.map(transformCategoria);
-    const pgContasPagar = rawContasPagar
+    const pgContasPagar = sinceFilter(rawContasPagar)
       .map(transformContaPagar)
       .filter((v): v is NonNullable<typeof v> => v !== null);
-    const pgContasReceber = rawContasReceber
+    const pgContasReceber = sinceFilter(rawContasReceber)
       .map(transformContaReceber)
       .filter((v): v is NonNullable<typeof v> => v !== null);
-    const pgMovimentacoes = rawMovimentacoes
+    const pgMovimentacoes = sinceFilter(rawMovimentacoes)
       .map(transformMovimentacaoCaixa)
       .filter((v): v is NonNullable<typeof v> => v !== null);
+    // tipos_investimento is a reference table — not filtered by --since.
     const pgTiposInvest = rawTiposInvest.map(transformTipoInvestimento);
-    const pgInvestimentos = rawInvestimentos
+    const pgInvestimentos = sinceFilter(rawInvestimentos)
       .map(transformInvestimento)
       .filter((v): v is NonNullable<typeof v> => v !== null);
     const validInvestimentoIds = new Set(pgInvestimentos.map(i => i.id));
-    const pgInvestEventos = rawInvestEventos
+    const pgInvestEventos = sinceFilter(rawInvestEventos)
       .map(e => transformInvestimentoEvento(e, validInvestimentoIds))
       .filter((v): v is NonNullable<typeof v> => v !== null);
-    const pgMetas = rawMetas
+    const pgMetas = sinceFilter(rawMetas)
       .map(transformMeta)
       .filter((v): v is NonNullable<typeof v> => v !== null);
     const validMetaIds = new Set(pgMetas.map(m => m.id));
-    const pgMetasMov = rawMetasMov
+    const pgMetasMov = sinceFilter(rawMetasMov)
       .map(m => transformMetaMovimento(m, validMetaIds))
       .filter((v): v is NonNullable<typeof v> => v !== null);
-    const pgAnexos = rawAnexos
+    const pgAnexos = sinceFilter(rawAnexos)
       .map(transformAnexo)
       .filter((v): v is NonNullable<typeof v> => v !== null);
     const validAnexoIds = new Set(pgAnexos.map(a => a.id));
-    const pgAnexosVinculos = rawAnexosVinculos
+    const pgAnexosVinculos = sinceFilter(rawAnexosVinculos)
       .map(av => transformAnexoVinculo(av, validAnexoIds))
       .filter((v): v is NonNullable<typeof v> => v !== null);
-    const pgWhatsapp = rawWhatsapp.map(transformWhatsappLog);
-    const pgJobs = rawJobs.map(transformJob);
+    const pgWhatsapp = sinceFilter(rawWhatsapp).map(transformWhatsappLog);
+    const pgJobs = sinceFilter(rawJobs).map(transformJob);
 
     const idsTotal = getMappedCount();
     console.log(`   ✅ ${pgUsuarios.length} usuarios transformados`);
@@ -388,6 +431,10 @@ async function main(): Promise<void> {
 
     await loader.truncateAll(dryRun);
 
+    // Helper to check if a table should be loaded (respects --tables filter).
+    const shouldLoad = (table: string): boolean =>
+      !tableFilter || tableFilter.includes(table);
+
     // Helper that runs all load operations in dependency order.
     // When `tx` is provided, all inserts share a single DB transaction so that
     // FK constraints (deferred via SET CONSTRAINTS ALL DEFERRED) are checked only
@@ -395,36 +442,36 @@ async function main(): Promise<void> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const execLoad = async (tx?: any): Promise<void> => {
       // Parent tables (no FK dependencies) first
-      await loader.loadUsuarios(pgUsuarios, batchSize, dryRun, tx);
-      await loader.loadCupons(pgCupons, batchSize, dryRun, tx);
-      await loader.loadTiposInvestimento(pgTiposInvest, batchSize, dryRun, tx);
-      await loader.loadInstituicoesFinanceiras(pgInstituicoes, batchSize, dryRun, tx);
-      await loader.loadWebhookEvents(pgWebhooks, batchSize, dryRun, tx);
+      if (shouldLoad('usuarios')) await loader.loadUsuarios(pgUsuarios, batchSize, dryRun, tx);
+      if (shouldLoad('cupons')) await loader.loadCupons(pgCupons, batchSize, dryRun, tx);
+      if (shouldLoad('tipos_investimento')) await loader.loadTiposInvestimento(pgTiposInvest, batchSize, dryRun, tx);
+      if (shouldLoad('instituicoes_financeiras')) await loader.loadInstituicoesFinanceiras(pgInstituicoes, batchSize, dryRun, tx);
+      if (shouldLoad('webhook_events')) await loader.loadWebhookEvents(pgWebhooks, batchSize, dryRun, tx);
 
       // Level-1 children (FK to parent tables only)
-      await loader.loadCategorias(pgCategorias, batchSize, dryRun, tx);
-      await loader.loadAssinantes(pgAssinantes, batchSize, dryRun, tx);
-      await loader.loadContas(pgContas, batchSize, dryRun, tx);
+      if (shouldLoad('categorias')) await loader.loadCategorias(pgCategorias, batchSize, dryRun, tx);
+      if (shouldLoad('assinantes')) await loader.loadAssinantes(pgAssinantes, batchSize, dryRun, tx);
+      if (shouldLoad('contas')) await loader.loadContas(pgContas, batchSize, dryRun, tx);
 
       // Level-2 children (FK to level-1 tables)
-      await loader.loadAssinantesPagamentos(pgPagamentos, batchSize, dryRun, tx);
-      await loader.loadContasPagar(pgContasPagar, batchSize, dryRun, tx);
-      await loader.loadContasReceber(pgContasReceber, batchSize, dryRun, tx);
-      await loader.loadInvestimentos(pgInvestimentos, batchSize, dryRun, tx);
-      await loader.loadMetas(pgMetas, batchSize, dryRun, tx);
-      await loader.loadAnexos(pgAnexos, batchSize, dryRun, tx);
-      await loader.loadWhatsappLogs(pgWhatsapp, batchSize, dryRun, tx);
+      if (shouldLoad('assinantes_pagamentos')) await loader.loadAssinantesPagamentos(pgPagamentos, batchSize, dryRun, tx);
+      if (shouldLoad('contas_pagar')) await loader.loadContasPagar(pgContasPagar, batchSize, dryRun, tx);
+      if (shouldLoad('contas_receber')) await loader.loadContasReceber(pgContasReceber, batchSize, dryRun, tx);
+      if (shouldLoad('investimentos')) await loader.loadInvestimentos(pgInvestimentos, batchSize, dryRun, tx);
+      if (shouldLoad('metas')) await loader.loadMetas(pgMetas, batchSize, dryRun, tx);
+      if (shouldLoad('anexos')) await loader.loadAnexos(pgAnexos, batchSize, dryRun, tx);
+      if (shouldLoad('whatsapp_logs')) await loader.loadWhatsappLogs(pgWhatsapp, batchSize, dryRun, tx);
 
       // Level-3 children (FK to level-2 tables)
-      await loader.loadMovimentacoesCaixa(pgMovimentacoes, batchSize, dryRun, tx);
-      await loader.loadInvestimentosEventos(pgInvestEventos, batchSize, dryRun, tx);
-      await loader.loadAnexosVinculos(pgAnexosVinculos, batchSize, dryRun, tx);
+      if (shouldLoad('movimentacoes_caixa')) await loader.loadMovimentacoesCaixa(pgMovimentacoes, batchSize, dryRun, tx);
+      if (shouldLoad('investimentos_eventos')) await loader.loadInvestimentosEventos(pgInvestEventos, batchSize, dryRun, tx);
+      if (shouldLoad('anexos_vinculos')) await loader.loadAnexosVinculos(pgAnexosVinculos, batchSize, dryRun, tx);
 
       // Level-4 children (FK to level-3 tables)
-      await loader.loadMetasMovimentos(pgMetasMov, batchSize, dryRun, tx);
+      if (shouldLoad('metas_movimentos')) await loader.loadMetasMovimentos(pgMetasMov, batchSize, dryRun, tx);
 
       // No-FK tables
-      await loader.loadJobs(pgJobs, batchSize, dryRun, tx);
+      if (shouldLoad('jobs')) await loader.loadJobs(pgJobs, batchSize, dryRun, tx);
     };
 
     if (!dryRun) {
