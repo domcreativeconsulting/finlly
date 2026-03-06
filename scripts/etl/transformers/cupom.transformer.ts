@@ -18,7 +18,17 @@ export interface PostgresCupom {
 
 export function transformCupom(row: MysqlCoupon): PostgresCupom {
   const tipo = String(row.tipo ?? 'percentual').toLowerCase();
-  const valor = Number(row.valor ?? 0);
+
+  // Default valor to 1 when 0, undefined, or non-numeric — a zero-value discount is
+  // meaningless and could cause ck_cupons_desconto violations if mishandled downstream.
+  const rawValor = Number(row.valor ?? 0);
+  const valor = rawValor !== 0 && !isNaN(rawValor) ? rawValor : 1;
+
+  if (rawValor === 0 || isNaN(rawValor)) {
+    console.warn(
+      `   ⚠️  cupom id=${row.id}: valor=${row.valor} (zero/undefined/NaN) — defaulting to 1`
+    );
+  }
 
   // ck_cupons_desconto: exactly one of desconto_percentual or desconto_fixo must be set.
   // Default to percentual when tipo is unrecognised to avoid constraint violations.
@@ -27,22 +37,14 @@ export function transformCupom(row: MysqlCoupon): PostgresCupom {
   const rawDescFixo = !isPercentual ? valor : undefined;
 
   // desconto_percentual CHECK: BETWEEN 0 AND 100
-  const desconto_percentual =
+  let desconto_percentual =
     rawDescPerc !== undefined
       ? Math.min(100, Math.max(0, rawDescPerc))
       : undefined;
 
   // desconto_fixo CHECK: >= 0
-  const desconto_fixo =
+  let desconto_fixo =
     rawDescFixo !== undefined ? Math.max(0, rawDescFixo) : undefined;
-
-  // uso_maximo CHECK: > 0 — treat 0 as "unlimited" (NULL)
-  const rawUsoMaximo = row.max_usos != null ? Number(row.max_usos) : undefined;
-  const uso_maximo =
-    rawUsoMaximo !== undefined && rawUsoMaximo > 0 ? rawUsoMaximo : undefined;
-
-  // uso_atual CHECK: >= 0
-  const uso_atual = Math.max(0, Number(row.usos ?? 0));
 
   if (rawDescPerc !== undefined && rawDescPerc !== desconto_percentual) {
     console.warn(
@@ -54,6 +56,22 @@ export function transformCupom(row: MysqlCoupon): PostgresCupom {
       `   ⚠️  cupom id=${row.id}: desconto_fixo=${rawDescFixo} clamped to ${desconto_fixo}`
     );
   }
+
+  // Belt-and-suspenders: ensure exactly one discount field is always set (ck_cupons_desconto).
+  if (desconto_percentual === undefined && desconto_fixo === undefined) {
+    console.warn(
+      `   ⚠️  cupom id=${row.id}: both discount fields would be null — defaulting to desconto_percentual=1`
+    );
+    desconto_percentual = 1;
+  }
+
+  // uso_maximo CHECK: > 0 — treat 0 as "unlimited" (NULL)
+  const rawUsoMaximo = row.max_usos != null ? Number(row.max_usos) : undefined;
+  const uso_maximo =
+    rawUsoMaximo !== undefined && rawUsoMaximo > 0 ? rawUsoMaximo : undefined;
+
+  // uso_atual CHECK: >= 0
+  const uso_atual = Math.max(0, Number(row.usos ?? 0));
 
   return {
     id: mapId(row.id, 'cupons'),

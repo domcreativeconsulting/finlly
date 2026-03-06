@@ -229,6 +229,39 @@ test('uso_atual is clamped to >= 0', () => {
   assert.strictEqual(result.uso_atual, 0, 'negative uso_atual should be 0');
 });
 
+test('valor=0 never produces both discount fields null', () => {
+  clearCache();
+  const result = transformCupom({ ...BASE_MYSQL_COUPON, tipo: 'percentual', valor: 0 });
+  const dp = result.desconto_percentual;
+  const df = result.desconto_fixo;
+  assert.ok(dp != null || df != null, 'at least one discount field must be set when valor=0');
+  assert.ok((dp != null) !== (df != null), 'exactly one discount field must be set when valor=0');
+});
+
+test('valor=undefined never produces both discount fields null', () => {
+  clearCache();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const result = transformCupom({ ...BASE_MYSQL_COUPON, tipo: 'percentual', valor: undefined as any });
+  const dp = result.desconto_percentual;
+  const df = result.desconto_fixo;
+  assert.ok(dp != null || df != null, 'at least one discount field must be set when valor=undefined');
+  assert.ok((dp != null) !== (df != null), 'exactly one discount field must be set when valor=undefined');
+});
+
+test('valor=0 with tipo percentual defaults desconto_percentual to 1', () => {
+  clearCache();
+  const result = transformCupom({ ...BASE_MYSQL_COUPON, tipo: 'percentual', valor: 0 });
+  assert.strictEqual(result.desconto_percentual, 1, 'desconto_percentual should default to 1 when valor=0');
+  assert.strictEqual(result.desconto_fixo, undefined);
+});
+
+test('valor=0 with tipo valor defaults desconto_fixo to 1', () => {
+  clearCache();
+  const result = transformCupom({ ...BASE_MYSQL_COUPON, tipo: 'valor', valor: 0 });
+  assert.strictEqual(result.desconto_fixo, 1, 'desconto_fixo should default to 1 when valor=0');
+  assert.strictEqual(result.desconto_percentual, undefined);
+});
+
 // ---------------------------------------------------------------------------
 // Tests: job.transformer
 // ---------------------------------------------------------------------------
