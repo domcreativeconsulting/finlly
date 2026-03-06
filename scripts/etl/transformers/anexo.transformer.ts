@@ -16,7 +16,11 @@ export interface PostgresAnexo {
   deleted_at?: Date;
 }
 
-export function transformAnexo(row: MysqlAttachment): PostgresAnexo {
+export function transformAnexo(row: MysqlAttachment): PostgresAnexo | null {
+  if (row.user_id == null) {
+    console.warn(`   ⚠️  Anexo id=${row.id} tem user_id=NULL — registro será ignorado`);
+    return null;
+  }
   return {
     id: mapId(row.id, 'attachments'),
     usuario_id: mapId(row.user_id, 'users'),

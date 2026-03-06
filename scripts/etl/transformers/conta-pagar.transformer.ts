@@ -23,7 +23,11 @@ export interface PostgresContaPagar {
   deleted_at?: Date;
 }
 
-export function transformContaPagar(row: MysqlBill): PostgresContaPagar {
+export function transformContaPagar(row: MysqlBill): PostgresContaPagar | null {
+  if (row.user_id == null) {
+    console.warn(`   ⚠️  ContaPagar id=${row.id} tem user_id=NULL — registro será ignorado`);
+    return null;
+  }
   return {
     id: mapId(row.id, 'bills'),
     usuario_id: mapId(row.user_id, 'users'),

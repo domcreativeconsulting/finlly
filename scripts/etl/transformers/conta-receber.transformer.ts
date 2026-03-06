@@ -23,7 +23,11 @@ export interface PostgresContaReceber {
   deleted_at?: Date;
 }
 
-export function transformContaReceber(row: MysqlReceivable): PostgresContaReceber {
+export function transformContaReceber(row: MysqlReceivable): PostgresContaReceber | null {
+  if (row.user_id == null) {
+    console.warn(`   ⚠️  ContaReceber id=${row.id} tem user_id=NULL — registro será ignorado`);
+    return null;
+  }
   return {
     id: mapId(row.id, 'receivables'),
     usuario_id: mapId(row.user_id, 'users'),
