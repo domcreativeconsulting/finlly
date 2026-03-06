@@ -17,7 +17,11 @@ export interface PostgresConta {
   deleted_at?: Date;
 }
 
-export function transformConta(row: MysqlAccount): PostgresConta {
+export function transformConta(row: MysqlAccount): PostgresConta | null {
+  if (row.user_id == null) {
+    console.warn(`   ⚠️  Conta id=${row.id} tem user_id=NULL — registro será ignorado`);
+    return null;
+  }
   // NOTE: `balance` is intentionally removed — it will be computed from movimentacoes_caixa
   return {
     id: mapId(row.id, 'accounts'),

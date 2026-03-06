@@ -12,6 +12,7 @@ import { transformMovimentacaoCaixa } from '../transformers/movimentacao-caixa.t
 import { transformContaPagar } from '../transformers/conta-pagar.transformer';
 import { transformContaReceber } from '../transformers/conta-receber.transformer';
 import { transformInvestimentoEvento } from '../transformers/investimento-evento.transformer';
+import { transformInvestimento } from '../transformers/investimento.transformer';
 import { transformMeta } from '../transformers/meta.transformer';
 import { transformAnexo } from '../transformers/anexo.transformer';
 import { transformUsuario } from '../transformers/usuario.transformer';
@@ -122,6 +123,19 @@ const BASE_MYSQL_INVESTMENT_EVENT = {
   type: 'aporte',
   amount: 1000,
   date: new Date(),
+  created_at: new Date(),
+  updated_at: new Date(),
+};
+
+const BASE_MYSQL_INVESTMENT = {
+  id: 1,
+  user_id: 1,
+  name: 'Investimento test',
+  type_id: 1,
+  initial_value: 1000,
+  current_value: 1000,
+  start_date: new Date(),
+  status: 'ativa',
   created_at: new Date(),
   updated_at: new Date(),
 };
@@ -284,14 +298,22 @@ console.log('\n📋 movimentacao-caixa.transformer tests');
 test('zero amount is clamped to 0.01', () => {
   clearCache();
   const result = transformMovimentacaoCaixa({ ...BASE_MYSQL_TRANSACTION, amount: 0 });
-  assert.ok(result.valor > 0, 'valor deve ser > 0');
+  assert.ok(result !== null && result.valor > 0, 'valor deve ser > 0');
 });
 
 test('negative amount becomes positive (abs)', () => {
   clearCache();
   const result = transformMovimentacaoCaixa({ ...BASE_MYSQL_TRANSACTION, amount: -50 });
-  assert.ok(result.valor > 0, 'valor deve ser > 0');
-  assert.strictEqual(result.valor, 50);
+  assert.ok(result !== null && result.valor > 0, 'valor deve ser > 0');
+  if (result !== null) {
+    assert.strictEqual(result.valor, 50);
+  }
+});
+
+test('transformMovimentacaoCaixa returns null when user_id is null', () => {
+  clearCache();
+  const result = transformMovimentacaoCaixa({ ...BASE_MYSQL_TRANSACTION, user_id: null });
+  assert.strictEqual(result, null, 'transformMovimentacaoCaixa must return null for null user_id');
 });
 
 // ---------------------------------------------------------------------------
@@ -303,7 +325,13 @@ console.log('\n📋 conta-pagar.transformer tests');
 test('zero valor is clamped to 0.01', () => {
   clearCache();
   const result = transformContaPagar({ ...BASE_MYSQL_BILL, amount: 0 });
-  assert.ok(result.valor > 0, 'valor deve ser > 0');
+  assert.ok(result !== null && result.valor > 0, 'valor deve ser > 0');
+});
+
+test('transformContaPagar returns null when user_id is null', () => {
+  clearCache();
+  const result = transformContaPagar({ ...BASE_MYSQL_BILL, user_id: null });
+  assert.strictEqual(result, null, 'transformContaPagar must return null for null user_id');
 });
 
 // ---------------------------------------------------------------------------
@@ -315,7 +343,13 @@ console.log('\n📋 conta-receber.transformer tests');
 test('zero valor is clamped to 0.01', () => {
   clearCache();
   const result = transformContaReceber({ ...BASE_MYSQL_RECEIVABLE, amount: 0 });
-  assert.ok(result.valor > 0, 'valor deve ser > 0');
+  assert.ok(result !== null && result.valor > 0, 'valor deve ser > 0');
+});
+
+test('transformContaReceber returns null when user_id is null', () => {
+  clearCache();
+  const result = transformContaReceber({ ...BASE_MYSQL_RECEIVABLE, user_id: null });
+  assert.strictEqual(result, null, 'transformContaReceber must return null for null user_id');
 });
 
 // ---------------------------------------------------------------------------
@@ -331,6 +365,19 @@ test('zero amount is clamped to 0.01', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Tests: investimento.transformer
+// ---------------------------------------------------------------------------
+
+console.log('\n📋 investimento.transformer tests');
+
+test('transformInvestimento returns null when user_id is null', () => {
+  clearCache();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const result = transformInvestimento({ ...BASE_MYSQL_INVESTMENT, user_id: null as any });
+  assert.strictEqual(result, null, 'transformInvestimento must return null for null user_id');
+});
+
+// ---------------------------------------------------------------------------
 // Tests: meta.transformer
 // ---------------------------------------------------------------------------
 
@@ -339,7 +386,13 @@ console.log('\n📋 meta.transformer tests');
 test('zero target_amount is clamped to 0.01', () => {
   clearCache();
   const result = transformMeta({ ...BASE_MYSQL_GOAL, target_amount: 0 });
-  assert.ok(result.valor_alvo > 0, 'valor_alvo deve ser > 0');
+  assert.ok(result !== null && result.valor_alvo > 0, 'valor_alvo deve ser > 0');
+});
+
+test('transformMeta returns null when user_id is null', () => {
+  clearCache();
+  const result = transformMeta({ ...BASE_MYSQL_GOAL, user_id: null });
+  assert.strictEqual(result, null, 'transformMeta must return null for null user_id');
 });
 
 // ---------------------------------------------------------------------------
@@ -351,7 +404,13 @@ console.log('\n📋 anexo.transformer tests');
 test('zero size_bytes is clamped to 1', () => {
   clearCache();
   const result = transformAnexo({ ...BASE_MYSQL_ATTACHMENT, size_bytes: 0 });
-  assert.ok(Number(result.tamanho_bytes) > 0, 'tamanho_bytes deve ser > 0');
+  assert.ok(result !== null && Number(result.tamanho_bytes) > 0, 'tamanho_bytes deve ser > 0');
+});
+
+test('transformAnexo returns null when user_id is null', () => {
+  clearCache();
+  const result = transformAnexo({ ...BASE_MYSQL_ATTACHMENT, user_id: null });
+  assert.strictEqual(result, null, 'transformAnexo must return null for null user_id');
 });
 
 // ---------------------------------------------------------------------------
@@ -477,11 +536,21 @@ test('conta.usuario_id matches the corresponding usuario.id', () => {
   clearCache();
   const usuario = transformUsuario(BASE_MYSQL_USER);
   const conta = transformConta(BASE_MYSQL_ACCOUNT);
-  assert.strictEqual(
-    conta.usuario_id,
-    usuario.id,
-    'conta.usuario_id must equal the UUID generated for the corresponding usuario',
-  );
+  assert.ok(conta !== null, 'transformConta must return a record for a valid user_id');
+  if (conta !== null) {
+    assert.strictEqual(
+      conta.usuario_id,
+      usuario.id,
+      'conta.usuario_id must equal the UUID generated for the corresponding usuario',
+    );
+  }
+});
+
+test('transformConta returns null when user_id is null', () => {
+  clearCache();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const result = transformConta({ ...BASE_MYSQL_ACCOUNT, user_id: null as any });
+  assert.strictEqual(result, null, 'transformConta must return null for null user_id');
 });
 
 test('UUID mapping is stable across clearCache() boundaries — fresh cache returns same UUID', () => {

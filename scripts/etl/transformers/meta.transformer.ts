@@ -19,7 +19,11 @@ export interface PostgresMeta {
   deleted_at?: Date;
 }
 
-export function transformMeta(row: MysqlGoal): PostgresMeta {
+export function transformMeta(row: MysqlGoal): PostgresMeta | null {
+  if (row.user_id == null) {
+    console.warn(`   ⚠️  Meta id=${row.id} tem user_id=NULL — registro será ignorado`);
+    return null;
+  }
   // NOTE: `current_amount` is intentionally removed — computed via metas_movimentos
   return {
     id: mapId(row.id, 'goals'),

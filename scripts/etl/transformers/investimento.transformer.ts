@@ -18,7 +18,11 @@ export interface PostgresInvestimento {
   deleted_at?: Date;
 }
 
-export function transformInvestimento(row: MysqlInvestment): PostgresInvestimento {
+export function transformInvestimento(row: MysqlInvestment): PostgresInvestimento | null {
+  if (row.user_id == null) {
+    console.warn(`   ⚠️  Investimento id=${row.id} tem user_id=NULL — registro será ignorado`);
+    return null;
+  }
   // NOTE: `current_value` is intentionally removed — it will be computed via investimentos_eventos
   return {
     id: mapId(row.id, 'investments'),

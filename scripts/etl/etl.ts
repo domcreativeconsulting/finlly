@@ -227,17 +227,31 @@ async function main(): Promise<void> {
     const pgPagamentos = rawPagamentos.map(transformAssinantePagamento);
     const pgWebhooks = rawWebhooks.map(transformWebhookEvent);
     const pgInstituicoes = rawInstituicoes.map(transformInstituicaoFinanceira);
-    const pgContas = rawContas.map(transformConta);
+    const pgContas = rawContas
+      .map(transformConta)
+      .filter((v): v is NonNullable<typeof v> => v !== null);
     const pgCategorias = rawCategorias.map(transformCategoria);
-    const pgContasPagar = rawContasPagar.map(transformContaPagar);
-    const pgContasReceber = rawContasReceber.map(transformContaReceber);
-    const pgMovimentacoes = rawMovimentacoes.map(transformMovimentacaoCaixa);
+    const pgContasPagar = rawContasPagar
+      .map(transformContaPagar)
+      .filter((v): v is NonNullable<typeof v> => v !== null);
+    const pgContasReceber = rawContasReceber
+      .map(transformContaReceber)
+      .filter((v): v is NonNullable<typeof v> => v !== null);
+    const pgMovimentacoes = rawMovimentacoes
+      .map(transformMovimentacaoCaixa)
+      .filter((v): v is NonNullable<typeof v> => v !== null);
     const pgTiposInvest = rawTiposInvest.map(transformTipoInvestimento);
-    const pgInvestimentos = rawInvestimentos.map(transformInvestimento);
+    const pgInvestimentos = rawInvestimentos
+      .map(transformInvestimento)
+      .filter((v): v is NonNullable<typeof v> => v !== null);
     const pgInvestEventos = rawInvestEventos.map(transformInvestimentoEvento);
-    const pgMetas = rawMetas.map(transformMeta);
+    const pgMetas = rawMetas
+      .map(transformMeta)
+      .filter((v): v is NonNullable<typeof v> => v !== null);
     const pgMetasMov = rawMetasMov.map(transformMetaMovimento);
-    const pgAnexos = rawAnexos.map(transformAnexo);
+    const pgAnexos = rawAnexos
+      .map(transformAnexo)
+      .filter((v): v is NonNullable<typeof v> => v !== null);
     const pgAnexosVinculos = rawAnexosVinculos
       .map(transformAnexoVinculo)
       .filter((v): v is NonNullable<typeof v> => v !== null);

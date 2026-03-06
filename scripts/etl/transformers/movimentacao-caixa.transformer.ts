@@ -20,7 +20,11 @@ export interface PostgresMovimentacaoCaixa {
   deleted_at?: Date;
 }
 
-export function transformMovimentacaoCaixa(row: MysqlTransaction): PostgresMovimentacaoCaixa {
+export function transformMovimentacaoCaixa(row: MysqlTransaction): PostgresMovimentacaoCaixa | null {
+  if (row.user_id == null) {
+    console.warn(`   ⚠️  MovimentacaoCaixa id=${row.id} tem user_id=NULL — registro será ignorado`);
+    return null;
+  }
   return {
     id: mapId(row.id, 'transactions'),
     usuario_id: mapId(row.user_id, 'users'),
