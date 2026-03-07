@@ -8,6 +8,11 @@ const mockRefresh = jest.fn();
 const mockLogout = jest.fn();
 const mockGetMe = jest.fn();
 
+// Mock express-rate-limit to be a pass-through in tests
+jest.unstable_mockModule('express-rate-limit', () => ({
+  rateLimit: () => (_req, _res, next) => next(),
+}));
+
 jest.unstable_mockModule('../../services/authService.js', () => ({
   register: mockRegister,
   login: mockLogin,

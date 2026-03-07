@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
 import { register, login, refresh, logout, getMe, parseExpiresInSeconds } from '../services/authService.js';
 import { jwtAuthMiddleware } from '../middleware/jwtAuth.js';
@@ -8,6 +9,30 @@ import { config } from '../config/env.js';
 import logger from '../logger.js';
 
 const router = Router();
+
+// ============================================================
+// Rate Limiters
+// ============================================================
+
+/** Strict limiter for login: 5 attempts per 15 minutes per IP. */
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { code: 'TOO_MANY_REQUESTS', message: 'Muitas tentativas. Tente novamente em 15 minutos.' },
+  handler: (req, res, next, options) => next(AppError.tooManyRequests(options.message.message)),
+});
+
+/** General limiter for sensitive auth endpoints: 30 requests per 15 minutes per IP. */
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { code: 'TOO_MANY_REQUESTS', message: 'Muitas tentativas. Tente novamente mais tarde.' },
+  handler: (req, res, next, options) => next(AppError.tooManyRequests(options.message.message)),
+});
 
 // ============================================================
 // Validation Schemas
@@ -60,7 +85,7 @@ function getRequestMeta(req) {
  * POST /auth/register
  * Cadastro de novo usuário.
  */
-router.post('/auth/register', async (req, res, next) => {
+router.post('/auth/register', authLimiter, async (req, res, next) => {
   const parsed = RegisterSchema.safeParse(req.body);
   if (!parsed.success) return next(toValidationError(parsed.error));
 
@@ -77,7 +102,7 @@ router.post('/auth/register', async (req, res, next) => {
  * POST /auth/login
  * Login e geração de tokens JWT.
  */
-router.post('/auth/login', async (req, res, next) => {
+router.post('/auth/login', loginLimiter, async (req, res, next) => {
   const parsed = LoginSchema.safeParse(req.body);
   if (!parsed.success) return next(toValidationError(parsed.error));
 
@@ -108,7 +133,7 @@ router.post('/auth/login', async (req, res, next) => {
  * POST /auth/refresh
  * Renova o access token usando o refresh token (cookie ou body).
  */
-router.post('/auth/refresh', async (req, res, next) => {
+router.post('/auth/refresh', authLimiter, async (req, res, next) => {
   const parsed = RefreshSchema.safeParse(req.body);
   if (!parsed.success) return next(toValidationError(parsed.error));
 
@@ -127,7 +152,7 @@ router.post('/auth/refresh', async (req, res, next) => {
  * POST /auth/logout
  * Logout de uma ou todas as sessões.
  */
-router.post('/auth/logout', jwtAuthMiddleware, async (req, res, next) => {
+router.post('/auth/logout', authLimiter, jwtAuthMiddleware, async (req, res, next) => {
   const parsed = LogoutSchema.safeParse(req.body);
   if (!parsed.success) return next(toValidationError(parsed.error));
 
@@ -148,7 +173,7 @@ router.post('/auth/logout', jwtAuthMiddleware, async (req, res, next) => {
  * GET /auth/me
  * Retorna dados do usuário autenticado.
  */
-router.get('/auth/me', jwtAuthMiddleware, async (req, res, next) => {
+router.get('/auth/me', authLimiter, jwtAuthMiddleware, async (req, res, next) => {
   try {
     const usuario = await getMe(req.user.sub);
     return res.status(200).json(usuario);
