@@ -155,6 +155,7 @@ model Usuario {
   sessoes               UsuarioSessao[]
   eventos_auth          UsuarioEventoAuth[]
   resets_senha          UsuarioResetSenha[]
+  verificacoes_email    UsuarioVerificacaoEmail[]
 
   @@unique([email], map: "uq_usuarios_email")
   @@map("usuarios")
@@ -198,17 +199,38 @@ model UsuarioEventoAuth {
 
 /// Tokens para recuperação de senha. Cascade delete.
 model UsuarioResetSenha {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  usuario_id     String   @db.Uuid
-  token_hash     String   @db.VarChar(255)
-  utilizado      Boolean  @default(false)
-  data_expiracao DateTime @db.Timestamptz(6)
-  criado_em      DateTime @default(now()) @db.Timestamptz(6)
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id     String    @db.Uuid
+  token_hash     String    @db.VarChar(255)
+  utilizado      Boolean   @default(false)
+  data_expiracao DateTime  @db.Timestamptz(6)
+  criado_em      DateTime  @default(now()) @db.Timestamptz(6)
+  utilizado_em   DateTime? @db.Timestamptz(6)
 
   usuario Usuario @relation(fields: [usuario_id], references: [id], onDelete: Cascade, map: "fk_resets_senha_usuario")
 
   @@unique([token_hash], map: "uq_resets_senha_token_hash")
+  @@index([usuario_id], map: "idx_resets_senha_usuario")
+  @@index([data_expiracao], map: "idx_resets_senha_expiracao")
   @@map("usuario_resets_senha")
+}
+
+/// Tokens de verificação de e-mail. Cascade delete.
+model UsuarioVerificacaoEmail {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id     String    @db.Uuid
+  token_hash     String    @db.VarChar(255)
+  verificado     Boolean   @default(false)
+  data_expiracao DateTime  @db.Timestamptz(6)
+  criado_em      DateTime  @default(now()) @db.Timestamptz(6)
+  verificado_em  DateTime? @db.Timestamptz(6)
+
+  usuario Usuario @relation(fields: [usuario_id], references: [id], onDelete: Cascade, map: "fk_verificacoes_email_usuario")
+
+  @@unique([token_hash], map: "uq_verificacoes_email_token_hash")
+  @@index([usuario_id], map: "idx_verificacoes_email_usuario")
+  @@index([data_expiracao], map: "idx_verificacoes_email_expiracao")
+  @@map("usuario_verificacoes_email")
 }
 
 // ============================================================

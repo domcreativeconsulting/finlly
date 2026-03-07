@@ -34,6 +34,23 @@ const envSchema = z.object({
   RATE_LIMIT_STORE: z.enum(['memory', 'redis']).default('memory'),
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(600000),
+
+  // Email (optional — emails are skipped when not configured)
+  MAIL_HOST: z.string().optional(),
+  MAIL_PORT: z.coerce.number().int().positive().default(587),
+  MAIL_USER: z.string().optional(),
+  MAIL_PASSWORD: z.string().optional(),
+  MAIL_FROM: z.string().default('noreply@finlly.com'),
+
+  // Password reset / email verification tokens
+  PASSWORD_RESET_EXPIRATION: z.coerce.number().int().positive().default(900), // 15 minutes in seconds
+  EMAIL_VERIFICATION_EXPIRATION: z.coerce.number().int().positive().default(86400), // 24 hours in seconds
+
+  // Rate limiting for forgot-password and resend-verification
+  FORGOT_PASSWORD_RATE_LIMIT: z.coerce.number().int().positive().default(3),
+  FORGOT_PASSWORD_RATE_WINDOW: z.coerce.number().int().positive().default(3600), // 1 hour in seconds
+  VERIFY_EMAIL_RATE_LIMIT: z.coerce.number().int().positive().default(3),
+  VERIFY_EMAIL_RATE_WINDOW: z.coerce.number().int().positive().default(3600), // 1 hour in seconds
 });
 
 /**
