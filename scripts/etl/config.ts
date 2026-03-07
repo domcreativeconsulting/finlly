@@ -69,6 +69,7 @@ export const config = {
     validateSamples: process.env['ETL_VALIDATE_SAMPLES'] !== 'false',
     sampleSize: 15,
     transactionTimeout: parseInt(process.env['ETL_TRANSACTION_TIMEOUT_MS'] ?? '120000', 10),
+    timezone: process.env['TZ'] ?? 'America/Sao_Paulo',
   },
 };
 

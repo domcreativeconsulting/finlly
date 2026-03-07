@@ -1,25 +1,74 @@
 import crypto from 'crypto';
+import { fromZonedTime, toZonedTime, formatInTimeZone } from 'date-fns-tz';
+import { config } from '../config';
 
 /**
- * Converts a MySQL DATETIME / Date object to an ISO 8601 string with UTC timezone (+00:00).
- * MySQL DATETIME has no timezone info; we assume all legacy data is stored in UTC.
+ * Extracts the local wall-clock datetime string from a Date or string value,
+ * preserving whatever date/time components are already present without applying
+ * any timezone offset. This is used to reinterpret the value in a specific timezone.
  */
-export function toTimestamptz(value: Date | string | null | undefined): Date | undefined {
-  if (value == null) return undefined;
-  const d = value instanceof Date ? value : new Date(value);
-  if (isNaN(d.getTime())) return undefined;
-  return d;
+function toLocalString(value: Date | string): string {
+  if (value instanceof Date) {
+    return (
+      `${value.getFullYear()}-` +
+      `${String(value.getMonth() + 1).padStart(2, '0')}-` +
+      `${String(value.getDate()).padStart(2, '0')}T` +
+      `${String(value.getHours()).padStart(2, '0')}:` +
+      `${String(value.getMinutes()).padStart(2, '0')}:` +
+      `${String(value.getSeconds()).padStart(2, '0')}`
+    );
+  }
+  return String(value);
 }
 
 /**
- * Converts a MySQL DATETIME to a Postgres Date-only value (YYYY-MM-DD).
+ * Converts a MySQL DATETIME value (interpreted as America/Sao_Paulo) to a UTC Date
+ * suitable for Postgres TIMESTAMPTZ storage.
+ *
+ * MySQL DATETIME has no timezone info; we assume all legacy data is in the
+ * configured ETL timezone (default: America/Sao_Paulo). DST transitions are
+ * handled automatically by date-fns-tz.
+ *
+ * Example:
+ *   MySQL '2026-03-07 14:30:00' (São Paulo, UTC-3 with DST)
+ *   → UTC Date: 2026-03-07T17:30:00.000Z
+ */
+export function toTimestamptz(value: Date | string | null | undefined): Date | undefined {
+  if (value == null) return undefined;
+  const utcDate = fromZonedTime(toLocalString(value), config.etl.timezone);
+  if (isNaN(utcDate.getTime())) return undefined;
+  return utcDate;
+}
+
+/**
+ * Converts a MySQL DATETIME / date string to a Postgres Date-only value (YYYY-MM-DD).
+ * The date components are extracted in the configured ETL timezone so that, e.g.,
+ * '2026-03-07 01:00:00' in São Paulo is stored as 2026-03-07 (not 2026-03-06 in UTC).
  */
 export function toDateOnly(value: Date | string | null | undefined): Date | undefined {
   if (value == null) return undefined;
+  const utcDate = fromZonedTime(toLocalString(value), config.etl.timezone);
+  if (isNaN(utcDate.getTime())) return undefined;
+  // Convert back to zoned to read year/month/day in the ETL timezone.
+  const zoned = toZonedTime(utcDate, config.etl.timezone);
+  return new Date(Date.UTC(zoned.getFullYear(), zoned.getMonth(), zoned.getDate()));
+}
+
+/**
+ * Formats a UTC Date as a human-readable string in the configured ETL timezone.
+ * Useful for logging and debugging to verify date conversions.
+ *
+ * Example output: '2026-03-07 14:30:00 -03:00 (America/Sao_Paulo)'
+ */
+export function formatDateInTimezone(
+  value: Date | string | null | undefined,
+  timezone: string = config.etl.timezone,
+): string {
+  if (value == null) return '(null)';
   const d = value instanceof Date ? value : new Date(value);
-  if (isNaN(d.getTime())) return undefined;
-  // Strip time component — keep date in UTC
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  if (isNaN(d.getTime())) return '(invalid date)';
+  const formatted = formatInTimeZone(d, timezone, 'yyyy-MM-dd HH:mm:ss xxx');
+  return `${formatted} (${timezone})`;
 }
 
 /**
