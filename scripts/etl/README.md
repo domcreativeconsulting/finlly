@@ -145,6 +145,86 @@ npm run etl -- --reset --confirm --tables=usuarios,assinantes
 
 ---
 
+## Timezone Handling
+
+### The Problem
+
+The MySQL legacy database stores all `DATETIME` fields **without timezone information**. The ETL must:
+
+1. **Assume** all MySQL `DATETIME` values are in the `America/Sao_Paulo` timezone (BRT)
+2. **Convert** them to UTC for storage as Postgres `TIMESTAMPTZ`
+3. **Handle** DST transitions automatically (Brazil observed UTC-2 during summer until late 2019; since November 2019 it stays at UTC-3 year-round)
+
+### How It Works
+
+The `toTimestamptz()` function in `scripts/etl/transformers/type-converter.ts` uses `date-fns-tz` to:
+
+1. Treat the MySQL `DATETIME` string as a **wall-clock time** in São Paulo (ignoring any embedded UTC offset from JavaScript `Date` objects)
+2. Convert that São Paulo local time to UTC using `fromZonedTime()`, which automatically applies the correct UTC offset for the given date (including any historical DST transitions)
+3. Return a UTC `Date` suitable for Postgres `TIMESTAMPTZ` storage
+
+Similarly, `toDateOnly()` uses `toZonedTime()` to extract the correct calendar date in São Paulo timezone before building a UTC midnight `Date`.
+
+### DST Examples
+
+Brazil abolished permanent DST in 2019. Historical data from before 2019 may include DST periods (UTC-2 in austral summer). `date-fns-tz` handles these automatically using the IANA timezone database:
+
+```
+Pre-2019 Summer (DST active, UTC-2):
+  MySQL:     '2018-12-15 14:30:00'  (no timezone stored)
+  Assumed:   14:30 in São Paulo (DST, UTC-2)
+  UTC:       '2018-12-15T16:30:00Z'
+  Postgres:  '2018-12-15 16:30:00+00'
+
+Post-2019 (no DST, UTC-3 year-round):
+  MySQL:     '2026-07-07 14:30:00'  (no timezone stored)
+  Assumed:   14:30 in São Paulo (BRT, UTC-3)
+  UTC:       '2026-07-07T17:30:00Z'
+  Postgres:  '2026-07-07 17:30:00+00'
+```
+
+### Verifying Dates in Postgres
+
+After migration, verify that dates round-trip correctly back to São Paulo time:
+
+```sql
+-- Check that migrated timestamps display the same time as the original MySQL values
+SELECT
+  id,
+  created_at                                      AS created_at_utc,
+  created_at AT TIME ZONE 'America/Sao_Paulo'     AS created_at_sp
+FROM usuarios
+LIMIT 5;
+
+-- The created_at_sp column should match the original MySQL DATETIME values exactly.
+```
+
+### Configuration
+
+The ETL timezone is read from the `TZ` environment variable (default: `America/Sao_Paulo`). At startup, the ETL validates the timezone and logs the active offset:
+
+```
+🌎 Timezone: America/Sao_Paulo (UTC offset: -3.0h)
+```
+
+If an invalid timezone is set, the ETL exits immediately with a helpful error message:
+
+```
+❌ Timezone inválido ou não reconhecido: "Invalid/Zone"
+   Defina TZ=America/Sao_Paulo no arquivo .env.local ou nas variáveis de ambiente.
+```
+
+### Affected Fields
+
+All date/time fields across the 20 tables are converted through `toTimestamptz()` or `toDateOnly()`:
+
+- **Audit fields**: `created_at`, `updated_at`, `deleted_at` (all 20 tables)
+- **Payment dates**: `data_vencimento`, `data_pagamento`, `data_recebimento`
+- **Timeline fields**: `data_inicio`, `data_fim`, `scheduled_at`, `started_at`, `finished_at`
+- **Event dates**: tables `metas`, `investimentos`, `movimentacoes_caixa`, `jobs`
+
+---
+
 ## Table Execution Order
 
 Tables are migrated in dependency order to respect FK constraints:

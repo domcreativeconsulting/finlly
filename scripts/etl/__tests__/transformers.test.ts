@@ -29,6 +29,12 @@ import {
   DataValidator,
 } from '../validators/data-validator';
 import { clearCache, mapId } from '../transformers/id-mapper';
+import {
+  toTimestamptz,
+  toDateOnly,
+  formatDateInTimezone,
+  parseJson,
+} from '../transformers/type-converter';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -771,6 +777,122 @@ test('null-user_id assinantes are filtered out before LOAD (simulated)', () => {
     pgAssinantes.every(a => a.usuario_id !== null && a.usuario_id !== undefined),
     'All remaining assinantes must have a valid usuario_id',
   );
+});
+
+console.log('\n📋 Timezone conversion tests (toTimestamptz / toDateOnly)');
+
+// São Paulo is permanently at UTC-3 (BRT — Brasília Standard Time) since November 2019
+// when Brazil abolished DST by law. Historical data before late-2019 may include periods
+// where São Paulo was at UTC-2 (BRST — Brazilian Summer Time, Oct–Feb). date-fns-tz handles
+// all historical offsets automatically via the IANA timezone database.
+
+test('toTimestamptz returns undefined for null', () => {
+  assert.strictEqual(toTimestamptz(null), undefined);
+});
+
+test('toTimestamptz returns undefined for undefined', () => {
+  assert.strictEqual(toTimestamptz(undefined), undefined);
+});
+
+test('toTimestamptz returns undefined for invalid date string', () => {
+  assert.strictEqual(toTimestamptz('not-a-date'), undefined);
+});
+
+test('toTimestamptz converts São Paulo string to UTC Date', () => {
+  // '2026-07-07 14:30:00' in São Paulo (UTC-3) → 17:30:00 UTC
+  const result = toTimestamptz('2026-07-07 14:30:00');
+  assert.ok(result instanceof Date, 'result must be a Date');
+  assert.ok(!isNaN(result!.getTime()), 'result must be a valid Date');
+  // Regardless of DST, the result must be strictly UTC (no fractional hours offset)
+  const isoStr = result!.toISOString();
+  assert.ok(isoStr.endsWith('Z'), 'result must be UTC');
+});
+
+test('toTimestamptz converts Date object treating it as São Paulo wall-clock time', () => {
+  // Pass a JS Date whose local components read 2026-07-07 14:30:00 in UTC
+  // (the ETL treats the wall-clock components as São Paulo time)
+  const d = new Date('2026-07-07T14:30:00Z');
+  const result = toTimestamptz(d);
+  assert.ok(result instanceof Date, 'result must be a Date');
+  assert.ok(!isNaN(result!.getTime()), 'result must be a valid Date');
+});
+
+test('toTimestamptz UTC offset is +3h (UTC-3, São Paulo standard time) for July', () => {
+  const result = toTimestamptz('2026-07-07 14:30:00');
+  assert.ok(result !== undefined);
+  // Expect hours to be 17 (14 + 3) in UTC
+  assert.strictEqual(result!.getUTCHours(), 17, 'UTC hours should be 14+3=17 for São Paulo UTC-3');
+  assert.strictEqual(result!.getUTCMinutes(), 30);
+});
+
+test('toDateOnly returns undefined for null', () => {
+  assert.strictEqual(toDateOnly(null), undefined);
+});
+
+test('toDateOnly returns undefined for invalid string', () => {
+  assert.strictEqual(toDateOnly('not-a-date'), undefined);
+});
+
+test('toDateOnly extracts date components in São Paulo timezone', () => {
+  // '2026-03-07 01:00:00' São Paulo → 04:00 UTC, but the DATE part in SP is still 2026-03-07
+  const result = toDateOnly('2026-03-07 01:00:00');
+  assert.ok(result instanceof Date, 'result must be a Date');
+  // The UTC components of a date-only result encode the calendar date without time-of-day offset
+  assert.strictEqual(result!.getUTCFullYear(), 2026);
+  assert.strictEqual(result!.getUTCMonth(), 2, 'March is month index 2');
+  assert.strictEqual(result!.getUTCDate(), 7);
+});
+
+test('toDateOnly midnight result has UTC time 00:00:00', () => {
+  const result = toDateOnly('2026-07-15 12:00:00');
+  assert.ok(result !== undefined);
+  assert.strictEqual(result!.getUTCHours(), 0, 'date-only result must have midnight UTC time');
+  assert.strictEqual(result!.getUTCMinutes(), 0);
+  assert.strictEqual(result!.getUTCSeconds(), 0);
+});
+
+test('formatDateInTimezone returns (null) for null input', () => {
+  assert.strictEqual(formatDateInTimezone(null), '(null)');
+});
+
+test('formatDateInTimezone returns (null) for undefined input', () => {
+  assert.strictEqual(formatDateInTimezone(undefined), '(null)');
+});
+
+test('formatDateInTimezone returns (invalid date) for bad string', () => {
+  assert.strictEqual(formatDateInTimezone('not-a-date'), '(invalid date)');
+});
+
+test('formatDateInTimezone includes timezone name in output', () => {
+  const utcDate = new Date('2026-07-07T17:30:00Z');
+  const result = formatDateInTimezone(utcDate, 'America/Sao_Paulo');
+  assert.ok(result.includes('America/Sao_Paulo'), `output must include timezone name, got: ${result}`);
+});
+
+test('formatDateInTimezone shows local time for São Paulo UTC-3', () => {
+  // 2026-07-07 17:30:00 UTC → 14:30:00 in São Paulo (UTC-3 standard time in July)
+  const utcDate = new Date('2026-07-07T17:30:00Z');
+  const result = formatDateInTimezone(utcDate, 'America/Sao_Paulo');
+  assert.ok(result.includes('2026-07-07 14:30:00'), `expected local time 14:30:00, got: ${result}`);
+});
+
+test('parseJson returns undefined for null', () => {
+  assert.strictEqual(parseJson(null), undefined);
+});
+
+test('parseJson returns parsed object for valid JSON string', () => {
+  const result = parseJson('{"key":"value"}');
+  assert.deepStrictEqual(result, { key: 'value' });
+});
+
+test('parseJson returns original object when already an object', () => {
+  const obj = { a: 1 };
+  assert.strictEqual(parseJson(obj), obj);
+});
+
+test('parseJson returns string for invalid JSON', () => {
+  const result = parseJson('not-json');
+  assert.strictEqual(result, 'not-json');
 });
 
 console.log(`\n${'─'.repeat(50)}`);
