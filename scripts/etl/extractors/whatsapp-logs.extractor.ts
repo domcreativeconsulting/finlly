@@ -16,9 +16,9 @@ export interface MysqlWhatsappMessage extends MysqlRow {
 
 export class WhatsappLogsExtractor extends BaseExtractor {
   async extract(): Promise<MysqlWhatsappMessage[]> {
-    return this.extractAll<MysqlWhatsappMessage>('whatsapp_messages', '*', 'id');
+    return this.extractAll<MysqlWhatsappMessage>('whatsapp_logs', '*', 'id');
   }
   async getCount(): Promise<number> {
-    return this.count('whatsapp_messages');
+    return this.count('whatsapp_logs');
   }
 }

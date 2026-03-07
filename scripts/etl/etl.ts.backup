@@ -75,14 +75,10 @@ async function main(): Promise<void> {
     const offsetMs = getTimezoneOffset(timezone, new Date());
     if (isNaN(offsetMs)) throw new Error('offset is NaN');
     const offsetHours = (offsetMs / 3_600_000).toFixed(1);
-    console.log(
-      `\n🌎 Timezone: ${timezone} (UTC offset: ${Number(offsetHours) >= 0 ? '+' : ''}${offsetHours}h)`
-    );
+    console.log(`\n🌎 Timezone: ${timezone} (UTC offset: ${Number(offsetHours) >= 0 ? '+' : ''}${offsetHours}h)`);
   } catch {
     console.error(`❌ Timezone inválido ou não reconhecido: "${timezone}"`);
-    console.error(
-      '   Defina TZ=America/Sao_Paulo no arquivo .env.local ou nas variáveis de ambiente.'
-    );
+    console.error('   Defina TZ=America/Sao_Paulo no arquivo .env.local ou nas variáveis de ambiente.');
     process.exit(1);
   }
 
@@ -98,9 +94,7 @@ async function main(): Promise<void> {
   // --reset --force: truncate all tables and exit (or continue if combined with a full run)
   if (reset) {
     if (!force) {
-      console.error(
-        '❌ --reset requires --force flag to prevent accidental data loss'
-      );
+      console.error('❌ --reset requires --force flag to prevent accidental data loss');
       process.exit(1);
     }
     console.log('🗑️  Modo reset: truncando todas as tabelas Postgres...');
@@ -256,10 +250,8 @@ async function main(): Promise<void> {
     // NOTE: Pure parent / reference tables (usuarios, cupons, tipos_investimento,
     // instituicoes_financeiras, categorias) are always included in full so that FK
     // references from incrementally-loaded child rows remain valid.
-    const sinceFilter = <
-      T extends { created_at?: unknown; updated_at?: unknown },
-    >(
-      rows: T[]
+    const sinceFilter = <T extends { created_at?: unknown; updated_at?: unknown }>(
+      rows: T[],
     ): T[] => {
       if (!since) return rows;
       return rows.filter((r) => {
@@ -281,15 +273,15 @@ async function main(): Promise<void> {
     // can show the original MySQL user_id even after nulls are dropped.
     const rawAssinanteByPgId = new Map(
       rawAssinantes
-        .filter((r) => r.user_id != null)
-        .map((r) => [mapId(r.id, 'plans'), r])
+        .filter(r => r.user_id != null)
+        .map(r => [mapId(r.id, 'plans'), r])
     );
     const pgAssinantes = sinceFilter(rawAssinantes)
       .map(transformAssinante)
       .filter((v): v is NonNullable<typeof v> => v !== null);
-    const validAssinanteIds = new Set(pgAssinantes.map((a) => a.id));
+    const validAssinanteIds = new Set(pgAssinantes.map(a => a.id));
     const pgPagamentos = sinceFilter(rawPagamentos)
-      .map((p) => transformAssinantePagamento(p, validAssinanteIds))
+      .map(p => transformAssinantePagamento(p, validAssinanteIds))
       .filter((v): v is NonNullable<typeof v> => v !== null);
     const pgWebhooks = sinceFilter(rawWebhooks).map(transformWebhookEvent);
     // instituicoes_financeiras and categorias are reference tables — not filtered by --since.
@@ -312,23 +304,23 @@ async function main(): Promise<void> {
     const pgInvestimentos = sinceFilter(rawInvestimentos)
       .map(transformInvestimento)
       .filter((v): v is NonNullable<typeof v> => v !== null);
-    const validInvestimentoIds = new Set(pgInvestimentos.map((i) => i.id));
+    const validInvestimentoIds = new Set(pgInvestimentos.map(i => i.id));
     const pgInvestEventos = sinceFilter(rawInvestEventos)
-      .map((e) => transformInvestimentoEvento(e, validInvestimentoIds))
+      .map(e => transformInvestimentoEvento(e, validInvestimentoIds))
       .filter((v): v is NonNullable<typeof v> => v !== null);
     const pgMetas = sinceFilter(rawMetas)
       .map(transformMeta)
       .filter((v): v is NonNullable<typeof v> => v !== null);
-    const validMetaIds = new Set(pgMetas.map((m) => m.id));
+    const validMetaIds = new Set(pgMetas.map(m => m.id));
     const pgMetasMov = sinceFilter(rawMetasMov)
-      .map((m) => transformMetaMovimento(m, validMetaIds))
+      .map(m => transformMetaMovimento(m, validMetaIds))
       .filter((v): v is NonNullable<typeof v> => v !== null);
     const pgAnexos = sinceFilter(rawAnexos)
       .map(transformAnexo)
       .filter((v): v is NonNullable<typeof v> => v !== null);
-    const validAnexoIds = new Set(pgAnexos.map((a) => a.id));
+    const validAnexoIds = new Set(pgAnexos.map(a => a.id));
     const pgAnexosVinculos = sinceFilter(rawAnexosVinculos)
-      .map((av) => transformAnexoVinculo(av, validAnexoIds))
+      .map(av => transformAnexoVinculo(av, validAnexoIds))
       .filter((v): v is NonNullable<typeof v> => v !== null);
     const pgWhatsapp = sinceFilter(rawWhatsapp).map(transformWhatsappLog);
     const pgJobs = sinceFilter(rawJobs).map(transformJob);
@@ -378,20 +370,11 @@ async function main(): Promise<void> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const dataValidationResult = dataValidator.validateAll({
       cupons: pgCupons as unknown as Record<string, unknown>[],
-      assinantesPagamentos: pgPagamentos as unknown as Record<
-        string,
-        unknown
-      >[],
+      assinantesPagamentos: pgPagamentos as unknown as Record<string, unknown>[],
       contasPagar: pgContasPagar as unknown as Record<string, unknown>[],
       contasReceber: pgContasReceber as unknown as Record<string, unknown>[],
-      movimentacoesCaixa: pgMovimentacoes as unknown as Record<
-        string,
-        unknown
-      >[],
-      investimentosEventos: pgInvestEventos as unknown as Record<
-        string,
-        unknown
-      >[],
+      movimentacoesCaixa: pgMovimentacoes as unknown as Record<string, unknown>[],
+      investimentosEventos: pgInvestEventos as unknown as Record<string, unknown>[],
       metas: pgMetas as unknown as Record<string, unknown>[],
       anexos: pgAnexos as unknown as Record<string, unknown>[],
       jobs: pgJobs as unknown as Record<string, unknown>[],
@@ -415,13 +398,11 @@ async function main(): Promise<void> {
     console.log('   Usuarios inseridos:');
     for (let i = 0; i < Math.min(3, pgUsuarios.length); i++) {
       const rawU = rawUsuarios[i];
-      console.log(
-        `     [${i}] MySQL id=${rawU?.id} → Postgres UUID: ${pgUsuarios[i].id}`
-      );
+      console.log(`     [${i}] MySQL id=${rawU?.id} → Postgres UUID: ${pgUsuarios[i].id}`);
     }
 
     // Build a Set of all usuario UUIDs for O(1) lookup
-    const usuarioIdSet = new Set(pgUsuarios.map((u) => u.id));
+    const usuarioIdSet = new Set(pgUsuarios.map(u => u.id));
 
     // Show the first few assinantes and whether their usuario_id resolves
     console.log('\n   Assinantes (com usuario_id):');
@@ -441,28 +422,22 @@ async function main(): Promise<void> {
     }
 
     // Full validation: find all assinantes whose usuario_id has no matching usuario
-    const invalidAssinantes = pgAssinantes.filter(
-      (a) => !usuarioIdSet.has(a.usuario_id)
-    );
+    const invalidAssinantes = pgAssinantes.filter(a => !usuarioIdSet.has(a.usuario_id));
     if (invalidAssinantes.length > 0) {
       console.error(
         `\n❌ FATAL: ${invalidAssinantes.length} assinante(s) com usuario_id inválido (FK quebrada):`
       );
       invalidAssinantes.slice(0, 3).forEach((a, idx) => {
-        console.error(
-          `   [${idx}] usuario_id=${a.usuario_id} (NÃO encontrado em usuarios!)`
-        );
+        console.error(`   [${idx}] usuario_id=${a.usuario_id} (NÃO encontrado em usuarios!)`);
       });
       migrationStatus = 'partial';
       reporter.addError(
         `FK violation: ${invalidAssinantes.length} assinante(s) referenciam usuario_id inexistente em usuarios. ` +
-          `Primeiro: usuario_id=${invalidAssinantes[0].usuario_id}`
+        `Primeiro: usuario_id=${invalidAssinantes[0].usuario_id}`
       );
       process.exit(1);
     } else if (pgAssinantes.length > 0) {
-      console.log(
-        '\n   ✅ Todos os assinantes têm usuario_id válido em usuarios'
-      );
+      console.log('\n   ✅ Todos os assinantes têm usuario_id válido em usuarios');
     }
 
     // ── FASE 3: LOAD ───────────────────────────────────────────────────────────
@@ -481,86 +456,36 @@ async function main(): Promise<void> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const execLoad = async (tx?: any): Promise<void> => {
       // Parent tables (no FK dependencies) first
-      if (shouldLoad('usuarios'))
-        await loader.loadUsuarios(pgUsuarios, batchSize, dryRun, tx);
-      if (shouldLoad('cupons'))
-        await loader.loadCupons(pgCupons, batchSize, dryRun, tx);
-      if (shouldLoad('tipos_investimento'))
-        await loader.loadTiposInvestimento(
-          pgTiposInvest,
-          batchSize,
-          dryRun,
-          tx
-        );
-      if (shouldLoad('instituicoes_financeiras'))
-        await loader.loadInstituicoesFinanceiras(
-          pgInstituicoes,
-          batchSize,
-          dryRun,
-          tx
-        );
-      if (shouldLoad('webhook_events'))
-        await loader.loadWebhookEvents(pgWebhooks, batchSize, dryRun, tx);
+      if (shouldLoad('usuarios')) await loader.loadUsuarios(pgUsuarios, batchSize, dryRun, tx);
+      if (shouldLoad('cupons')) await loader.loadCupons(pgCupons, batchSize, dryRun, tx);
+      if (shouldLoad('tipos_investimento')) await loader.loadTiposInvestimento(pgTiposInvest, batchSize, dryRun, tx);
+      if (shouldLoad('instituicoes_financeiras')) await loader.loadInstituicoesFinanceiras(pgInstituicoes, batchSize, dryRun, tx);
+      if (shouldLoad('webhook_events')) await loader.loadWebhookEvents(pgWebhooks, batchSize, dryRun, tx);
 
       // Level-1 children (FK to parent tables only)
-      if (shouldLoad('categorias'))
-        await loader.loadCategorias(pgCategorias, batchSize, dryRun, tx);
-      if (shouldLoad('assinantes'))
-        await loader.loadAssinantes(pgAssinantes, batchSize, dryRun, tx);
-      if (shouldLoad('contas'))
-        await loader.loadContas(pgContas, batchSize, dryRun, tx);
+      if (shouldLoad('categorias')) await loader.loadCategorias(pgCategorias, batchSize, dryRun, tx);
+      if (shouldLoad('assinantes')) await loader.loadAssinantes(pgAssinantes, batchSize, dryRun, tx);
+      if (shouldLoad('contas')) await loader.loadContas(pgContas, batchSize, dryRun, tx);
 
       // Level-2 children (FK to level-1 tables)
-      if (shouldLoad('assinantes_pagamentos'))
-        await loader.loadAssinantesPagamentos(
-          pgPagamentos,
-          batchSize,
-          dryRun,
-          tx
-        );
-      if (shouldLoad('contas_pagar'))
-        await loader.loadContasPagar(pgContasPagar, batchSize, dryRun, tx);
-      if (shouldLoad('contas_receber'))
-        await loader.loadContasReceber(pgContasReceber, batchSize, dryRun, tx);
-      if (shouldLoad('investimentos'))
-        await loader.loadInvestimentos(pgInvestimentos, batchSize, dryRun, tx);
-      if (shouldLoad('metas'))
-        await loader.loadMetas(pgMetas, batchSize, dryRun, tx);
-      if (shouldLoad('anexos'))
-        await loader.loadAnexos(pgAnexos, batchSize, dryRun, tx);
-      if (shouldLoad('whatsapp_logs'))
-        await loader.loadWhatsappLogs(pgWhatsapp, batchSize, dryRun, tx);
+      if (shouldLoad('assinantes_pagamentos')) await loader.loadAssinantesPagamentos(pgPagamentos, batchSize, dryRun, tx);
+      if (shouldLoad('contas_pagar')) await loader.loadContasPagar(pgContasPagar, batchSize, dryRun, tx);
+      if (shouldLoad('contas_receber')) await loader.loadContasReceber(pgContasReceber, batchSize, dryRun, tx);
+      if (shouldLoad('investimentos')) await loader.loadInvestimentos(pgInvestimentos, batchSize, dryRun, tx);
+      if (shouldLoad('metas')) await loader.loadMetas(pgMetas, batchSize, dryRun, tx);
+      if (shouldLoad('anexos')) await loader.loadAnexos(pgAnexos, batchSize, dryRun, tx);
+      if (shouldLoad('whatsapp_logs')) await loader.loadWhatsappLogs(pgWhatsapp, batchSize, dryRun, tx);
 
       // Level-3 children (FK to level-2 tables)
-      if (shouldLoad('movimentacoes_caixa'))
-        await loader.loadMovimentacoesCaixa(
-          pgMovimentacoes,
-          batchSize,
-          dryRun,
-          tx
-        );
-      if (shouldLoad('investimentos_eventos'))
-        await loader.loadInvestimentosEventos(
-          pgInvestEventos,
-          batchSize,
-          dryRun,
-          tx
-        );
-      if (shouldLoad('anexos_vinculos'))
-        await loader.loadAnexosVinculos(
-          pgAnexosVinculos,
-          batchSize,
-          dryRun,
-          tx
-        );
+      if (shouldLoad('movimentacoes_caixa')) await loader.loadMovimentacoesCaixa(pgMovimentacoes, batchSize, dryRun, tx);
+      if (shouldLoad('investimentos_eventos')) await loader.loadInvestimentosEventos(pgInvestEventos, batchSize, dryRun, tx);
+      if (shouldLoad('anexos_vinculos')) await loader.loadAnexosVinculos(pgAnexosVinculos, batchSize, dryRun, tx);
 
       // Level-4 children (FK to level-3 tables)
-      if (shouldLoad('metas_movimentos'))
-        await loader.loadMetasMovimentos(pgMetasMov, batchSize, dryRun, tx);
+      if (shouldLoad('metas_movimentos')) await loader.loadMetasMovimentos(pgMetasMov, batchSize, dryRun, tx);
 
       // No-FK tables
-      if (shouldLoad('jobs'))
-        await loader.loadJobs(pgJobs, batchSize, dryRun, tx);
+      if (shouldLoad('jobs')) await loader.loadJobs(pgJobs, batchSize, dryRun, tx);
     };
 
     if (!dryRun) {
@@ -571,7 +496,7 @@ async function main(): Promise<void> {
           await tx.$executeRaw`SET CONSTRAINTS ALL DEFERRED`;
           await execLoad(tx);
         },
-        { timeout: transactionTimeout }
+        { timeout: transactionTimeout },
       );
     } else {
       await execLoad();
@@ -644,7 +569,7 @@ async function main(): Promise<void> {
         ],
       },
       dataValidationResult,
-      loader.failedRows
+      loader.failedRows,
     );
 
     const reportPath = reporter.save(report);

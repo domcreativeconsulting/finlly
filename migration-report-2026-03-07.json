@@ -1,0 +1,642 @@
+{
+  "timestamp": "2026-03-07T21:58:02.483Z",
+  "status": "partial",
+  "modo": "execucao_real",
+  "summary": {
+    "total_tabelas": 20,
+    "tabelas_ok": 11,
+    "tabelas_com_erro": 9,
+    "total_registros_mysql": 52,
+    "total_registros_postgres": 23,
+    "total_erros": 9,
+    "total_avisos": 29
+  },
+  "por_tabela": [
+    {
+      "tabela": "usuarios",
+      "mysql_count": 6,
+      "postgres_count": 6,
+      "status": "ok"
+    },
+    {
+      "tabela": "cupons",
+      "mysql_count": 1,
+      "postgres_count": 1,
+      "status": "ok"
+    },
+    {
+      "tabela": "assinantes",
+      "mysql_count": 3,
+      "postgres_count": 0,
+      "status": "mismatch"
+    },
+    {
+      "tabela": "assinantes_pagamentos",
+      "mysql_count": 0,
+      "postgres_count": 0,
+      "status": "ok"
+    },
+    {
+      "tabela": "webhook_events",
+      "mysql_count": 0,
+      "postgres_count": 0,
+      "status": "ok"
+    },
+    {
+      "tabela": "instituicoes_financeiras",
+      "mysql_count": 0,
+      "postgres_count": 0,
+      "status": "ok"
+    },
+    {
+      "tabela": "contas",
+      "mysql_count": 4,
+      "postgres_count": 0,
+      "status": "mismatch"
+    },
+    {
+      "tabela": "categorias",
+      "mysql_count": 15,
+      "postgres_count": 15,
+      "status": "ok"
+    },
+    {
+      "tabela": "contas_pagar",
+      "mysql_count": 11,
+      "postgres_count": 0,
+      "status": "mismatch"
+    },
+    {
+      "tabela": "contas_receber",
+      "mysql_count": 2,
+      "postgres_count": 0,
+      "status": "mismatch"
+    },
+    {
+      "tabela": "movimentacoes_caixa",
+      "mysql_count": 3,
+      "postgres_count": 0,
+      "status": "mismatch"
+    },
+    {
+      "tabela": "tipos_investimento",
+      "mysql_count": 2,
+      "postgres_count": 1,
+      "status": "mismatch"
+    },
+    {
+      "tabela": "investimentos",
+      "mysql_count": 2,
+      "postgres_count": 0,
+      "status": "mismatch"
+    },
+    {
+      "tabela": "investimentos_eventos",
+      "mysql_count": 0,
+      "postgres_count": 0,
+      "status": "ok"
+    },
+    {
+      "tabela": "metas",
+      "mysql_count": 2,
+      "postgres_count": 0,
+      "status": "mismatch"
+    },
+    {
+      "tabela": "metas_movimentos",
+      "mysql_count": 1,
+      "postgres_count": 0,
+      "status": "mismatch"
+    },
+    {
+      "tabela": "anexos",
+      "mysql_count": 0,
+      "postgres_count": 0,
+      "status": "ok"
+    },
+    {
+      "tabela": "anexos_vinculos",
+      "mysql_count": 0,
+      "postgres_count": 0,
+      "status": "ok"
+    },
+    {
+      "tabela": "whatsapp_logs",
+      "mysql_count": 0,
+      "postgres_count": 0,
+      "status": "ok"
+    },
+    {
+      "tabela": "jobs",
+      "mysql_count": 0,
+      "postgres_count": 0,
+      "status": "ok"
+    }
+  ],
+  "amostras": [
+    {
+      "tabela": "usuarios",
+      "mysql_id": 3,
+      "postgres_id": "c660c9e8-fa05-5c05-a160-8d9a7711cbbe",
+      "encontrado": true,
+      "campos_ok": 3,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "usuarios",
+      "mysql_id": 12,
+      "postgres_id": "7f5d92f2-35d3-5bff-ab1a-5344dbd41993",
+      "encontrado": true,
+      "campos_ok": 3,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "usuarios",
+      "mysql_id": 1,
+      "postgres_id": "da61d4d2-6395-59e7-a6b5-cac0c2c9b212",
+      "encontrado": true,
+      "campos_ok": 3,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "usuarios",
+      "mysql_id": 6,
+      "postgres_id": "83b74ecf-a961-5e44-a9b7-1f2d7a9b2f72",
+      "encontrado": true,
+      "campos_ok": 3,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "usuarios",
+      "mysql_id": 2,
+      "postgres_id": "8c1ad8cf-1a6a-56b8-9cc9-3a9ddfe5504a",
+      "encontrado": true,
+      "campos_ok": 3,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "usuarios",
+      "mysql_id": 11,
+      "postgres_id": "a9ebf605-e984-5aee-86d1-6682675a2fa0",
+      "encontrado": true,
+      "campos_ok": 3,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "cupons",
+      "mysql_id": 2,
+      "postgres_id": "ca30b2f0-b70e-500e-871d-ff606244c170",
+      "encontrado": true,
+      "campos_ok": 2,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "assinantes",
+      "mysql_id": 1,
+      "postgres_id": "f1b7c2b1-a2ae-5941-9329-a8ecfe4fa60b",
+      "encontrado": false,
+      "campos_ok": 0,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "assinantes",
+      "mysql_id": 8,
+      "postgres_id": "187a61e2-6108-5a34-aee1-1d67fc084d8c",
+      "encontrado": false,
+      "campos_ok": 0,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "assinantes",
+      "mysql_id": 9,
+      "postgres_id": "44d8f64a-4716-5449-9674-5abd525c957f",
+      "encontrado": false,
+      "campos_ok": 0,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "contas",
+      "mysql_id": 3,
+      "postgres_id": "318024c3-91ac-51b8-a519-76a82673da1f",
+      "encontrado": false,
+      "campos_ok": 0,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "contas",
+      "mysql_id": 1,
+      "postgres_id": "8310d3ed-fcd6-5d1c-8cc5-4f0b50bcf4f3",
+      "encontrado": false,
+      "campos_ok": 0,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "contas",
+      "mysql_id": 2,
+      "postgres_id": "f8773ac3-ae03-55b7-a0ce-eb761dcabb97",
+      "encontrado": false,
+      "campos_ok": 0,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "contas",
+      "mysql_id": 5,
+      "postgres_id": "664a98ef-d89a-5a07-a66c-0f43d706e1a5",
+      "encontrado": false,
+      "campos_ok": 0,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "categorias",
+      "mysql_id": 9,
+      "postgres_id": "3f9f275f-c093-5cbe-87c6-464d1c5a4665",
+      "encontrado": true,
+      "campos_ok": 1,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "categorias",
+      "mysql_id": 2,
+      "postgres_id": "d80e009b-57ee-518e-85d2-4211bd5acbcf",
+      "encontrado": true,
+      "campos_ok": 1,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "categorias",
+      "mysql_id": 13,
+      "postgres_id": "c38fbee7-a4fe-5b08-b28b-476a094b00be",
+      "encontrado": true,
+      "campos_ok": 1,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "categorias",
+      "mysql_id": 7,
+      "postgres_id": "b390866b-95c9-5f92-9f28-654734029b7a",
+      "encontrado": true,
+      "campos_ok": 1,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "categorias",
+      "mysql_id": 14,
+      "postgres_id": "551d7739-f8f3-538f-84d6-6d46c17d61de",
+      "encontrado": true,
+      "campos_ok": 1,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "categorias",
+      "mysql_id": 16,
+      "postgres_id": "dab56bba-fff5-5955-a71f-977be44a9f16",
+      "encontrado": true,
+      "campos_ok": 1,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "categorias",
+      "mysql_id": 8,
+      "postgres_id": "af276879-1c20-570f-b589-27e6ad9a2534",
+      "encontrado": true,
+      "campos_ok": 1,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "categorias",
+      "mysql_id": 3,
+      "postgres_id": "f3924628-a7e1-538b-aadb-1b8625181a62",
+      "encontrado": true,
+      "campos_ok": 1,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "categorias",
+      "mysql_id": 1,
+      "postgres_id": "cd2d890b-b9de-5a60-abe0-e5280989df06",
+      "encontrado": true,
+      "campos_ok": 1,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "categorias",
+      "mysql_id": 5,
+      "postgres_id": "8e98308b-c6d9-5a3c-bd44-082bceb5da07",
+      "encontrado": true,
+      "campos_ok": 1,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "categorias",
+      "mysql_id": 15,
+      "postgres_id": "c0c89af2-cb59-514b-a6f2-d846d479ead7",
+      "encontrado": true,
+      "campos_ok": 1,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "categorias",
+      "mysql_id": 6,
+      "postgres_id": "746720b6-bbba-5200-9c86-5bb16e2d22ad",
+      "encontrado": true,
+      "campos_ok": 1,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "categorias",
+      "mysql_id": 18,
+      "postgres_id": "67e3fae7-690e-5d12-a65e-aaedac206893",
+      "encontrado": true,
+      "campos_ok": 1,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "categorias",
+      "mysql_id": 12,
+      "postgres_id": "68569fbd-27d4-5a2a-9cc5-1b69cea354dc",
+      "encontrado": true,
+      "campos_ok": 1,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "categorias",
+      "mysql_id": 4,
+      "postgres_id": "73d93f01-2ecf-5a0f-85d5-522c29844d36",
+      "encontrado": true,
+      "campos_ok": 1,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "contas_pagar",
+      "mysql_id": 17,
+      "postgres_id": "d3585790-5970-5f23-a4da-023631a0c7f8",
+      "encontrado": false,
+      "campos_ok": 0,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "contas_pagar",
+      "mysql_id": 8,
+      "postgres_id": "1b7688ac-7abd-5ae0-b249-6192afe59bd9",
+      "encontrado": false,
+      "campos_ok": 0,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "contas_pagar",
+      "mysql_id": 7,
+      "postgres_id": "73ae5069-e831-5dc0-82a3-5da204ca723c",
+      "encontrado": false,
+      "campos_ok": 0,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "contas_pagar",
+      "mysql_id": 12,
+      "postgres_id": "f6933c54-65a9-5108-9ef7-06094642d53b",
+      "encontrado": false,
+      "campos_ok": 0,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "contas_pagar",
+      "mysql_id": 16,
+      "postgres_id": "2c32af4a-75ee-50f3-9d52-bb0f1a91a38a",
+      "encontrado": false,
+      "campos_ok": 0,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "contas_pagar",
+      "mysql_id": 14,
+      "postgres_id": "ee7d7ef4-1ec1-5083-a670-4d072bfc0db2",
+      "encontrado": false,
+      "campos_ok": 0,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "contas_pagar",
+      "mysql_id": 10,
+      "postgres_id": "44f75d2c-be2a-54fa-b50f-20d6ec7eea60",
+      "encontrado": false,
+      "campos_ok": 0,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "contas_pagar",
+      "mysql_id": 18,
+      "postgres_id": "467971d0-81d0-5921-b8c5-4a0f281f0c64",
+      "encontrado": false,
+      "campos_ok": 0,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "contas_pagar",
+      "mysql_id": 11,
+      "postgres_id": "50894184-70c3-5e06-84dd-6ca9e55ee7a0",
+      "encontrado": false,
+      "campos_ok": 0,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "contas_pagar",
+      "mysql_id": 9,
+      "postgres_id": "3b79de73-edc6-5f0c-abdd-762ef8d02495",
+      "encontrado": false,
+      "campos_ok": 0,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "contas_pagar",
+      "mysql_id": 13,
+      "postgres_id": "23ac9877-eaca-50c0-a9dc-7e4a7dacaf56",
+      "encontrado": false,
+      "campos_ok": 0,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "contas_receber",
+      "mysql_id": 2,
+      "postgres_id": "042f7524-63f2-5c2d-8dba-879c7bac4159",
+      "encontrado": false,
+      "campos_ok": 0,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "contas_receber",
+      "mysql_id": 1,
+      "postgres_id": "2a909116-56c1-5410-b9f2-c784e47f9060",
+      "encontrado": false,
+      "campos_ok": 0,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "movimentacoes_caixa",
+      "mysql_id": 3,
+      "postgres_id": "94dc3390-2240-5566-97f1-8ec865fe6458",
+      "encontrado": false,
+      "campos_ok": 0,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "movimentacoes_caixa",
+      "mysql_id": 2,
+      "postgres_id": "74200c58-846f-5507-bb34-b7628c4fb820",
+      "encontrado": false,
+      "campos_ok": 0,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "movimentacoes_caixa",
+      "mysql_id": 1,
+      "postgres_id": "6172dd7d-e58a-5d2d-b509-3c749b637dd7",
+      "encontrado": false,
+      "campos_ok": 0,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "tipos_investimento",
+      "mysql_id": 2,
+      "postgres_id": "ebb7a608-b31f-5ebc-ad99-7f5253dc7b9a",
+      "encontrado": false,
+      "campos_ok": 0,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "tipos_investimento",
+      "mysql_id": 1,
+      "postgres_id": "65624bdc-2209-5a1b-a237-dc0bdaccf90f",
+      "encontrado": true,
+      "campos_ok": 1,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "investimentos",
+      "mysql_id": 11,
+      "postgres_id": "b67d13f6-f495-5cc9-ae1d-aef590da3ce2",
+      "encontrado": false,
+      "campos_ok": 0,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "investimentos",
+      "mysql_id": 10,
+      "postgres_id": "b0dfcdf6-d71f-56e5-988d-c1ca96a7a282",
+      "encontrado": false,
+      "campos_ok": 0,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "metas",
+      "mysql_id": 2,
+      "postgres_id": "a59b2e4e-edac-5372-b1fd-36cf22a382a9",
+      "encontrado": false,
+      "campos_ok": 0,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "metas",
+      "mysql_id": 1,
+      "postgres_id": "7b02cd12-667f-507b-b8ad-3a561e260299",
+      "encontrado": false,
+      "campos_ok": 0,
+      "campos_com_erro": 0
+    },
+    {
+      "tabela": "metas_movimentos",
+      "mysql_id": 1,
+      "postgres_id": "9036273d-652f-5b50-9a73-dce21d7a6579",
+      "encontrado": false,
+      "campos_ok": 0,
+      "campos_com_erro": 0
+    }
+  ],
+  "orphans_found": [],
+  "qualidade_dados": {
+    "total_violacoes": 0,
+    "linhas_sanitizadas": 0,
+    "linhas_ignoradas": 0,
+    "por_tabela": [
+      {
+        "tabela": "cupons",
+        "total_linhas": 1,
+        "violacoes": 0
+      },
+      {
+        "tabela": "assinantes_pagamentos",
+        "total_linhas": 0,
+        "violacoes": 0
+      },
+      {
+        "tabela": "contas_pagar",
+        "total_linhas": 0,
+        "violacoes": 0
+      },
+      {
+        "tabela": "contas_receber",
+        "total_linhas": 0,
+        "violacoes": 0
+      },
+      {
+        "tabela": "movimentacoes_caixa",
+        "total_linhas": 0,
+        "violacoes": 0
+      },
+      {
+        "tabela": "investimentos_eventos",
+        "total_linhas": 0,
+        "violacoes": 0
+      },
+      {
+        "tabela": "metas",
+        "total_linhas": 0,
+        "violacoes": 0
+      },
+      {
+        "tabela": "anexos",
+        "total_linhas": 0,
+        "violacoes": 0
+      },
+      {
+        "tabela": "jobs",
+        "total_linhas": 0,
+        "violacoes": 0
+      },
+      {
+        "tabela": "whatsapp_logs",
+        "total_linhas": 0,
+        "violacoes": 0
+      }
+    ]
+  },
+  "linhas_com_falha": {
+    "total": 0,
+    "por_tabela": {}
+  },
+  "transformacoes_aplicadas": {
+    "ids_mapeados": 25,
+    "tipos_convertidos": [
+      "DATETIME → TIMESTAMPTZ",
+      "INT → UUID (v5)",
+      "VARCHAR → ENUM"
+    ],
+    "campos_removidos": ["balance", "current_value", "current_amount"],
+    "campos_adicionados": [
+      "hash_sha256",
+      "deleted_at",
+      "is_sistema",
+      "conta_destino_id"
+    ]
+  },
+  "erros": [
+    "Contagem divergente em assinantes: MySQL=3, Postgres=0",
+    "Contagem divergente em contas: MySQL=4, Postgres=0",
+    "Contagem divergente em contas_pagar: MySQL=11, Postgres=0",
+    "Contagem divergente em contas_receber: MySQL=2, Postgres=0",
+    "Contagem divergente em movimentacoes_caixa: MySQL=3, Postgres=0",
+    "Contagem divergente em tipos_investimento: MySQL=2, Postgres=1",
+    "Contagem divergente em investimentos: MySQL=2, Postgres=0",
+    "Contagem divergente em metas: MySQL=2, Postgres=0",
+    "Contagem divergente em metas_movimentos: MySQL=1, Postgres=0"
+  ]
+}
