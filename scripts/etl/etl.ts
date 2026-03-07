@@ -1,5 +1,6 @@
 import { config, cliFlags } from './config';
 import { getMappedCount, clearCache, mapId } from './transformers/id-mapper';
+import { getTimezoneOffset } from 'date-fns-tz';
 
 // Extractors
 import { UsuariosExtractor } from './extractors/usuarios.extractor';
@@ -67,6 +68,19 @@ async function main(): Promise<void> {
 
   // CLI flags
   const { tables: tableFilter, since, reset, force } = cliFlags;
+
+  // ── Timezone validation ────────────────────────────────────────────────────
+  const timezone = config.etl.timezone;
+  try {
+    const offsetMs = getTimezoneOffset(timezone, new Date());
+    if (isNaN(offsetMs)) throw new Error('offset is NaN');
+    const offsetHours = (offsetMs / 3_600_000).toFixed(1);
+    console.log(`\n🌎 Timezone: ${timezone} (UTC offset: ${Number(offsetHours) >= 0 ? '+' : ''}${offsetHours}h)`);
+  } catch {
+    console.error(`❌ Timezone inválido ou não reconhecido: "${timezone}"`);
+    console.error('   Defina TZ=America/Sao_Paulo no arquivo .env.local ou nas variáveis de ambiente.');
+    process.exit(1);
+  }
 
   console.log('\n🚀 Iniciando migração MySQL → Postgres\n');
   console.log(

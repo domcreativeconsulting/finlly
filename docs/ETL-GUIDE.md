@@ -7,7 +7,7 @@ Este guia descreve como executar o script ETL (Extract, Transform, Load) que mig
 A migração cobre **20 tabelas** e realiza as seguintes transformações principais:
 
 - `INT AUTO_INCREMENT` → `UUID` (via UUIDv5 determinístico)
-- `DATETIME` → `TIMESTAMPTZ` (assumindo UTC)
+- `DATETIME` → `TIMESTAMPTZ` (America/Sao_Paulo → UTC, com suporte a DST)
 - `VARCHAR status` → `ENUM` Postgres
 - Remoção de campos desnormalizados: `balance`, `current_value`, `current_amount`
 - Geração de `hash_sha256` para deduplicação de anexos
@@ -37,6 +37,9 @@ LEGACY_MYSQL_DATABASE=finlly_go
 
 # Banco de dados v2 (Postgres)
 DATABASE_URL=postgresql://user:password@localhost:5432/finlly
+
+# Timezone (obrigatório — todos os DATETIMEs do MySQL são interpretados neste fuso)
+TZ=America/Sao_Paulo
 
 # Configurações do ETL
 ETL_BATCH_SIZE=1000        # Registros por lote (padrão: 1000)
@@ -344,6 +347,97 @@ E do Postgres:
 ```bash
 pg_dump $DATABASE_URL > backup-finlly-v2-$(date +%Y%m%d).sql
 ```
+
+---
+
+## Tratamento de Timezone (America/Sao_Paulo)
+
+### Por que isso importa
+
+O banco MySQL legado armazena todos os `DATETIME` **sem informação de fuso horário**. O ETL assume que esses valores estão em **America/Sao_Paulo** e os converte para UTC antes de inserir no Postgres como `TIMESTAMPTZ`.
+
+Isso garante que o Postgres armazene o instante correto no tempo, independentemente do fuso do servidor.
+
+### Horário de Verão (DST)
+
+O Brasil aboliu o horário de verão em 2019. Desde então, `America/Sao_Paulo` permanece **UTC-3 o ano todo**. A biblioteca `date-fns-tz` usa o banco de dados IANA de fusos horários, portanto trata corretamente registros históricos (anteriores a 2019) que possam ter sido gerados durante o horário de verão (UTC-2).
+
+| Período | Offset São Paulo |
+|---------|-----------------|
+| A partir de 2020 (sem DST) | UTC-3 (ano todo) |
+| Antes de 2020 — verão (nov–fev) | UTC-2 (histórico) |
+| Antes de 2020 — inverno (mar–out) | UTC-3 (histórico) |
+
+### Exemplo de conversão
+
+```
+MySQL value:      '2026-03-07 14:30:00'
+Interpretation:   2026-03-07 14:30 em São Paulo (UTC-3, horário padrão)
+UTC resultante:   2026-03-07 17:30:00 UTC
+Postgres storage: '2026-03-07 17:30:00+00' (TIMESTAMPTZ)
+```
+
+### Fluxo completo
+
+```
+Extract (MySQL)
+  ↓
+'2026-03-07 14:30:00' (sem timezone)
+  ↓
+Transform (JavaScript / date-fns-tz)
+  ↓
+Interpreta como America/Sao_Paulo → 2026-03-07 14:30 -03:00
+Converte para UTC → 2026-03-07 17:30:00 UTC
+  ↓
+Load (Postgres)
+  ↓
+TIMESTAMPTZ: '2026-03-07 17:30:00+00'
+  ↓
+Consulta na aplicação (AT TIME ZONE)
+  ↓
+SELECT created_at AT TIME ZONE 'America/Sao_Paulo' AS created_at_sp
+Resultado: 2026-03-07 14:30:00 ✅
+```
+
+### Configuração obrigatória
+
+Defina `TZ=America/Sao_Paulo` no arquivo `.env.local` (ou variável de ambiente). O ETL valida o timezone na inicialização e exibe um erro claro se for inválido:
+
+```
+🌎 Timezone: America/Sao_Paulo (UTC offset: -3.0h)
+```
+
+Se o timezone for inválido:
+
+```
+❌ Timezone inválido ou não reconhecido: "America/Foo"
+   Defina TZ=America/Sao_Paulo no arquivo .env.local ou nas variáveis de ambiente.
+```
+
+### Verificando datas no Postgres
+
+Após a migração, use `AT TIME ZONE` para inspecionar os valores convertidos:
+
+```sql
+-- Verificar created_at no fuso de São Paulo
+SELECT
+  id,
+  created_at AS created_at_utc,
+  created_at AT TIME ZONE 'America/Sao_Paulo' AS created_at_sp
+FROM usuarios
+LIMIT 5;
+
+-- Confirmar que a data original do MySQL é restaurada corretamente
+-- Se o MySQL tinha '2026-03-07 14:30:00', o resultado de created_at_sp
+-- deve ser '2026-03-07 14:30:00'
+```
+
+### Campos afetados
+
+| Função | Campos |
+|--------|--------|
+| `toTimestamptz()` | `created_at`, `updated_at`, `deleted_at`, datas de agendamento e pagamento |
+| `toDateOnly()` | `data_inicio`, `data_fim`, `data_vencimento`, `data_recebimento`, `data_pagamento` |
 
 ---
 
