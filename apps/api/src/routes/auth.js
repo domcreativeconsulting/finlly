@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
 import { register, login, refresh, logout, getMe, parseExpiresInSeconds } from '../services/authService.js';
+import { forgotPassword, resetPassword } from '../services/passwordRecoveryService.js';
+import { verifyEmail, resendVerificationEmail } from '../services/emailVerificationService.js';
 import { jwtAuthMiddleware } from '../middleware/jwtAuth.js';
 import { toValidationError } from '../errors/toValidationError.js';
 import { AppError } from '../errors/AppError.js';
@@ -64,6 +66,30 @@ const RefreshSchema = z.object({
 const LogoutSchema = z.object({
   sessao_id: z.string().uuid().optional(),
   todas: z.boolean().optional(),
+});
+
+const ForgotPasswordSchema = z.object({
+  email: z.string().email('E-mail inválido'),
+});
+
+const ResetPasswordSchema = z.object({
+  token: z.string().min(1, 'Token obrigatório'),
+  nova_senha: z
+    .string()
+    .min(8, 'Mínimo 8 caracteres')
+    .max(255)
+    .regex(/[A-Z]/, 'Deve conter letra maiúscula')
+    .regex(/[a-z]/, 'Deve conter letra minúscula')
+    .regex(/[0-9]/, 'Deve conter número')
+    .regex(/[!@#$%^&*]/, 'Deve conter caractere especial !@#$%^&*'),
+});
+
+const VerifyEmailSchema = z.object({
+  token: z.string().min(1, 'Token obrigatório'),
+});
+
+const ResendVerificationEmailSchema = z.object({
+  email: z.string().email('E-mail inválido'),
 });
 
 // ============================================================
@@ -177,6 +203,74 @@ router.get('/auth/me', authLimiter, jwtAuthMiddleware, async (req, res, next) =>
   try {
     const usuario = await getMe(req.user.sub);
     return res.status(200).json(usuario);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /auth/forgot-password
+ * Inicia fluxo de recuperação de senha.
+ */
+router.post('/auth/forgot-password', authLimiter, async (req, res, next) => {
+  const parsed = ForgotPasswordSchema.safeParse(req.body);
+  if (!parsed.success) return next(toValidationError(parsed.error));
+
+  try {
+    const result = await forgotPassword(parsed.data.email, getRequestMeta(req));
+    logger.info({ msg: 'Forgot password requested', email: parsed.data.email });
+    return res.status(200).json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /auth/reset-password
+ * Redefine a senha usando token de recuperação.
+ */
+router.post('/auth/reset-password', authLimiter, async (req, res, next) => {
+  const parsed = ResetPasswordSchema.safeParse(req.body);
+  if (!parsed.success) return next(toValidationError(parsed.error));
+
+  try {
+    const result = await resetPassword(parsed.data, getRequestMeta(req));
+    logger.info({ msg: 'Password reset completed', usuario_id: result.usuario_id });
+    return res.status(200).json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /auth/verify-email
+ * Verifica o e-mail do usuário.
+ */
+router.post('/auth/verify-email', authLimiter, async (req, res, next) => {
+  const parsed = VerifyEmailSchema.safeParse(req.body);
+  if (!parsed.success) return next(toValidationError(parsed.error));
+
+  try {
+    const result = await verifyEmail(parsed.data.token, getRequestMeta(req));
+    logger.info({ msg: 'Email verified', usuario_id: result.usuario_id });
+    return res.status(200).json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/**
+ * POST /auth/resend-verification-email
+ * Reenvia e-mail de verificação.
+ */
+router.post('/auth/resend-verification-email', authLimiter, async (req, res, next) => {
+  const parsed = ResendVerificationEmailSchema.safeParse(req.body);
+  if (!parsed.success) return next(toValidationError(parsed.error));
+
+  try {
+    const result = await resendVerificationEmail(parsed.data.email, getRequestMeta(req));
+    logger.info({ msg: 'Verification email resent', email: parsed.data.email });
+    return res.status(200).json(result);
   } catch (err) {
     return next(err);
   }

@@ -7,6 +7,10 @@ const mockLogin = jest.fn();
 const mockRefresh = jest.fn();
 const mockLogout = jest.fn();
 const mockGetMe = jest.fn();
+const mockForgotPassword = jest.fn();
+const mockResetPassword = jest.fn();
+const mockVerifyEmail = jest.fn();
+const mockResendVerificationEmail = jest.fn();
 
 // Mock express-rate-limit to be a pass-through in tests
 jest.unstable_mockModule('express-rate-limit', () => ({
@@ -29,6 +33,20 @@ jest.unstable_mockModule('../../services/authService.js', () => ({
   },
 }));
 
+jest.unstable_mockModule('../../services/passwordRecoveryService.js', () => ({
+  forgotPassword: mockForgotPassword,
+  resetPassword: mockResetPassword,
+  maskEmail: (email) => {
+    const [local, domain] = email.split('@');
+    return `${local.slice(0, 2)}***@${domain}`;
+  },
+}));
+
+jest.unstable_mockModule('../../services/emailVerificationService.js', () => ({
+  verifyEmail: mockVerifyEmail,
+  resendVerificationEmail: mockResendVerificationEmail,
+}));
+
 jest.unstable_mockModule('../../logger.js', () => ({
   default: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
 }));
@@ -41,6 +59,13 @@ jest.unstable_mockModule('../../config/env.js', () => ({
     JWT_EXPIRES_IN: '15m',
     JWT_REFRESH_SECRET: 'test_refresh_secret_minimum_32_chars_long',
     JWT_REFRESH_EXPIRES_IN: '30d',
+    PASSWORD_RESET_EXPIRATION: 900,
+    EMAIL_VERIFICATION_EXPIRATION: 86400,
+    FORGOT_PASSWORD_RATE_LIMIT: 3,
+    FORGOT_PASSWORD_RATE_WINDOW: 3600,
+    VERIFY_EMAIL_RATE_LIMIT: 3,
+    VERIFY_EMAIL_RATE_WINDOW: 3600,
+    APP_URL: 'http://localhost:5173',
   },
 }));
 
@@ -68,6 +93,10 @@ beforeEach(() => {
   mockRefresh.mockReset();
   mockLogout.mockReset();
   mockGetMe.mockReset();
+  mockForgotPassword.mockReset();
+  mockResetPassword.mockReset();
+  mockVerifyEmail.mockReset();
+  mockResendVerificationEmail.mockReset();
 });
 
 function makeApp() {
@@ -346,5 +375,228 @@ describe('GET /auth/me', () => {
     const app = makeApp();
     const res = await request(app, 'GET', '/auth/me', null);
     expect(res.status).toBe(404);
+  });
+});
+
+// ============================================================
+// POST /auth/forgot-password
+// ============================================================
+describe('POST /auth/forgot-password', () => {
+  const validBody = { email: 'joao@example.com' };
+
+  test('returns 200 with generic message on valid email', async () => {
+    mockForgotPassword.mockResolvedValue({
+      message: 'Se esse e-mail estiver registrado, você receberá um link de recuperação em breve',
+      email_masked: 'jo***@example.com',
+    });
+
+    const app = makeApp();
+    const res = await request(app, 'POST', '/auth/forgot-password', validBody);
+    expect(res.status).toBe(200);
+    expect(res.body.message).toContain('Se esse e-mail estiver registrado');
+    expect(res.body.email_masked).toBe('jo***@example.com');
+  });
+
+  test('returns 422 when email is invalid', async () => {
+    const app = makeApp();
+    const res = await request(app, 'POST', '/auth/forgot-password', { email: 'not-an-email' });
+    expect(res.status).toBe(422);
+    expect(res.body.code).toBe('VALIDATION_ERROR');
+  });
+
+  test('returns 422 when email is missing', async () => {
+    const app = makeApp();
+    const res = await request(app, 'POST', '/auth/forgot-password', {});
+    expect(res.status).toBe(422);
+    expect(res.body.code).toBe('VALIDATION_ERROR');
+  });
+
+  test('returns 429 when rate limit exceeded', async () => {
+    const { AppError } = await import('../../errors/AppError.js');
+    mockForgotPassword.mockRejectedValue(AppError.tooManyRequests('Muitas tentativas.'));
+
+    const app = makeApp();
+    const res = await request(app, 'POST', '/auth/forgot-password', validBody);
+    expect(res.status).toBe(429);
+  });
+});
+
+// ============================================================
+// POST /auth/reset-password
+// ============================================================
+describe('POST /auth/reset-password', () => {
+  const validBody = {
+    token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test',
+    nova_senha: 'NovaSegura123!',
+  };
+
+  test('returns 200 on successful password reset', async () => {
+    mockResetPassword.mockResolvedValue({
+      message: 'Senha redefinida com sucesso',
+      usuario_id: 'uuid-123',
+    });
+
+    const app = makeApp();
+    const res = await request(app, 'POST', '/auth/reset-password', validBody);
+    expect(res.status).toBe(200);
+    expect(res.body.message).toBe('Senha redefinida com sucesso');
+    expect(res.body.usuario_id).toBe('uuid-123');
+  });
+
+  test('returns 422 when token is missing', async () => {
+    const app = makeApp();
+    const res = await request(app, 'POST', '/auth/reset-password', { nova_senha: 'NovaSegura123!' });
+    expect(res.status).toBe(422);
+    expect(res.body.code).toBe('VALIDATION_ERROR');
+  });
+
+  test('returns 422 when nova_senha is too weak', async () => {
+    const app = makeApp();
+    const res = await request(app, 'POST', '/auth/reset-password', {
+      token: 'some.jwt.token',
+      nova_senha: 'weak',
+    });
+    expect(res.status).toBe(422);
+    expect(res.body.code).toBe('VALIDATION_ERROR');
+  });
+
+  test('returns 422 when nova_senha lacks special char', async () => {
+    const app = makeApp();
+    const res = await request(app, 'POST', '/auth/reset-password', {
+      token: 'some.jwt.token',
+      nova_senha: 'NovaSegura123',
+    });
+    expect(res.status).toBe(422);
+    expect(res.body.code).toBe('VALIDATION_ERROR');
+  });
+
+  test('returns 400 when token is expired', async () => {
+    const { AppError } = await import('../../errors/AppError.js');
+    mockResetPassword.mockRejectedValue(AppError.badRequest('Token expirado'));
+
+    const app = makeApp();
+    const res = await request(app, 'POST', '/auth/reset-password', validBody);
+    expect(res.status).toBe(400);
+    expect(res.body.message).toContain('Token expirado');
+  });
+
+  test('returns 400 when token already used', async () => {
+    const { AppError } = await import('../../errors/AppError.js');
+    mockResetPassword.mockRejectedValue(AppError.badRequest('Token já foi utilizado'));
+
+    const app = makeApp();
+    const res = await request(app, 'POST', '/auth/reset-password', validBody);
+    expect(res.status).toBe(400);
+    expect(res.body.message).toContain('Token já foi utilizado');
+  });
+
+  test('returns 403 when user is blocked', async () => {
+    const { AppError } = await import('../../errors/AppError.js');
+    mockResetPassword.mockRejectedValue(AppError.forbidden('Usuário bloqueado'));
+
+    const app = makeApp();
+    const res = await request(app, 'POST', '/auth/reset-password', validBody);
+    expect(res.status).toBe(403);
+  });
+});
+
+// ============================================================
+// POST /auth/verify-email
+// ============================================================
+describe('POST /auth/verify-email', () => {
+  const validBody = { token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test' };
+
+  test('returns 200 on successful email verification', async () => {
+    mockVerifyEmail.mockResolvedValue({
+      message: 'E-mail verificado com sucesso',
+      usuario_id: 'uuid-123',
+    });
+
+    const app = makeApp();
+    const res = await request(app, 'POST', '/auth/verify-email', validBody);
+    expect(res.status).toBe(200);
+    expect(res.body.message).toBe('E-mail verificado com sucesso');
+    expect(res.body.usuario_id).toBe('uuid-123');
+  });
+
+  test('returns 422 when token is missing', async () => {
+    const app = makeApp();
+    const res = await request(app, 'POST', '/auth/verify-email', {});
+    expect(res.status).toBe(422);
+    expect(res.body.code).toBe('VALIDATION_ERROR');
+  });
+
+  test('returns 400 when token is invalid', async () => {
+    const { AppError } = await import('../../errors/AppError.js');
+    mockVerifyEmail.mockRejectedValue(AppError.badRequest('Token ausente ou inválido'));
+
+    const app = makeApp();
+    const res = await request(app, 'POST', '/auth/verify-email', validBody);
+    expect(res.status).toBe(400);
+  });
+
+  test('returns 400 when email already verified', async () => {
+    const { AppError } = await import('../../errors/AppError.js');
+    mockVerifyEmail.mockRejectedValue(AppError.badRequest('E-mail já verificado'));
+
+    const app = makeApp();
+    const res = await request(app, 'POST', '/auth/verify-email', validBody);
+    expect(res.status).toBe(400);
+    expect(res.body.message).toContain('E-mail já verificado');
+  });
+
+  test('returns 404 when user not found', async () => {
+    const { AppError } = await import('../../errors/AppError.js');
+    mockVerifyEmail.mockRejectedValue(AppError.notFound('Usuário não encontrado'));
+
+    const app = makeApp();
+    const res = await request(app, 'POST', '/auth/verify-email', validBody);
+    expect(res.status).toBe(404);
+  });
+});
+
+// ============================================================
+// POST /auth/resend-verification-email
+// ============================================================
+describe('POST /auth/resend-verification-email', () => {
+  const validBody = { email: 'joao@example.com' };
+
+  test('returns 200 with masked email', async () => {
+    mockResendVerificationEmail.mockResolvedValue({
+      message: 'E-mail de verificação reenviado',
+      email_masked: 'jo***@example.com',
+    });
+
+    const app = makeApp();
+    const res = await request(app, 'POST', '/auth/resend-verification-email', validBody);
+    expect(res.status).toBe(200);
+    expect(res.body.message).toBe('E-mail de verificação reenviado');
+    expect(res.body.email_masked).toBe('jo***@example.com');
+  });
+
+  test('returns 422 when email is invalid', async () => {
+    const app = makeApp();
+    const res = await request(app, 'POST', '/auth/resend-verification-email', { email: 'bad-email' });
+    expect(res.status).toBe(422);
+    expect(res.body.code).toBe('VALIDATION_ERROR');
+  });
+
+  test('returns 400 when email already verified', async () => {
+    const { AppError } = await import('../../errors/AppError.js');
+    mockResendVerificationEmail.mockRejectedValue(AppError.badRequest('E-mail já verificado'));
+
+    const app = makeApp();
+    const res = await request(app, 'POST', '/auth/resend-verification-email', validBody);
+    expect(res.status).toBe(400);
+    expect(res.body.message).toContain('E-mail já verificado');
+  });
+
+  test('returns 429 when rate limit exceeded', async () => {
+    const { AppError } = await import('../../errors/AppError.js');
+    mockResendVerificationEmail.mockRejectedValue(AppError.tooManyRequests('Muitas tentativas.'));
+
+    const app = makeApp();
+    const res = await request(app, 'POST', '/auth/resend-verification-email', validBody);
+    expect(res.status).toBe(429);
   });
 });
