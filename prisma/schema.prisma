@@ -102,22 +102,42 @@ enum TipoRecorrencia {
   @@map("tipo_recorrencia")
 }
 
+enum RoleUsuario {
+  admin
+  user
+
+  @@map("role_usuario")
+}
+
+enum StatusUsuario {
+  ativo
+  bloqueado_inadimplencia
+  suspenso_seguranca
+
+  @@map("status_usuario")
+}
+
 // ============================================================
 // DOMAIN: USUÁRIOS & AUTENTICAÇÃO
 // ============================================================
 
 /// Usuários do sistema. Soft-delete via deleted_at (LGPD).
 model Usuario {
-  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  nome             String    @db.VarChar(255)
-  email            String    @db.VarChar(255)
-  senha_hash       String    @db.VarChar(255)
-  telefone         String?   @db.VarChar(20)
-  avatar_url       String?
-  email_verificado Boolean   @default(false)
-  created_at       DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at       DateTime  @default(now()) @db.Timestamptz(6)
-  deleted_at       DateTime? @db.Timestamptz(6)
+  id                  String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nome                String        @db.VarChar(255)
+  email               String        @db.VarChar(255)
+  senha_hash          String        @db.VarChar(255)
+  telefone            String?       @db.VarChar(20)
+  avatar_url          String?
+  email_verificado    Boolean       @default(false)
+  role                RoleUsuario   @default(user)
+  status              StatusUsuario @default(ativo)
+  ultima_senha_troca  DateTime?     @db.Timestamptz(6)
+  tentativas_login    Int           @default(0)
+  bloqueado_ate       DateTime?     @db.Timestamptz(6)
+  created_at          DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime      @default(now()) @db.Timestamptz(6)
+  deleted_at          DateTime?     @db.Timestamptz(6)
 
   assinante             Assinante?
   pagamentos            AssinantePagamento[]
@@ -132,9 +152,63 @@ model Usuario {
   metas_movimentos      MetaMovimento[]
   anexos                Anexo[]
   whatsapp_logs         WhatsappLog[]
+  sessoes               UsuarioSessao[]
+  eventos_auth          UsuarioEventoAuth[]
+  resets_senha          UsuarioResetSenha[]
 
   @@unique([email], map: "uq_usuarios_email")
   @@map("usuarios")
+}
+
+/// Sessões de refresh token por dispositivo. Cascade delete.
+model UsuarioSessao {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id         String    @db.Uuid
+  refresh_token_hash String    @db.VarChar(255)
+  device_info        String?   @db.VarChar(512)
+  ip_address         String?   @db.VarChar(45)
+  data_criacao       DateTime  @default(now()) @db.Timestamptz(6)
+  data_expiracao     DateTime  @db.Timestamptz(6)
+  data_revogacao     DateTime? @db.Timestamptz(6)
+
+  usuario Usuario @relation(fields: [usuario_id], references: [id], onDelete: Cascade, map: "fk_sessoes_usuario")
+
+  @@unique([refresh_token_hash], map: "uq_sessoes_refresh_token_hash")
+  @@index([usuario_id], map: "idx_sessoes_usuario")
+  @@map("usuario_sessoes")
+}
+
+/// Auditoria de eventos de autenticação. SetNull on user delete.
+model UsuarioEventoAuth {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id  String?   @db.Uuid
+  tipo        String    @db.VarChar(50)
+  sucesso     Boolean
+  erro_msg    String?   @db.VarChar(500)
+  ip_address  String?   @db.VarChar(45)
+  user_agent  String?   @db.VarChar(512)
+  data_evento DateTime  @default(now()) @db.Timestamptz(6)
+
+  usuario Usuario? @relation(fields: [usuario_id], references: [id], onDelete: SetNull, map: "fk_eventos_auth_usuario")
+
+  @@index([usuario_id], map: "idx_eventos_auth_usuario")
+  @@index([data_evento], map: "idx_eventos_auth_data")
+  @@map("usuario_eventos_auth")
+}
+
+/// Tokens para recuperação de senha. Cascade delete.
+model UsuarioResetSenha {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id     String   @db.Uuid
+  token_hash     String   @db.VarChar(255)
+  utilizado      Boolean  @default(false)
+  data_expiracao DateTime @db.Timestamptz(6)
+  criado_em      DateTime @default(now()) @db.Timestamptz(6)
+
+  usuario Usuario @relation(fields: [usuario_id], references: [id], onDelete: Cascade, map: "fk_resets_senha_usuario")
+
+  @@unique([token_hash], map: "uq_resets_senha_token_hash")
+  @@map("usuario_resets_senha")
 }
 
 // ============================================================
