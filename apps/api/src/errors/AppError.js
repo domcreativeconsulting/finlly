@@ -27,6 +27,14 @@ export class AppError extends Error {
     return new AppError('CONFLICT', message, 409, details);
   }
 
+  static tooManyRequests(message = 'Too many requests') {
+    return new AppError('TOO_MANY_REQUESTS', message, 429);
+  }
+
+  static locked(message = 'Account locked') {
+    return new AppError('ACCOUNT_LOCKED', message, 423);
+  }
+
   static internal(message = 'An unexpected error occurred') {
     return new AppError('INTERNAL_SERVER_ERROR', message, 500);
   }
