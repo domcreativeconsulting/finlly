@@ -9,9 +9,32 @@ import { AppError } from '../errors/AppError.js';
 import { createDefaultCategories } from './categoriaService.js';
 
 const BCRYPT_ROUNDS = 12;
-const MAX_LOGIN_ATTEMPTS = 5;
-const LOCKOUT_DURATION_MINUTES = 30;
+const MAX_LOGIN_ATTEMPTS = 5; // Redis rate-limit: max attempts per window
 const RATE_LIMIT_WINDOW_SECONDS = 900; // 15 min
+
+/**
+ * Progressive lockout levels: after N failed attempts, lock account for durationMs.
+ * Applied in ascending order — the highest matching threshold wins.
+ */
+const LOCKOUT_LEVELS = [
+  { attempts: 3, durationMs: 5 * 60 * 1000 },           // 5 minutes
+  { attempts: 5, durationMs: 30 * 60 * 1000 },          // 30 minutes
+  { attempts: 10, durationMs: 24 * 60 * 60 * 1000 },    // 24 hours
+];
+
+/**
+ * Returns the lockout duration in ms for a given attempt count, or null if no lockout.
+ * @param {number} attempts
+ * @returns {number|null}
+ */
+function getLockoutDuration(attempts) {
+  for (let i = LOCKOUT_LEVELS.length - 1; i >= 0; i--) {
+    if (attempts >= LOCKOUT_LEVELS[i].attempts) {
+      return LOCKOUT_LEVELS[i].durationMs;
+    }
+  }
+  return null;
+}
 
 /**
  * Hashes a string using SHA-256 (for storing refresh token hash in DB).
@@ -228,14 +251,14 @@ export async function login({ email, senha, device_info }, meta = {}) {
 
   if (!senhaValida) {
     const newAttempts = usuario.tentativas_login + 1;
-    const shouldLock = newAttempts >= MAX_LOGIN_ATTEMPTS;
+    const lockDurationMs = getLockoutDuration(newAttempts);
 
     await prisma.usuario.update({
       where: { id: usuario.id },
       data: {
         tentativas_login: newAttempts,
-        ...(shouldLock && {
-          bloqueado_ate: new Date(Date.now() + LOCKOUT_DURATION_MINUTES * 60 * 1000),
+        ...(lockDurationMs !== null && {
+          bloqueado_ate: new Date(Date.now() + lockDurationMs),
         }),
       },
     });
@@ -249,7 +272,7 @@ export async function login({ email, senha, device_info }, meta = {}) {
       user_agent: meta.userAgent || null,
     });
 
-    if (shouldLock) {
+    if (lockDurationMs !== null) {
       throw AppError.locked('Conta bloqueada após múltiplas tentativas falhas.');
     }
     throw AppError.unauthorized('Senha incorreta');
