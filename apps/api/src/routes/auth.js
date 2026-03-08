@@ -26,6 +26,26 @@ const loginLimiter = rateLimit({
   handler: (req, res, next, options) => next(AppError.tooManyRequests(options.message.message)),
 });
 
+/** Limiter for register: 10 attempts per hour per IP. */
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { code: 'TOO_MANY_REQUESTS', message: 'Muitas tentativas de registro. Tente novamente em 1 hora.' },
+  handler: (req, res, next, options) => next(AppError.tooManyRequests(options.message.message)),
+});
+
+/** Limiter for forgot-password: 3 attempts per hour per IP. */
+const forgotPasswordLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 3,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { code: 'TOO_MANY_REQUESTS', message: 'Muitas tentativas. Tente novamente em 1 hora.' },
+  handler: (req, res, next, options) => next(AppError.tooManyRequests(options.message.message)),
+});
+
 /** General limiter for sensitive auth endpoints: 30 requests per 15 minutes per IP. */
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -111,7 +131,7 @@ function getRequestMeta(req) {
  * POST /auth/register
  * Cadastro de novo usuário.
  */
-router.post('/auth/register', authLimiter, async (req, res, next) => {
+router.post('/auth/register', registerLimiter, async (req, res, next) => {
   const parsed = RegisterSchema.safeParse(req.body);
   if (!parsed.success) return next(toValidationError(parsed.error));
 
@@ -212,7 +232,7 @@ router.get('/auth/me', authLimiter, jwtAuthMiddleware, async (req, res, next) =>
  * POST /auth/forgot-password
  * Inicia fluxo de recuperação de senha.
  */
-router.post('/auth/forgot-password', authLimiter, async (req, res, next) => {
+router.post('/auth/forgot-password', forgotPasswordLimiter, async (req, res, next) => {
   const parsed = ForgotPasswordSchema.safeParse(req.body);
   if (!parsed.success) return next(toValidationError(parsed.error));
 
