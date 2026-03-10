@@ -74,7 +74,7 @@ const loginLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   store: buildStore(LOGIN_WINDOW_MS),
-  message: { code: 'TOO_MANY_REQUESTS', message: 'Muitas tentativas. Tente novamente em 15 minutos.' },
+  message: { code: 'RATE_LIMITED', message: 'Muitas tentativas. Tente novamente em 15 minutos.' },
   handler: (req, res, next, options) => {
     logger.warn({ msg: 'Login rate limit atingido', ip: req.ip });
     return next(AppError.tooManyRequests(options.message.message));
@@ -88,7 +88,7 @@ const registerLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   store: buildStore(REGISTER_WINDOW_MS),
-  message: { code: 'TOO_MANY_REQUESTS', message: 'Muitas tentativas de registro. Tente novamente em 1 hora.' },
+  message: { code: 'RATE_LIMITED', message: 'Muitas tentativas de registro. Tente novamente em 1 hora.' },
   handler: (req, res, next, options) => {
     logger.warn({ msg: 'Register rate limit atingido', ip: req.ip });
     return next(AppError.tooManyRequests(options.message.message));
@@ -103,7 +103,7 @@ const forgotPasswordLimiter = rateLimit({
   legacyHeaders: false,
   store: buildStore(FORGOT_PASSWORD_WINDOW_MS),
   keyGenerator: (req) => req.body?.email || req.ip,
-  message: { code: 'TOO_MANY_REQUESTS', message: 'Muitas tentativas. Tente novamente em 1 hora.' },
+  message: { code: 'RATE_LIMITED', message: 'Muitas tentativas. Tente novamente em 1 hora.' },
   handler: (req, res, next, options) => {
     logger.warn({ msg: 'Forgot-password rate limit atingido', ip: req.ip });
     return next(AppError.tooManyRequests(options.message.message));
@@ -116,7 +116,7 @@ const authLimiter = rateLimit({
   max: 30,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { code: 'TOO_MANY_REQUESTS', message: 'Muitas tentativas. Tente novamente mais tarde.' },
+  message: { code: 'RATE_LIMITED', message: 'Muitas tentativas. Tente novamente mais tarde.' },
   handler: (req, res, next, options) => next(AppError.tooManyRequests(options.message.message)),
 });
 
