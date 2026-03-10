@@ -1,52 +1,78 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { toast } from 'react-toastify';
 import { useAuth } from '../hooks/useAuth.js';
 import { perfilService } from '../services/perfil.service.js';
 
 const TIMEZONES = [
-  'America/Sao_Paulo',
-  'America/Manaus',
-  'America/Belem',
-  'America/Fortaleza',
-  'America/Recife',
-  'America/Bahia',
-  'America/Cuiaba',
-  'America/Porto_Velho',
-  'America/Boa_Vista',
-  'America/Rio_Branco',
-  'America/Noronha',
-  'UTC',
-  'Europe/Lisbon',
-  'Europe/London',
-  'America/New_York',
-  'America/Chicago',
-  'America/Denver',
-  'America/Los_Angeles',
+  'America/Sao_Paulo', 'America/Manaus', 'America/Belem', 'America/Fortaleza',
+  'America/Recife', 'America/Maceio', 'America/Bahia', 'America/Cuiaba',
+  'America/Porto_Velho', 'America/Boa_Vista', 'America/Rio_Branco',
+  'America/Noronha', 'America/Araguaina',
+  'UTC', 'Europe/Lisbon', 'Europe/London', 'America/New_York',
+  'America/Chicago', 'America/Denver', 'America/Los_Angeles',
+  'America/Toronto', 'America/Mexico_City', 'America/Argentina/Buenos_Aires',
+  'America/Lima', 'America/Bogota', 'America/Santiago',
+  'Europe/Berlin', 'Europe/Paris', 'Europe/Madrid', 'Europe/Rome',
+  'Asia/Tokyo', 'Asia/Shanghai', 'Asia/Kolkata', 'Asia/Dubai',
+  'Australia/Sydney', 'Pacific/Auckland',
 ];
 
-const MOEDAS = [
-  'BRL', 'USD', 'EUR', 'GBP', 'JPY',
-  'CAD', 'AUD', 'CHF', 'MXN', 'ARS',
-  'CLP', 'COP', 'PEN', 'UYU',
-];
+const MOEDAS = ['BRL', 'USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CHF', 'MXN', 'ARS', 'CLP', 'COP', 'PEN', 'UYU'];
+
+const PerfilSchema = z.object({
+  nome: z
+    .string()
+    .min(3, 'Mínimo 3 caracteres')
+    .max(255, 'Máximo 255 caracteres'),
+  whatsapp: z
+    .string()
+    .max(20, 'Máximo 20 caracteres')
+    .regex(/^\+?[\d\s\-(). ]+$/, 'Número inválido. Use formato: +55 11 99999-9999')
+    .optional()
+    .or(z.literal('')),
+  timezone: z
+    .string()
+    .refine((tz) => TIMEZONES.includes(tz), {
+      message: 'Fuso horário inválido',
+    }),
+  moeda: z
+    .string()
+    .length(3, 'Código de moeda deve ter 3 letras')
+    .refine((m) => MOEDAS.includes(m.toUpperCase()), {
+      message: 'Moeda inválida',
+    }),
+});
 
 export default function PerfilPage() {
   const { usuario } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({
-    nome: '',
-    whatsapp: '',
-    timezone: 'America/Sao_Paulo',
-    moeda: 'BRL',
+  const [errorMsg, setErrorMsg] = useState(null);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm({
+    resolver: zodResolver(PerfilSchema),
+    mode: 'onChange',
+    defaultValues: {
+      nome: '',
+      whatsapp: '',
+      timezone: 'America/Sao_Paulo',
+      moeda: 'BRL',
+    },
   });
 
   useEffect(() => {
     perfilService.getPerfil()
       .then((data) => {
-        setForm({
+        reset({
           nome: data.nome || '',
           whatsapp: data.whatsapp || '',
           timezone: data.timezone || 'America/Sao_Paulo',
@@ -57,39 +83,22 @@ export default function PerfilPage() {
         toast.error('Erro ao carregar perfil.');
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [reset]);
 
-  function handleChange(e) {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    if (!form.nome || form.nome.length < 3) {
-      toast.error('Nome deve ter pelo menos 3 caracteres.');
-      return;
-    }
-
-    const data = {
-      nome: form.nome,
-      timezone: form.timezone,
-      moeda: form.moeda,
+  async function onSubmit(data) {
+    setErrorMsg(null);
+    const payload = {
+      nome: data.nome.trim(),
+      timezone: data.timezone,
+      moeda: data.moeda.toUpperCase(),
+      whatsapp: data.whatsapp && data.whatsapp.trim() !== '' ? data.whatsapp.trim() : null,
     };
-    if (form.whatsapp) {
-      data.whatsapp = form.whatsapp;
-    } else {
-      data.whatsapp = null;
-    }
-
-    setSaving(true);
     try {
-      await perfilService.updatePerfil(data);
+      await perfilService.updatePerfil(payload);
       toast.success('Perfil atualizado com sucesso!');
-    } catch {
-      toast.error('Erro ao atualizar perfil. Tente novamente.');
-    } finally {
-      setSaving(false);
+    } catch (err) {
+      const msg = err?.response?.data?.message || 'Erro ao atualizar perfil. Tente novamente.';
+      setErrorMsg(msg);
     }
   }
 
@@ -118,72 +127,82 @@ export default function PerfilPage() {
           </div>
         ) : (
           <div style={styles.card}>
-            <form onSubmit={handleSubmit} noValidate>
+            <form onSubmit={handleSubmit(onSubmit)} noValidate>
+              {errorMsg && (
+                <div style={styles.errorBox} role="alert">
+                  <span aria-hidden="true">⚠️</span> {errorMsg}
+                </div>
+              )}
+
               <div style={styles.fieldGroup}>
                 <label style={styles.label} htmlFor="nome">Nome *</label>
                 <input
                   id="nome"
-                  name="nome"
                   type="text"
-                  value={form.nome}
-                  onChange={handleChange}
-                  style={styles.input}
                   placeholder="Seu nome completo"
-                  required
+                  autoComplete="name"
+                  style={{ ...styles.input, ...(errors.nome ? styles.inputError : {}) }}
+                  {...register('nome')}
                 />
+                {errors.nome && (
+                  <span style={styles.fieldError} role="alert">{errors.nome.message}</span>
+                )}
               </div>
 
               <div style={styles.fieldGroup}>
-                <label style={styles.label} htmlFor="whatsapp">WhatsApp</label>
+                <label style={styles.label} htmlFor="whatsapp">WhatsApp <span style={{ color: '#9ca3af', fontWeight: 400 }}>(opcional)</span></label>
                 <input
                   id="whatsapp"
-                  name="whatsapp"
                   type="text"
-                  value={form.whatsapp}
-                  onChange={handleChange}
-                  style={styles.input}
                   placeholder="+55 11 99999-9999"
+                  style={{ ...styles.input, ...(errors.whatsapp ? styles.inputError : {}) }}
+                  {...register('whatsapp')}
                 />
+                {errors.whatsapp && (
+                  <span style={styles.fieldError} role="alert">{errors.whatsapp.message}</span>
+                )}
               </div>
 
               <div style={styles.fieldGroup}>
                 <label style={styles.label} htmlFor="timezone">Fuso Horário</label>
                 <select
                   id="timezone"
-                  name="timezone"
-                  value={form.timezone}
-                  onChange={handleChange}
-                  style={styles.select}
+                  style={{ ...styles.select, ...(errors.timezone ? styles.inputError : {}) }}
+                  {...register('timezone')}
                 >
                   {TIMEZONES.map((tz) => (
                     <option key={tz} value={tz}>{tz}</option>
                   ))}
                 </select>
+                {errors.timezone && (
+                  <span style={styles.fieldError} role="alert">{errors.timezone.message}</span>
+                )}
               </div>
 
               <div style={styles.fieldGroup}>
                 <label style={styles.label} htmlFor="moeda">Moeda</label>
                 <select
                   id="moeda"
-                  name="moeda"
-                  value={form.moeda}
-                  onChange={handleChange}
-                  style={styles.select}
+                  style={{ ...styles.select, ...(errors.moeda ? styles.inputError : {}) }}
+                  {...register('moeda')}
                 >
                   {MOEDAS.map((m) => (
                     <option key={m} value={m}>{m}</option>
                   ))}
                 </select>
+                {errors.moeda && (
+                  <span style={styles.fieldError} role="alert">{errors.moeda.message}</span>
+                )}
               </div>
 
               <button
                 type="submit"
-                disabled={saving}
-                style={saving ? { ...styles.submitButton, ...styles.submitButtonDisabled } : styles.submitButton}
+                disabled={isSubmitting}
+                style={isSubmitting ? { ...styles.submitButton, ...styles.submitButtonDisabled } : styles.submitButton}
               >
-                {saving ? (
+                {isSubmitting ? (
                   <>
-                    <span style={styles.spinnerInline} />
+                    <span style={styles.spinnerInline} aria-hidden="true" />
                     {' '}Salvando...
                   </>
                 ) : (
@@ -329,5 +348,26 @@ const styles = {
     borderTopColor: '#2563eb',
     borderRadius: '50%',
     animation: 'spin 0.7s linear infinite',
+  },
+  inputError: {
+    borderColor: '#f87171',
+  },
+  fieldError: {
+    display: 'block',
+    marginTop: '4px',
+    fontSize: '13px',
+    color: '#dc2626',
+  },
+  errorBox: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    backgroundColor: '#fef2f2',
+    border: '1px solid #fecaca',
+    borderRadius: '8px',
+    padding: '12px 16px',
+    color: '#dc2626',
+    marginBottom: '20px',
+    fontSize: '14px',
   },
 };
