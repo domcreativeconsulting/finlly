@@ -269,6 +269,52 @@ import ErrorBoundary from './components/ErrorBoundary.jsx';
 - In development: detailed error info is logged to the console.
 - In production: only critical errors are logged; no sensitive details exposed.
 
+## Rate Limiting
+
+A API aplica rate limiting em todos os endpoints sensíveis de autenticação para proteção contra brute-force e abuso.
+
+### Políticas por Endpoint
+
+| Endpoint                           | Método | Limite        | Janela  | Chave       |
+| ---------------------------------- | ------ | ------------- | ------- | ----------- |
+| `/auth/login`                      | POST   | 5 tentativas  | 15 min  | IP          |
+| `/auth/register`                   | POST   | 10 tentativas | 1 hora  | IP          |
+| `/auth/forgot-password`            | POST   | 3 tentativas  | 1 hora  | email ou IP |
+| `/auth/refresh`, `/auth/logout`    | POST   | 30 tentativas | 15 min  | IP          |
+| `/auth/me`, `/perfil`, `/users/me` | GET    | 30 tentativas | 15 min  | IP          |
+
+> Além do rate limit por IP, o `authService` aplica um rate limit adicional por **email+IP** (SHA-256 do email normalizado) diretamente via Redis para o endpoint de login.
+
+### Resposta ao Exceder o Limite
+
+```json
+{
+  "code": "RATE_LIMITED",
+  "message": "Muitas tentativas. Tente novamente em 15 minutos.",
+  "requestId": "abc-123"
+}
+```
+
+**HTTP Status:** `429 Too Many Requests`  
+**Header:** `Retry-After` é incluído automaticamente via `standardHeaders: true`.
+
+### Armazenamento
+
+| Ambiente  | Store       | Configuração              |
+| --------- | ----------- | ------------------------- |
+| Dev       | MemoryStore | padrão (sem config extra) |
+| Produção  | Redis       | `RATE_LIMIT_STORE=redis`  |
+
+### Configuração via Env
+
+| Variável               | Padrão    | Descrição                                           |
+| ---------------------- | --------- | --------------------------------------------------- |
+| `RATE_LIMIT_STORE`     | `memory`  | Store do rate limit: `memory` ou `redis`            |
+| `RATE_LIMIT_MAX`       | `10`      | Máximo de requisições por janela (endpoints gerais) |
+| `RATE_LIMIT_WINDOW_MS` | `600000`  | Janela em ms (padrão: 10 min)                       |
+
+> As políticas específicas de login (5/15min) e registro (10/1h) são configuradas diretamente no código e podem ser ajustadas em `apps/api/src/routes/auth.js`.
+
 ## Testing Health Endpoint
 
 With the API running, verify the health endpoint:
