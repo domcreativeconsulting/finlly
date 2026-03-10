@@ -1,17 +1,8 @@
-import { scryptSync, randomBytes } from 'crypto';
+import bcrypt from 'bcryptjs';
 import prisma from '../utils/database.js';
 import { createDefaultCategories } from './categoriaService.js';
 
-/**
- * Hashes a plain-text password using scrypt with a random salt.
- * @param {string} password
- * @returns {string} salt:hash
- */
-function hashPassword(password) {
-  const salt = randomBytes(32).toString('hex');
-  const hash = scryptSync(password, salt, 64).toString('hex');
-  return `${salt}:${hash}`;
-}
+const BCRYPT_ROUNDS = 12;
 
 /**
  * Registers a new user and creates their default categories atomically.
@@ -19,7 +10,7 @@ function hashPassword(password) {
  * @returns {Promise<{ id: string, nome: string, email: string, created_at: Date, categorias_criadas: number }>}
  */
 export async function registerUser({ nome, email, senha }) {
-  const senha_hash = hashPassword(senha);
+  const senha_hash = await bcrypt.hash(senha, BCRYPT_ROUNDS);
 
   const result = await prisma.$transaction(async (tx) => {
     const usuario = await tx.usuario.create({
