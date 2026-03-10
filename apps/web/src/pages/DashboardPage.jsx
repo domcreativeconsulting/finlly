@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
 
 export default function DashboardPage() {
@@ -7,13 +8,18 @@ export default function DashboardPage() {
     <div style={styles.page}>
       <header style={styles.header}>
         <h1 style={styles.logo}>Finlly</h1>
-        <button
-          onClick={logout}
-          style={styles.logoutButton}
-          aria-label="logout"
-        >
-          Sair
-        </button>
+        <div style={styles.headerActions}>
+          <Link to="/perfil" style={styles.perfilLink}>
+            Meu Perfil
+          </Link>
+          <button
+            onClick={logout}
+            style={styles.logoutButton}
+            aria-label="logout"
+          >
+            Sair
+          </button>
+        </div>
       </header>
 
       <main style={styles.main}>
@@ -50,6 +56,20 @@ const styles = {
     fontWeight: '700',
     color: '#2563eb',
     margin: 0,
+  },
+  headerActions: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+  },
+  perfilLink: {
+    padding: '8px 16px',
+    fontSize: '14px',
+    fontWeight: '500',
+    color: '#2563eb',
+    textDecoration: 'none',
+    border: '1px solid #2563eb',
+    borderRadius: '6px',
   },
   logoutButton: {
     padding: '8px 16px',
