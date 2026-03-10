@@ -7,6 +7,7 @@ import { getRedisClient } from '../utils/redisClient.js';
 import { config } from '../config/env.js';
 import { AppError } from '../errors/AppError.js';
 import { createDefaultCategories } from './categoriaService.js';
+import logger from '../logger.js';
 
 const BCRYPT_ROUNDS = 12;
 const MAX_LOGIN_ATTEMPTS = 5; // Redis rate-limit: max attempts per window
@@ -135,12 +136,14 @@ async function checkRateLimit(email) {
     return; // Redis unavailable — skip rate limiting gracefully
   }
 
-  const key = `login:attempts:${email}`;
+  const emailNormalized = email.trim().toLowerCase();
+  const key = `login:attempts:${sha256(emailNormalized)}`;
   const attempts = await redis.incr(key);
   if (attempts === 1) {
     await redis.expire(key, RATE_LIMIT_WINDOW_SECONDS);
   }
   if (attempts > MAX_LOGIN_ATTEMPTS) {
+    logger.warn({ msg: 'Rate limit atingido no login', emailHash: sha256(emailNormalized), attempts });
     throw AppError.tooManyRequests('Muitas tentativas. Tente novamente em 15 minutos.');
   }
 }
@@ -153,7 +156,8 @@ async function resetRateLimit(email) {
   let redis;
   try {
     redis = await getRedisClient();
-    await redis.del(`login:attempts:${email}`);
+    const emailNormalized = email.trim().toLowerCase();
+    await redis.del(`login:attempts:${sha256(emailNormalized)}`);
   } catch {
     // ignore
   }
