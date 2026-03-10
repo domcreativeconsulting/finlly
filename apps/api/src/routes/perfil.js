@@ -35,6 +35,7 @@ const IANA_TIMEZONES = [
 
 const UpdatePerfilSchema = z.object({
   nome: z.string().min(3).max(255).optional(),
+  email: z.string().email('E-mail inválido').transform(val => val.trim().toLowerCase()).optional(),
   whatsapp: z.string().max(20).regex(/^\+?[\d\s\-().]+$/, 'Número inválido').optional().nullable(),
   timezone: z
     .string()
