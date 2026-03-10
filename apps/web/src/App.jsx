@@ -8,6 +8,7 @@ import ForgotPasswordPage from './pages/auth/ForgotPasswordPage.jsx';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage.jsx';
 import VerifyEmailPage from './pages/auth/VerifyEmailPage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
+import PerfilPage from './pages/PerfilPage.jsx';
 import { ProtectedRoute } from './components/ProtectedRoute.jsx';
 
 export default function App() {
@@ -29,6 +30,10 @@ export default function App() {
         <Route
           path="/dashboard"
           element={<ProtectedRoute element={<DashboardPage />} />}
+        />
+        <Route
+          path="/perfil"
+          element={<ProtectedRoute element={<PerfilPage />} />}
         />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="*" element={<Navigate to="/login" replace />} />

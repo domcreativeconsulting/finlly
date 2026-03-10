@@ -10,6 +10,7 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { csrfProtection } from './middleware/csrfProtection.js';
 import healthRouter from './routes/health.js';
 import authRouter from './routes/auth.js';
+import perfilRouter from './routes/perfil.js';
 
 const app = express();
 
@@ -23,6 +24,7 @@ app.use(requestLogger);
 
 app.use(healthRouter);
 app.use(authRouter);
+app.use(perfilRouter);
 
 app.get('/', (req, res) => {
   res.send('Hello World!');
