@@ -96,6 +96,74 @@ Copy `.env.example` to `.env` and fill in the values before starting the applica
 
 > **Never** commit your `.env` file to version control. It is already listed in `.gitignore`.
 
+## API — Endpoints de Perfil
+
+> Todos os endpoints de perfil requerem autenticação via Bearer token (`Authorization: Bearer <accessToken>`).
+
+### `GET /perfil` · `GET /users/me`
+
+Retorna o perfil completo do usuário autenticado.
+
+**Resposta 200:**
+```json
+{
+  "id": "uuid",
+  "nome": "João Silva",
+  "email": "joao@example.com",
+  "telefone": null,
+  "whatsapp": "+5511999999999",
+  "avatar_url": null,
+  "timezone": "America/Sao_Paulo",
+  "moeda": "BRL",
+  "role": "user",
+  "status": "ativo",
+  "email_verificado": false,
+  "created_at": "2024-01-01T00:00:00.000Z",
+  "updated_at": "2024-01-01T00:00:00.000Z"
+}
+```
+
+---
+
+### `PATCH /perfil` · `PUT /users/me`
+
+Atualiza parcialmente o perfil do usuário autenticado. Todos os campos são opcionais — envie apenas os que deseja alterar.
+
+**Campos editáveis:**
+
+| Campo      | Tipo     | Validação                                      |
+| ---------- | -------- | ---------------------------------------------- |
+| `nome`     | string   | mín. 3, máx. 255 caracteres                    |
+| `email`    | string   | formato e-mail válido; normalizado para minúsculas |
+| `whatsapp` | string   | máx. 20 chars, formato `+?[\d\s\-().]+`; aceita `null` |
+| `timezone` | string   | identificador IANA válido (ex: `America/Sao_Paulo`) |
+| `moeda`    | string   | exatamente 3 letras (ex: `BRL`, `USD`); convertido para maiúsculas |
+
+**Campos não editáveis:** `id`, `role`, `status`, `subscription_status`, `email_verificado`, `created_at`.
+
+**Exemplo de request:**
+```json
+{
+  "nome": "João da Silva",
+  "email": "joao.novo@example.com",
+  "timezone": "America/Manaus"
+}
+```
+
+**Resposta 200:** objeto de perfil completo (mesmo formato do GET).
+
+**Erros possíveis:**
+
+| Status | Code               | Motivo                                          |
+| ------ | ------------------ | ----------------------------------------------- |
+| 400    | `BAD_REQUEST`      | Nenhum campo fornecido                          |
+| 401    | `UNAUTHORIZED`     | Token ausente ou inválido                       |
+| 409    | `CONFLICT`         | Email já está em uso por outro usuário          |
+| 422    | `VALIDATION_ERROR` | Campo com formato inválido (Zod)                |
+| 429    | `RATE_LIMITED`     | Limite de 30 req/15min por IP atingido          |
+
+---
+
 ## Additional Information
 For more detailed instructions about each project, please refer to their respective README files within the project folders.
 

@@ -34,9 +34,9 @@ export async function getPerfil(userId) {
 
 /**
  * Atualiza os dados de perfil do usuário autenticado.
- * Campos editáveis: nome, whatsapp, timezone, moeda
+ * Campos editáveis: nome, email, whatsapp, timezone, moeda
  * @param {string} userId
- * @param {{ nome?: string, whatsapp?: string, timezone?: string, moeda?: string }} data
+ * @param {{ nome?: string, email?: string, whatsapp?: string, timezone?: string, moeda?: string }} data
  * @returns {Promise<object>} usuario atualizado
  */
 export async function updatePerfil(userId, data) {
@@ -47,11 +47,23 @@ export async function updatePerfil(userId, data) {
 
   if (!exists) throw AppError.notFound('Usuário não encontrado');
 
-  const usuario = await prisma.usuario.update({
-    where: { id: userId },
-    data,
-    select: PERFIL_SELECT,
-  });
+  if (data.email) {
+    const conflict = await prisma.usuario.findFirst({
+      where: { email: data.email, NOT: { id: userId } },
+      select: { id: true },
+    });
+    if (conflict) throw AppError.conflict('Email já está em uso');
+  }
 
-  return usuario;
+  try {
+    const usuario = await prisma.usuario.update({
+      where: { id: userId },
+      data,
+      select: PERFIL_SELECT,
+    });
+    return usuario;
+  } catch (err) {
+    if (err.code === 'P2002') throw AppError.conflict('Email já está em uso');
+    throw err;
+  }
 }
