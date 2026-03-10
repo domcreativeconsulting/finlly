@@ -127,8 +127,9 @@ async function verifyPassword(password, storedHash) {
  * Checks and increments the Redis-backed rate limit for login attempts.
  * Silently passes if Redis is unavailable.
  * @param {string} email
+ * @param {string} [ip]
  */
-async function checkRateLimit(email) {
+async function checkRateLimit(email, ip = 'unknown') {
   let redis;
   try {
     redis = await getRedisClient();
@@ -137,7 +138,7 @@ async function checkRateLimit(email) {
   }
 
   const emailNormalized = email.trim().toLowerCase();
-  const key = `login:attempts:${sha256(emailNormalized)}`;
+  const key = `login:attempts:${sha256(emailNormalized)}:${ip}`;
   const attempts = await redis.incr(key);
   if (attempts === 1) {
     await redis.expire(key, RATE_LIMIT_WINDOW_SECONDS);
@@ -149,15 +150,16 @@ async function checkRateLimit(email) {
 }
 
 /**
- * Resets the Redis rate limit counter for an email after a successful login.
+ * Resets the Redis rate limit counter for an email+ip after a successful login.
  * @param {string} email
+ * @param {string} [ip]
  */
-async function resetRateLimit(email) {
+async function resetRateLimit(email, ip = 'unknown') {
   let redis;
   try {
     redis = await getRedisClient();
     const emailNormalized = email.trim().toLowerCase();
-    await redis.del(`login:attempts:${sha256(emailNormalized)}`);
+    await redis.del(`login:attempts:${sha256(emailNormalized)}:${ip}`);
   } catch {
     // ignore
   }
@@ -225,7 +227,7 @@ export async function register({ nome, email, senha }, meta = {}) {
  * @returns {Promise<{ accessToken: string, refreshToken: string, usuario: object }>}
  */
 export async function login({ email, senha, device_info }, meta = {}) {
-  await checkRateLimit(email);
+  await checkRateLimit(email, meta.ip || 'unknown');
 
   const usuario = await prisma.usuario.findUnique({ where: { email } });
 
@@ -238,7 +240,7 @@ export async function login({ email, senha, device_info }, meta = {}) {
       ip_address: meta.ip || null,
       user_agent: meta.userAgent || null,
     });
-    throw AppError.unauthorized('Email não encontrado');
+    throw AppError.unauthorized('Credenciais inválidas');
   }
 
   // Check for temporary lockout
@@ -279,11 +281,11 @@ export async function login({ email, senha, device_info }, meta = {}) {
     if (lockDurationMs !== null) {
       throw AppError.locked('Conta bloqueada após múltiplas tentativas falhas.');
     }
-    throw AppError.unauthorized('Senha incorreta');
+    throw AppError.unauthorized('Credenciais inválidas');
   }
 
   // Successful login: reset attempts
-  await resetRateLimit(email);
+  await resetRateLimit(email, meta.ip || 'unknown');
 
   const refreshExpiresInSeconds = parseExpiresInSeconds(config.JWT_REFRESH_EXPIRES_IN);
   const dataExpiracao = new Date(Date.now() + refreshExpiresInSeconds * 1000);

@@ -256,12 +256,12 @@ describe('POST /auth/login', () => {
 
   test('returns 401 when credentials are wrong', async () => {
     const { AppError } = await import('../../errors/AppError.js');
-    mockLogin.mockRejectedValue(AppError.unauthorized('Senha incorreta'));
+    mockLogin.mockRejectedValue(AppError.unauthorized('Credenciais inválidas'));
 
     const app = makeApp();
     const res = await request(app, 'POST', '/auth/login', validBody);
     expect(res.status).toBe(401);
-    expect(res.body.message).toContain('Senha incorreta');
+    expect(res.body.message).toContain('Credenciais inválidas');
   });
 
   test('returns 429 when rate limit exceeded', async () => {
