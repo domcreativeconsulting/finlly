@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../hooks/useAuth.js';
+import logo from '../../assets/logo.png';
 
 const LoginSchema = z.object({
   email: z.string().email('E-mail inválido'),
@@ -50,11 +51,17 @@ export default function LoginPage() {
     } catch (err) {
       const status = err.response?.status;
       if (status === 429) {
-        setErrorMsg('Muitas tentativas. Aguarde alguns minutos e tente novamente.');
+        setErrorMsg(
+          'Muitas tentativas. Aguarde alguns minutos e tente novamente.'
+        );
       } else if (status === 423) {
-        setErrorMsg('Conta bloqueada por 30 minutos. Entre em contato com o suporte.');
+        setErrorMsg(
+          'Conta bloqueada por 30 minutos. Entre em contato com o suporte.'
+        );
       } else {
-        setErrorMsg(err.response?.data?.message || 'E-mail ou senha incorretos.');
+        setErrorMsg(
+          err.response?.data?.message || 'E-mail ou senha incorretos.'
+        );
       }
     }
   };
@@ -66,11 +73,11 @@ export default function LoginPage() {
         <div style={styles.leftPanel}>
           <div style={styles.leftContent}>
             <div style={styles.logoRow}>
-              <span style={styles.logoIcon}>🤖</span>
-              <span style={styles.logoText}>Finlly</span>
+              <img src={logo} alt="Finlly Logo" className={styles.logoImage} />
             </div>
-            <p style={styles.logoSubtitle}>Gestão financeira pessoal</p>
-            <h2 style={styles.leftHeadline}>Sua gestão financeira, simplificada.</h2>
+            <h2 style={styles.leftHeadline}>
+              Sua gestão financeira, simplificada.
+            </h2>
             <p style={styles.leftDescription}>
               Acesse a plataforma para ter controle total sobre suas finanças.
             </p>
@@ -85,7 +92,9 @@ export default function LoginPage() {
 
           {errorMsg && (
             <div style={styles.errorBox} role="alert">
-              <span style={styles.errorIcon} aria-hidden="true">⚠️</span>
+              <span style={styles.errorIcon} aria-hidden="true">
+                ⚠️
+              </span>
               {errorMsg}
             </div>
           )}
@@ -94,7 +103,9 @@ export default function LoginPage() {
             {/* Campo de e-mail */}
             <div style={styles.fieldGroup}>
               <div style={styles.inputWrapper}>
-                <span style={styles.inputIcon} aria-hidden="true">✉️</span>
+                <span style={styles.inputIcon} aria-hidden="true">
+                  ✉️
+                </span>
                 <input
                   id="email"
                   type="email"
@@ -120,7 +131,9 @@ export default function LoginPage() {
             {/* Campo de senha */}
             <div style={styles.fieldGroup}>
               <div style={styles.inputWrapper}>
-                <span style={styles.inputIcon} aria-hidden="true">🔒</span>
+                <span style={styles.inputIcon} aria-hidden="true">
+                  🔒
+                </span>
                 <input
                   id="senha"
                   type={mostrarSenha ? 'text' : 'password'}
@@ -179,7 +192,9 @@ export default function LoginPage() {
                 </>
               ) : (
                 <>
-                  <span style={styles.submitIcon} aria-hidden="true">→</span>
+                  <span style={styles.submitIcon} aria-hidden="true">
+                    →
+                  </span>
                   Entrar
                 </>
               )}
@@ -216,40 +231,35 @@ const styles = {
     maxWidth: '420px',
     color: '#ffffff',
   },
+
   logoRow: {
     display: 'flex',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: '12px',
-    marginBottom: '8px',
+    marginBottom: '32px',
   },
-  logoIcon: {
-    fontSize: '40px',
-    lineHeight: 1,
+
+  logoImage: {
+    width: '48px',
+    height: '48px',
   },
-  logoText: {
-    fontSize: '36px',
-    fontWeight: '700',
-    color: '#ffffff',
-    letterSpacing: '-0.5px',
-  },
-  logoSubtitle: {
-    fontSize: '14px',
-    color: 'rgba(255,255,255,0.75)',
-    margin: '0 0 40px',
-    letterSpacing: '0.5px',
-  },
+
   leftHeadline: {
     fontSize: '32px',
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#ffffff',
     lineHeight: 1.3,
     margin: '0 0 16px',
+    textAlign: 'center',
   },
+
   leftDescription: {
     fontSize: '15px',
     color: 'rgba(255,255,255,0.8)',
     lineHeight: 1.6,
     margin: 0,
+    textAlign: 'center',
   },
   rightPanel: {
     flex: '0 0 45%',

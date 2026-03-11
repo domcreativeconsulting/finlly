@@ -541,6 +541,10 @@ export default function PerfilPage() {
             </div>
           </div>
         )}
+        {/* Footer */}
+        <footer style={s.footer}>
+          Finlly • painel financeiro pessoal — {new Date().getFullYear()}
+        </footer>
       </div>
     </div>
   );
@@ -881,5 +885,16 @@ const s = {
     borderTopColor: '#2563eb',
     borderRadius: '50%',
     animation: 'spin 0.7s linear infinite',
+  },
+
+  footer: {
+    width: '100%', // Garante que ocupe toda a largura
+    margin: '20px 0 20px 0', // Empurra para o fim da página se o conteúdo for pouco
+    padding: '20px', // Aumenta o "tamanho" vertical (espaço interno)
+    textAlign: 'center',
+    fontSize: '14.4px', // Tamanho de fonte padrão para rodapés modernos
+    backgroundColor: 'rgb(51, 82, 138)',
+    color: '#ffffff',
+    borderRadius: '20px 20px 16px 16px',
   },
 };
