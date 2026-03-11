@@ -13,8 +13,10 @@ const mockVerifyEmail = jest.fn();
 const mockResendVerificationEmail = jest.fn();
 
 // Mock express-rate-limit to be a pass-through in tests
+// ipKeyGenerator is also exported by express-rate-limit and used in auth.js
 jest.unstable_mockModule('express-rate-limit', () => ({
   rateLimit: () => (_req, _res, next) => next(),
+  ipKeyGenerator: (req) => req.ip || '127.0.0.1',
 }));
 
 jest.unstable_mockModule('../../services/authService.js', () => ({
@@ -24,7 +26,7 @@ jest.unstable_mockModule('../../services/authService.js', () => ({
   logout: mockLogout,
   getMe: mockGetMe,
   parseExpiresInSeconds: (val) => {
-    const match = String(val || '').match(/^(\d+)([smhd]?)$/);
+    const match = String(val || '').match(/^(\\d+)([smhd]?)$/);
     if (!match) return 30 * 24 * 60 * 60;
     const n = parseInt(match[1], 10);
     const unit = match[2] || 's';

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -16,6 +16,22 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    let timer;
+    const handleResize = () => {
+      clearTimeout(timer);
+      timer = setTimeout(checkMobile, 100);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   const {
     register,
@@ -45,105 +61,138 @@ export default function LoginPage() {
 
   return (
     <div style={styles.page}>
-      <div style={styles.card}>
-        <div style={styles.header}>
-          <h1 style={styles.title}>Entrar</h1>
-          <p style={styles.subtitle}>Acesse sua conta Finlly</p>
+      {/* Painel Esquerdo */}
+      {!isMobile && (
+        <div style={styles.leftPanel}>
+          <div style={styles.leftContent}>
+            <div style={styles.logoRow}>
+              <span style={styles.logoIcon}>🤖</span>
+              <span style={styles.logoText}>Finlly</span>
+            </div>
+            <p style={styles.logoSubtitle}>Gestão financeira pessoal</p>
+            <h2 style={styles.leftHeadline}>Sua gestão financeira, simplificada.</h2>
+            <p style={styles.leftDescription}>
+              Acesse a plataforma para ter controle total sobre suas finanças.
+            </p>
+          </div>
         </div>
+      )}
 
-        {errorMsg && (
-          <div style={styles.errorBox} role="alert">
-            <span style={styles.errorIcon} aria-hidden="true">⚠️</span>
-            {errorMsg}
-          </div>
-        )}
+      {/* Painel Direito */}
+      <div style={isMobile ? styles.rightPanelMobile : styles.rightPanel}>
+        <div style={styles.formCard}>
+          <h1 style={styles.formTitle}>Acesse sua conta</h1>
 
-        <form onSubmit={handleSubmit(onSubmit)} noValidate>
-          <div style={styles.fieldGroup}>
-            <label htmlFor="email" style={styles.label}>
-              E-mail
-            </label>
-            <input
-              id="email"
-              type="email"
-              placeholder="seu@email.com"
-              autoComplete="email"
-              style={{
-                ...styles.input,
-                ...(errors.email ? styles.inputError : {}),
-              }}
-              {...register('email')}
-            />
-            {errors.email && (
-              <span style={styles.fieldError} role="alert">
-                {errors.email.message}
-              </span>
-            )}
-          </div>
+          {errorMsg && (
+            <div style={styles.errorBox} role="alert">
+              <span style={styles.errorIcon} aria-hidden="true">⚠️</span>
+              {errorMsg}
+            </div>
+          )}
 
-          <div style={styles.fieldGroup}>
-            <div style={styles.labelRow}>
-              <label htmlFor="senha" style={styles.label}>
-                Senha
+          <form onSubmit={handleSubmit(onSubmit)} noValidate>
+            {/* Campo de e-mail */}
+            <div style={styles.fieldGroup}>
+              <div style={styles.inputWrapper}>
+                <span style={styles.inputIcon} aria-hidden="true">✉️</span>
+                <input
+                  id="email"
+                  type="email"
+                  placeholder="Seu e-mail de cadastro."
+                  autoComplete="email"
+                  style={{
+                    ...styles.input,
+                    paddingLeft: '42px',
+                    ...(errors.email ? styles.inputError : {}),
+                  }}
+                  {...register('email')}
+                />
+              </div>
+              {errors.email ? (
+                <span style={styles.fieldError} role="alert">
+                  {errors.email.message}
+                </span>
+              ) : (
+                <span style={styles.hintText}>Seu e-mail de cadastro.</span>
+              )}
+            </div>
+
+            {/* Campo de senha */}
+            <div style={styles.fieldGroup}>
+              <div style={styles.inputWrapper}>
+                <span style={styles.inputIcon} aria-hidden="true">🔒</span>
+                <input
+                  id="senha"
+                  type={mostrarSenha ? 'text' : 'password'}
+                  placeholder="Sua senha de acesso."
+                  autoComplete="current-password"
+                  style={{
+                    ...styles.input,
+                    paddingLeft: '42px',
+                    paddingRight: '48px',
+                    ...(errors.senha ? styles.inputError : {}),
+                  }}
+                  {...register('senha')}
+                />
+                <button
+                  type="button"
+                  style={styles.eyeButton}
+                  onClick={() => setMostrarSenha((v) => !v)}
+                  aria-label={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
+                >
+                  {mostrarSenha ? '🙈' : '👁️'}
+                </button>
+              </div>
+              {errors.senha ? (
+                <span style={styles.fieldError} role="alert">
+                  {errors.senha.message}
+                </span>
+              ) : (
+                <span style={styles.hintText}>Sua senha de acesso.</span>
+              )}
+            </div>
+
+            {/* Linha lembrar-me + assinar */}
+            <div style={styles.rememberRow}>
+              <label style={styles.checkboxLabel}>
+                <input type="checkbox" style={styles.checkbox} />
+                Lembrar-me
               </label>
-              <Link to="/forgot-password" style={styles.forgotLink}>
-                Esqueci minha senha
+              <Link to="/register" style={styles.assinarLink}>
+                Assinar agora
               </Link>
             </div>
-            <div style={styles.passwordWrapper}>
-              <input
-                id="senha"
-                type={mostrarSenha ? 'text' : 'password'}
-                placeholder="Sua senha"
-                autoComplete="current-password"
-                style={{
-                  ...styles.input,
-                  paddingRight: '48px',
-                  ...(errors.senha ? styles.inputError : {}),
-                }}
-                {...register('senha')}
-              />
-              <button
-                type="button"
-                style={styles.eyeButton}
-                onClick={() => setMostrarSenha((v) => !v)}
-                aria-label={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
-              >
-                {mostrarSenha ? '🙈' : '👁️'}
-              </button>
-            </div>
-            {errors.senha && (
-              <span style={styles.fieldError} role="alert">
-                {errors.senha.message}
-              </span>
-            )}
-          </div>
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            style={{
-              ...styles.submitButton,
-              ...(isSubmitting ? styles.submitButtonDisabled : {}),
-            }}
-          >
-            {isSubmitting ? (
-              <>
-                <span style={styles.spinnerInline} aria-hidden="true" />
-                Entrando...
-              </>
-            ) : (
-              'Entrar'
-            )}
-          </button>
-        </form>
+            {/* Botão de submit */}
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              style={{
+                ...styles.submitButton,
+                ...(isSubmitting ? styles.submitButtonDisabled : {}),
+              }}
+            >
+              {isSubmitting ? (
+                <>
+                  <span style={styles.spinnerInline} aria-hidden="true" />
+                  Entrando...
+                </>
+              ) : (
+                <>
+                  <span style={styles.submitIcon} aria-hidden="true">→</span>
+                  Entrar
+                </>
+              )}
+            </button>
+          </form>
 
-        <p style={styles.footerText}>
-          Não tem conta?{' '}
-          <Link to="/register" style={styles.link}>
-            Cadastre-se
-          </Link>
-        </p>
+          <p style={styles.footerText}>
+            Ainda não tem uma conta?{' '}
+            <Link to="/register" style={styles.link}>
+              Fale conosco
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -151,35 +200,85 @@ export default function LoginPage() {
 
 const styles = {
   page: {
-    minHeight: '100vh',
+    display: 'flex',
+    height: '100vh',
+    overflow: 'hidden',
+  },
+  leftPanel: {
+    flex: '0 0 55%',
+    background: 'linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)',
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f3f4f6',
-    padding: '16px',
+    padding: '48px',
   },
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: '12px',
-    boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
-    padding: '40px',
-    width: '100%',
+  leftContent: {
     maxWidth: '420px',
+    color: '#ffffff',
   },
-  header: {
-    marginBottom: '28px',
-    textAlign: 'center',
+  logoRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    marginBottom: '8px',
   },
-  title: {
-    fontSize: '28px',
+  logoIcon: {
+    fontSize: '40px',
+    lineHeight: 1,
+  },
+  logoText: {
+    fontSize: '36px',
+    fontWeight: '700',
+    color: '#ffffff',
+    letterSpacing: '-0.5px',
+  },
+  logoSubtitle: {
+    fontSize: '14px',
+    color: 'rgba(255,255,255,0.75)',
+    margin: '0 0 40px',
+    letterSpacing: '0.5px',
+  },
+  leftHeadline: {
+    fontSize: '32px',
+    fontWeight: '700',
+    color: '#ffffff',
+    lineHeight: 1.3,
+    margin: '0 0 16px',
+  },
+  leftDescription: {
+    fontSize: '15px',
+    color: 'rgba(255,255,255,0.8)',
+    lineHeight: 1.6,
+    margin: 0,
+  },
+  rightPanel: {
+    flex: '0 0 45%',
+    backgroundColor: '#ffffff',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: '40px',
+    overflowY: 'auto',
+  },
+  rightPanelMobile: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: '24px',
+    overflowY: 'auto',
+  },
+  formCard: {
+    width: '100%',
+    maxWidth: '380px',
+    padding: '8px 0',
+  },
+  formTitle: {
+    fontSize: '30px',
     fontWeight: '700',
     color: '#111827',
-    margin: '0 0 8px',
-  },
-  subtitle: {
-    color: '#6b7280',
-    margin: 0,
-    fontSize: '15px',
+    margin: '0 0 28px',
   },
   errorBox: {
     display: 'flex',
@@ -197,20 +296,20 @@ const styles = {
     flexShrink: 0,
   },
   fieldGroup: {
-    marginBottom: '20px',
+    marginBottom: '18px',
   },
-  labelRow: {
+  inputWrapper: {
+    position: 'relative',
     display: 'flex',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '6px',
   },
-  label: {
-    display: 'block',
-    fontSize: '14px',
-    fontWeight: '500',
-    color: '#374151',
-    marginBottom: '6px',
+  inputIcon: {
+    position: 'absolute',
+    left: '12px',
+    fontSize: '16px',
+    lineHeight: 1,
+    pointerEvents: 'none',
+    zIndex: 1,
   },
   input: {
     width: '100%',
@@ -220,7 +319,6 @@ const styles = {
     borderRadius: '8px',
     outline: 'none',
     boxSizing: 'border-box',
-    transition: 'border-color 0.2s',
     color: '#111827',
     backgroundColor: '#fff',
   },
@@ -233,25 +331,47 @@ const styles = {
     fontSize: '13px',
     color: '#dc2626',
   },
-  passwordWrapper: {
-    position: 'relative',
+  hintText: {
+    display: 'block',
+    marginTop: '4px',
+    fontSize: '13px',
+    color: '#9ca3af',
   },
   eyeButton: {
     position: 'absolute',
     right: '12px',
-    top: '50%',
-    transform: 'translateY(-50%)',
     background: 'none',
     border: 'none',
     cursor: 'pointer',
     fontSize: '18px',
     padding: '4px',
     lineHeight: 1,
+    zIndex: 1,
   },
-  forgotLink: {
-    fontSize: '13px',
-    color: '#9ca3af',
+  rememberRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '24px',
+  },
+  checkboxLabel: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    fontSize: '14px',
+    color: '#374151',
+    cursor: 'pointer',
+  },
+  checkbox: {
+    width: '16px',
+    height: '16px',
+    cursor: 'pointer',
+  },
+  assinarLink: {
+    fontSize: '14px',
+    color: '#2563eb',
     textDecoration: 'none',
+    fontWeight: '500',
   },
   submitButton: {
     display: 'flex',
@@ -259,20 +379,23 @@ const styles = {
     alignItems: 'center',
     gap: '8px',
     width: '100%',
-    padding: '13px',
+    padding: '14px',
     fontSize: '16px',
     fontWeight: '600',
     color: '#ffffff',
-    backgroundColor: '#2563eb',
+    backgroundColor: '#1e3a5f',
     border: 'none',
     borderRadius: '8px',
     cursor: 'pointer',
-    marginTop: '8px',
-    transition: 'background-color 0.2s',
+    marginBottom: '24px',
   },
   submitButtonDisabled: {
-    backgroundColor: '#93c5fd',
+    backgroundColor: '#6b8ab5',
     cursor: 'not-allowed',
+  },
+  submitIcon: {
+    fontSize: '18px',
+    lineHeight: 1,
   },
   spinnerInline: {
     display: 'inline-block',
@@ -284,10 +407,10 @@ const styles = {
     animation: 'spin 0.7s linear infinite',
   },
   footerText: {
-    marginTop: '24px',
     textAlign: 'center',
     fontSize: '14px',
     color: '#6b7280',
+    margin: 0,
   },
   link: {
     color: '#2563eb',
