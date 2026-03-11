@@ -270,7 +270,7 @@ export default function PerfilPage() {
       </nav>
 
       {/* Main area */}
-      <div style={s.mainArea}>
+      <div style={{ ...s.mainArea, ...(sidebarOpen ? {} : { marginLeft: 0 }) }}>
         {/* Header */}
         <div style={s.topBar}>
           <div style={s.topBarLeft}>
