@@ -6,6 +6,15 @@ import { z } from 'zod';
 import { toast } from 'react-toastify';
 import { useAuth } from '../hooks/useAuth.js';
 import { perfilService } from '../services/perfil.service.js';
+import {
+  LayoutDashboard,
+  ArrowUpCircle,
+  ArrowDownCircle,
+  TrendingUp,
+  Target,
+  Paperclip,
+  LogOut,
+} from 'lucide-react';
 
 const TIMEZONES = [
   'America/Sao_Paulo',
@@ -130,6 +139,7 @@ export default function PerfilPage() {
   const [emailValue, setEmailValue] = useState('');
   const [createdAt, setCreatedAt] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const [senhaAtual, setSenhaAtual] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
@@ -233,352 +243,380 @@ export default function PerfilPage() {
   const initials = getInitials(usuario?.nome);
 
   const navItems = [
-    { icon: '⊞', label: 'Dashboard', path: '/dashboard' },
-    { icon: '↕', label: 'Transações', path: '/transacoes' },
-    { icon: '📊', label: 'Relatórios', path: '/relatorios' },
-    { icon: '⚙', label: 'Configurações', path: '/perfil', active: true },
+    {
+      icon: <LayoutDashboard size={20} />,
+      label: 'Dashboard',
+      path: '/dashboard',
+    },
+    {
+      icon: <ArrowDownCircle size={20} />,
+      label: 'Contas a pagar',
+      path: '/contas-pagar',
+    },
+    {
+      icon: <ArrowUpCircle size={20} />,
+      label: 'Contas a receber',
+      path: '/contas-receber',
+    },
+    {
+      icon: <TrendingUp size={20} />,
+      label: 'Investimentos',
+      path: '/investimentos',
+    },
+    { icon: <Target size={20} />, label: 'Metas', path: '/metas' },
+    { icon: <Paperclip size={20} />, label: 'Anexos', path: '/anexos' },
+    { icon: <LogOut size={20} />, label: 'Sair', path: '/logout' },
   ];
 
   return (
     <div style={s.pageWrapper}>
       <div style={s.page}>
-      {/* Sidebar */}
-      <nav
-        style={{ ...s.sidebar, ...(sidebarOpen ? {} : s.sidebarHidden) }}
-        aria-label="Navegação principal"
-      >
-        <div style={s.sidebarLogo}>
-          <span style={s.sidebarLogoIcon}>F</span>
-        </div>
-        <ul style={s.navList}>
-          {navItems.map((item) => (
-            <li key={item.path}>
-              <button
-                onClick={() => navigate(item.path)}
-                style={
-                  item.active ? { ...s.navBtn, ...s.navBtnActive } : s.navBtn
-                }
-                title={item.label}
-                aria-label={item.label}
-                aria-current={item.active ? 'page' : undefined}
-              >
-                <span style={s.navIcon}>{item.icon}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      </nav>
+        {/* Sidebar */}
+        <nav
+          style={{ ...s.sidebar, ...(sidebarOpen ? {} : s.sidebarHidden) }}
+          aria-label="Navegação principal"
+        >
+          <div style={s.sidebarLogo}>
+            <span style={s.sidebarLogoIcon}>F</span>
+          </div>
+          <ul style={s.navList}>
+            {navItems.map((item) => (
+              <li key={item.path}>
+                <button
+                  onClick={() => navigate(item.path)}
+                  style={
+                    item.active ? { ...s.navBtn, ...s.navBtnActive } : s.navBtn
+                  }
+                  title={item.label}
+                  aria-label={item.label}
+                  aria-current={item.active ? 'page' : undefined}
+                >
+                  <span style={s.navIcon}>{item.icon}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </nav>
 
-      {/* Main area */}
-      <div style={{ ...s.mainArea, ...(sidebarOpen ? {} : { marginLeft: 0 }) }}>
-        {/* Header */}
-        <div style={s.topBar}>
-          <div style={s.topBarLeft}>
-            <button
-              style={s.hamburger}
-              aria-label="Menu"
-              onClick={() => setSidebarOpen((v) => !v)}
-            >
-              ☰
-            </button>
-            <div style={s.pageTitleIcon} aria-hidden="true">👤</div>
-            <div>
-              <div style={s.pageTitleRow}>
-                <h1 style={s.pageTitle}>Meu perfil</h1>
-                <span style={s.pageTitleChip}>Configurações da sua conta</span>
+        {/* Main area */}
+        <div
+          style={{ ...s.mainArea, ...(sidebarOpen ? {} : { marginLeft: 0 }) }}
+        >
+          {/* Header */}
+          <div style={s.topBar}>
+            <div style={s.topBarLeft}>
+              <button
+                style={s.hamburger}
+                aria-label="Menu"
+                onClick={() => setSidebarOpen((v) => !v)}
+              >
+                ☰
+              </button>
+              <div style={s.pageTitleIcon} aria-hidden="true">
+                👤
               </div>
-              <p style={s.pageSubtitle}>
-                Ajuste seus dados pessoais, número de WhatsApp e credenciais de
-                acesso.
-              </p>
+              <div>
+                <div style={s.pageTitleRow}>
+                  <h1 style={s.pageTitle}>Meu perfil</h1>
+                  <span style={s.pageTitleChip}>
+                    Configurações da sua conta
+                  </span>
+                </div>
+                <p style={s.pageSubtitle}>
+                  Ajuste seus dados pessoais, número de WhatsApp e credenciais
+                  de acesso.
+                </p>
+              </div>
+            </div>
+            <div
+              style={s.avatar}
+              title={usuario?.nome || ''}
+              aria-label={`Avatar de ${usuario?.nome || 'usuário'}`}
+            >
+              {initials}
             </div>
           </div>
-          <div
-            style={s.avatar}
-            title={usuario?.nome || ''}
-            aria-label={`Avatar de ${usuario?.nome || 'usuário'}`}
-          >
-            {initials}
-          </div>
-        </div>
-        <hr style={s.divider} />
+          <hr style={s.divider} />
 
-        {/* Inline alerts */}
-        {successMsg && (
-          <div style={s.alertSuccess} role="alert">
-            <span>✓ {successMsg}</span>
-            <button
-              style={s.alertClose}
-              onClick={() => setSuccessMsg(null)}
-              aria-label="Fechar"
-            >
-              ×
-            </button>
-          </div>
-        )}
-        {errorMsg && (
-          <div style={s.alertDanger} role="alert">
-            <span>⚠ {errorMsg}</span>
-            <button
-              style={s.alertClose}
-              onClick={() => setErrorMsg(null)}
-              aria-label="Fechar"
-            >
-              ×
-            </button>
-          </div>
-        )}
+          {/* Inline alerts */}
+          {successMsg && (
+            <div style={s.alertSuccess} role="alert">
+              <span>✓ {successMsg}</span>
+              <button
+                style={s.alertClose}
+                onClick={() => setSuccessMsg(null)}
+                aria-label="Fechar"
+              >
+                ×
+              </button>
+            </div>
+          )}
+          {errorMsg && (
+            <div style={s.alertDanger} role="alert">
+              <span>⚠ {errorMsg}</span>
+              <button
+                style={s.alertClose}
+                onClick={() => setErrorMsg(null)}
+                aria-label="Fechar"
+              >
+                ×
+              </button>
+            </div>
+          )}
 
-        {loading ? (
-          <div style={s.loadingWrapper}>
-            <span style={s.spinner} aria-hidden="true" />
-            <span style={{ color: '#6b7280', marginLeft: '12px' }}>
-              Carregando...
-            </span>
-          </div>
-        ) : (
-          <div style={s.cardsGrid}>
-            {/* Card: Dados da conta */}
-            <div style={{ ...s.card, height: '100%' }}>
-              <div style={s.cardHeader}>
-                <h2 style={s.cardTitle}>Dados da conta</h2>
-                {createdAt && (
-                  <span style={s.cardMeta}>
-                    usando desde {formatDate(createdAt)}
-                  </span>
-                )}
-              </div>
-
-              <form onSubmit={handleSubmit(onSubmit)} noValidate>
-                <div style={s.fieldGroup}>
-                  <label style={s.label} htmlFor="nome">
-                    Nome completo *
-                  </label>
-                  <input
-                    id="nome"
-                    type="text"
-                    placeholder="Seu nome completo"
-                    autoComplete="name"
-                    style={{ ...s.input, ...(errors.nome ? s.inputError : {}) }}
-                    {...register('nome')}
-                  />
-                  {errors.nome && (
-                    <span style={s.fieldError} role="alert">
-                      {errors.nome.message}
+          {loading ? (
+            <div style={s.loadingWrapper}>
+              <span style={s.spinner} aria-hidden="true" />
+              <span style={{ color: '#6b7280', marginLeft: '12px' }}>
+                Carregando...
+              </span>
+            </div>
+          ) : (
+            <div style={s.cardsGrid}>
+              {/* Card: Dados da conta */}
+              <div style={{ ...s.card, height: '100%' }}>
+                <div style={s.cardHeader}>
+                  <h2 style={s.cardTitle}>Dados da conta</h2>
+                  {createdAt && (
+                    <span style={s.cardMeta}>
+                      usando desde {formatDate(createdAt)}
                     </span>
                   )}
                 </div>
 
-                <div style={s.fieldGroup}>
-                  <label style={s.label} htmlFor="email">
-                    E-mail de acesso *
-                  </label>
-                  <input
-                    id="email"
-                    type="email"
-                    value={emailValue}
-                    readOnly
-                    style={{ ...s.input, ...s.inputReadOnly }}
-                    autoComplete="email"
-                  />
-                  <span style={s.helperText}>
-                    Usado para login e comunicações importantes.
-                  </span>
-                </div>
-
-                <div style={s.formRow}>
-                  <div style={{ ...s.fieldGroup, gridColumn: 'span 2' }}>
-                    <label style={s.label} htmlFor="whatsapp">
-                      WhatsApp (para lembretes e agente)
+                <form onSubmit={handleSubmit(onSubmit)} noValidate>
+                  <div style={s.fieldGroup}>
+                    <label style={s.label} htmlFor="nome">
+                      Nome completo *
                     </label>
                     <input
-                      id="whatsapp"
+                      id="nome"
                       type="text"
-                      placeholder="+55 11 99999-9999"
+                      placeholder="Seu nome completo"
+                      autoComplete="name"
                       style={{
                         ...s.input,
-                        ...(errors.whatsapp ? s.inputError : {}),
+                        ...(errors.nome ? s.inputError : {}),
                       }}
-                      {...register('whatsapp')}
+                      {...register('nome')}
                     />
-                    {errors.whatsapp && (
+                    {errors.nome && (
                       <span style={s.fieldError} role="alert">
-                        {errors.whatsapp.message}
+                        {errors.nome.message}
                       </span>
                     )}
+                  </div>
+
+                  <div style={s.fieldGroup}>
+                    <label style={s.label} htmlFor="email">
+                      E-mail de acesso *
+                    </label>
+                    <input
+                      id="email"
+                      type="email"
+                      value={emailValue}
+                      readOnly
+                      style={{ ...s.input, ...s.inputReadOnly }}
+                      autoComplete="email"
+                    />
                     <span style={s.helperText}>
-                      Esse número será usado para identificar você quando falar
-                      com o agente no WhatsApp.
+                      Usado para login e comunicações importantes.
                     </span>
                   </div>
-                  <div style={s.fieldGroup}>
-                    <label style={s.label} htmlFor="moeda">
-                      Moeda padrão
-                    </label>
-                    <select
-                      id="moeda"
-                      style={{
-                        ...s.select,
-                        ...(errors.moeda ? s.inputError : {}),
-                      }}
-                      {...register('moeda')}
-                    >
-                      {MOEDAS.map((m) => (
-                        <option key={m} value={m}>
-                          {MOEDAS_LABELS[m] || m}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.moeda && (
-                      <span style={s.fieldError} role="alert">
-                        {errors.moeda.message}
-                      </span>
-                    )}
-                  </div>
-                  <div style={s.fieldGroup}>
-                    <label style={s.label} htmlFor="timezone">
-                      Fuso horário
-                    </label>
-                    <select
-                      id="timezone"
-                      style={{
-                        ...s.select,
-                        ...(errors.timezone ? s.inputError : {}),
-                      }}
-                      {...register('timezone')}
-                    >
-                      {TIMEZONES.map((tz) => (
-                        <option key={tz} value={tz}>
-                          {tz}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.timezone && (
-                      <span style={s.fieldError} role="alert">
-                        {errors.timezone.message}
-                      </span>
-                    )}
-                  </div>
-                </div>
 
-                <div style={{ textAlign: 'right' }}>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    style={
-                      isSubmitting
-                        ? { ...s.btnPrimary, ...s.btnPrimaryDisabled }
-                        : s.btnPrimary
-                    }
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <span style={s.spinnerInline} aria-hidden="true" />{' '}
-                        Salvando...
-                      </>
-                    ) : (
-                      '✓ Salvar alterações'
-                    )}
-                  </button>
-                </div>
-              </form>
-            </div>
+                  <div style={s.formRow}>
+                    <div style={{ ...s.fieldGroup, gridColumn: 'span 2' }}>
+                      <label style={s.label} htmlFor="whatsapp">
+                        WhatsApp (para lembretes e agente)
+                      </label>
+                      <input
+                        id="whatsapp"
+                        type="text"
+                        placeholder="+55 11 99999-9999"
+                        style={{
+                          ...s.input,
+                          ...(errors.whatsapp ? s.inputError : {}),
+                        }}
+                        {...register('whatsapp')}
+                      />
+                      {errors.whatsapp && (
+                        <span style={s.fieldError} role="alert">
+                          {errors.whatsapp.message}
+                        </span>
+                      )}
+                      <span style={s.helperText}>
+                        Esse número será usado para identificar você quando
+                        falar com o agente no WhatsApp.
+                      </span>
+                    </div>
+                    <div style={s.fieldGroup}>
+                      <label style={s.label} htmlFor="moeda">
+                        Moeda padrão
+                      </label>
+                      <select
+                        id="moeda"
+                        style={{
+                          ...s.select,
+                          ...(errors.moeda ? s.inputError : {}),
+                        }}
+                        {...register('moeda')}
+                      >
+                        {MOEDAS.map((m) => (
+                          <option key={m} value={m}>
+                            {MOEDAS_LABELS[m] || m}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.moeda && (
+                        <span style={s.fieldError} role="alert">
+                          {errors.moeda.message}
+                        </span>
+                      )}
+                    </div>
+                    <div style={s.fieldGroup}>
+                      <label style={s.label} htmlFor="timezone">
+                        Fuso horário
+                      </label>
+                      <select
+                        id="timezone"
+                        style={{
+                          ...s.select,
+                          ...(errors.timezone ? s.inputError : {}),
+                        }}
+                        {...register('timezone')}
+                      >
+                        {TIMEZONES.map((tz) => (
+                          <option key={tz} value={tz}>
+                            {tz}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.timezone && (
+                        <span style={s.fieldError} role="alert">
+                          {errors.timezone.message}
+                        </span>
+                      )}
+                    </div>
+                  </div>
 
-            {/* Card: Segurança e senha */}
-            <div style={{ ...s.card, height: '100%' }}>
-              <div style={s.cardHeader}>
-                <h2 style={s.cardTitle}>Segurança e senha</h2>
+                  <div style={{ textAlign: 'right' }}>
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      style={
+                        isSubmitting
+                          ? { ...s.btnPrimary, ...s.btnPrimaryDisabled }
+                          : s.btnPrimary
+                      }
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <span style={s.spinnerInline} aria-hidden="true" />{' '}
+                          Salvando...
+                        </>
+                      ) : (
+                        '✓ Salvar alterações'
+                      )}
+                    </button>
+                  </div>
+                </form>
               </div>
 
-              <form onSubmit={handleSenha} noValidate>
-                {senhaError && (
-                  <div style={s.errorBox} role="alert">
-                    <span aria-hidden="true">⚠️</span> {senhaError}
-                  </div>
-                )}
-
-                <div style={s.fieldGroup}>
-                  <label style={s.label} htmlFor="senhaAtual">
-                    Senha atual
-                  </label>
-                  <input
-                    id="senhaAtual"
-                    type="password"
-                    value={senhaAtual}
-                    onChange={(e) => setSenhaAtual(e.target.value)}
-                    style={s.input}
-                    autoComplete="current-password"
-                  />
+              {/* Card: Segurança e senha */}
+              <div style={{ ...s.card, height: '100%' }}>
+                <div style={s.cardHeader}>
+                  <h2 style={s.cardTitle}>Segurança e senha</h2>
                 </div>
 
-                <div style={s.twoCol}>
+                <form onSubmit={handleSenha} noValidate>
+                  {senhaError && (
+                    <div style={s.errorBox} role="alert">
+                      <span aria-hidden="true">⚠️</span> {senhaError}
+                    </div>
+                  )}
+
                   <div style={s.fieldGroup}>
-                    <label style={s.label} htmlFor="novaSenha">
-                      Nova senha
+                    <label style={s.label} htmlFor="senhaAtual">
+                      Senha atual
                     </label>
                     <input
-                      id="novaSenha"
+                      id="senhaAtual"
                       type="password"
-                      value={novaSenha}
-                      onChange={(e) => setNovaSenha(e.target.value)}
+                      value={senhaAtual}
+                      onChange={(e) => setSenhaAtual(e.target.value)}
                       style={s.input}
-                      autoComplete="new-password"
+                      autoComplete="current-password"
                     />
                   </div>
-                  <div style={s.fieldGroup}>
-                    <label style={s.label} htmlFor="confirmarSenha">
-                      Confirmar nova senha
-                    </label>
-                    <input
-                      id="confirmarSenha"
-                      type="password"
-                      value={confirmarSenha}
-                      onChange={(e) => setConfirmarSenha(e.target.value)}
-                      style={s.input}
-                      autoComplete="new-password"
-                    />
+
+                  <div style={s.twoCol}>
+                    <div style={s.fieldGroup}>
+                      <label style={s.label} htmlFor="novaSenha">
+                        Nova senha
+                      </label>
+                      <input
+                        id="novaSenha"
+                        type="password"
+                        value={novaSenha}
+                        onChange={(e) => setNovaSenha(e.target.value)}
+                        style={s.input}
+                        autoComplete="new-password"
+                      />
+                    </div>
+                    <div style={s.fieldGroup}>
+                      <label style={s.label} htmlFor="confirmarSenha">
+                        Confirmar nova senha
+                      </label>
+                      <input
+                        id="confirmarSenha"
+                        type="password"
+                        value={confirmarSenha}
+                        onChange={(e) => setConfirmarSenha(e.target.value)}
+                        style={s.input}
+                        autoComplete="new-password"
+                      />
+                    </div>
                   </div>
-                </div>
 
-                <p style={s.senhaHint}>
-                  Use uma senha forte. No mínimo {MIN_PASSWORD_LENGTH}{' '}
-                  caracteres, idealmente com letras maiúsculas, minúsculas,
-                  números e símbolos.
-                </p>
+                  <p style={s.senhaHint}>
+                    Use uma senha forte. No mínimo {MIN_PASSWORD_LENGTH}{' '}
+                    caracteres, idealmente com letras maiúsculas, minúsculas,
+                    números e símbolos.
+                  </p>
 
-                <div style={{ textAlign: 'right' }}>
-                  <button
-                    type="submit"
-                    disabled={savingSenha}
-                    style={
-                      savingSenha
-                        ? { ...s.btnSecondary, ...s.btnSecondaryDisabled }
-                        : s.btnSecondary
-                    }
-                  >
-                    {savingSenha ? (
-                      <>
-                        <span
-                          style={{
-                            ...s.spinnerInline,
-                            borderColor: 'rgba(37,99,235,0.3)',
-                            borderTopColor: '#2563eb',
-                          }}
-                          aria-hidden="true"
-                        />{' '}
-                        Alterando...
-                      </>
-                    ) : (
-                      '🔒 Alterar senha'
-                    )}
-                  </button>
-                </div>
-              </form>
+                  <div style={{ textAlign: 'right' }}>
+                    <button
+                      type="submit"
+                      disabled={savingSenha}
+                      style={
+                        savingSenha
+                          ? { ...s.btnSecondary, ...s.btnSecondaryDisabled }
+                          : s.btnSecondary
+                      }
+                    >
+                      {savingSenha ? (
+                        <>
+                          <span
+                            style={{
+                              ...s.spinnerInline,
+                              borderColor: 'rgba(37,99,235,0.3)',
+                              borderTopColor: '#2563eb',
+                            }}
+                            aria-hidden="true"
+                          />{' '}
+                          Alterando...
+                        </>
+                      ) : (
+                        '🔒 Alterar senha'
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-    </div>
 
       <footer style={s.footer}>
         Finlly • painel financeiro pessoal — {new Date().getFullYear()}
@@ -603,7 +641,8 @@ const s = {
     minHeight: '100vh',
     width: '100%',
     backgroundColor: '#ffffff',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily:
+      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
   },
 
   /* Sidebar */
