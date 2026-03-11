@@ -1,9 +1,22 @@
 import { Router } from 'express';
-import { rateLimit } from 'express-rate-limit';
+import { rateLimit, ipKeyGenerator } from 'express-rate-limit';
 import { z } from 'zod';
-import { register, login, refresh, logout, getMe, parseExpiresInSeconds } from '../services/authService.js';
-import { forgotPassword, resetPassword } from '../services/passwordRecoveryService.js';
-import { verifyEmail, resendVerificationEmail } from '../services/emailVerificationService.js';
+import {
+  register,
+  login,
+  refresh,
+  logout,
+  getMe,
+  parseExpiresInSeconds,
+} from '../services/authService.js';
+import {
+  forgotPassword,
+  resetPassword,
+} from '../services/passwordRecoveryService.js';
+import {
+  verifyEmail,
+  resendVerificationEmail,
+} from '../services/emailVerificationService.js';
 import { jwtAuthMiddleware } from '../middleware/jwtAuth.js';
 import { toValidationError } from '../errors/toValidationError.js';
 import { AppError } from '../errors/AppError.js';
@@ -63,8 +76,8 @@ function buildStore(windowMs) {
 // Rate Limiters
 // ============================================================
 
-const LOGIN_WINDOW_MS = 15 * 60 * 1000;     // 15 minutes
-const REGISTER_WINDOW_MS = 60 * 60 * 1000;  // 1 hour
+const LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const REGISTER_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 const FORGOT_PASSWORD_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 
 /** Strict limiter for login: 5 attempts per 15 minutes per IP. */
@@ -74,7 +87,10 @@ const loginLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   store: buildStore(LOGIN_WINDOW_MS),
-  message: { code: 'RATE_LIMITED', message: 'Muitas tentativas. Tente novamente em 15 minutos.' },
+  message: {
+    code: 'RATE_LIMITED',
+    message: 'Muitas tentativas. Tente novamente em 15 minutos.',
+  },
   handler: (req, res, next, options) => {
     logger.warn({ msg: 'Login rate limit atingido', ip: req.ip });
     return next(AppError.tooManyRequests(options.message.message));
@@ -88,7 +104,10 @@ const registerLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   store: buildStore(REGISTER_WINDOW_MS),
-  message: { code: 'RATE_LIMITED', message: 'Muitas tentativas de registro. Tente novamente em 1 hora.' },
+  message: {
+    code: 'RATE_LIMITED',
+    message: 'Muitas tentativas de registro. Tente novamente em 1 hora.',
+  },
   handler: (req, res, next, options) => {
     logger.warn({ msg: 'Register rate limit atingido', ip: req.ip });
     return next(AppError.tooManyRequests(options.message.message));
@@ -102,8 +121,11 @@ const forgotPasswordLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   store: buildStore(FORGOT_PASSWORD_WINDOW_MS),
-  keyGenerator: (req) => req.body?.email || req.ip,
-  message: { code: 'RATE_LIMITED', message: 'Muitas tentativas. Tente novamente em 1 hora.' },
+  keyGenerator: (req) => req.body?.email || ipKeyGenerator(req), // ← usar o helper
+  message: {
+    code: 'RATE_LIMITED',
+    message: 'Muitas tentativas. Tente novamente em 1 hora.',
+  },
   handler: (req, res, next, options) => {
     logger.warn({ msg: 'Forgot-password rate limit atingido', ip: req.ip });
     return next(AppError.tooManyRequests(options.message.message));
@@ -116,8 +138,12 @@ const authLimiter = rateLimit({
   max: 30,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { code: 'RATE_LIMITED', message: 'Muitas tentativas. Tente novamente mais tarde.' },
-  handler: (req, res, next, options) => next(AppError.tooManyRequests(options.message.message)),
+  message: {
+    code: 'RATE_LIMITED',
+    message: 'Muitas tentativas. Tente novamente mais tarde.',
+  },
+  handler: (req, res, next, options) =>
+    next(AppError.tooManyRequests(options.message.message)),
 });
 
 // ============================================================
@@ -219,7 +245,8 @@ router.post('/auth/login', loginLimiter, async (req, res, next) => {
   try {
     const result = await login(parsed.data, getRequestMeta(req));
 
-    const refreshExpiresMs = parseExpiresInSeconds(config.JWT_REFRESH_EXPIRES_IN) * 1000;
+    const refreshExpiresMs =
+      parseExpiresInSeconds(config.JWT_REFRESH_EXPIRES_IN) * 1000;
     res.cookie('refreshToken', result.refreshToken, {
       httpOnly: true,
       secure: config.NODE_ENV === 'production',
@@ -262,52 +289,76 @@ router.post('/auth/refresh', authLimiter, async (req, res, next) => {
  * POST /auth/logout
  * Logout de uma ou todas as sessões.
  */
-router.post('/auth/logout', authLimiter, jwtAuthMiddleware, async (req, res, next) => {
-  const parsed = LogoutSchema.safeParse(req.body);
-  if (!parsed.success) return next(toValidationError(parsed.error));
+router.post(
+  '/auth/logout',
+  authLimiter,
+  jwtAuthMiddleware,
+  async (req, res, next) => {
+    const parsed = LogoutSchema.safeParse(req.body);
+    if (!parsed.success) return next(toValidationError(parsed.error));
 
-  try {
-    const userId = req.user.sub;
-    const sessionId = req.user.sessionId;
-    const result = await logout(userId, { ...parsed.data, sessionId }, getRequestMeta(req));
+    try {
+      const userId = req.user.sub;
+      const sessionId = req.user.sessionId;
+      const result = await logout(
+        userId,
+        { ...parsed.data, sessionId },
+        getRequestMeta(req)
+      );
 
-    res.clearCookie('refreshToken', { path: '/auth/refresh' });
-    logger.info({ msg: 'Logout realizado', userId });
-    return res.status(200).json(result);
-  } catch (err) {
-    return next(err);
+      res.clearCookie('refreshToken', { path: '/auth/refresh' });
+      logger.info({ msg: 'Logout realizado', userId });
+      return res.status(200).json(result);
+    } catch (err) {
+      return next(err);
+    }
   }
-});
+);
 
 /**
  * GET /auth/me
  * Retorna dados do usuário autenticado.
  */
-router.get('/auth/me', authLimiter, jwtAuthMiddleware, async (req, res, next) => {
-  try {
-    const usuario = await getMe(req.user.sub);
-    return res.status(200).json(usuario);
-  } catch (err) {
-    return next(err);
+router.get(
+  '/auth/me',
+  authLimiter,
+  jwtAuthMiddleware,
+  async (req, res, next) => {
+    try {
+      const usuario = await getMe(req.user.sub);
+      return res.status(200).json(usuario);
+    } catch (err) {
+      return next(err);
+    }
   }
-});
+);
 
 /**
  * POST /auth/forgot-password
  * Inicia fluxo de recuperação de senha.
  */
-router.post('/auth/forgot-password', forgotPasswordLimiter, async (req, res, next) => {
-  const parsed = ForgotPasswordSchema.safeParse(req.body);
-  if (!parsed.success) return next(toValidationError(parsed.error));
+router.post(
+  '/auth/forgot-password',
+  forgotPasswordLimiter,
+  async (req, res, next) => {
+    const parsed = ForgotPasswordSchema.safeParse(req.body);
+    if (!parsed.success) return next(toValidationError(parsed.error));
 
-  try {
-    const result = await forgotPassword(parsed.data.email, getRequestMeta(req));
-    logger.info({ msg: 'Forgot password requested', email: parsed.data.email });
-    return res.status(200).json(result);
-  } catch (err) {
-    return next(err);
+    try {
+      const result = await forgotPassword(
+        parsed.data.email,
+        getRequestMeta(req)
+      );
+      logger.info({
+        msg: 'Forgot password requested',
+        email: parsed.data.email,
+      });
+      return res.status(200).json(result);
+    } catch (err) {
+      return next(err);
+    }
   }
-});
+);
 
 /**
  * POST /auth/reset-password
@@ -319,7 +370,10 @@ router.post('/auth/reset-password', authLimiter, async (req, res, next) => {
 
   try {
     const result = await resetPassword(parsed.data, getRequestMeta(req));
-    logger.info({ msg: 'Password reset completed', usuario_id: result.usuario_id });
+    logger.info({
+      msg: 'Password reset completed',
+      usuario_id: result.usuario_id,
+    });
     return res.status(200).json(result);
   } catch (err) {
     return next(err);
@@ -347,17 +401,27 @@ router.post('/auth/verify-email', authLimiter, async (req, res, next) => {
  * POST /auth/resend-verification-email
  * Reenvia e-mail de verificação.
  */
-router.post('/auth/resend-verification-email', authLimiter, async (req, res, next) => {
-  const parsed = ResendVerificationEmailSchema.safeParse(req.body);
-  if (!parsed.success) return next(toValidationError(parsed.error));
+router.post(
+  '/auth/resend-verification-email',
+  authLimiter,
+  async (req, res, next) => {
+    const parsed = ResendVerificationEmailSchema.safeParse(req.body);
+    if (!parsed.success) return next(toValidationError(parsed.error));
 
-  try {
-    const result = await resendVerificationEmail(parsed.data.email, getRequestMeta(req));
-    logger.info({ msg: 'Verification email resent', email: parsed.data.email });
-    return res.status(200).json(result);
-  } catch (err) {
-    return next(err);
+    try {
+      const result = await resendVerificationEmail(
+        parsed.data.email,
+        getRequestMeta(req)
+      );
+      logger.info({
+        msg: 'Verification email resent',
+        email: parsed.data.email,
+      });
+      return res.status(200).json(result);
+    } catch (err) {
+      return next(err);
+    }
   }
-});
+);
 
 export default router;

@@ -1,4 +1,5 @@
 import express from 'express';
+import 'dotenv/config';
 import cookieParser from 'cookie-parser';
 import { config } from './config/env.js';
 import logger from './logger.js';
@@ -33,5 +34,7 @@ app.get('/', (req, res) => {
 app.use(errorHandler);
 
 app.listen(config.API_PORT, () => {
-  logger.info({ msg: `Server is running on http://localhost:${config.API_PORT}` });
+  logger.info({
+    msg: `Server is running on http://localhost:${config.API_PORT}`,
+  });
 });
