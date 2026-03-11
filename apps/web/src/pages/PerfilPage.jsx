@@ -63,6 +63,23 @@ const MOEDAS = [
   'UYU',
 ];
 
+const MOEDAS_LABELS = {
+  BRL: 'BRL (R$)',
+  USD: 'USD ($)',
+  EUR: 'EUR (€)',
+  GBP: 'GBP (£)',
+  JPY: 'JPY (¥)',
+  CAD: 'CAD (CA$)',
+  AUD: 'AUD (A$)',
+  CHF: 'CHF (Fr)',
+  MXN: 'MXN (MX$)',
+  ARS: 'ARS (AR$)',
+  CLP: 'CLP (CL$)',
+  COP: 'COP (CO$)',
+  PEN: 'PEN (S/.)',
+  UYU: 'UYU ($U)',
+};
+
 const MIN_PASSWORD_LENGTH = 6;
 
 const PerfilSchema = z.object({
@@ -109,6 +126,7 @@ export default function PerfilPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState(null);
+  const [successMsg, setSuccessMsg] = useState(null);
   const [emailValue, setEmailValue] = useState('');
   const [createdAt, setCreatedAt] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -156,6 +174,7 @@ export default function PerfilPage() {
 
   async function onSubmit(data) {
     setErrorMsg(null);
+    setSuccessMsg(null);
     const payload = {
       nome: data.nome.trim(),
       timezone: data.timezone,
@@ -168,6 +187,7 @@ export default function PerfilPage() {
     try {
       await perfilService.updatePerfil(payload);
       toast.success('Perfil atualizado com sucesso!');
+      setSuccessMsg('Perfil atualizado com sucesso!');
     } catch (err) {
       const msg =
         err?.response?.data?.message ||
@@ -220,7 +240,8 @@ export default function PerfilPage() {
   ];
 
   return (
-    <div style={s.page}>
+    <div style={s.pageWrapper}>
+      <div style={s.page}>
       {/* Sidebar */}
       <nav
         style={{ ...s.sidebar, ...(sidebarOpen ? {} : s.sidebarHidden) }}
@@ -260,9 +281,16 @@ export default function PerfilPage() {
             >
               ☰
             </button>
+            <div style={s.pageTitleIcon} aria-hidden="true">👤</div>
             <div>
-              <h1 style={s.pageTitle}>Meu perfil</h1>
-              <p style={s.pageSubtitle}>Configurações da sua conta</p>
+              <div style={s.pageTitleRow}>
+                <h1 style={s.pageTitle}>Meu perfil</h1>
+                <span style={s.pageTitleChip}>Configurações da sua conta</span>
+              </div>
+              <p style={s.pageSubtitle}>
+                Ajuste seus dados pessoais, número de WhatsApp e credenciais de
+                acesso.
+              </p>
             </div>
           </div>
           <div
@@ -275,16 +303,31 @@ export default function PerfilPage() {
         </div>
         <hr style={s.divider} />
 
-        {/* Sub-header */}
-        <div style={s.subHeader}>
-          <div style={s.avatarSmall} aria-hidden="true">
-            <span style={{ fontSize: '18px' }}>👤</span>
+        {/* Inline alerts */}
+        {successMsg && (
+          <div style={s.alertSuccess} role="alert">
+            <span>✓ {successMsg}</span>
+            <button
+              style={s.alertClose}
+              onClick={() => setSuccessMsg(null)}
+              aria-label="Fechar"
+            >
+              ×
+            </button>
           </div>
-          <p style={s.subHeaderText}>
-            Ajuste seus dados pessoais, número de WhatsApp e credenciais de
-            acesso.
-          </p>
-        </div>
+        )}
+        {errorMsg && (
+          <div style={s.alertDanger} role="alert">
+            <span>⚠ {errorMsg}</span>
+            <button
+              style={s.alertClose}
+              onClick={() => setErrorMsg(null)}
+              aria-label="Fechar"
+            >
+              ×
+            </button>
+          </div>
+        )}
 
         {loading ? (
           <div style={s.loadingWrapper}>
@@ -296,7 +339,7 @@ export default function PerfilPage() {
         ) : (
           <div style={s.cardsGrid}>
             {/* Card: Dados da conta */}
-            <div style={s.card}>
+            <div style={{ ...s.card, height: '100%' }}>
               <div style={s.cardHeader}>
                 <h2 style={s.cardTitle}>Dados da conta</h2>
                 {createdAt && (
@@ -307,12 +350,6 @@ export default function PerfilPage() {
               </div>
 
               <form onSubmit={handleSubmit(onSubmit)} noValidate>
-                {errorMsg && (
-                  <div style={s.errorBox} role="alert">
-                    <span aria-hidden="true">⚠️</span> {errorMsg}
-                  </div>
-                )}
-
                 <div style={s.fieldGroup}>
                   <label style={s.label} htmlFor="nome">
                     Nome completo *
@@ -349,32 +386,31 @@ export default function PerfilPage() {
                   </span>
                 </div>
 
-                <div style={s.fieldGroup}>
-                  <label style={s.label} htmlFor="whatsapp">
-                    WhatsApp (para lembretes e agente)
-                  </label>
-                  <input
-                    id="whatsapp"
-                    type="text"
-                    placeholder="+55 11 99999-9999"
-                    style={{
-                      ...s.input,
-                      ...(errors.whatsapp ? s.inputError : {}),
-                    }}
-                    {...register('whatsapp')}
-                  />
-                  {errors.whatsapp && (
-                    <span style={s.fieldError} role="alert">
-                      {errors.whatsapp.message}
+                <div style={s.formRow}>
+                  <div style={{ ...s.fieldGroup, gridColumn: 'span 2' }}>
+                    <label style={s.label} htmlFor="whatsapp">
+                      WhatsApp (para lembretes e agente)
+                    </label>
+                    <input
+                      id="whatsapp"
+                      type="text"
+                      placeholder="+55 11 99999-9999"
+                      style={{
+                        ...s.input,
+                        ...(errors.whatsapp ? s.inputError : {}),
+                      }}
+                      {...register('whatsapp')}
+                    />
+                    {errors.whatsapp && (
+                      <span style={s.fieldError} role="alert">
+                        {errors.whatsapp.message}
+                      </span>
+                    )}
+                    <span style={s.helperText}>
+                      Esse número será usado para identificar você quando falar
+                      com o agente no WhatsApp.
                     </span>
-                  )}
-                  <span style={s.helperText}>
-                    Esse número será usado para identificar você quando falar
-                    com o agente no WhatsApp.
-                  </span>
-                </div>
-
-                <div style={s.twoCol}>
+                  </div>
                   <div style={s.fieldGroup}>
                     <label style={s.label} htmlFor="moeda">
                       Moeda padrão
@@ -389,7 +425,7 @@ export default function PerfilPage() {
                     >
                       {MOEDAS.map((m) => (
                         <option key={m} value={m}>
-                          {m}
+                          {MOEDAS_LABELS[m] || m}
                         </option>
                       ))}
                     </select>
@@ -449,7 +485,7 @@ export default function PerfilPage() {
             </div>
 
             {/* Card: Segurança e senha */}
-            <div style={s.card}>
+            <div style={{ ...s.card, height: '100%' }}>
               <div style={s.cardHeader}>
                 <h2 style={s.cardTitle}>Segurança e senha</h2>
               </div>
@@ -541,23 +577,31 @@ export default function PerfilPage() {
             </div>
           </div>
         )}
-        {/* Footer */}
-        <footer style={s.footer}>
-          Finlly • painel financeiro pessoal — {new Date().getFullYear()}
-        </footer>
       </div>
+    </div>
+
+      <footer style={s.footer}>
+        Finlly • painel financeiro pessoal — {new Date().getFullYear()}
+      </footer>
     </div>
   );
 }
 
 const s = {
-  page: {
+  pageWrapper: {
     display: 'flex',
+    flexDirection: 'column',
     minHeight: '100vh',
     width: '100%',
-    backgroundColor: '#ffffff',
     fontFamily:
       '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+  },
+
+  page: {
+    display: 'flex',
+    flex: 1,
+    width: '100%',
+    backgroundColor: '#ffffff',
   },
 
   /* Sidebar */
@@ -628,7 +672,6 @@ const s = {
     display: 'flex',
     flexDirection: 'column',
     minWidth: 0,
-    minHeight: '100vh',
     backgroundColor: '#f3f4f6',
   },
 
@@ -645,6 +688,40 @@ const s = {
     alignItems: 'center',
     gap: '16px',
   },
+  pageTitleIcon: {
+    fontSize: '28px',
+    lineHeight: 1,
+    flexShrink: 0,
+  },
+  pageTitleRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    flexWrap: 'wrap',
+  },
+  pageTitle: {
+    fontSize: '26px',
+    fontWeight: '700',
+    color: '#111827',
+    margin: 0,
+    lineHeight: 1.2,
+  },
+  pageTitleChip: {
+    display: 'inline-block',
+    fontSize: '12px',
+    fontWeight: '500',
+    color: '#2563eb',
+    backgroundColor: '#eff6ff',
+    border: '1px solid #bfdbfe',
+    borderRadius: '20px',
+    padding: '2px 10px',
+    whiteSpace: 'nowrap',
+  },
+  pageSubtitle: {
+    fontSize: '13px',
+    color: '#6b7280',
+    margin: '4px 0 0',
+  },
   hamburger: {
     background: 'none',
     border: 'none',
@@ -653,18 +730,6 @@ const s = {
     color: '#374151',
     padding: '4px',
     lineHeight: 1,
-  },
-  pageTitle: {
-    fontSize: '22px',
-    fontWeight: '700',
-    color: '#111827',
-    margin: 0,
-    lineHeight: 1.2,
-  },
-  pageSubtitle: {
-    fontSize: '13px',
-    color: '#6b7280',
-    margin: '2px 0 0',
   },
   avatar: {
     width: '40px',
@@ -685,6 +750,44 @@ const s = {
     margin: '0 32px',
     border: 'none',
     borderTop: '1px solid #e5e7eb',
+  },
+
+  /* Inline alerts */
+  alertSuccess: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    margin: '16px 32px 0',
+    padding: '12px 16px',
+    borderRadius: '8px',
+    backgroundColor: '#f0fdf4',
+    border: '1px solid #bbf7d0',
+    color: '#15803d',
+    fontSize: '14px',
+    fontWeight: '500',
+  },
+  alertDanger: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    margin: '16px 32px 0',
+    padding: '12px 16px',
+    borderRadius: '8px',
+    backgroundColor: '#fef2f2',
+    border: '1px solid #fecaca',
+    color: '#dc2626',
+    fontSize: '14px',
+    fontWeight: '500',
+  },
+  alertClose: {
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    fontSize: '18px',
+    lineHeight: 1,
+    color: 'inherit',
+    opacity: 0.7,
+    padding: '0 0 0 8px',
   },
 
   /* Sub-header */
@@ -715,7 +818,7 @@ const s = {
     display: 'grid',
     gridTemplateColumns: '1.5fr 1fr',
     gap: '24px',
-    padding: '0 32px 40px',
+    padding: '24px 32px 40px',
     flex: 1,
     alignItems: 'start',
   },
@@ -748,6 +851,11 @@ const s = {
   /* Form elements */
   fieldGroup: {
     marginBottom: '16px',
+  },
+  formRow: {
+    display: 'grid',
+    gridTemplateColumns: '2fr 1fr 1fr',
+    gap: '12px',
   },
   twoCol: {
     display: 'grid',
@@ -833,7 +941,7 @@ const s = {
     color: '#ffffff',
     backgroundColor: '#2563eb',
     border: 'none',
-    borderRadius: '7px',
+    borderRadius: '20px',
     cursor: 'pointer',
     transition: 'background-color 0.2s',
   },
@@ -851,7 +959,7 @@ const s = {
     color: '#2563eb',
     backgroundColor: '#ffffff',
     border: '1.5px solid #2563eb',
-    borderRadius: '7px',
+    borderRadius: '20px',
     cursor: 'pointer',
     transition: 'background-color 0.2s',
   },
@@ -888,13 +996,14 @@ const s = {
   },
 
   footer: {
-    width: '100%', // Garante que ocupe toda a largura
-    margin: '20px 0 20px 0', // Empurra para o fim da página se o conteúdo for pouco
-    padding: '20px', // Aumenta o "tamanho" vertical (espaço interno)
+    width: '100%',
+    padding: '18px 32px',
     textAlign: 'center',
-    fontSize: '14.4px', // Tamanho de fonte padrão para rodapés modernos
-    backgroundColor: 'rgb(51, 82, 138)',
+    fontSize: '14px',
+    fontWeight: '500',
+    backgroundColor: '#1a2744',
     color: '#ffffff',
-    borderRadius: '20px 20px 16px 16px',
+    boxSizing: 'border-box',
+    flexShrink: 0,
   },
 };
