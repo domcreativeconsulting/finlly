@@ -8,20 +8,60 @@ import { useAuth } from '../hooks/useAuth.js';
 import { perfilService } from '../services/perfil.service.js';
 
 const TIMEZONES = [
-  'America/Sao_Paulo', 'America/Manaus', 'America/Belem', 'America/Fortaleza',
-  'America/Recife', 'America/Maceio', 'America/Bahia', 'America/Cuiaba',
-  'America/Porto_Velho', 'America/Boa_Vista', 'America/Rio_Branco',
-  'America/Noronha', 'America/Araguaina',
-  'UTC', 'Europe/Lisbon', 'Europe/London', 'America/New_York',
-  'America/Chicago', 'America/Denver', 'America/Los_Angeles',
-  'America/Toronto', 'America/Mexico_City', 'America/Argentina/Buenos_Aires',
-  'America/Lima', 'America/Bogota', 'America/Santiago',
-  'Europe/Berlin', 'Europe/Paris', 'Europe/Madrid', 'Europe/Rome',
-  'Asia/Tokyo', 'Asia/Shanghai', 'Asia/Kolkata', 'Asia/Dubai',
-  'Australia/Sydney', 'Pacific/Auckland',
+  'America/Sao_Paulo',
+  'America/Manaus',
+  'America/Belem',
+  'America/Fortaleza',
+  'America/Recife',
+  'America/Maceio',
+  'America/Bahia',
+  'America/Cuiaba',
+  'America/Porto_Velho',
+  'America/Boa_Vista',
+  'America/Rio_Branco',
+  'America/Noronha',
+  'America/Araguaina',
+  'UTC',
+  'Europe/Lisbon',
+  'Europe/London',
+  'America/New_York',
+  'America/Chicago',
+  'America/Denver',
+  'America/Los_Angeles',
+  'America/Toronto',
+  'America/Mexico_City',
+  'America/Argentina/Buenos_Aires',
+  'America/Lima',
+  'America/Bogota',
+  'America/Santiago',
+  'Europe/Berlin',
+  'Europe/Paris',
+  'Europe/Madrid',
+  'Europe/Rome',
+  'Asia/Tokyo',
+  'Asia/Shanghai',
+  'Asia/Kolkata',
+  'Asia/Dubai',
+  'Australia/Sydney',
+  'Pacific/Auckland',
 ];
 
-const MOEDAS = ['BRL', 'USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CHF', 'MXN', 'ARS', 'CLP', 'COP', 'PEN', 'UYU'];
+const MOEDAS = [
+  'BRL',
+  'USD',
+  'EUR',
+  'GBP',
+  'JPY',
+  'CAD',
+  'AUD',
+  'CHF',
+  'MXN',
+  'ARS',
+  'CLP',
+  'COP',
+  'PEN',
+  'UYU',
+];
 
 const MIN_PASSWORD_LENGTH = 6;
 
@@ -33,14 +73,15 @@ const PerfilSchema = z.object({
   whatsapp: z
     .string()
     .max(20, 'Máximo 20 caracteres')
-    .regex(/^\+?[\d\s\-(). ]+$/, 'Número inválido. Use formato: +55 11 99999-9999')
+    .regex(
+      /^\+?[\d\s\-(). ]+$/,
+      'Número inválido. Use formato: +55 11 99999-9999'
+    )
     .optional()
     .or(z.literal('')),
-  timezone: z
-    .string()
-    .refine((tz) => TIMEZONES.includes(tz), {
-      message: 'Fuso horário inválido',
-    }),
+  timezone: z.string().refine((tz) => TIMEZONES.includes(tz), {
+    message: 'Fuso horário inválido',
+  }),
   moeda: z
     .string()
     .length(3, 'Código de moeda deve ter 3 letras')
@@ -95,7 +136,8 @@ export default function PerfilPage() {
   });
 
   useEffect(() => {
-    perfilService.getPerfil()
+    perfilService
+      .getPerfil()
       .then((data) => {
         reset({
           nome: data.nome || '',
@@ -118,13 +160,18 @@ export default function PerfilPage() {
       nome: data.nome.trim(),
       timezone: data.timezone,
       moeda: data.moeda.toUpperCase(),
-      whatsapp: data.whatsapp && data.whatsapp.trim() !== '' ? data.whatsapp.trim() : null,
+      whatsapp:
+        data.whatsapp && data.whatsapp.trim() !== ''
+          ? data.whatsapp.trim()
+          : null,
     };
     try {
       await perfilService.updatePerfil(payload);
       toast.success('Perfil atualizado com sucesso!');
     } catch (err) {
-      const msg = err?.response?.data?.message || 'Erro ao atualizar perfil. Tente novamente.';
+      const msg =
+        err?.response?.data?.message ||
+        'Erro ao atualizar perfil. Tente novamente.';
       setErrorMsg(msg);
     }
   }
@@ -137,7 +184,9 @@ export default function PerfilPage() {
       return;
     }
     if (novaSenha.length < MIN_PASSWORD_LENGTH) {
-      setSenhaError(`A nova senha deve ter no mínimo ${MIN_PASSWORD_LENGTH} caracteres.`);
+      setSenhaError(
+        `A nova senha deve ter no mínimo ${MIN_PASSWORD_LENGTH} caracteres.`
+      );
       return;
     }
     if (novaSenha !== confirmarSenha) {
@@ -152,7 +201,9 @@ export default function PerfilPage() {
       setNovaSenha('');
       setConfirmarSenha('');
     } catch (err) {
-      const msg = err?.response?.data?.message || 'Erro ao alterar senha. Tente novamente.';
+      const msg =
+        err?.response?.data?.message ||
+        'Erro ao alterar senha. Tente novamente.';
       setSenhaError(msg);
     } finally {
       setSavingSenha(false);
@@ -171,7 +222,10 @@ export default function PerfilPage() {
   return (
     <div style={s.page}>
       {/* Sidebar */}
-      <nav style={{ ...s.sidebar, ...(sidebarOpen ? {} : s.sidebarHidden) }} aria-label="Navegação principal">
+      <nav
+        style={{ ...s.sidebar, ...(sidebarOpen ? {} : s.sidebarHidden) }}
+        aria-label="Navegação principal"
+      >
         <div style={s.sidebarLogo}>
           <span style={s.sidebarLogoIcon}>F</span>
         </div>
@@ -180,7 +234,9 @@ export default function PerfilPage() {
             <li key={item.path}>
               <button
                 onClick={() => navigate(item.path)}
-                style={item.active ? { ...s.navBtn, ...s.navBtnActive } : s.navBtn}
+                style={
+                  item.active ? { ...s.navBtn, ...s.navBtnActive } : s.navBtn
+                }
                 title={item.label}
                 aria-label={item.label}
                 aria-current={item.active ? 'page' : undefined}
@@ -197,13 +253,23 @@ export default function PerfilPage() {
         {/* Header */}
         <div style={s.topBar}>
           <div style={s.topBarLeft}>
-            <button style={s.hamburger} aria-label="Menu" onClick={() => setSidebarOpen((v) => !v)}>☰</button>
+            <button
+              style={s.hamburger}
+              aria-label="Menu"
+              onClick={() => setSidebarOpen((v) => !v)}
+            >
+              ☰
+            </button>
             <div>
               <h1 style={s.pageTitle}>Meu perfil</h1>
               <p style={s.pageSubtitle}>Configurações da sua conta</p>
             </div>
           </div>
-          <div style={s.avatar} title={usuario?.nome || ''} aria-label={`Avatar de ${usuario?.nome || 'usuário'}`}>
+          <div
+            style={s.avatar}
+            title={usuario?.nome || ''}
+            aria-label={`Avatar de ${usuario?.nome || 'usuário'}`}
+          >
             {initials}
           </div>
         </div>
@@ -215,14 +281,17 @@ export default function PerfilPage() {
             <span style={{ fontSize: '18px' }}>👤</span>
           </div>
           <p style={s.subHeaderText}>
-            Ajuste seus dados pessoais, número de WhatsApp e credenciais de acesso.
+            Ajuste seus dados pessoais, número de WhatsApp e credenciais de
+            acesso.
           </p>
         </div>
 
         {loading ? (
           <div style={s.loadingWrapper}>
             <span style={s.spinner} aria-hidden="true" />
-            <span style={{ color: '#6b7280', marginLeft: '12px' }}>Carregando...</span>
+            <span style={{ color: '#6b7280', marginLeft: '12px' }}>
+              Carregando...
+            </span>
           </div>
         ) : (
           <div style={s.cardsGrid}>
@@ -231,7 +300,9 @@ export default function PerfilPage() {
               <div style={s.cardHeader}>
                 <h2 style={s.cardTitle}>Dados da conta</h2>
                 {createdAt && (
-                  <span style={s.cardMeta}>usando desde {formatDate(createdAt)}</span>
+                  <span style={s.cardMeta}>
+                    usando desde {formatDate(createdAt)}
+                  </span>
                 )}
               </div>
 
@@ -243,7 +314,9 @@ export default function PerfilPage() {
                 )}
 
                 <div style={s.fieldGroup}>
-                  <label style={s.label} htmlFor="nome">Nome completo *</label>
+                  <label style={s.label} htmlFor="nome">
+                    Nome completo *
+                  </label>
                   <input
                     id="nome"
                     type="text"
@@ -253,12 +326,16 @@ export default function PerfilPage() {
                     {...register('nome')}
                   />
                   {errors.nome && (
-                    <span style={s.fieldError} role="alert">{errors.nome.message}</span>
+                    <span style={s.fieldError} role="alert">
+                      {errors.nome.message}
+                    </span>
                   )}
                 </div>
 
                 <div style={s.fieldGroup}>
-                  <label style={s.label} htmlFor="email">E-mail de acesso *</label>
+                  <label style={s.label} htmlFor="email">
+                    E-mail de acesso *
+                  </label>
                   <input
                     id="email"
                     type="email"
@@ -267,53 +344,83 @@ export default function PerfilPage() {
                     style={{ ...s.input, ...s.inputReadOnly }}
                     autoComplete="email"
                   />
-                  <span style={s.helperText}>Usado para login e comunicações importantes.</span>
+                  <span style={s.helperText}>
+                    Usado para login e comunicações importantes.
+                  </span>
                 </div>
 
                 <div style={s.fieldGroup}>
-                  <label style={s.label} htmlFor="whatsapp">WhatsApp (para lembretes e agente)</label>
+                  <label style={s.label} htmlFor="whatsapp">
+                    WhatsApp (para lembretes e agente)
+                  </label>
                   <input
                     id="whatsapp"
                     type="text"
                     placeholder="+55 11 99999-9999"
-                    style={{ ...s.input, ...(errors.whatsapp ? s.inputError : {}) }}
+                    style={{
+                      ...s.input,
+                      ...(errors.whatsapp ? s.inputError : {}),
+                    }}
                     {...register('whatsapp')}
                   />
                   {errors.whatsapp && (
-                    <span style={s.fieldError} role="alert">{errors.whatsapp.message}</span>
+                    <span style={s.fieldError} role="alert">
+                      {errors.whatsapp.message}
+                    </span>
                   )}
-                  <span style={s.helperText}>Esse número será usado para identificar você quando falar com o agente no WhatsApp.</span>
+                  <span style={s.helperText}>
+                    Esse número será usado para identificar você quando falar
+                    com o agente no WhatsApp.
+                  </span>
                 </div>
 
                 <div style={s.twoCol}>
                   <div style={s.fieldGroup}>
-                    <label style={s.label} htmlFor="moeda">Moeda padrão</label>
+                    <label style={s.label} htmlFor="moeda">
+                      Moeda padrão
+                    </label>
                     <select
                       id="moeda"
-                      style={{ ...s.select, ...(errors.moeda ? s.inputError : {}) }}
+                      style={{
+                        ...s.select,
+                        ...(errors.moeda ? s.inputError : {}),
+                      }}
                       {...register('moeda')}
                     >
                       {MOEDAS.map((m) => (
-                        <option key={m} value={m}>{m}</option>
+                        <option key={m} value={m}>
+                          {m}
+                        </option>
                       ))}
                     </select>
                     {errors.moeda && (
-                      <span style={s.fieldError} role="alert">{errors.moeda.message}</span>
+                      <span style={s.fieldError} role="alert">
+                        {errors.moeda.message}
+                      </span>
                     )}
                   </div>
                   <div style={s.fieldGroup}>
-                    <label style={s.label} htmlFor="timezone">Fuso horário</label>
+                    <label style={s.label} htmlFor="timezone">
+                      Fuso horário
+                    </label>
                     <select
                       id="timezone"
-                      style={{ ...s.select, ...(errors.timezone ? s.inputError : {}) }}
+                      style={{
+                        ...s.select,
+                        ...(errors.timezone ? s.inputError : {}),
+                      }}
                       {...register('timezone')}
                     >
                       {TIMEZONES.map((tz) => (
-                        <option key={tz} value={tz}>{tz}</option>
+                        <option key={tz} value={tz}>
+                          {tz}
+                        </option>
                       ))}
                     </select>
                     {errors.timezone && (
-                      <span style={s.fieldError} role="alert">{errors.timezone.message}</span>
+                      <span style={s.fieldError} role="alert">
+                        {errors.timezone.message}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -322,12 +429,16 @@ export default function PerfilPage() {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    style={isSubmitting ? { ...s.btnPrimary, ...s.btnPrimaryDisabled } : s.btnPrimary}
+                    style={
+                      isSubmitting
+                        ? { ...s.btnPrimary, ...s.btnPrimaryDisabled }
+                        : s.btnPrimary
+                    }
                   >
                     {isSubmitting ? (
                       <>
-                        <span style={s.spinnerInline} aria-hidden="true" />
-                        {' '}Salvando...
+                        <span style={s.spinnerInline} aria-hidden="true" />{' '}
+                        Salvando...
                       </>
                     ) : (
                       '✓ Salvar alterações'
@@ -351,7 +462,9 @@ export default function PerfilPage() {
                 )}
 
                 <div style={s.fieldGroup}>
-                  <label style={s.label} htmlFor="senhaAtual">Senha atual</label>
+                  <label style={s.label} htmlFor="senhaAtual">
+                    Senha atual
+                  </label>
                   <input
                     id="senhaAtual"
                     type="password"
@@ -364,7 +477,9 @@ export default function PerfilPage() {
 
                 <div style={s.twoCol}>
                   <div style={s.fieldGroup}>
-                    <label style={s.label} htmlFor="novaSenha">Nova senha</label>
+                    <label style={s.label} htmlFor="novaSenha">
+                      Nova senha
+                    </label>
                     <input
                       id="novaSenha"
                       type="password"
@@ -375,7 +490,9 @@ export default function PerfilPage() {
                     />
                   </div>
                   <div style={s.fieldGroup}>
-                    <label style={s.label} htmlFor="confirmarSenha">Confirmar nova senha</label>
+                    <label style={s.label} htmlFor="confirmarSenha">
+                      Confirmar nova senha
+                    </label>
                     <input
                       id="confirmarSenha"
                       type="password"
@@ -388,19 +505,32 @@ export default function PerfilPage() {
                 </div>
 
                 <p style={s.senhaHint}>
-                  Use uma senha forte. No mínimo {MIN_PASSWORD_LENGTH} caracteres, idealmente com letras maiúsculas, minúsculas, números e símbolos.
+                  Use uma senha forte. No mínimo {MIN_PASSWORD_LENGTH}{' '}
+                  caracteres, idealmente com letras maiúsculas, minúsculas,
+                  números e símbolos.
                 </p>
 
                 <div style={{ textAlign: 'right' }}>
                   <button
                     type="submit"
                     disabled={savingSenha}
-                    style={savingSenha ? { ...s.btnSecondary, ...s.btnSecondaryDisabled } : s.btnSecondary}
+                    style={
+                      savingSenha
+                        ? { ...s.btnSecondary, ...s.btnSecondaryDisabled }
+                        : s.btnSecondary
+                    }
                   >
                     {savingSenha ? (
                       <>
-                        <span style={{ ...s.spinnerInline, borderColor: 'rgba(37,99,235,0.3)', borderTopColor: '#2563eb' }} aria-hidden="true" />
-                        {' '}Alterando...
+                        <span
+                          style={{
+                            ...s.spinnerInline,
+                            borderColor: 'rgba(37,99,235,0.3)',
+                            borderTopColor: '#2563eb',
+                          }}
+                          aria-hidden="true"
+                        />{' '}
+                        Alterando...
                       </>
                     ) : (
                       '🔒 Alterar senha'
@@ -420,8 +550,10 @@ const s = {
   page: {
     display: 'flex',
     minHeight: '100vh',
-    backgroundColor: '#f3f4f6',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    width: '100%',
+    backgroundColor: '#ffffff',
+    fontFamily:
+      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
   },
 
   /* Sidebar */
@@ -492,6 +624,8 @@ const s = {
     display: 'flex',
     flexDirection: 'column',
     minWidth: 0,
+    minHeight: '100vh',
+    backgroundColor: '#f3f4f6',
   },
 
   /* Top bar */
@@ -500,7 +634,7 @@ const s = {
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: '20px 32px 16px',
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#ffffff',
   },
   topBarLeft: {
     display: 'flex',
@@ -575,7 +709,7 @@ const s = {
   /* Cards grid */
   cardsGrid: {
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
+    gridTemplateColumns: '1.5fr 1fr',
     gap: '24px',
     padding: '0 32px 40px',
     flex: 1,
