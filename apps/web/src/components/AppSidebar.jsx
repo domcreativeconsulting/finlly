@@ -54,7 +54,7 @@ function NavItem({ item, onNavigate }) {
           border: 'none',
           borderRadius: '10px',
           cursor: 'pointer',
-          color: hovered || item.active ? '#ffffff' : 'rgba(255,255,255,0.6)',
+          color: '#ffffff',
           fontSize: '20px',
           transition: 'background 0.18s ease, color 0.18s ease',
           padding: 0,
@@ -111,7 +111,7 @@ function NavItemExpanded({ item, onNavigate }) {
           border: 'none',
           borderRadius: '10px',
           cursor: 'pointer',
-          color: hovered || item.active ? '#ffffff' : 'rgba(255,255,255,0.6)',
+          color: '#ffffff',
           fontSize: '20px',
           transition: 'background 0.18s ease, color 0.18s ease',
           padding: 0,
@@ -147,10 +147,20 @@ function NavItemExpanded({ item, onNavigate }) {
   );
 }
 
-export default function AppSidebar({ sidebarOpen, currentPath }) {
+export default function AppSidebar({ sidebarOpen, currentPath, onHoverChange }) {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
+
+  function handleMouseEnter() {
+    setIsHovered(true);
+    onHoverChange?.(true);
+  }
+
+  function handleMouseLeave() {
+    setIsHovered(false);
+    onHoverChange?.(false);
+  }
 
   const navItems = NAV_ITEMS.map((item) => ({
     ...item,
@@ -168,8 +178,8 @@ export default function AppSidebar({ sidebarOpen, currentPath }) {
 
   return (
     <nav
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       style={{
         ...sidebarStyles.sidebar,
         ...(sidebarOpen ? {} : sidebarStyles.sidebarHidden),
@@ -185,7 +195,6 @@ export default function AppSidebar({ sidebarOpen, currentPath }) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          borderBottom: '1px solid rgba(255,255,255,0.12)',
           marginBottom: '8px',
           flexShrink: 0,
           padding: isHovered ? '0 16px' : '0',
