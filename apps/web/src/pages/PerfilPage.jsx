@@ -1,21 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'react-toastify';
 import { useAuth } from '../hooks/useAuth.js';
 import { perfilService } from '../services/perfil.service.js';
-import {
-  LayoutDashboard,
-  ArrowUpCircle,
-  ArrowDownCircle,
-  TrendingUp,
-  Target,
-  Paperclip,
-  LogOut,
-} from 'lucide-react';
-import logoIcon from '../assets/logo.png';
+import AppSidebar from '../components/AppSidebar.jsx';
 
 const TIMEZONES = [
   'America/Sao_Paulo',
@@ -90,7 +80,46 @@ const MOEDAS_LABELS = {
   UYU: 'UYU ($U)',
 };
 
-const MIN_PASSWORD_LENGTH = 6;
+const TIMEZONE_LABELS = {
+  'America/Sao_Paulo': 'Brasília (UTC-3)',
+  'America/Manaus': 'Manaus (UTC-4)',
+  'America/Belem': 'Belém (UTC-3)',
+  'America/Fortaleza': 'Fortaleza (UTC-3)',
+  'America/Recife': 'Recife (UTC-3)',
+  'America/Maceio': 'Maceió (UTC-3)',
+  'America/Bahia': 'Bahia (UTC-3)',
+  'America/Cuiaba': 'Cuiabá (UTC-4)',
+  'America/Porto_Velho': 'Porto Velho (UTC-4)',
+  'America/Boa_Vista': 'Boa Vista (UTC-4)',
+  'America/Rio_Branco': 'Rio Branco (UTC-5)',
+  'America/Noronha': 'Fernando de Noronha (UTC-2)',
+  'America/Araguaina': 'Araguaína (UTC-3)',
+  UTC: 'UTC (UTC+0)',
+  'Europe/Lisbon': 'Lisboa (UTC+0/+1)',
+  'Europe/London': 'Londres (UTC+0/+1)',
+  'America/New_York': 'Nova York (UTC-5/-4)',
+  'America/Chicago': 'Chicago (UTC-6/-5)',
+  'America/Denver': 'Denver (UTC-7/-6)',
+  'America/Los_Angeles': 'Los Angeles (UTC-8/-7)',
+  'America/Toronto': 'Toronto (UTC-5/-4)',
+  'America/Mexico_City': 'Cidade do México (UTC-6/-5)',
+  'America/Argentina/Buenos_Aires': 'Buenos Aires (UTC-3)',
+  'America/Lima': 'Lima (UTC-5)',
+  'America/Bogota': 'Bogotá (UTC-5)',
+  'America/Santiago': 'Santiago (UTC-4/-3)',
+  'Europe/Berlin': 'Berlim (UTC+1/+2)',
+  'Europe/Paris': 'Paris (UTC+1/+2)',
+  'Europe/Madrid': 'Madri (UTC+1/+2)',
+  'Europe/Rome': 'Roma (UTC+1/+2)',
+  'Asia/Tokyo': 'Tóquio (UTC+9)',
+  'Asia/Shanghai': 'Xangai (UTC+8)',
+  'Asia/Kolkata': 'Calcutá (UTC+5:30)',
+  'Asia/Dubai': 'Dubai (UTC+4)',
+  'Australia/Sydney': 'Sydney (UTC+10/+11)',
+  'Pacific/Auckland': 'Auckland (UTC+12/+13)',
+};
+
+const MIN_PASSWORD_LENGTH = 8;
 
 const PerfilSchema = z.object({
   nome: z
@@ -117,6 +146,23 @@ const PerfilSchema = z.object({
     }),
 });
 
+const SenhaSchema = z
+  .object({
+    senhaAtual: z.string().min(1, 'Informe a senha atual.'),
+    novaSenha: z
+      .string()
+      .min(MIN_PASSWORD_LENGTH, `Mínimo ${MIN_PASSWORD_LENGTH} caracteres`)
+      .regex(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/,
+        'Use maiúsculas, minúsculas e números'
+      ),
+    confirmarSenha: z.string(),
+  })
+  .refine((data) => data.novaSenha === data.confirmarSenha, {
+    message: 'A nova senha e a confirmação não coincidem.',
+    path: ['confirmarSenha'],
+  });
+
 function getInitials(name) {
   if (!name) return '?';
   const parts = name.trim().split(/\s+/);
@@ -131,152 +177,25 @@ function formatDate(dateStr) {
   return d.toLocaleDateString('pt-BR');
 }
 
-// Componente isolado para cada botão da nav — gerencia seu próprio hover
-function NavItem({ item, onNavigate }) {
-  const [hovered, setHovered] = useState(false);
-
-  return (
-    <li
-      style={{
-        width: '100%',
-        display: 'flex',
-        justifyContent: 'center',
-        marginBottom: '4px',
-        padding: '0 8px',
-        boxSizing: 'border-box',
-      }}
-    >
-      <button
-        onClick={() => onNavigate(item.path)}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        title={item.label}
-        aria-label={item.label}
-        aria-current={item.active ? 'page' : undefined}
-        style={{
-          width: '100%',
-          height: '44px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'flex-start',
-          background:
-            hovered || item.active ? 'rgba(255,255,255,0.18)' : 'none',
-          border: 'none',
-          borderRadius: '10px',
-          cursor: 'pointer',
-          color: hovered || item.active ? '#ffffff' : 'rgba(255,255,255,0.6)',
-          fontSize: '20px',
-          transition: 'background 0.18s ease, color 0.18s ease',
-          padding: 0,
-          overflow: 'hidden',
-        }}
-      >
-        {/* Ícone: sempre centralizado num bloco de 44px fixo */}
-        <span
-          style={{
-            minWidth: '44px',
-            width: '44px',
-            height: '44px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-          }}
-        >
-          {item.icon}
-        </span>
-      </button>
-    </li>
-  );
-}
-
-// Componente isolado para cada botão expandido da nav
-function NavItemExpanded({ item, onNavigate }) {
-  const [hovered, setHovered] = useState(false);
-
-  return (
-    <li
-      style={{
-        width: '100%',
-        display: 'flex',
-        justifyContent: 'center',
-        marginBottom: '4px',
-        padding: '0 10px',
-        boxSizing: 'border-box',
-      }}
-    >
-      <button
-        onClick={() => onNavigate(item.path)}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        title={item.label}
-        aria-label={item.label}
-        aria-current={item.active ? 'page' : undefined}
-        style={{
-          width: '100%',
-          height: '44px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'flex-start',
-          background:
-            hovered || item.active ? 'rgba(255,255,255,0.18)' : 'none',
-          border: 'none',
-          borderRadius: '10px',
-          cursor: 'pointer',
-          color: hovered || item.active ? '#ffffff' : 'rgba(255,255,255,0.6)',
-          fontSize: '20px',
-          transition: 'background 0.18s ease, color 0.18s ease',
-          padding: 0,
-          overflow: 'hidden',
-        }}
-      >
-        {/* Ícone: bloco fixo de 44px */}
-        <span
-          style={{
-            minWidth: '44px',
-            width: '44px',
-            height: '44px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-          }}
-        >
-          {item.icon}
-        </span>
-        {/* Label */}
-        <span
-          style={{
-            fontSize: '14px',
-            fontWeight: '500',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            color: 'inherit',
-          }}
-        >
-          {item.label}
-        </span>
-      </button>
-    </li>
-  );
-}
-
 export default function PerfilPage() {
   const { usuario } = useAuth();
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
   const [emailValue, setEmailValue] = useState('');
   const [createdAt, setCreatedAt] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [isHovered, setIsHovered] = useState(false);
 
-  const [senhaAtual, setSenhaAtual] = useState('');
-  const [novaSenha, setNovaSenha] = useState('');
-  const [confirmarSenha, setConfirmarSenha] = useState('');
-  const [senhaError, setSenhaError] = useState('');
-  const [savingSenha, setSavingSenha] = useState(false);
+  const {
+    register: registerSenha,
+    handleSubmit: handleSubmitSenha,
+    reset: resetSenha,
+    setError: setSenhaRootError,
+    formState: { errors: senhaErrors, isSubmitting: isSavingSenha },
+  } = useForm({
+    resolver: zodResolver(SenhaSchema),
+    mode: 'onChange',
+  });
 
   const {
     register,
@@ -337,142 +256,37 @@ export default function PerfilPage() {
     }
   }
 
-  async function handleSenha(e) {
-    e.preventDefault();
-    setSenhaError('');
-    if (!senhaAtual) {
-      setSenhaError('Informe a senha atual.');
-      return;
-    }
-    if (novaSenha.length < MIN_PASSWORD_LENGTH) {
-      setSenhaError(
-        `A nova senha deve ter no mínimo ${MIN_PASSWORD_LENGTH} caracteres.`
-      );
-      return;
-    }
-    if (novaSenha !== confirmarSenha) {
-      setSenhaError('A nova senha e a confirmação não coincidem.');
-      return;
-    }
-    setSavingSenha(true);
+  async function handleSenha(data) {
     try {
-      await perfilService.updateSenha({ senhaAtual, novaSenha });
+      await perfilService.updateSenha({
+        senhaAtual: data.senhaAtual,
+        novaSenha: data.novaSenha,
+      });
       toast.success('Senha alterada com sucesso!');
-      setSenhaAtual('');
-      setNovaSenha('');
-      setConfirmarSenha('');
+      resetSenha();
     } catch (err) {
       const msg =
         err?.response?.data?.message ||
         'Erro ao alterar senha. Tente novamente.';
-      setSenhaError(msg);
-    } finally {
-      setSavingSenha(false);
+      setSenhaRootError('root', { message: msg });
     }
   }
 
   const initials = getInitials(usuario?.nome);
 
-  const navItems = [
-    {
-      icon: <LayoutDashboard size={20} />,
-      label: 'Dashboard',
-      path: '/dashboard',
-    },
-    {
-      icon: <ArrowUpCircle size={20} />,
-      label: 'Contas a pagar',
-      path: '/contas-pagar',
-    },
-    {
-      icon: <ArrowDownCircle size={20} />,
-      label: 'Contas a receber',
-      path: '/contas-receber',
-    },
-    {
-      icon: <TrendingUp size={20} />,
-      label: 'Investimentos',
-      path: '/investimentos',
-    },
-    { icon: <Target size={20} />, label: 'Metas', path: '/metas' },
-    { icon: <Paperclip size={20} />, label: 'Anexos', path: '/anexos' },
-    { icon: <LogOut size={20} />, label: 'Sair', path: '/logout' },
-  ];
-
   return (
     <div style={s.pageWrapper}>
       <div style={s.page}>
         {/* Sidebar */}
-        <nav
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-          style={{
-            ...s.sidebar,
-            ...(sidebarOpen ? {} : s.sidebarHidden),
-            width: isHovered ? '220px' : '92px',
-          }}
-          aria-label="Navegação principal"
-        >
-          {/* Logo */}
-          <div
-            style={{
-              width: '100%',
-              height: '62px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: isHovered ? 'center' : 'center',
-              borderBottom: '1px solid rgba(255,255,255,0.12)',
-              marginBottom: '8px',
-              flexShrink: 0,
-              padding: isHovered ? '0 16px' : '0',
-              boxSizing: 'border-box',
-              overflow: 'hidden',
-              transition: 'padding 0.3s ease, justify-content 0.3s ease',
-            }}
-          >
-            <img
-              src={logoIcon}
-              alt="Finlly"
-              style={{
-                height: isHovered ? '36px' : '13px',
-                width: 'auto',
-                transition: 'height 0.3s ease',
-                flexShrink: 0,
-              }}
-            />
-          </div>
-
-          {/* Nav items */}
-          <ul
-            style={{
-              listStyle: 'none',
-              margin: 0,
-              padding: '12px 15px',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: isHovered ? 'flex-start' : 'center',
-              gap: '15px', // Cria o espaço automático entre o ícone e o texto
-              width: '100%',
-            }}
-          >
-            {navItems.map((item) =>
-              isHovered ? (
-                <NavItemExpanded
-                  key={item.path}
-                  item={item}
-                  onNavigate={navigate}
-                />
-              ) : (
-                <NavItem key={item.path} item={item} onNavigate={navigate} />
-              )
-            )}
-          </ul>
-        </nav>
+        <AppSidebar sidebarOpen={sidebarOpen} currentPath="/perfil" />
 
         {/* Main area */}
         <div
-          style={{ ...s.mainArea, ...(sidebarOpen ? {} : { marginLeft: 0 }) }}
+          style={{
+            ...s.mainArea,
+            marginLeft: sidebarOpen ? '124px' : '0',
+            transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          }}
         >
           {/* Header */}
           <div style={s.topBar}>
@@ -659,7 +473,7 @@ export default function PerfilPage() {
                       >
                         {TIMEZONES.map((tz) => (
                           <option key={tz} value={tz}>
-                            {tz}
+                            {TIMEZONE_LABELS[tz] || tz}
                           </option>
                         ))}
                       </select>
@@ -700,10 +514,11 @@ export default function PerfilPage() {
                   <h2 style={s.cardTitle}>Segurança e senha</h2>
                 </div>
 
-                <form onSubmit={handleSenha} noValidate>
-                  {senhaError && (
+                <form onSubmit={handleSubmitSenha(handleSenha)} noValidate>
+                  {senhaErrors.root && (
                     <div style={s.errorBox} role="alert">
-                      <span aria-hidden="true">⚠️</span> {senhaError}
+                      <span aria-hidden="true">⚠️</span>{' '}
+                      {senhaErrors.root.message}
                     </div>
                   )}
 
@@ -714,11 +529,18 @@ export default function PerfilPage() {
                     <input
                       id="senhaAtual"
                       type="password"
-                      value={senhaAtual}
-                      onChange={(e) => setSenhaAtual(e.target.value)}
-                      style={s.input}
+                      style={{
+                        ...s.input,
+                        ...(senhaErrors.senhaAtual ? s.inputError : {}),
+                      }}
                       autoComplete="current-password"
+                      {...registerSenha('senhaAtual')}
                     />
+                    {senhaErrors.senhaAtual && (
+                      <span style={s.fieldError} role="alert">
+                        {senhaErrors.senhaAtual.message}
+                      </span>
+                    )}
                   </div>
 
                   <div style={s.twoCol}>
@@ -729,11 +551,18 @@ export default function PerfilPage() {
                       <input
                         id="novaSenha"
                         type="password"
-                        value={novaSenha}
-                        onChange={(e) => setNovaSenha(e.target.value)}
-                        style={s.input}
+                        style={{
+                          ...s.input,
+                          ...(senhaErrors.novaSenha ? s.inputError : {}),
+                        }}
                         autoComplete="new-password"
+                        {...registerSenha('novaSenha')}
                       />
+                      {senhaErrors.novaSenha && (
+                        <span style={s.fieldError} role="alert">
+                          {senhaErrors.novaSenha.message}
+                        </span>
+                      )}
                     </div>
                     <div style={s.fieldGroup}>
                       <label style={s.label} htmlFor="confirmarSenha">
@@ -742,31 +571,38 @@ export default function PerfilPage() {
                       <input
                         id="confirmarSenha"
                         type="password"
-                        value={confirmarSenha}
-                        onChange={(e) => setConfirmarSenha(e.target.value)}
-                        style={s.input}
+                        style={{
+                          ...s.input,
+                          ...(senhaErrors.confirmarSenha ? s.inputError : {}),
+                        }}
                         autoComplete="new-password"
+                        {...registerSenha('confirmarSenha')}
                       />
+                      {senhaErrors.confirmarSenha && (
+                        <span style={s.fieldError} role="alert">
+                          {senhaErrors.confirmarSenha.message}
+                        </span>
+                      )}
                     </div>
                   </div>
 
                   <p style={s.senhaHint}>
-                    Use uma senha forte. No mínimo {MIN_PASSWORD_LENGTH}{' '}
-                    caracteres, idealmente com letras maiúsculas, minúsculas,
-                    números e símbolos.
+                    A senha deve ter no mínimo {MIN_PASSWORD_LENGTH} caracteres
+                    e obrigatoriamente conter letras maiúsculas, minúsculas e
+                    números.
                   </p>
 
                   <div style={{ textAlign: 'right' }}>
                     <button
                       type="submit"
-                      disabled={savingSenha}
+                      disabled={isSavingSenha}
                       style={
-                        savingSenha
+                        isSavingSenha
                           ? { ...s.btnSecondary, ...s.btnSecondaryDisabled }
                           : s.btnSecondary
                       }
                     >
-                      {savingSenha ? (
+                      {isSavingSenha ? (
                         <>
                           <span
                             style={{
@@ -813,8 +649,6 @@ const s = {
     minHeight: '100vh',
     width: '100%',
     backgroundColor: '#ffffff',
-    fontFamily:
-      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
   },
 
   /* Sidebar */
@@ -839,7 +673,10 @@ const s = {
     transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
   },
   sidebarHidden: {
-    display: 'none',
+    width: '0',
+    paddingTop: 0,
+    paddingBottom: 0,
+    overflow: 'hidden',
   },
 
   /* Main area */
@@ -966,29 +803,6 @@ const s = {
     color: 'inherit',
     opacity: 0.7,
     padding: '0 0 0 8px',
-  },
-
-  /* Sub-header */
-  subHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    padding: '16px 32px',
-  },
-  avatarSmall: {
-    width: '36px',
-    height: '36px',
-    borderRadius: '50%',
-    backgroundColor: '#e5e7eb',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  subHeaderText: {
-    fontSize: '14px',
-    color: '#6b7280',
-    margin: 0,
   },
 
   /* Cards grid */
