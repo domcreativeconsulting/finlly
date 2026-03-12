@@ -36,6 +36,7 @@ export default function App() {
           element={<ProtectedRoute element={<PerfilPage />} />}
         />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/logout" element={<Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
       <ToastContainer
