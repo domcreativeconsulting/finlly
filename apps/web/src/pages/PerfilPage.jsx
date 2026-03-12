@@ -185,6 +185,7 @@ export default function PerfilPage() {
   const [emailValue, setEmailValue] = useState('');
   const [createdAt, setCreatedAt] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
 
   const {
     register: registerSenha,
@@ -278,13 +279,13 @@ export default function PerfilPage() {
     <div style={s.pageWrapper}>
       <div style={s.page}>
         {/* Sidebar */}
-        <AppSidebar sidebarOpen={sidebarOpen} currentPath="/perfil" />
+        <AppSidebar sidebarOpen={sidebarOpen} currentPath="/perfil" onHoverChange={setSidebarExpanded} />
 
         {/* Main area */}
         <div
           style={{
             ...s.mainArea,
-            marginLeft: sidebarOpen ? '124px' : '0',
+            marginLeft: !sidebarOpen ? '0px' : sidebarExpanded ? '236px' : '108px',
             transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           }}
         >
