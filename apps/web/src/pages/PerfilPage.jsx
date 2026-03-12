@@ -628,7 +628,7 @@ export default function PerfilPage() {
       </div>
 
       <footer style={s.footer}>
-        Finlly • painel financeiro pessoal — {new Date().getFullYear()}
+        Finlly • painel financeiro pessoal — 2026
       </footer>
     </div>
   );
@@ -987,16 +987,17 @@ const s = {
   },
 
   footer: {
-    paddingLeft: '124px',
-    paddingRight: '32px',
-    paddingTop: '18px',
-    paddingBottom: '18px',
-    textAlign: 'center',
-    fontSize: '14px',
-    fontWeight: '500',
-    backgroundColor: '#1a2744',
+    position: 'fixed',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#33528a',
     color: '#ffffff',
-    boxSizing: 'border-box',
-    flexShrink: 0,
+    textAlign: 'center',
+    padding: '14px 0',
+    fontSize: '13px',
+    fontWeight: '400',
+    zIndex: 10,
+    letterSpacing: '0.01em',
   },
 };
