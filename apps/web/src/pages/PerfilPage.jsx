@@ -15,6 +15,7 @@ import {
   Paperclip,
   LogOut,
 } from 'lucide-react';
+import logoIcon from '../assets/logo.png';
 
 const TIMEZONES = [
   'America/Sao_Paulo',
@@ -130,6 +131,136 @@ function formatDate(dateStr) {
   return d.toLocaleDateString('pt-BR');
 }
 
+// Componente isolado para cada botão da nav — gerencia seu próprio hover
+function NavItem({ item, onNavigate }) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <li
+      style={{
+        width: '100%',
+        display: 'flex',
+        justifyContent: 'center',
+        marginBottom: '4px',
+        padding: '0 8px',
+        boxSizing: 'border-box',
+      }}
+    >
+      <button
+        onClick={() => onNavigate(item.path)}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        title={item.label}
+        aria-label={item.label}
+        aria-current={item.active ? 'page' : undefined}
+        style={{
+          width: '100%',
+          height: '44px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'flex-start',
+          background:
+            hovered || item.active ? 'rgba(255,255,255,0.18)' : 'none',
+          border: 'none',
+          borderRadius: '10px',
+          cursor: 'pointer',
+          color: hovered || item.active ? '#ffffff' : 'rgba(255,255,255,0.6)',
+          fontSize: '20px',
+          transition: 'background 0.18s ease, color 0.18s ease',
+          padding: 0,
+          overflow: 'hidden',
+        }}
+      >
+        {/* Ícone: sempre centralizado num bloco de 44px fixo */}
+        <span
+          style={{
+            minWidth: '44px',
+            width: '44px',
+            height: '44px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}
+        >
+          {item.icon}
+        </span>
+      </button>
+    </li>
+  );
+}
+
+// Componente isolado para cada botão expandido da nav
+function NavItemExpanded({ item, onNavigate }) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <li
+      style={{
+        width: '100%',
+        display: 'flex',
+        justifyContent: 'center',
+        marginBottom: '4px',
+        padding: '0 10px',
+        boxSizing: 'border-box',
+      }}
+    >
+      <button
+        onClick={() => onNavigate(item.path)}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        title={item.label}
+        aria-label={item.label}
+        aria-current={item.active ? 'page' : undefined}
+        style={{
+          width: '100%',
+          height: '44px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'flex-start',
+          background:
+            hovered || item.active ? 'rgba(255,255,255,0.18)' : 'none',
+          border: 'none',
+          borderRadius: '10px',
+          cursor: 'pointer',
+          color: hovered || item.active ? '#ffffff' : 'rgba(255,255,255,0.6)',
+          fontSize: '20px',
+          transition: 'background 0.18s ease, color 0.18s ease',
+          padding: 0,
+          overflow: 'hidden',
+        }}
+      >
+        {/* Ícone: bloco fixo de 44px */}
+        <span
+          style={{
+            minWidth: '44px',
+            width: '44px',
+            height: '44px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}
+        >
+          {item.icon}
+        </span>
+        {/* Label */}
+        <span
+          style={{
+            fontSize: '14px',
+            fontWeight: '500',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            color: 'inherit',
+          }}
+        >
+          {item.label}
+        </span>
+      </button>
+    </li>
+  );
+}
+
 export default function PerfilPage() {
   const { usuario } = useAuth();
   const navigate = useNavigate();
@@ -139,7 +270,7 @@ export default function PerfilPage() {
   const [emailValue, setEmailValue] = useState('');
   const [createdAt, setCreatedAt] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   const [senhaAtual, setSenhaAtual] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
@@ -249,12 +380,12 @@ export default function PerfilPage() {
       path: '/dashboard',
     },
     {
-      icon: <ArrowDownCircle size={20} />,
+      icon: <ArrowUpCircle size={20} />,
       label: 'Contas a pagar',
       path: '/contas-pagar',
     },
     {
-      icon: <ArrowUpCircle size={20} />,
+      icon: <ArrowDownCircle size={20} />,
       label: 'Contas a receber',
       path: '/contas-receber',
     },
@@ -273,28 +404,69 @@ export default function PerfilPage() {
       <div style={s.page}>
         {/* Sidebar */}
         <nav
-          style={{ ...s.sidebar, ...(sidebarOpen ? {} : s.sidebarHidden) }}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          style={{
+            ...s.sidebar,
+            ...(sidebarOpen ? {} : s.sidebarHidden),
+            width: isHovered ? '220px' : '92px',
+          }}
           aria-label="Navegação principal"
         >
-          <div style={s.sidebarLogo}>
-            <span style={s.sidebarLogoIcon}>F</span>
+          {/* Logo */}
+          <div
+            style={{
+              width: '100%',
+              height: '62px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: isHovered ? 'center' : 'center',
+              borderBottom: '1px solid rgba(255,255,255,0.12)',
+              marginBottom: '8px',
+              flexShrink: 0,
+              padding: isHovered ? '0 16px' : '0',
+              boxSizing: 'border-box',
+              overflow: 'hidden',
+              transition: 'padding 0.3s ease, justify-content 0.3s ease',
+            }}
+          >
+            <img
+              src={logoIcon}
+              alt="Finlly"
+              style={{
+                height: isHovered ? '36px' : '13px',
+                width: 'auto',
+                transition: 'height 0.3s ease',
+                flexShrink: 0,
+              }}
+            />
           </div>
-          <ul style={s.navList}>
-            {navItems.map((item) => (
-              <li key={item.path}>
-                <button
-                  onClick={() => navigate(item.path)}
-                  style={
-                    item.active ? { ...s.navBtn, ...s.navBtnActive } : s.navBtn
-                  }
-                  title={item.label}
-                  aria-label={item.label}
-                  aria-current={item.active ? 'page' : undefined}
-                >
-                  <span style={s.navIcon}>{item.icon}</span>
-                </button>
-              </li>
-            ))}
+
+          {/* Nav items */}
+          <ul
+            style={{
+              listStyle: 'none',
+              margin: 0,
+              padding: '12px 15px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: isHovered ? 'flex-start' : 'center',
+              gap: '15px', // Cria o espaço automático entre o ícone e o texto
+              width: '100%',
+            }}
+          >
+            {navItems.map((item) =>
+              isHovered ? (
+                <NavItemExpanded
+                  key={item.path}
+                  item={item}
+                  onNavigate={navigate}
+                />
+              ) : (
+                <NavItem key={item.path} item={item} onNavigate={navigate} />
+              )
+            )}
           </ul>
         </nav>
 
@@ -664,56 +836,8 @@ const s = {
     overflowY: 'auto',
     zIndex: 1030,
     flexShrink: 0,
-    transition: 'width 0.3s ease-in-out, box-shadow 0.3s ease',
+    transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
   },
-  sidebarLogo: {
-    width: '62px',
-    height: '62px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderBottom: '1px solid rgba(255,255,255,0.12)',
-    marginBottom: '8px',
-    flexShrink: 0,
-  },
-  sidebarLogoIcon: {
-    fontSize: '22px',
-    fontWeight: '800',
-    color: '#ffffff',
-    letterSpacing: '-1px',
-  },
-  navList: {
-    listStyle: 'none',
-    margin: 0,
-    padding: 0,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '4px',
-    width: '100%',
-    alignItems: 'center',
-  },
-  navBtn: {
-    width: '48px',
-    height: '48px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: 'none',
-    border: 'none',
-    borderRadius: '10px',
-    cursor: 'pointer',
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: '20px',
-    transition: 'background 0.15s, color 0.15s',
-  },
-  navBtnActive: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    color: '#ffffff',
-  },
-  navIcon: {
-    lineHeight: 1,
-  },
-
   sidebarHidden: {
     display: 'none',
   },
@@ -724,7 +848,7 @@ const s = {
     display: 'flex',
     flexDirection: 'column',
     minWidth: 0,
-    marginLeft: '124px', // 92px (sidebar width) + 16px (left offset) + 16px (gap)
+    marginLeft: '124px',
     minHeight: '100vh',
     backgroundColor: '#f3f4f6',
   },
@@ -900,9 +1024,7 @@ const s = {
     fontSize: '12px',
     color: '#9ca3af',
     whiteSpace: 'nowrap',
-  },
-
-  /* Form elements */
+  } /* Form elements */,
   fieldGroup: {
     marginBottom: '16px',
   },
@@ -1050,7 +1172,7 @@ const s = {
   },
 
   footer: {
-    paddingLeft: '124px', // 92px (sidebar width) + 16px (left offset) + 16px (gap)
+    paddingLeft: '124px',
     paddingRight: '32px',
     paddingTop: '18px',
     paddingBottom: '18px',
