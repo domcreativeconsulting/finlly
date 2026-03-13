@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -178,7 +179,8 @@ function formatDate(dateStr) {
 }
 
 export default function PerfilPage() {
-  const { usuario } = useAuth();
+  const { usuario, logout } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
@@ -186,6 +188,8 @@ export default function PerfilPage() {
   const [createdAt, setCreatedAt] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
   const {
     register: registerSenha,
@@ -233,6 +237,18 @@ export default function PerfilPage() {
       .finally(() => setLoading(false));
   }, [reset]);
 
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    }
+    if (dropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [dropdownOpen]);
+
   async function onSubmit(data) {
     setErrorMsg(null);
     setSuccessMsg(null);
@@ -275,6 +291,11 @@ export default function PerfilPage() {
 
   const initials = getInitials(usuario?.nome);
 
+  function handleMenuNavigate(path) {
+    setDropdownOpen(false);
+    navigate(path);
+  }
+
   return (
     <div style={s.pageWrapper}>
       <div style={s.page}>
@@ -315,12 +336,70 @@ export default function PerfilPage() {
                 </p>
               </div>
             </div>
-            <div
-              style={s.avatar}
-              title={usuario?.nome || ''}
-              aria-label={`Avatar de ${usuario?.nome || 'usuário'}`}
-            >
-              {initials}
+            <div ref={dropdownRef} style={{ position: 'relative' }}>
+              <button
+                onClick={() => setDropdownOpen((v) => !v)}
+                style={{
+                  ...s.avatar,
+                  cursor: 'pointer',
+                  border: 'none',
+                  outline: 'none',
+                  boxShadow: dropdownOpen ? '0 0 0 3px rgba(37,99,235,0.25)' : 'none',
+                }}
+                title={usuario?.nome || ''}
+                aria-label={`Menu do usuário ${usuario?.nome || ''}`}
+                aria-expanded={dropdownOpen}
+                aria-haspopup="true"
+              >
+                {initials}
+              </button>
+
+              {dropdownOpen && (
+                <div style={s.userDropdown}>
+                  {/* User info header */}
+                  <div style={s.userDropdownHeader}>
+                    <div style={s.userDropdownName}>{usuario?.nome || 'Usuário'}</div>
+                    <div style={s.userDropdownEmail}>{emailValue || usuario?.email || ''}</div>
+                  </div>
+
+                  <hr style={s.userDropdownDivider} />
+
+                  {/* Assinatura */}
+                  <button
+                    style={s.userDropdownItem}
+                    onClick={() => handleMenuNavigate('/assinatura')}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <span style={s.userDropdownIcon}>💳</span>
+                    Assinatura
+                  </button>
+
+                  {/* Perfil */}
+                  <button
+                    style={s.userDropdownItem}
+                    onClick={() => handleMenuNavigate('/perfil')}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <span style={s.userDropdownIcon}>👤</span>
+                    Perfil
+                  </button>
+
+                  <hr style={s.userDropdownDivider} />
+
+                  {/* Sair */}
+                  <button
+                    style={{ ...s.userDropdownItem, color: '#dc2626' }}
+                    onClick={() => { setDropdownOpen(false); logout(); }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <span style={s.userDropdownIcon}>🚪</span>
+                    Sair
+                  </button>
+                </div>
+              )}
             </div>
           </div>
           <hr style={s.divider} />
@@ -997,6 +1076,57 @@ const s = {
     backgroundColor: '#1a2744',
     color: '#ffffff',
     boxSizing: 'border-box',
+    flexShrink: 0,
+  },
+
+  userDropdown: {
+    position: 'absolute',
+    top: 'calc(100% + 8px)',
+    right: 0,
+    width: '230px',
+    backgroundColor: '#ffffff',
+    borderRadius: '12px',
+    boxShadow: '0 8px 30px rgba(0,0,0,0.13)',
+    border: '1px solid #e5e7eb',
+    zIndex: 1050,
+    overflow: 'hidden',
+    padding: '4px 0',
+  },
+  userDropdownHeader: {
+    padding: '14px 16px 12px',
+  },
+  userDropdownName: {
+    fontSize: '14px',
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: '2px',
+  },
+  userDropdownEmail: {
+    fontSize: '12px',
+    color: '#6b7280',
+  },
+  userDropdownDivider: {
+    margin: '4px 0',
+    border: 'none',
+    borderTop: '1px solid #f3f4f6',
+  },
+  userDropdownItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    width: '100%',
+    padding: '10px 16px',
+    fontSize: '14px',
+    fontWeight: '500',
+    color: '#374151',
+    background: 'transparent',
+    border: 'none',
+    cursor: 'pointer',
+    textAlign: 'left',
+    transition: 'background-color 0.15s',
+  },
+  userDropdownIcon: {
+    fontSize: '16px',
     flexShrink: 0,
   },
 };
