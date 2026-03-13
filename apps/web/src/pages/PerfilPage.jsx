@@ -703,12 +703,11 @@ export default function PerfilPage() {
               </div>
             </div>
           )}
+          <footer style={s.footer}>
+            Finlly • painel financeiro pessoal — {new Date().getFullYear()}
+          </footer>
         </div>
       </div>
-
-      <footer style={s.footer}>
-        Finlly • painel financeiro pessoal — {new Date().getFullYear()}
-      </footer>
     </div>
   );
 }
@@ -1066,17 +1065,17 @@ const s = {
   },
 
   footer: {
-    paddingLeft: '124px',
-    paddingRight: '32px',
+    marginTop: 'auto',
     paddingTop: '18px',
     paddingBottom: '18px',
+    paddingLeft: '32px',
+    paddingRight: '32px',
     textAlign: 'center',
     fontSize: '14px',
     fontWeight: '500',
-    backgroundColor: '#1a2744',
-    color: '#ffffff',
-    boxSizing: 'border-box',
-    flexShrink: 0,
+    backgroundColor: '#1a2e5a',
+    color: '#93c5fd',
+    letterSpacing: '0.01em',
   },
 
   userDropdown: {
