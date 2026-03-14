@@ -13,13 +13,34 @@ import { useAuth } from '../hooks/useAuth.js';
 import logoIcon from '../assets/logo.png';
 
 const NAV_ITEMS = [
-  { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/dashboard' },
-  { icon: <ArrowUpCircle size={20} />, label: 'Contas a pagar', path: '/contas-pagar' },
-  { icon: <ArrowDownCircle size={20} />, label: 'Contas a receber', path: '/contas-receber' },
-  { icon: <TrendingUp size={20} />, label: 'Investimentos', path: '/investimentos' },
+  {
+    icon: <LayoutDashboard size={20} />,
+    label: 'Dashboard',
+    path: '/dashboard',
+  },
+  {
+    icon: <ArrowUpCircle size={20} />,
+    label: 'Contas a pagar',
+    path: '/contas-pagar',
+  },
+  {
+    icon: <ArrowDownCircle size={20} />,
+    label: 'Contas a receber',
+    path: '/contas-receber',
+  },
+  {
+    icon: <TrendingUp size={20} />,
+    label: 'Investimentos',
+    path: '/investimentos',
+  },
   { icon: <Target size={20} />, label: 'Metas', path: '/metas' },
   { icon: <Paperclip size={20} />, label: 'Anexos', path: '/anexos' },
-  { icon: <LogOut size={20} />, label: 'Sair', path: '/logout', isLogout: true },
+  {
+    icon: <LogOut size={20} />,
+    label: 'Sair',
+    path: '/logout',
+    isLogout: true,
+  },
 ];
 
 function NavItem({ item, onNavigate }) {
@@ -147,10 +168,16 @@ function NavItemExpanded({ item, onNavigate }) {
   );
 }
 
-export default function AppSidebar({ sidebarOpen, currentPath, onHoverChange }) {
+export default function AppSidebar({
+  sidebarOpen,
+  currentPath,
+  isExpanded,
+  onHoverChange,
+}) {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
+  const effectivelyExpanded = isHovered || isExpanded;
 
   function handleMouseEnter() {
     setIsHovered(true);
@@ -183,7 +210,7 @@ export default function AppSidebar({ sidebarOpen, currentPath, onHoverChange }) 
       style={{
         ...sidebarStyles.sidebar,
         ...(sidebarOpen ? {} : sidebarStyles.sidebarHidden),
-        width: isHovered ? '220px' : '92px',
+        width: effectivelyExpanded ? '220px' : '92px',
       }}
       aria-label="Navegação principal"
     >
@@ -207,7 +234,7 @@ export default function AppSidebar({ sidebarOpen, currentPath, onHoverChange }) 
           src={logoIcon}
           alt="Finlly"
           style={{
-            height: isHovered ? '36px' : '13px',
+            height: effectivelyExpanded ? '36px' : '13px',
             width: 'auto',
             transition: 'height 0.3s ease',
             flexShrink: 0,
@@ -224,13 +251,13 @@ export default function AppSidebar({ sidebarOpen, currentPath, onHoverChange }) 
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: isHovered ? 'flex-start' : 'center',
+          justifyContent: effectivelyExpanded ? 'flex-start' : 'center',
           gap: '15px',
           width: '100%',
         }}
       >
         {navItems.map((item) =>
-          isHovered ? (
+          effectivelyExpanded ? (
             <NavItemExpanded
               key={item.path}
               item={item}

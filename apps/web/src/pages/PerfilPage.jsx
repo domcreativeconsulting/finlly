@@ -7,6 +7,7 @@ import { toast } from 'react-toastify';
 import { useAuth } from '../hooks/useAuth.js';
 import { perfilService } from '../services/perfil.service.js';
 import AppSidebar from '../components/AppSidebar.jsx';
+import { Save, Lock, CircleUser, CreditCard, DoorOpen } from 'lucide-react';
 
 const TIMEZONES = [
   'America/Sao_Paulo',
@@ -190,6 +191,9 @@ export default function PerfilPage() {
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const [isHoverBtnSalvar, setIsHoverBtnSalvar] = useState(false);
+  const [isHoverBtnSenha, setIsHoverBtnSenha] = useState(false);
+  const [isFocusedInput, setIsFocusedInput] = useState(false);
 
   const {
     register: registerSenha,
@@ -296,17 +300,29 @@ export default function PerfilPage() {
     navigate(path);
   }
 
+  const handleFocus = (e) => setIsFocusedInput(e.target.id);
+  const handleBlur = () => setIsFocusedInput(null);
+
   return (
     <div style={s.pageWrapper}>
       <div style={s.page}>
         {/* Sidebar */}
-        <AppSidebar sidebarOpen={sidebarOpen} currentPath="/perfil" onHoverChange={setSidebarExpanded} />
+        <AppSidebar
+          sidebarOpen={sidebarOpen}
+          isExpanded={sidebarExpanded}
+          currentPath="/perfil"
+          onHoverChange={setSidebarExpanded}
+        />
 
         {/* Main area */}
         <div
           style={{
             ...s.mainArea,
-            marginLeft: !sidebarOpen ? '0px' : sidebarExpanded ? '236px' : '108px',
+            marginLeft: !sidebarOpen
+              ? '0px'
+              : sidebarExpanded
+                ? '236px'
+                : '108px',
             transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           }}
         >
@@ -316,12 +332,19 @@ export default function PerfilPage() {
               <button
                 style={s.hamburger}
                 aria-label="Menu"
-                onClick={() => setSidebarOpen((v) => !v)}
+                onClick={() => {
+                  if (!sidebarOpen) {
+                    setSidebarOpen(true);
+                    setSidebarExpanded(true);
+                  } else {
+                    setSidebarExpanded(!sidebarExpanded);
+                  }
+                }}
               >
                 ☰
               </button>
               <div style={s.pageTitleIcon} aria-hidden="true">
-                👤
+                <CircleUser size={32} color="#4b5563" strokeWidth={1.5} />
               </div>
               <div>
                 <div style={s.pageTitleRow}>
@@ -344,7 +367,9 @@ export default function PerfilPage() {
                   cursor: 'pointer',
                   border: 'none',
                   outline: 'none',
-                  boxShadow: dropdownOpen ? '0 0 0 3px rgba(37,99,235,0.25)' : 'none',
+                  boxShadow: dropdownOpen
+                    ? '0 0 0 3px rgba(37,99,235,0.25)'
+                    : 'none',
                 }}
                 title={usuario?.nome || ''}
                 aria-label={`Menu do usuário ${usuario?.nome || ''}`}
@@ -358,8 +383,12 @@ export default function PerfilPage() {
                 <div style={s.userDropdown}>
                   {/* User info header */}
                   <div style={s.userDropdownHeader}>
-                    <div style={s.userDropdownName}>{usuario?.nome || 'Usuário'}</div>
-                    <div style={s.userDropdownEmail}>{emailValue || usuario?.email || ''}</div>
+                    <div style={s.userDropdownName}>
+                      {usuario?.nome || 'Usuário'}
+                    </div>
+                    <div style={s.userDropdownEmail}>
+                      {emailValue || usuario?.email || ''}
+                    </div>
                   </div>
 
                   <hr style={s.userDropdownDivider} />
@@ -368,10 +397,14 @@ export default function PerfilPage() {
                   <button
                     style={s.userDropdownItem}
                     onClick={() => handleMenuNavigate('/assinatura')}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor = '#f3f4f6')
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = 'transparent')
+                    }
                   >
-                    <span style={s.userDropdownIcon}>💳</span>
+                    <CreditCard size={18} style={{ marginRight: '5px' }} />
                     Assinatura
                   </button>
 
@@ -379,10 +412,19 @@ export default function PerfilPage() {
                   <button
                     style={s.userDropdownItem}
                     onClick={() => handleMenuNavigate('/perfil')}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor = '#f3f4f6')
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = 'transparent')
+                    }
                   >
-                    <span style={s.userDropdownIcon}>👤</span>
+                    <CircleUser
+                      size={18}
+                      color="#4b5563"
+                      strokeWidth={1.5}
+                      style={{ marginRight: '5px' }}
+                    />
                     Perfil
                   </button>
 
@@ -391,11 +433,18 @@ export default function PerfilPage() {
                   {/* Sair */}
                   <button
                     style={{ ...s.userDropdownItem, color: '#dc2626' }}
-                    onClick={() => { setDropdownOpen(false); logout(); }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      logout();
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor = '#fef2f2')
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = 'transparent')
+                    }
                   >
-                    <span style={s.userDropdownIcon}>🚪</span>
+                    <DoorOpen size={18} style={{ marginRight: '5px' }} />
                     Sair
                   </button>
                 </div>
@@ -438,274 +487,338 @@ export default function PerfilPage() {
               </span>
             </div>
           ) : (
-            <div style={s.cardsGrid}>
-              {/* Card: Dados da conta */}
-              <div style={{ ...s.card, height: '100%' }}>
-                <div style={s.cardHeader}>
-                  <h2 style={s.cardTitle}>Dados da conta</h2>
-                  {createdAt && (
-                    <span style={s.cardMeta}>
-                      usando desde {formatDate(createdAt)}
-                    </span>
-                  )}
-                </div>
-
-                <form onSubmit={handleSubmit(onSubmit)} noValidate>
-                  <div style={s.fieldGroup}>
-                    <label style={s.label} htmlFor="nome">
-                      Nome completo *
-                    </label>
-                    <input
-                      id="nome"
-                      type="text"
-                      placeholder="Seu nome completo"
-                      autoComplete="name"
-                      style={{
-                        ...s.input,
-                        ...(errors.nome ? s.inputError : {}),
-                      }}
-                      {...register('nome')}
-                    />
-                    {errors.nome && (
-                      <span style={s.fieldError} role="alert">
-                        {errors.nome.message}
+            <>
+              <div style={s.cardsGrid}>
+                {/* Card: Dados da conta */}
+                <div style={{ ...s.card, height: '100%' }}>
+                  <div style={s.cardHeader}>
+                    <h2 style={s.cardTitle}>Dados da conta</h2>
+                    {createdAt && (
+                      <span style={s.cardMeta}>
+                        usando desde {formatDate(createdAt)}
                       </span>
                     )}
                   </div>
 
-                  <div style={s.fieldGroup}>
-                    <label style={s.label} htmlFor="email">
-                      E-mail de acesso *
-                    </label>
-                    <input
-                      id="email"
-                      type="email"
-                      value={emailValue}
-                      readOnly
-                      style={{ ...s.input, ...s.inputReadOnly }}
-                      autoComplete="email"
-                    />
-                    <span style={s.helperText}>
-                      Usado para login e comunicações importantes.
-                    </span>
-                  </div>
-
-                  <div style={s.formRow}>
-                    <div style={{ ...s.fieldGroup, gridColumn: 'span 2' }}>
-                      <label style={s.label} htmlFor="whatsapp">
-                        WhatsApp (para lembretes e agente)
+                  <form onSubmit={handleSubmit(onSubmit)} noValidate>
+                    <div style={s.fieldGroup}>
+                      <label style={s.label} htmlFor="nome">
+                        Nome completo *
                       </label>
                       <input
-                        id="whatsapp"
+                        id="nome"
                         type="text"
-                        placeholder="+55 11 99999-9999"
+                        placeholder="Seu nome completo"
+                        autoComplete="name"
                         style={{
                           ...s.input,
-                          ...(errors.whatsapp ? s.inputError : {}),
+                          ...(errors.nome ? s.inputError : {}),
+                          outline:
+                            isFocusedInput === 'nome'
+                              ? '2px solid rgb(37 99 235 / 45%)'
+                              : 'none',
                         }}
-                        {...register('whatsapp')}
+                        {...register('nome')}
+                        onFocus={handleFocus}
+                        onBlur={handleBlur}
                       />
-                      {errors.whatsapp && (
+                      {errors.nome && (
                         <span style={s.fieldError} role="alert">
-                          {errors.whatsapp.message}
+                          {errors.nome.message}
                         </span>
                       )}
+                    </div>
+
+                    <div style={s.fieldGroup}>
+                      <label style={s.label} htmlFor="email">
+                        E-mail de acesso *
+                      </label>
+                      <input
+                        id="email"
+                        type="email"
+                        value={emailValue}
+                        readOnly
+                        style={{ ...s.input, ...s.inputReadOnly }}
+                        autoComplete="email"
+                      />
                       <span style={s.helperText}>
-                        Esse número será usado para identificar você quando
-                        falar com o agente no WhatsApp.
+                        Usado para login e comunicações importantes.
                       </span>
                     </div>
-                    <div style={s.fieldGroup}>
-                      <label style={s.label} htmlFor="moeda">
-                        Moeda padrão
-                      </label>
-                      <select
-                        id="moeda"
-                        style={{
-                          ...s.select,
-                          ...(errors.moeda ? s.inputError : {}),
-                        }}
-                        {...register('moeda')}
-                      >
-                        {MOEDAS.map((m) => (
-                          <option key={m} value={m}>
-                            {MOEDAS_LABELS[m] || m}
-                          </option>
-                        ))}
-                      </select>
-                      {errors.moeda && (
-                        <span style={s.fieldError} role="alert">
-                          {errors.moeda.message}
-                        </span>
-                      )}
-                    </div>
-                    <div style={s.fieldGroup}>
-                      <label style={s.label} htmlFor="timezone">
-                        Fuso horário
-                      </label>
-                      <select
-                        id="timezone"
-                        style={{
-                          ...s.select,
-                          ...(errors.timezone ? s.inputError : {}),
-                        }}
-                        {...register('timezone')}
-                      >
-                        {TIMEZONES.map((tz) => (
-                          <option key={tz} value={tz}>
-                            {TIMEZONE_LABELS[tz] || tz}
-                          </option>
-                        ))}
-                      </select>
-                      {errors.timezone && (
-                        <span style={s.fieldError} role="alert">
-                          {errors.timezone.message}
-                        </span>
-                      )}
-                    </div>
-                  </div>
 
-                  <div style={{ textAlign: 'right' }}>
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      style={
-                        isSubmitting
-                          ? { ...s.btnPrimary, ...s.btnPrimaryDisabled }
-                          : s.btnPrimary
-                      }
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <span style={s.spinnerInline} aria-hidden="true" />{' '}
-                          Salvando...
-                        </>
-                      ) : (
-                        '✓ Salvar alterações'
-                      )}
-                    </button>
-                  </div>
-                </form>
-              </div>
+                    <div style={s.formRow}>
+                      <div style={{ ...s.fieldGroup, gridColumn: 'span 2' }}>
+                        <label style={s.label} htmlFor="whatsapp">
+                          WhatsApp (para lembretes e agente)
+                        </label>
+                        <input
+                          id="whatsapp"
+                          type="text"
+                          placeholder="+55 11 99999-9999"
+                          style={{
+                            ...s.input,
+                            ...(errors.whatsapp ? s.inputError : {}),
+                            outline:
+                              isFocusedInput === 'whatsapp'
+                                ? '2px solid rgb(37 99 235 / 45%)'
+                                : 'none',
+                          }}
+                          {...register('whatsapp')}
+                          onFocus={handleFocus}
+                          onBlur={handleBlur}
+                        />
+                        {errors.whatsapp && (
+                          <span style={s.fieldError} role="alert">
+                            {errors.whatsapp.message}
+                          </span>
+                        )}
+                        <span style={s.helperText}>
+                          Esse número será usado para identificar você quando
+                          falar com o agente no WhatsApp.
+                        </span>
+                      </div>
+                      <div style={s.fieldGroup}>
+                        <label style={s.label} htmlFor="moeda">
+                          Moeda padrão
+                        </label>
+                        <select
+                          id="moeda"
+                          style={{
+                            ...s.select,
+                            ...(errors.moeda ? s.inputError : {}),
+                            outline:
+                              isFocusedInput === 'moeda'
+                                ? '2px solid rgb(37 99 235 / 45%)'
+                                : 'none',
+                          }}
+                          {...register('moeda')}
+                          onFocus={handleFocus}
+                          onBlur={handleBlur}
+                        >
+                          {MOEDAS.map((m) => (
+                            <option key={m} value={m}>
+                              {MOEDAS_LABELS[m] || m}
+                            </option>
+                          ))}
+                        </select>
+                        {errors.moeda && (
+                          <span style={s.fieldError} role="alert">
+                            {errors.moeda.message}
+                          </span>
+                        )}
+                      </div>
+                      <div style={s.fieldGroup}>
+                        <label style={s.label} htmlFor="timezone">
+                          Fuso horário
+                        </label>
+                        <select
+                          id="timezone"
+                          style={{
+                            ...s.select,
+                            ...(errors.timezone ? s.inputError : {}),
+                            outline:
+                              isFocusedInput === 'timezone'
+                                ? '2px solid rgb(37 99 235 / 45%)'
+                                : 'none',
+                          }}
+                          {...register('timezone')}
+                          onFocus={handleFocus}
+                          onBlur={handleBlur}
+                        >
+                          {TIMEZONES.map((tz) => (
+                            <option key={tz} value={tz}>
+                              {TIMEZONE_LABELS[tz] || tz}
+                            </option>
+                          ))}
+                        </select>
+                        {errors.timezone && (
+                          <span style={s.fieldError} role="alert">
+                            {errors.timezone.message}
+                          </span>
+                        )}
+                      </div>
+                    </div>
 
-              {/* Card: Segurança e senha */}
-              <div style={{ ...s.card, height: '100%' }}>
-                <div style={s.cardHeader}>
-                  <h2 style={s.cardTitle}>Segurança e senha</h2>
+                    <div style={{ textAlign: 'right' }}>
+                      <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        onMouseEnter={() => setIsHoverBtnSalvar(true)}
+                        onMouseLeave={() => setIsHoverBtnSalvar(false)}
+                        style={
+                          isSubmitting
+                            ? { ...s.btnPrimary, ...s.btnPrimaryDisabled }
+                            : isHoverBtnSalvar
+                              ? { ...s.btnPrimary, backgroundColor: '#1d4ed8' } // Cor mais escura no hover
+                              : s.btnPrimary
+                        }
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <span style={s.spinnerInline} aria-hidden="true" />
+                            <span style={{ marginLeft: '8px' }}>
+                              Salvando...
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <Save size={18} style={{ marginRight: '5px' }} />
+                            Salvar alterações
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </form>
                 </div>
 
-                <form onSubmit={handleSubmitSenha(handleSenha)} noValidate>
-                  {senhaErrors.root && (
-                    <div style={s.errorBox} role="alert">
-                      <span aria-hidden="true">⚠️</span>{' '}
-                      {senhaErrors.root.message}
-                    </div>
-                  )}
+                {/* Card: Segurança e senha */}
+                <div style={{ ...s.card, height: '100%' }}>
+                  <div style={s.cardHeader}>
+                    <h2 style={s.cardTitle}>Segurança e senha</h2>
+                  </div>
 
-                  <div style={s.fieldGroup}>
-                    <label style={s.label} htmlFor="senhaAtual">
-                      Senha atual
-                    </label>
-                    <input
-                      id="senhaAtual"
-                      type="password"
-                      style={{
-                        ...s.input,
-                        ...(senhaErrors.senhaAtual ? s.inputError : {}),
-                      }}
-                      autoComplete="current-password"
-                      {...registerSenha('senhaAtual')}
-                    />
-                    {senhaErrors.senhaAtual && (
-                      <span style={s.fieldError} role="alert">
-                        {senhaErrors.senhaAtual.message}
-                      </span>
+                  <form onSubmit={handleSubmitSenha(handleSenha)} noValidate>
+                    {senhaErrors.root && (
+                      <div style={s.errorBox} role="alert">
+                        <span aria-hidden="true">⚠️</span>{' '}
+                        {senhaErrors.root.message}
+                      </div>
                     )}
-                  </div>
 
-                  <div style={s.twoCol}>
                     <div style={s.fieldGroup}>
-                      <label style={s.label} htmlFor="novaSenha">
-                        Nova senha
+                      <label style={s.label} htmlFor="senhaAtual">
+                        Senha atual
                       </label>
                       <input
-                        id="novaSenha"
+                        id="senhaAtual"
                         type="password"
                         style={{
                           ...s.input,
-                          ...(senhaErrors.novaSenha ? s.inputError : {}),
+                          ...(senhaErrors.senhaAtual ? s.inputError : {}),
+                          outline:
+                            isFocusedInput === 'senhaAtual'
+                              ? '2px solid rgb(37 99 235 / 45%)'
+                              : 'none',
                         }}
-                        autoComplete="new-password"
-                        {...registerSenha('novaSenha')}
+                        autoComplete="current-password"
+                        {...registerSenha('senhaAtual')}
+                        onFocus={handleFocus}
+                        onBlur={handleBlur}
                       />
-                      {senhaErrors.novaSenha && (
+                      {senhaErrors.senhaAtual && (
                         <span style={s.fieldError} role="alert">
-                          {senhaErrors.novaSenha.message}
+                          {senhaErrors.senhaAtual.message}
                         </span>
                       )}
                     </div>
-                    <div style={s.fieldGroup}>
-                      <label style={s.label} htmlFor="confirmarSenha">
-                        Confirmar nova senha
-                      </label>
-                      <input
-                        id="confirmarSenha"
-                        type="password"
-                        style={{
-                          ...s.input,
-                          ...(senhaErrors.confirmarSenha ? s.inputError : {}),
-                        }}
-                        autoComplete="new-password"
-                        {...registerSenha('confirmarSenha')}
-                      />
-                      {senhaErrors.confirmarSenha && (
-                        <span style={s.fieldError} role="alert">
-                          {senhaErrors.confirmarSenha.message}
-                        </span>
-                      )}
+
+                    <div style={s.twoCol}>
+                      <div style={s.fieldGroup}>
+                        <label style={s.label} htmlFor="novaSenha">
+                          Nova senha
+                        </label>
+                        <input
+                          id="novaSenha"
+                          type="password"
+                          style={{
+                            ...s.input,
+                            ...(senhaErrors.novaSenha ? s.inputError : {}),
+                            outline:
+                              isFocusedInput === 'novaSenha'
+                                ? '2px solid rgb(37 99 235 / 45%)'
+                                : 'none',
+                          }}
+                          autoComplete="new-password"
+                          {...registerSenha('novaSenha')}
+                          onFocus={handleFocus}
+                          onBlur={handleBlur}
+                        />
+                        {senhaErrors.novaSenha && (
+                          <span style={s.fieldError} role="alert">
+                            {senhaErrors.novaSenha.message}
+                          </span>
+                        )}
+                      </div>
+                      <div style={s.fieldGroup}>
+                        <label style={s.label} htmlFor="confirmarSenha">
+                          Confirmar nova senha
+                        </label>
+                        <input
+                          id="confirmarSenha"
+                          type="password"
+                          style={{
+                            ...s.input,
+                            ...(senhaErrors.confirmarSenha ? s.inputError : {}),
+                            outline:
+                              isFocusedInput === 'confirmarSenha'
+                                ? '2px solid rgb(37 99 235 / 45%)'
+                                : 'none',
+                          }}
+                          autoComplete="new-password"
+                          {...registerSenha('confirmarSenha')}
+                          onFocus={handleFocus}
+                          onBlur={handleBlur}
+                        />
+                        {senhaErrors.confirmarSenha && (
+                          <span style={s.fieldError} role="alert">
+                            {senhaErrors.confirmarSenha.message}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
 
-                  <p style={s.senhaHint}>
-                    A senha deve ter no mínimo {MIN_PASSWORD_LENGTH} caracteres
-                    e obrigatoriamente conter letras maiúsculas, minúsculas e
-                    números.
-                  </p>
+                    <p style={s.senhaHint}>
+                      A senha deve ter no mínimo {MIN_PASSWORD_LENGTH}{' '}
+                      caracteres e obrigatoriamente conter letras maiúsculas,
+                      minúsculas e números.
+                    </p>
 
-                  <div style={{ textAlign: 'right' }}>
-                    <button
-                      type="submit"
-                      disabled={isSavingSenha}
-                      style={
-                        isSavingSenha
-                          ? { ...s.btnSecondary, ...s.btnSecondaryDisabled }
-                          : s.btnSecondary
-                      }
-                    >
-                      {isSavingSenha ? (
-                        <>
-                          <span
-                            style={{
-                              ...s.spinnerInline,
-                              borderColor: 'rgba(37,99,235,0.3)',
-                              borderTopColor: '#2563eb',
-                            }}
-                            aria-hidden="true"
-                          />{' '}
-                          Alterando...
-                        </>
-                      ) : (
-                        '🔒 Alterar senha'
-                      )}
-                    </button>
-                  </div>
-                </form>
+                    <div style={{ textAlign: 'right' }}>
+                      <button
+                        type="submit"
+                        disabled={isSavingSenha}
+                        onMouseEnter={() => setIsHoverBtnSenha(true)}
+                        onMouseLeave={() => setIsHoverBtnSenha(false)}
+                        style={
+                          isSavingSenha
+                            ? { ...s.btnSecondary, ...s.btnSecondaryDisabled }
+                            : isHoverBtnSenha
+                              ? {
+                                  ...s.btnSecondary,
+                                  backgroundColor: '#FFFFFF',
+                                } // Letra branca
+                              : s.btnSecondary
+                        }
+                      >
+                        {isSavingSenha ? (
+                          <>
+                            <span
+                              style={{
+                                ...s.spinnerInline,
+                                borderColor: 'rgba(37,99,235,0.3)',
+                                borderTopColor: '#2563eb',
+                              }}
+                              aria-hidden="true"
+                            />{' '}
+                            Alterando...
+                          </>
+                        ) : (
+                          <>
+                            <Lock size={18} style={{ marginRight: '5px' }} />
+                            Alterar senha
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+                <footer style={{ ...s.footer, gridColumn: '1 / -1' }}>
+                  Finlly • painel financeiro pessoal —{' '}
+                  {new Date().getFullYear()}
+                </footer>
               </div>
-            </div>
+            </>
           )}
-          <footer style={s.footer}>
-            Finlly • painel financeiro pessoal — {new Date().getFullYear()}
-          </footer>
         </div>
       </div>
     </div>
@@ -783,7 +896,7 @@ const s = {
     gap: '16px',
   },
   pageTitleIcon: {
-    fontSize: '28px',
+    size: '28px',
     lineHeight: 1,
     flexShrink: 0,
   },
@@ -889,7 +1002,7 @@ const s = {
     display: 'grid',
     gridTemplateColumns: '1.5fr 1fr',
     gap: '24px',
-    padding: '24px 32px 40px',
+    padding: '24px 32px 0px 40px',
     flex: 1,
     alignItems: 'start',
   },
@@ -955,7 +1068,7 @@ const s = {
     cursor: 'default',
   },
   select: {
-    width: '100%',
+    width: '200px',
     padding: '9px 12px',
     fontSize: '14px',
     border: '1px solid #d1d5db',
@@ -1008,11 +1121,11 @@ const s = {
     fontSize: '14px',
     fontWeight: '600',
     color: '#ffffff',
-    backgroundColor: '#2563eb',
+    backgroundColor: '#33528a',
     border: 'none',
     borderRadius: '20px',
     cursor: 'pointer',
-    transition: 'background-color 0.2s',
+    transition: 'all 0.2s ease-in-out',
   },
   btnPrimaryDisabled: {
     backgroundColor: '#93c5fd',
@@ -1026,11 +1139,11 @@ const s = {
     fontSize: '14px',
     fontWeight: '600',
     color: '#2563eb',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#eff6ff',
     border: '1.5px solid #2563eb',
     borderRadius: '20px',
     cursor: 'pointer',
-    transition: 'background-color 0.2s',
+    transition: 'all 0.2s ease-in-out',
   },
   btnSecondaryDisabled: {
     opacity: 0.6,
@@ -1065,7 +1178,8 @@ const s = {
   },
 
   footer: {
-    marginTop: 'auto',
+    gridColumn: '1 / -1',
+    marginTop: '32px',
     paddingTop: '18px',
     paddingBottom: '18px',
     paddingLeft: '32px',
@@ -1073,9 +1187,10 @@ const s = {
     textAlign: 'center',
     fontSize: '14px',
     fontWeight: '500',
-    backgroundColor: '#1a2e5a',
-    color: '#93c5fd',
+    backgroundColor: '#33528a',
+    color: '#FFFFFF',
     letterSpacing: '0.01em',
+    borderRadius: '20px',
   },
 
   userDropdown: {
@@ -1123,9 +1238,5 @@ const s = {
     cursor: 'pointer',
     textAlign: 'left',
     transition: 'background-color 0.15s',
-  },
-  userDropdownIcon: {
-    fontSize: '16px',
-    flexShrink: 0,
   },
 };
