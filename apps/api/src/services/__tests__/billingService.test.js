@@ -92,7 +92,7 @@ describe('criarAssinatura', () => {
     mockAsaas.createSubscription.mockResolvedValue(SUBSCRIPTION);
     mockPrisma.assinante.upsert.mockResolvedValue(ASSINANTE);
 
-    const result = await criarAssinatura(USUARIO_ID, { plano: 'mensal', ciclo: 'mensal' });
+    const result = await criarAssinatura(USUARIO_ID, { plano: 'mensal', ciclo: 'mensal', formaPagamento: 'PIX' });
 
     expect(result).toMatchObject({
       assinante: ASSINANTE,
@@ -104,6 +104,7 @@ describe('criarAssinatura', () => {
         customer: CUSTOMER.id,
         cycle: 'MONTHLY',
         value: 29.9,
+        billingType: 'PIX',
       }),
     );
   });
@@ -114,10 +115,10 @@ describe('criarAssinatura', () => {
     mockAsaas.createSubscription.mockResolvedValue({ id: 'sub_002', invoiceUrl: null });
     mockPrisma.assinante.upsert.mockResolvedValue({ ...ASSINANTE, plano: 'anual' });
 
-    const result = await criarAssinatura(USUARIO_ID, { plano: 'anual', ciclo: 'anual' });
+    const result = await criarAssinatura(USUARIO_ID, { plano: 'anual', ciclo: 'anual', formaPagamento: 'CREDIT_CARD' });
 
     expect(mockAsaas.createSubscription).toHaveBeenCalledWith(
-      expect.objectContaining({ cycle: 'YEARLY', value: 287.9 }),
+      expect.objectContaining({ cycle: 'YEARLY', value: 287.9, billingType: 'CREDIT_CARD' }),
     );
     expect(result.paymentLink).toBeNull();
   });
@@ -129,7 +130,7 @@ describe('criarAssinatura', () => {
     mockAsaas.createSubscription.mockResolvedValue(SUBSCRIPTION);
     mockPrisma.assinante.upsert.mockResolvedValue(ASSINANTE);
 
-    await criarAssinatura(USUARIO_ID, { plano: 'mensal', ciclo: 'mensal' });
+    await criarAssinatura(USUARIO_ID, { plano: 'mensal', ciclo: 'mensal', formaPagamento: 'PIX' });
 
     expect(mockAsaas.createCustomer).toHaveBeenCalledWith(
       expect.objectContaining({ email: USUARIO.email, nome: USUARIO.nome }),
@@ -138,7 +139,7 @@ describe('criarAssinatura', () => {
 
   test('rejeita ciclo inválido com AppError 400', async () => {
     await expect(
-      criarAssinatura(USUARIO_ID, { plano: 'mensal', ciclo: 'semanal' }),
+      criarAssinatura(USUARIO_ID, { plano: 'mensal', ciclo: 'semanal', formaPagamento: 'PIX' }),
     ).rejects.toMatchObject({ status: 400 });
   });
 
@@ -146,7 +147,7 @@ describe('criarAssinatura', () => {
     mockPrisma.usuario.findFirst.mockResolvedValue(null);
 
     await expect(
-      criarAssinatura(USUARIO_ID, { plano: 'mensal', ciclo: 'mensal' }),
+      criarAssinatura(USUARIO_ID, { plano: 'mensal', ciclo: 'mensal', formaPagamento: 'PIX' }),
     ).rejects.toMatchObject({ status: 404 });
   });
 
@@ -168,7 +169,7 @@ describe('criarAssinatura', () => {
     mockAsaas.createSubscription.mockResolvedValue(SUBSCRIPTION);
     mockPrisma.assinante.upsert.mockResolvedValue(ASSINANTE);
 
-    await criarAssinatura(USUARIO_ID, { plano: 'mensal', ciclo: 'mensal', cupomCodigo: 'DESC10' });
+    await criarAssinatura(USUARIO_ID, { plano: 'mensal', ciclo: 'mensal', formaPagamento: 'PIX', cupomCodigo: 'DESC10' });
 
     // 29.90 - 10% = 26.91
     expect(mockAsaas.createSubscription).toHaveBeenCalledWith(
@@ -181,8 +182,34 @@ describe('criarAssinatura', () => {
     mockPrisma.cupom.findFirst.mockResolvedValue(null);
 
     await expect(
-      criarAssinatura(USUARIO_ID, { plano: 'mensal', ciclo: 'mensal', cupomCodigo: 'INVALIDO' }),
+      criarAssinatura(USUARIO_ID, { plano: 'mensal', ciclo: 'mensal', formaPagamento: 'PIX', cupomCodigo: 'INVALIDO' }),
     ).rejects.toMatchObject({ status: 400, message: 'Cupom inválido ou expirado' });
+  });
+
+  test('envia billingType PIX quando formaPagamento é PIX', async () => {
+    mockPrisma.usuario.findFirst.mockResolvedValue(USUARIO);
+    mockAsaas.getCustomerByEmail.mockResolvedValue(CUSTOMER);
+    mockAsaas.createSubscription.mockResolvedValue(SUBSCRIPTION);
+    mockPrisma.assinante.upsert.mockResolvedValue(ASSINANTE);
+
+    await criarAssinatura(USUARIO_ID, { plano: 'mensal', ciclo: 'mensal', formaPagamento: 'PIX' });
+
+    expect(mockAsaas.createSubscription).toHaveBeenCalledWith(
+      expect.objectContaining({ billingType: 'PIX' }),
+    );
+  });
+
+  test('envia billingType CREDIT_CARD quando formaPagamento é CREDIT_CARD', async () => {
+    mockPrisma.usuario.findFirst.mockResolvedValue(USUARIO);
+    mockAsaas.getCustomerByEmail.mockResolvedValue(CUSTOMER);
+    mockAsaas.createSubscription.mockResolvedValue(SUBSCRIPTION);
+    mockPrisma.assinante.upsert.mockResolvedValue(ASSINANTE);
+
+    await criarAssinatura(USUARIO_ID, { plano: 'mensal', ciclo: 'mensal', formaPagamento: 'CREDIT_CARD' });
+
+    expect(mockAsaas.createSubscription).toHaveBeenCalledWith(
+      expect.objectContaining({ billingType: 'CREDIT_CARD' }),
+    );
   });
 });
 

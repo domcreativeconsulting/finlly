@@ -29,10 +29,10 @@ function getNextDueDate() {
  * Creates or updates a subscription for the given user.
  *
  * @param {string} usuarioId
- * @param {{ plano: string, ciclo: string, cupomCodigo?: string }} params
+ * @param {{ plano: string, ciclo: string, formaPagamento: 'PIX'|'CREDIT_CARD', cupomCodigo?: string }} params
  * @returns {Promise<{ assinante: object, paymentLink: string|null }>}
  */
-export async function criarAssinatura(usuarioId, { plano, ciclo, cupomCodigo }) {
+export async function criarAssinatura(usuarioId, { plano, ciclo, formaPagamento, cupomCodigo }) {
   if (!CICLO_ASAAS[ciclo]) {
     throw AppError.badRequest(`Ciclo inválido: ${ciclo}. Use 'mensal' ou 'anual'`);
   }
@@ -86,7 +86,7 @@ export async function criarAssinatura(usuarioId, { plano, ciclo, cupomCodigo }) 
   const nextDueDate = getNextDueDate();
   const subscription = await asaas.createSubscription({
     customer: customer.id,
-    billingType: 'BOLETO',
+    billingType: formaPagamento,
     cycle: CICLO_ASAAS[ciclo],
     value: valor,
     nextDueDate,
