@@ -2,6 +2,10 @@ import { config } from '../../config/env.js';
 import { AppError } from '../../errors/AppError.js';
 import logger from '../../logger.js';
 
+const RETRY_BASE_DELAY_MS = 500;
+const RETRY_JITTER_MS = 200;
+const RETRY_MAX_DELAY_MS = 10_000;
+
 /**
  * Returns the Asaas base URL from config or derives it from ASAAS_ENV.
  * @returns {string}
@@ -14,10 +18,35 @@ function getBaseUrl() {
 }
 
 /**
- * Performs an authenticated HTTP request to the Asaas API.
+ * Resolves after the given number of milliseconds.
+ * @param {number} ms
+ * @returns {Promise<void>}
+ */
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Calculates the retry delay using exponential backoff + jitter, or a
+ * server-specified Retry-After value when provided.
+ * @param {number} attempt - zero-indexed attempt number
+ * @param {number|null} [retryAfterMs] - delay from Retry-After header in ms
+ * @returns {number} delay in milliseconds
+ */
+function calculateRetryDelay(attempt, retryAfterMs = null) {
+  if (retryAfterMs != null) return retryAfterMs;
+  return Math.min(
+    RETRY_BASE_DELAY_MS * Math.pow(2, attempt) + Math.random() * RETRY_JITTER_MS,
+    RETRY_MAX_DELAY_MS,
+  );
+}
+
+/**
+ * Performs an authenticated HTTP request to the Asaas API with automatic
+ * retries (exponential backoff + jitter) and per-attempt timeouts.
  * @param {string} path - API path (e.g. '/customers')
  * @param {RequestInit} [options] - fetch options
- * @returns {Promise<object>}
+ * @returns {Promise<object|null>}
  */
 async function request(path, options = {}) {
   const url = `${getBaseUrl()}${path}`;
@@ -27,28 +56,76 @@ async function request(path, options = {}) {
     ...options.headers,
   };
 
-  let response;
-  try {
-    response = await fetch(url, { ...options, headers });
-  } catch (err) {
-    logger.error({ err, url }, 'Asaas network error');
-    throw AppError.internal('Erro de conexão com o provedor de pagamento');
-  }
+  const maxAttempts = (config.ASAAS_MAX_RETRIES ?? 3) + 1;
 
-  if (!response.ok) {
-    let body = null;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), config.ASAAS_TIMEOUT_MS ?? 10000);
+
     try {
-      body = await response.json();
-    } catch {
-      // ignore parse errors
+      const response = await fetch(url, { ...options, headers, signal: controller.signal });
+      clearTimeout(timeoutId);
+
+      // 204 No Content
+      if (response.status === 204) return null;
+
+      // Non-retriable 4xx (except 429)
+      if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+        let body = null;
+        try {
+          body = await response.json();
+        } catch {
+          // ignore parse errors
+        }
+        logger.error({ status: response.status, body, url }, 'Asaas HTTP error');
+        throw AppError.internal(`Erro no provedor de pagamento: ${response.status}`);
+      }
+
+      // Retriable HTTP errors (429, 5xx)
+      if (!response.ok) {
+        let retryAfterMs = null;
+        if (response.status === 429) {
+          const retryAfter = response.headers.get('Retry-After');
+          if (retryAfter) retryAfterMs = parseFloat(retryAfter) * 1000;
+        }
+
+        logger.warn(
+          { url, attempt: attempt + 1, totalAttempts: maxAttempts, status: response.status },
+          'Asaas request falhou, tentando novamente...',
+        );
+
+        if (attempt < maxAttempts - 1) {
+          await sleep(calculateRetryDelay(attempt, retryAfterMs));
+        }
+        continue;
+      }
+
+      // Success
+      return response.json();
+    } catch (err) {
+      clearTimeout(timeoutId);
+
+      // Non-retriable errors thrown above bubble up immediately
+      if (err instanceof AppError || err?.name === 'AppError') throw err;
+
+      const isTimeout = err?.name === 'AbortError' || err?.name === 'TimeoutError';
+      const isNetwork = err instanceof TypeError;
+
+      if (!isTimeout && !isNetwork) throw AppError.internal('Erro de conexão com o provedor de pagamento');
+
+      logger.warn(
+        { url, attempt: attempt + 1, totalAttempts: maxAttempts, err: err.message },
+        'Asaas request falhou, tentando novamente...',
+      );
+
+      if (attempt < maxAttempts - 1) {
+        await sleep(calculateRetryDelay(attempt));
+      }
     }
-    logger.error({ status: response.status, body, url }, 'Asaas HTTP error');
-    throw AppError.internal(`Erro no provedor de pagamento: ${response.status}`);
   }
 
-  if (response.status === 204) return null;
-
-  return response.json();
+  logger.error({ url, maxAttempts }, 'Asaas request falhou após todas as tentativas');
+  throw AppError.internal('Erro de conexão com o provedor de pagamento');
 }
 
 /**
