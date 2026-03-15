@@ -9,6 +9,7 @@ import { requestIdMiddleware } from './middleware/requestId.js';
 import { requestLogger } from './middleware/requestLogger.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { csrfProtection } from './middleware/csrfProtection.js';
+import billingRouter from './routes/billing.js';
 import healthRouter from './routes/health.js';
 import authRouter from './routes/auth.js';
 import perfilRouter from './routes/perfil.js';
@@ -26,6 +27,7 @@ app.use(requestLogger);
 app.use(healthRouter);
 app.use(authRouter);
 app.use(perfilRouter);
+app.use(billingRouter);
 
 app.get('/', (req, res) => {
   res.send('Hello World!');

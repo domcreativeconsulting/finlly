@@ -68,6 +68,22 @@ export default [
   },
   {
     files: ['apps/api/**/*.js'],
+    languageOptions: {
+      globals: {
+        fetch: 'readonly',
+        Buffer: 'readonly',
+        process: 'readonly',
+        URL: 'readonly',
+        URLSearchParams: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        global: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+      },
+    },
     rules: {
       'no-console': ['warn'],
     },
@@ -84,6 +100,8 @@ export default [
         afterAll: 'readonly',
         afterEach: 'readonly',
         it: 'readonly',
+        jest: 'readonly',
+        Buffer: 'readonly',
       },
     },
   },

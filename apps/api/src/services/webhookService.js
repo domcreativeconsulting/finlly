@@ -1,0 +1,236 @@
+import { createHmac, timingSafeEqual } from 'crypto';
+import { Buffer } from 'buffer';
+import prisma from '../utils/database.js';
+import { AppError } from '../errors/AppError.js';
+import { config } from '../config/env.js';
+import logger from '../logger.js';
+
+/**
+ * Verifies the HMAC-SHA256 signature of a webhook payload.
+ * @param {Buffer|string} rawBody
+ * @param {string} signature
+ * @throws {AppError} if the signature is invalid
+ */
+function verificarAssinatura(rawBody, signature) {
+  const secret = config.ASAAS_WEBHOOK_SECRET;
+  if (!secret) return; // Skip verification if not configured
+
+  const hmac = createHmac('sha256', secret);
+  hmac.update(typeof rawBody === 'string' ? Buffer.from(rawBody) : rawBody);
+  const expected = hmac.digest('hex');
+
+  let sigBuffer, expectedBuffer;
+  try {
+    sigBuffer = Buffer.from(signature, 'hex');
+    expectedBuffer = Buffer.from(expected, 'hex');
+  } catch {
+    throw AppError.unauthorized('Assinatura inválida');
+  }
+
+  if (sigBuffer.length !== expectedBuffer.length || !timingSafeEqual(sigBuffer, expectedBuffer)) {
+    throw AppError.unauthorized('Assinatura inválida');
+  }
+}
+
+/**
+ * Handles PAYMENT_CONFIRMED and PAYMENT_RECEIVED events.
+ * @param {object} payment - payment object from Asaas payload
+ */
+async function handlePaymentConfirmed(payment) {
+  const usuarioId = payment.externalReference;
+  const subscriptionId = payment.subscription;
+
+  const assinante = await prisma.assinante.findFirst({
+    where: {
+      deleted_at: null,
+      OR: [
+        ...(usuarioId ? [{ usuario_id: usuarioId }] : []),
+        ...(subscriptionId ? [{ provider_subscription_id: subscriptionId }] : []),
+      ],
+    },
+  });
+
+  if (!assinante) {
+    logger.warn({ usuarioId, subscriptionId }, 'Assinante não encontrado para PAYMENT_CONFIRMED');
+    return;
+  }
+
+  const proximaCobranca = payment.dueDate ? new Date(payment.dueDate) : null;
+
+  await prisma.assinante.update({
+    where: { id: assinante.id },
+    data: { status: 'ativo', proxima_cobranca: proximaCobranca },
+  });
+
+  await prisma.assinantePagamento.create({
+    data: {
+      assinante_id: assinante.id,
+      usuario_id: assinante.usuario_id,
+      status: 'pago',
+      valor: payment.value ?? 0,
+      provider: 'asaas',
+      provider_payment_id: payment.id,
+      descricao: payment.description ?? null,
+      data_pagamento: payment.paymentDate ? new Date(payment.paymentDate) : new Date(),
+      data_vencimento: payment.dueDate ? new Date(payment.dueDate) : null,
+    },
+  });
+
+  await prisma.usuario.update({
+    where: { id: assinante.usuario_id },
+    data: { status: 'ativo' },
+  });
+
+  logger.info({ usuarioId: assinante.usuario_id, paymentId: payment.id }, 'Pagamento confirmado');
+}
+
+/**
+ * Handles PAYMENT_OVERDUE events.
+ * @param {object} payment - payment object from Asaas payload
+ */
+async function handlePaymentOverdue(payment) {
+  const usuarioId = payment.externalReference;
+  const subscriptionId = payment.subscription;
+
+  const assinante = await prisma.assinante.findFirst({
+    where: {
+      deleted_at: null,
+      OR: [
+        ...(usuarioId ? [{ usuario_id: usuarioId }] : []),
+        ...(subscriptionId ? [{ provider_subscription_id: subscriptionId }] : []),
+      ],
+    },
+  });
+
+  if (!assinante) {
+    logger.warn({ usuarioId, subscriptionId }, 'Assinante não encontrado para PAYMENT_OVERDUE');
+    return;
+  }
+
+  await prisma.assinante.update({
+    where: { id: assinante.id },
+    data: { status: 'inadimplente' },
+  });
+
+  await prisma.assinantePagamento.create({
+    data: {
+      assinante_id: assinante.id,
+      usuario_id: assinante.usuario_id,
+      status: 'pendente',
+      valor: payment.value ?? 0,
+      provider: 'asaas',
+      provider_payment_id: payment.id,
+      descricao: payment.description ?? null,
+      data_vencimento: payment.dueDate ? new Date(payment.dueDate) : null,
+    },
+  });
+
+  await prisma.usuario.update({
+    where: { id: assinante.usuario_id },
+    data: { status: 'bloqueado_inadimplencia' },
+  });
+
+  logger.info({ usuarioId: assinante.usuario_id, paymentId: payment.id }, 'Pagamento inadimplente');
+}
+
+/**
+ * Handles PAYMENT_DELETED and SUBSCRIPTION_DELETED events.
+ * @param {object} payment - payment or subscription object from Asaas payload
+ */
+async function handleDeleted(payment) {
+  const usuarioId = payment.externalReference;
+  const subscriptionId = payment.subscription ?? payment.id;
+
+  const assinante = await prisma.assinante.findFirst({
+    where: {
+      deleted_at: null,
+      OR: [
+        ...(usuarioId ? [{ usuario_id: usuarioId }] : []),
+        ...(subscriptionId ? [{ provider_subscription_id: subscriptionId }] : []),
+      ],
+    },
+  });
+
+  if (!assinante) {
+    logger.warn({ usuarioId, subscriptionId }, 'Assinante não encontrado para evento de deleção');
+    return;
+  }
+
+  await prisma.assinante.update({
+    where: { id: assinante.id },
+    data: { status: 'cancelado' },
+  });
+
+  await prisma.usuario.update({
+    where: { id: assinante.usuario_id },
+    data: { status: 'ativo' },
+  });
+
+  logger.info({ usuarioId: assinante.usuario_id }, 'Assinatura cancelada por evento de deleção');
+}
+
+/**
+ * Processes a webhook event from Asaas idempotently.
+ *
+ * @param {object} payload - parsed JSON payload
+ * @param {Buffer|string} rawBody - raw request body for HMAC verification
+ * @param {string|undefined} signatureHeader - value of asaas-signature or x-asaas-hmac-sha256 header
+ * @returns {Promise<{ processed: boolean, event: string }|{ skipped: boolean }>}
+ */
+export async function processarWebhookAsaas(payload, rawBody, signatureHeader) {
+  // Verify HMAC signature if secret is configured
+  if (config.ASAAS_WEBHOOK_SECRET && signatureHeader) {
+    verificarAssinatura(rawBody, signatureHeader);
+  } else if (config.ASAAS_WEBHOOK_SECRET && !signatureHeader) {
+    throw AppError.unauthorized('Assinatura inválida');
+  }
+
+  // Idempotency: try to insert the event — if it already exists, skip
+  try {
+    await prisma.webhookEvent.create({
+      data: {
+        provider: 'asaas',
+        event_id: String(payload.id),
+        event_type: payload.event,
+        payload,
+        processado: false,
+      },
+    });
+  } catch (err) {
+    if (err?.code === 'P2002') {
+      // Unique constraint violation — event already processed
+      return { skipped: true };
+    }
+    throw err;
+  }
+
+  const eventType = payload.event;
+  const payment = payload.payment ?? payload.subscription ?? payload;
+
+  try {
+    if (eventType === 'PAYMENT_CONFIRMED' || eventType === 'PAYMENT_RECEIVED') {
+      await handlePaymentConfirmed(payment);
+    } else if (eventType === 'PAYMENT_OVERDUE') {
+      await handlePaymentOverdue(payment);
+    } else if (eventType === 'PAYMENT_DELETED' || eventType === 'SUBSCRIPTION_DELETED') {
+      await handleDeleted(payment);
+    } else {
+      logger.info({ eventType }, 'Evento Asaas ignorado');
+    }
+
+    // Mark as processed
+    await prisma.webhookEvent.updateMany({
+      where: { provider: 'asaas', event_id: String(payload.id) },
+      data: { processado: true, processado_em: new Date() },
+    });
+  } catch (err) {
+    logger.error({ err, eventType }, 'Erro ao processar webhook Asaas');
+    await prisma.webhookEvent.updateMany({
+      where: { provider: 'asaas', event_id: String(payload.id) },
+      data: { erro: err?.message ?? 'Erro desconhecido' },
+    });
+    throw err;
+  }
+
+  return { processed: true, event: eventType };
+}
