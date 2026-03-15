@@ -38,4 +38,8 @@ export class AppError extends Error {
   static internal(message = 'An unexpected error occurred') {
     return new AppError('INTERNAL_SERVER_ERROR', message, 500);
   }
+
+  static paymentRequired(message = 'Payment required', code = 'PAYMENT_REQUIRED') {
+    return new AppError(code, message, 402);
+  }
 }
