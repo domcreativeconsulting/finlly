@@ -13,6 +13,7 @@ import healthRouter from './routes/health.js';
 import authRouter from './routes/auth.js';
 import perfilRouter from './routes/perfil.js';
 import billingRouter from './routes/billing.js';
+import { startReconciliacaoJob } from './jobs/reconciliacao.job.js';
 
 const app = express();
 
@@ -44,4 +45,7 @@ app.listen(config.API_PORT, () => {
   logger.info({
     msg: `Server is running on http://localhost:${config.API_PORT}`,
   });
+  if (config.NODE_ENV !== 'test') {
+    startReconciliacaoJob();
+  }
 });

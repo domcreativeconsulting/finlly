@@ -3,6 +3,7 @@ import { rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
 import { criarAssinatura, cancelarAssinatura, getStatusAssinatura } from '../services/billingService.js';
 import { processarWebhookAsaas } from '../services/webhookService.js';
+import { reconciliarAssinaturas } from '../services/reconciliacaoService.js';
 import { jwtAuthMiddleware } from '../middleware/jwtAuth.js';
 import { toValidationError } from '../errors/toValidationError.js';
 import { AppError } from '../errors/AppError.js';
@@ -28,6 +29,16 @@ const webhookLimiter = rateLimit({
 const billingLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { code: 'RATE_LIMITED', message: 'Muitas tentativas. Tente novamente mais tarde.' },
+  handler: (req, res, next, options) => next(AppError.tooManyRequests(options.message.message)),
+});
+
+/** Rate limiter for admin routes: 5 req/min per IP */
+const adminLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 5,
   standardHeaders: true,
   legacyHeaders: false,
   message: { code: 'RATE_LIMITED', message: 'Muitas tentativas. Tente novamente mais tarde.' },
@@ -131,6 +142,28 @@ router.get('/billing/status', billingLimiter, jwtAuthMiddleware, async (req, res
   try {
     const assinante = await getStatusAssinatura(req.user.sub);
     return res.status(200).json({ assinante });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// ============================================================
+// Admin routes
+// ============================================================
+
+/**
+ * POST /billing/admin/reconciliar
+ * Triggers a manual reconciliation. Restricted to admin users.
+ */
+router.post('/billing/admin/reconciliar', adminLimiter, jwtAuthMiddleware, async (req, res, next) => {
+  if (req.user.role !== 'admin') {
+    return next(AppError.forbidden('Acesso restrito a administradores'));
+  }
+
+  try {
+    const summary = await reconciliarAssinaturas();
+    logger.info({ summary, userId: req.user.sub }, 'Reconciliação manual disparada');
+    return res.status(200).json(summary);
   } catch (err) {
     return next(err);
   }

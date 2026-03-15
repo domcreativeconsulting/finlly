@@ -51,6 +51,9 @@ const envSchema = z.object({
   FORGOT_PASSWORD_RATE_WINDOW: z.coerce.number().int().positive().default(3600), // 1 hour in seconds
   VERIFY_EMAIL_RATE_LIMIT: z.coerce.number().int().positive().default(3),
   VERIFY_EMAIL_RATE_WINDOW: z.coerce.number().int().positive().default(3600), // 1 hour in seconds
+
+  // Reconciliation job
+  RECONCILIACAO_INTERVAL_MS: z.coerce.number().int().positive().default(3600000), // 1 hour in ms
 });
 
 /**
