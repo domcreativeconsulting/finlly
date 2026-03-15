@@ -45,6 +45,7 @@ export async function criarAssinatura(usuarioId, { plano, ciclo, cupomCodigo }) 
   let valor = PRECOS[ciclo] ?? PRECOS.mensal;
 
   // Apply coupon if provided
+  let cupomId = undefined;
   if (cupomCodigo) {
     const agora = new Date();
     const cupomValido = await prisma.cupom.findFirst({
@@ -69,6 +70,7 @@ export async function criarAssinatura(usuarioId, { plano, ciclo, cupomCodigo }) 
 
     // Minimum value R$ 1,00
     if (valor < 1) valor = 1;
+    cupomId = cupomValido.id;
   }
 
   // Find or create Asaas customer
@@ -101,6 +103,7 @@ export async function criarAssinatura(usuarioId, { plano, ciclo, cupomCodigo }) 
       provider: 'asaas',
       provider_customer_id: customer.id,
       provider_subscription_id: subscription.id,
+      ...(cupomId ? { cupom_id: cupomId } : {}),
     },
     update: {
       status: 'inativo',
@@ -109,8 +112,17 @@ export async function criarAssinatura(usuarioId, { plano, ciclo, cupomCodigo }) 
       provider_customer_id: customer.id,
       provider_subscription_id: subscription.id,
       deleted_at: null,
+      ...(cupomId ? { cupom_id: cupomId } : {}),
     },
   });
+
+  // Increment coupon usage after successful subscription creation
+  if (cupomId) {
+    await prisma.cupom.update({
+      where: { id: cupomId },
+      data: { uso_atual: { increment: 1 } },
+    });
+  }
 
   logger.info({ usuarioId, subscriptionId: subscription.id, plano, ciclo }, 'Assinatura criada');
 

@@ -6,6 +6,7 @@ import { jest } from '@jest/globals';
 const mockPrisma = {
   cupom: {
     findFirst: jest.fn(),
+    update: jest.fn(),
   },
   assinante: {
     upsert: jest.fn(),
@@ -162,6 +163,7 @@ describe('criarAssinatura', () => {
     };
     mockPrisma.usuario.findFirst.mockResolvedValue(USUARIO);
     mockPrisma.cupom.findFirst.mockResolvedValue(CUPOM);
+    mockPrisma.cupom.update.mockResolvedValue({ ...CUPOM, uso_atual: 1 });
     mockAsaas.getCustomerByEmail.mockResolvedValue(CUSTOMER);
     mockAsaas.createSubscription.mockResolvedValue(SUBSCRIPTION);
     mockPrisma.assinante.upsert.mockResolvedValue(ASSINANTE);

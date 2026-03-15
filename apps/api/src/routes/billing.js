@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import { rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
-import express from 'express';
 import { criarAssinatura, cancelarAssinatura, getStatusAssinatura } from '../services/billingService.js';
 import { processarWebhookAsaas } from '../services/webhookService.js';
 import { jwtAuthMiddleware } from '../middleware/jwtAuth.js';
@@ -9,7 +8,9 @@ import { toValidationError } from '../errors/toValidationError.js';
 import { AppError } from '../errors/AppError.js';
 import logger from '../logger.js';
 
-const router = Router();
+// ============================================================
+// Rate Limiter
+// ============================================================
 
 /** Rate limiter for webhook endpoint: 100 req/min per IP */
 const webhookLimiter = rateLimit({
@@ -32,10 +33,58 @@ const subscribeSchema = z.object({
 });
 
 // ============================================================
-// POST /billing/subscribe
+// Webhook router — must be registered BEFORE express.json()
+// Uses express.raw() to receive raw body for HMAC verification
 // ============================================================
 
+export const webhookRouter = Router();
+
 /**
+ * POST /webhooks/asaas
+ * Receives and processes Asaas webhook events.
+ * Not authenticated — uses HMAC signature verification instead.
+ */
+webhookRouter.post(
+  '/webhooks/asaas',
+  webhookLimiter,
+  async (req, res, next) => {
+    const rawBody = req.body;
+
+    let payload;
+    if (Buffer.isBuffer(rawBody)) {
+      try {
+        payload = JSON.parse(rawBody.toString());
+      } catch {
+        return next(AppError.badRequest('Payload inválido'));
+      }
+    } else if (typeof rawBody === 'object' && rawBody !== null) {
+      // Body was pre-parsed (shouldn't happen if registered before express.json)
+      payload = rawBody;
+    } else {
+      return next(AppError.badRequest('Payload inválido'));
+    }
+
+    const signatureHeader =
+      req.headers['asaas-signature'] ?? req.headers['x-asaas-hmac-sha256'];
+
+    try {
+      const result = await processarWebhookAsaas(payload, rawBody, signatureHeader);
+      logger.info({ result, event: payload.event }, 'Webhook Asaas processado');
+      return res.status(200).json({ received: true });
+    } catch (err) {
+      return next(err);
+    }
+  },
+);
+
+// ============================================================
+// Billing router — authenticated routes
+// ============================================================
+
+const router = Router();
+
+/**
+ * POST /billing/subscribe
  * Creates or updates a subscription for the authenticated user.
  */
 router.post('/billing/subscribe', jwtAuthMiddleware, async (req, res, next) => {
@@ -54,11 +103,8 @@ router.post('/billing/subscribe', jwtAuthMiddleware, async (req, res, next) => {
   }
 });
 
-// ============================================================
-// POST /billing/cancel
-// ============================================================
-
 /**
+ * POST /billing/cancel
  * Cancels the subscription of the authenticated user.
  */
 router.post('/billing/cancel', jwtAuthMiddleware, async (req, res, next) => {
@@ -70,11 +116,8 @@ router.post('/billing/cancel', jwtAuthMiddleware, async (req, res, next) => {
   }
 });
 
-// ============================================================
-// GET /billing/status
-// ============================================================
-
 /**
+ * GET /billing/status
  * Returns the subscription status of the authenticated user.
  */
 router.get('/billing/status', jwtAuthMiddleware, async (req, res, next) => {
@@ -85,38 +128,5 @@ router.get('/billing/status', jwtAuthMiddleware, async (req, res, next) => {
     return next(err);
   }
 });
-
-// ============================================================
-// POST /webhooks/asaas
-// ============================================================
-
-/**
- * Receives and processes Asaas webhook events.
- * Not authenticated — uses HMAC signature verification instead.
- */
-router.post(
-  '/webhooks/asaas',
-  webhookLimiter,
-  express.raw({ type: 'application/json' }),
-  async (req, res, next) => {
-    let payload;
-    try {
-      payload = JSON.parse(req.body.toString());
-    } catch {
-      return next(AppError.badRequest('Payload inválido'));
-    }
-
-    const signatureHeader =
-      req.headers['asaas-signature'] ?? req.headers['x-asaas-hmac-sha256'];
-
-    try {
-      const result = await processarWebhookAsaas(payload, req.body, signatureHeader);
-      logger.info({ result, event: payload.event }, 'Webhook Asaas processado');
-      return res.status(200).json({ received: true });
-    } catch (err) {
-      return next(err);
-    }
-  },
-);
 
 export default router;
