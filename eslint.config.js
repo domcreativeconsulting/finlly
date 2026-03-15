@@ -67,7 +67,31 @@ export default [
     },
   },
   {
+    // Node.js API — globals do Node 18+ (fetch, Buffer, etc.)
     files: ['apps/api/**/*.js'],
+    languageOptions: {
+      globals: {
+        // Node.js built-ins
+        Buffer: 'readonly',
+        process: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        // Node 18+ fetch global
+        fetch: 'readonly',
+        // Timers
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        setImmediate: 'readonly',
+        clearImmediate: 'readonly',
+        // URL API
+        URL: 'readonly',
+        URLSearchParams: 'readonly',
+        // Console
+        console: 'readonly',
+      },
+    },
     rules: {
       'no-console': ['warn'],
     },
@@ -76,6 +100,7 @@ export default [
     files: ['apps/api/src/**/__tests__/**/*.js'],
     languageOptions: {
       globals: {
+        // Jest globals
         describe: 'readonly',
         test: 'readonly',
         expect: 'readonly',
@@ -84,6 +109,10 @@ export default [
         afterAll: 'readonly',
         afterEach: 'readonly',
         it: 'readonly',
+        // Node.js globals needed in tests
+        Buffer: 'readonly',
+        process: 'readonly',
+        fetch: 'readonly',
       },
     },
   },
