@@ -12,16 +12,16 @@ import { csrfProtection } from './middleware/csrfProtection.js';
 import healthRouter from './routes/health.js';
 import authRouter from './routes/auth.js';
 import perfilRouter from './routes/perfil.js';
-import billingRouter, { webhookRouter } from './routes/billing.js';
+import billingRouter from './routes/billing.js';
 
 const app = express();
 
 app.use(corsMiddleware);
 app.use(securityHeaders);
 
-// Webhook route must be registered BEFORE express.json() to receive raw body for HMAC.
-// We apply express.raw() only for the webhook path to avoid interfering with other routes.
-app.use('/webhooks/asaas', express.raw({ type: 'application/json' }), webhookRouter);
+// Apply raw body parsing for the webhook path before express.json(),
+// so the raw bytes are preserved for HMAC signature verification.
+app.use('/webhooks/asaas', express.raw({ type: 'application/json' }));
 
 app.use(express.json());
 app.use(cookieParser());

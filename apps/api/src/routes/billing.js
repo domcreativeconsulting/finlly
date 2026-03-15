@@ -8,8 +8,10 @@ import { toValidationError } from '../errors/toValidationError.js';
 import { AppError } from '../errors/AppError.js';
 import logger from '../logger.js';
 
+const router = Router();
+
 // ============================================================
-// Rate Limiter
+// Rate Limiters
 // ============================================================
 
 /** Rate limiter for webhook endpoint: 100 req/min per IP */
@@ -19,6 +21,16 @@ const webhookLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { code: 'RATE_LIMITED', message: 'Too many requests.' },
+  handler: (req, res, next, options) => next(AppError.tooManyRequests(options.message.message)),
+});
+
+/** Rate limiter for billing routes: 30 req/15min per IP */
+const billingLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { code: 'RATE_LIMITED', message: 'Muitas tentativas. Tente novamente mais tarde.' },
   handler: (req, res, next, options) => next(AppError.tooManyRequests(options.message.message)),
 });
 
@@ -33,18 +45,15 @@ const subscribeSchema = z.object({
 });
 
 // ============================================================
-// Webhook router — must be registered BEFORE express.json()
-// Uses express.raw() to receive raw body for HMAC verification
+// POST /webhooks/asaas
+// Not authenticated — uses HMAC signature verification.
+// express.raw() is applied in index.js for this path before express.json().
 // ============================================================
 
-export const webhookRouter = Router();
-
 /**
- * POST /webhooks/asaas
  * Receives and processes Asaas webhook events.
- * Not authenticated — uses HMAC signature verification instead.
  */
-webhookRouter.post(
+router.post(
   '/webhooks/asaas',
   webhookLimiter,
   async (req, res, next) => {
@@ -58,7 +67,7 @@ webhookRouter.post(
         return next(AppError.badRequest('Payload inválido'));
       }
     } else if (typeof rawBody === 'object' && rawBody !== null) {
-      // Body was pre-parsed (shouldn't happen if registered before express.json)
+      // Body was pre-parsed (e.g. in test environment)
       payload = rawBody;
     } else {
       return next(AppError.badRequest('Payload inválido'));
@@ -78,16 +87,14 @@ webhookRouter.post(
 );
 
 // ============================================================
-// Billing router — authenticated routes
+// Authenticated billing routes
 // ============================================================
-
-const router = Router();
 
 /**
  * POST /billing/subscribe
  * Creates or updates a subscription for the authenticated user.
  */
-router.post('/billing/subscribe', jwtAuthMiddleware, async (req, res, next) => {
+router.post('/billing/subscribe', billingLimiter, jwtAuthMiddleware, async (req, res, next) => {
   const parsed = subscribeSchema.safeParse(req.body);
   if (!parsed.success) return next(toValidationError(parsed.error));
 
@@ -107,7 +114,7 @@ router.post('/billing/subscribe', jwtAuthMiddleware, async (req, res, next) => {
  * POST /billing/cancel
  * Cancels the subscription of the authenticated user.
  */
-router.post('/billing/cancel', jwtAuthMiddleware, async (req, res, next) => {
+router.post('/billing/cancel', billingLimiter, jwtAuthMiddleware, async (req, res, next) => {
   try {
     await cancelarAssinatura(req.user.sub);
     return res.status(200).json({ message: 'Assinatura cancelada com sucesso' });
@@ -120,7 +127,7 @@ router.post('/billing/cancel', jwtAuthMiddleware, async (req, res, next) => {
  * GET /billing/status
  * Returns the subscription status of the authenticated user.
  */
-router.get('/billing/status', jwtAuthMiddleware, async (req, res, next) => {
+router.get('/billing/status', billingLimiter, jwtAuthMiddleware, async (req, res, next) => {
   try {
     const assinante = await getStatusAssinatura(req.user.sub);
     return res.status(200).json({ assinante });
