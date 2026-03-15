@@ -12,11 +12,17 @@ import { csrfProtection } from './middleware/csrfProtection.js';
 import healthRouter from './routes/health.js';
 import authRouter from './routes/auth.js';
 import perfilRouter from './routes/perfil.js';
+import billingRouter from './routes/billing.js';
 
 const app = express();
 
 app.use(corsMiddleware);
 app.use(securityHeaders);
+
+// Apply raw body parsing for the webhook path before express.json(),
+// so the raw bytes are preserved for HMAC signature verification.
+app.use('/webhooks/asaas', express.raw({ type: 'application/json' }));
+
 app.use(express.json());
 app.use(cookieParser());
 app.use(csrfProtection);
@@ -26,6 +32,7 @@ app.use(requestLogger);
 app.use(healthRouter);
 app.use(authRouter);
 app.use(perfilRouter);
+app.use(billingRouter);
 
 app.get('/', (req, res) => {
   res.send('Hello World!');
