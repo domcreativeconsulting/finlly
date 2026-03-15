@@ -8,7 +8,7 @@ import { criarAssinatura, getStatusAssinatura, cancelarAssinatura } from '../ser
 const router = Router();
 
 // ============================================================
-// Rate Limiter for checkout (10 req/min per user)
+// Rate Limiters for checkout (10 req/min per user)
 // ============================================================
 
 const checkoutLimiter = rateLimit({
@@ -16,6 +16,15 @@ const checkoutLimiter = rateLimit({
   max: 10,
   keyGenerator: (req) => `billing:checkout:${req.user?.sub || req.ip}`,
   message: { code: 'TOO_MANY_REQUESTS', message: 'Muitas tentativas de checkout. Aguarde 1 minuto.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const billingReadLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  keyGenerator: (req) => `billing:read:${req.user?.sub || req.ip}`,
+  message: { code: 'TOO_MANY_REQUESTS', message: 'Muitas requisições. Aguarde 1 minuto.' },
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -58,7 +67,7 @@ router.post('/billing/checkout', jwtAuthMiddleware, checkoutLimiter, async (req,
  * GET /billing/status
  * Returns the subscription status and recent payments for the authenticated user.
  */
-router.get('/billing/status', jwtAuthMiddleware, async (req, res, next) => {
+router.get('/billing/status', jwtAuthMiddleware, billingReadLimiter, async (req, res, next) => {
   try {
     const result = await getStatusAssinatura(req.user.sub);
     return res.json(result);
@@ -71,7 +80,7 @@ router.get('/billing/status', jwtAuthMiddleware, async (req, res, next) => {
  * POST /billing/cancelar
  * Cancels the subscription for the authenticated user.
  */
-router.post('/billing/cancelar', jwtAuthMiddleware, async (req, res, next) => {
+router.post('/billing/cancelar', jwtAuthMiddleware, billingReadLimiter, async (req, res, next) => {
   try {
     await cancelarAssinatura(req.user.sub);
     return res.json({ message: 'Assinatura cancelada com sucesso' });
