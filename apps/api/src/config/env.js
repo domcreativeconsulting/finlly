@@ -23,6 +23,8 @@ const envSchema = z.object({
   ASAAS_API_KEY: z.string().optional(),
   ASAAS_WEBHOOK_SECRET: z.string().optional(),
   ASAAS_BASE_URL: z.preprocess((v) => v || undefined, z.string().url().optional()),
+  ASAAS_TIMEOUT_MS: z.coerce.number().int().positive().default(10000), // 10s per attempt
+  ASAAS_MAX_RETRIES: z.coerce.number().int().min(0).max(5).default(3), // max retries
 
   // WhatsApp Agent (optional)
   WA_PROVIDER: z.string().optional(),
