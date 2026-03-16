@@ -47,8 +47,6 @@ async function request(path, options = {}) {
   const maxRetries = config.ASAAS_MAX_RETRIES;
   const timeoutMs = config.ASAAS_TIMEOUT_MS;
 
-  let lastErr = null;
-
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -57,11 +55,9 @@ async function request(path, options = {}) {
     try {
       response = await fetch(url, { ...options, headers, signal: controller.signal });
     } catch (err) {
-      clearTimeout(timer);
       const isAbort = err.name === 'AbortError' || err.name === 'TimeoutError';
       const isNetwork = err instanceof TypeError;
       if (isAbort || isNetwork) {
-        lastErr = err;
         logger.warn({ err, url, attempt }, 'Asaas request failed (retriable)');
         if (attempt < maxRetries) {
           const delay = Math.min(
@@ -99,7 +95,6 @@ async function request(path, options = {}) {
           retryAfterMs = parseFloat(retryAfter) * 1000;
         }
       }
-      lastErr = new Error(`HTTP ${response.status}`);
       logger.warn({ status: response.status, url, attempt }, 'Asaas request failed (retriable)');
       if (attempt < maxRetries) {
         const delay = retryAfterMs !== null
@@ -119,9 +114,6 @@ async function request(path, options = {}) {
 
     return response.json();
   }
-
-  logger.error({ lastErr, url }, 'Asaas request exhausted retries');
-  throw AppError.internal('Erro de conexão com o provedor de pagamento');
 }
 
 /**
