@@ -82,6 +82,7 @@ export default [
         global: 'readonly',
         __dirname: 'readonly',
         __filename: 'readonly',
+        AbortController: 'readonly',
       },
     },
     rules: {
@@ -102,6 +103,7 @@ export default [
         it: 'readonly',
         jest: 'readonly',
         Buffer: 'readonly',
+        DOMException: 'readonly',
       },
     },
   },
