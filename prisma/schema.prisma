@@ -17,6 +17,7 @@ datasource db {
 
 enum StatusAssinante {
   trial
+  pendente
   ativo
   inativo
   cancelado

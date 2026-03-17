@@ -41,6 +41,22 @@ jest.unstable_mockModule('../../config/env.js', () => ({
   },
 }));
 
+const mockAtualizarStatusAssinante = jest.fn().mockResolvedValue(undefined);
+
+jest.unstable_mockModule('../assinanteStatusService.js', () => ({
+  atualizarStatusAssinante: mockAtualizarStatusAssinante,
+  mapAsaasStatusToLocal: (status) => {
+    switch (status) {
+      case 'ACTIVE': return 'ativo';
+      case 'PENDING': return 'pendente';
+      case 'OVERDUE': return 'inadimplente';
+      case 'INACTIVE':
+      case 'CANCELLED': return 'cancelado';
+      default: return null;
+    }
+  },
+}));
+
 // ---------------------------------------------------------------------------
 // Service under test
 // ---------------------------------------------------------------------------
@@ -62,6 +78,7 @@ beforeEach(() => {
   mockPrisma.assinantePagamento.create.mockResolvedValue({});
   mockPrisma.assinantePagamento.upsert.mockResolvedValue({});
   mockPrisma.usuario.update.mockResolvedValue({});
+  mockAtualizarStatusAssinante.mockResolvedValue(undefined);
 });
 
 // ---------------------------------------------------------------------------
@@ -181,7 +198,7 @@ describe('idempotência', () => {
     expect(mockPrisma.webhookEvent.update).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ erro: null }) }),
     );
-    expect(mockPrisma.assinante.update).toHaveBeenCalled();
+    expect(mockAtualizarStatusAssinante).toHaveBeenCalled();
   });
 
   test('evento novo (não existe) → cria e processa', async () => {
@@ -215,24 +232,17 @@ describe('PAYMENT_CONFIRMED', () => {
 
     expect(result).toEqual({ processed: true, event: 'PAYMENT_CONFIRMED' });
 
-    expect(mockPrisma.assinante.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: ASSINANTE.id },
-        data: expect.objectContaining({ status: 'ativo' }),
-      }),
+    expect(mockAtualizarStatusAssinante).toHaveBeenCalledWith(
+      ASSINANTE.id,
+      ASSINANTE.usuario_id,
+      'ativo',
+      expect.objectContaining({ proxima_cobranca: expect.any(Date) }),
     );
 
     expect(mockPrisma.assinantePagamento.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         create: expect.objectContaining({ status: 'pago', usuario_id: ASSINANTE.usuario_id }),
         update: expect.objectContaining({ status: 'pago' }),
-      }),
-    );
-
-    expect(mockPrisma.usuario.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: ASSINANTE.usuario_id },
-        data: { status: 'ativo' },
       }),
     );
   });
@@ -252,8 +262,11 @@ describe('PAYMENT_RECEIVED', () => {
     const result = await processarWebhookAsaas(payload, rawBody, sig);
 
     expect(result).toEqual({ processed: true, event: 'PAYMENT_RECEIVED' });
-    expect(mockPrisma.assinante.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ status: 'ativo' }) }),
+    expect(mockAtualizarStatusAssinante).toHaveBeenCalledWith(
+      ASSINANTE.id,
+      ASSINANTE.usuario_id,
+      'ativo',
+      expect.any(Object),
     );
   });
 });
@@ -273,18 +286,10 @@ describe('PAYMENT_OVERDUE', () => {
 
     expect(result).toEqual({ processed: true, event: 'PAYMENT_OVERDUE' });
 
-    expect(mockPrisma.assinante.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: ASSINANTE.id },
-        data: { status: 'inadimplente' },
-      }),
-    );
-
-    expect(mockPrisma.usuario.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: ASSINANTE.usuario_id },
-        data: { status: 'bloqueado_inadimplencia' },
-      }),
+    expect(mockAtualizarStatusAssinante).toHaveBeenCalledWith(
+      ASSINANTE.id,
+      ASSINANTE.usuario_id,
+      'inadimplente',
     );
 
     expect(mockPrisma.assinantePagamento.upsert).toHaveBeenCalledWith(
@@ -311,18 +316,10 @@ describe('PAYMENT_DELETED', () => {
 
     expect(result).toEqual({ processed: true, event: 'PAYMENT_DELETED' });
 
-    expect(mockPrisma.assinante.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: ASSINANTE.id },
-        data: { status: 'cancelado' },
-      }),
-    );
-
-    expect(mockPrisma.usuario.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: ASSINANTE.usuario_id },
-        data: { status: 'ativo' },
-      }),
+    expect(mockAtualizarStatusAssinante).toHaveBeenCalledWith(
+      ASSINANTE.id,
+      ASSINANTE.usuario_id,
+      'cancelado',
     );
   });
 });
@@ -348,10 +345,10 @@ describe('SUBSCRIPTION_DELETED', () => {
     const result = await processarWebhookAsaas(payload, rawBody, sig);
 
     expect(result).toEqual({ processed: true, event: 'SUBSCRIPTION_DELETED' });
-    expect(mockPrisma.assinante.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: { status: 'cancelado' },
-      }),
+    expect(mockAtualizarStatusAssinante).toHaveBeenCalledWith(
+      ASSINANTE.id,
+      ASSINANTE.usuario_id,
+      'cancelado',
     );
   });
 });
@@ -380,13 +377,11 @@ describe('SUBSCRIPTION_UPDATED', () => {
     const result = await processarWebhookAsaas(payload, rawBody, sig);
 
     expect(result).toEqual({ processed: true, event: 'SUBSCRIPTION_UPDATED' });
-    expect(mockPrisma.assinante.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: ASSINANTE.id },
-        data: expect.objectContaining({
-          status: 'ativo',
-        }),
-      }),
+    expect(mockAtualizarStatusAssinante).toHaveBeenCalledWith(
+      ASSINANTE.id,
+      ASSINANTE.usuario_id,
+      'ativo',
+      expect.objectContaining({ proxima_cobranca: expect.any(Date) }),
     );
   });
 
@@ -407,10 +402,11 @@ describe('SUBSCRIPTION_UPDATED', () => {
     const result = await processarWebhookAsaas(payload, rawBody, sig);
 
     expect(result).toEqual({ processed: true, event: 'SUBSCRIPTION_UPDATED' });
-    expect(mockPrisma.assinante.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ status: 'cancelado' }),
-      }),
+    expect(mockAtualizarStatusAssinante).toHaveBeenCalledWith(
+      ASSINANTE.id,
+      ASSINANTE.usuario_id,
+      'cancelado',
+      expect.any(Object),
     );
   });
 
@@ -426,7 +422,7 @@ describe('SUBSCRIPTION_UPDATED', () => {
 
     const result = await processarWebhookAsaas(payload, rawBody, sig);
     expect(result).toEqual({ processed: true, event: 'SUBSCRIPTION_UPDATED' });
-    expect(mockPrisma.assinante.update).not.toHaveBeenCalled();
+    expect(mockAtualizarStatusAssinante).not.toHaveBeenCalled();
   });
 });
 

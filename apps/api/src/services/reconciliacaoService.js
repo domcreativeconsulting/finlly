@@ -2,28 +2,10 @@ import prisma from '../utils/database.js';
 import { asaas } from '../lib/asaas/asaasClient.js';
 import { getRedisClient } from '../utils/redisClient.js';
 import logger from '../logger.js';
+import { atualizarStatusAssinante, mapAsaasStatusToLocal } from './assinanteStatusService.js';
 
 const LOCK_KEY = 'reconciliacao:lock';
 const LOCK_TTL = 300; // 300 seconds
-
-/**
- * Maps Asaas subscription status to local status.
- * @param {string} asaasStatus
- * @returns {{ assinanteStatus: string, usuarioStatus: string }}
- */
-function mapAsaasStatus(asaasStatus) {
-  switch (asaasStatus) {
-    case 'ACTIVE':
-      return { assinanteStatus: 'ativo', usuarioStatus: 'ativo' };
-    case 'OVERDUE':
-      return { assinanteStatus: 'inadimplente', usuarioStatus: 'bloqueado_inadimplencia' };
-    case 'INACTIVE':
-    case 'CANCELLED':
-      return { assinanteStatus: 'cancelado', usuarioStatus: 'ativo' };
-    default:
-      return null;
-  }
-}
 
 /**
  * Maps Asaas payment status to local status.
@@ -90,30 +72,16 @@ export async function reconciliarAssinaturas() {
       try {
         const subscriptionData = await asaas.getSubscription(assinante.provider_subscription_id);
 
-        const mapped = mapAsaasStatus(subscriptionData.status);
-        if (mapped) {
-          const { assinanteStatus, usuarioStatus } = mapped;
-
-          // Update assinante status if changed
-          if (assinante.status !== assinanteStatus) {
-            await prisma.assinante.update({
-              where: { id: assinante.id },
-              data: { status: assinanteStatus, updated_at: new Date() },
-            });
-          }
-
-          // Update usuario status based on assinante status
-          await prisma.usuario.update({
-            where: { id: assinante.usuario_id },
-            data: { status: usuarioStatus },
-          });
+        const localStatus = mapAsaasStatusToLocal(subscriptionData.status);
+        if (localStatus && assinante.status !== localStatus) {
+          await atualizarStatusAssinante(assinante.id, assinante.usuario_id, localStatus);
 
           logger.info(
             {
               assinanteId: assinante.id,
               usuarioId: assinante.usuario_id,
               asaasStatus: subscriptionData.status,
-              localStatus: assinanteStatus,
+              localStatus,
             },
             'Assinante sincronizado',
           );
