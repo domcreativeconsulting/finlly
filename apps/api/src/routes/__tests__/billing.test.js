@@ -171,7 +171,7 @@ describe('POST /billing/subscribe', () => {
 
   test('retorna 422 (VALIDATION_ERROR) quando plano está ausente', async () => {
     const app = makeApp();
-    const { plano, ...semPlano } = bodyValido;
+    const { plano: _plano, ...semPlano } = bodyValido;
     const res = await request(app, 'POST', '/billing/subscribe', semPlano);
 
     expect(res.status).toBe(422);
@@ -180,7 +180,7 @@ describe('POST /billing/subscribe', () => {
 
   test('retorna 422 quando ciclo está ausente', async () => {
     const app = makeApp();
-    const { ciclo, ...semCiclo } = bodyValido;
+    const { ciclo: _ciclo, ...semCiclo } = bodyValido;
     const res = await request(app, 'POST', '/billing/subscribe', semCiclo);
 
     expect(res.status).toBe(422);
@@ -189,7 +189,7 @@ describe('POST /billing/subscribe', () => {
 
   test('retorna 422 quando formaPagamento está ausente', async () => {
     const app = makeApp();
-    const { formaPagamento, ...semFormaPagamento } = bodyValido;
+    const { formaPagamento: _formaPagamento, ...semFormaPagamento } = bodyValido;
     const res = await request(app, 'POST', '/billing/subscribe', semFormaPagamento);
 
     expect(res.status).toBe(422);

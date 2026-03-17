@@ -57,6 +57,8 @@ export default [
         'warn',
         {
           argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          destructuredArrayIgnorePattern: '^_',
         },
       ],
     },
