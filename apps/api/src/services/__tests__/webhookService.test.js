@@ -33,6 +33,10 @@ jest.unstable_mockModule('../../logger.js', () => ({
   default: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
 }));
 
+jest.unstable_mockModule('../../utils/redisClient.js', () => ({
+  getRedisClient: jest.fn().mockResolvedValue({ del: jest.fn().mockResolvedValue(1) }),
+}));
+
 const WEBHOOK_SECRET = 'test_webhook_secret_32_chars_min!';
 
 jest.unstable_mockModule('../../config/env.js', () => ({

@@ -3,6 +3,10 @@ import { AppError } from '../errors/AppError.js';
 import { asaas } from '../lib/asaas/asaasClient.js';
 import logger from '../logger.js';
 import { atualizarStatusAssinante } from './assinanteStatusService.js';
+import { getRedisClient } from '../utils/redisClient.js';
+import { config } from '../config/env.js';
+
+const BILLING_STATUS_CACHE_PREFIX = 'billing:status:';
 
 /** Base prices in BRL */
 const PRECOS = {
@@ -163,6 +167,14 @@ export async function cancelarAssinatura(usuarioId) {
 
   await atualizarStatusAssinante(assinante.id, assinante.usuario_id, 'cancelado');
 
+  // Invalidate billing status cache (best-effort)
+  try {
+    const redis = await getRedisClient();
+    await redis.del(`${BILLING_STATUS_CACHE_PREFIX}${usuarioId}`);
+  } catch {
+    // Redis unavailable — ignore
+  }
+
   logger.info({ usuarioId }, 'Assinatura cancelada');
 }
 
@@ -173,8 +185,32 @@ export async function cancelarAssinatura(usuarioId) {
  * @returns {Promise<object|null>}
  */
 export async function getStatusAssinatura(usuarioId) {
+  const cacheKey = `${BILLING_STATUS_CACHE_PREFIX}${usuarioId}`;
+
+  // Try cache first
+  try {
+    const redis = await getRedisClient();
+    const cached = await redis.get(cacheKey);
+    if (cached !== null) {
+      return JSON.parse(cached);
+    }
+  } catch {
+    // Redis unavailable — fall through to DB
+  }
+
+  // Fetch from DB
   const assinante = await prisma.assinante.findFirst({
     where: { usuario_id: usuarioId, deleted_at: null },
   });
+
+  // Save to cache (best-effort)
+  try {
+    const redis = await getRedisClient();
+    const ttl = config.BILLING_STATUS_CACHE_TTL;
+    await redis.set(cacheKey, JSON.stringify(assinante), { EX: ttl });
+  } catch {
+    // Redis unavailable — ignore
+  }
+
   return assinante ?? null;
 }
