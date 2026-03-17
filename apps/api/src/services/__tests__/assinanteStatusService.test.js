@@ -5,8 +5,15 @@ const mockPrisma = {
   usuario: { update: jest.fn() },
 };
 
+const mockRedis = {
+  del: jest.fn(),
+};
+
+const mockGetRedisClient = jest.fn();
+
 jest.unstable_mockModule('../../utils/database.js', () => ({ default: mockPrisma }));
 jest.unstable_mockModule('../../logger.js', () => ({ default: { info: jest.fn() } }));
+jest.unstable_mockModule('../../utils/redisClient.js', () => ({ getRedisClient: mockGetRedisClient }));
 
 let atualizarStatusAssinante;
 let mapAsaasStatusToLocal;
@@ -24,6 +31,8 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockPrisma.assinante.update.mockResolvedValue({});
   mockPrisma.usuario.update.mockResolvedValue({});
+  mockGetRedisClient.mockResolvedValue(mockRedis);
+  mockRedis.del.mockResolvedValue(1);
 });
 
 // ---------------------------------------------------------------------------
@@ -135,5 +144,20 @@ describe('atualizarStatusAssinante', () => {
 
     const call = mockPrisma.assinante.update.mock.calls[0][0];
     expect(call.data.updated_at).toBeInstanceOf(Date);
+  });
+
+  test('invalida o cache Redis após atualização de status', async () => {
+    await atualizarStatusAssinante(ASSINANTE_ID, USUARIO_ID, 'ativo');
+
+    expect(mockRedis.del).toHaveBeenCalledWith(`billing:status:${USUARIO_ID}`);
+  });
+
+  test('prossegue normalmente quando Redis está indisponível', async () => {
+    mockGetRedisClient.mockRejectedValue(new Error('Redis down'));
+
+    await atualizarStatusAssinante(ASSINANTE_ID, USUARIO_ID, 'ativo');
+
+    expect(mockPrisma.assinante.update).toHaveBeenCalled();
+    expect(mockPrisma.usuario.update).toHaveBeenCalled();
   });
 });

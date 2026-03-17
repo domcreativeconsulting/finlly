@@ -26,6 +26,14 @@ const mockAsaas = {
   cancelSubscription: jest.fn(),
 };
 
+const mockRedis = {
+  get: jest.fn(),
+  set: jest.fn(),
+  del: jest.fn(),
+};
+
+const mockGetRedisClient = jest.fn();
+
 jest.unstable_mockModule('../../utils/database.js', () => ({
   default: mockPrisma,
 }));
@@ -37,6 +45,14 @@ jest.unstable_mockModule('../../lib/asaas/asaasClient.js', () => ({
 
 jest.unstable_mockModule('../../logger.js', () => ({
   default: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
+}));
+
+jest.unstable_mockModule('../../utils/redisClient.js', () => ({
+  getRedisClient: mockGetRedisClient,
+}));
+
+jest.unstable_mockModule('../../config/env.js', () => ({
+  config: { BILLING_STATUS_CACHE_TTL: 60 },
 }));
 
 // ---------------------------------------------------------------------------
@@ -55,6 +71,10 @@ beforeAll(async () => {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockGetRedisClient.mockResolvedValue(mockRedis);
+  mockRedis.get.mockResolvedValue(null);
+  mockRedis.set.mockResolvedValue('OK');
+  mockRedis.del.mockResolvedValue(1);
 });
 
 // ---------------------------------------------------------------------------
@@ -263,6 +283,29 @@ describe('cancelarAssinatura', () => {
     expect(mockPrisma.assinante.update).toHaveBeenCalled();
     expect(mockPrisma.usuario.update).toHaveBeenCalled();
   });
+
+  test('invalida o cache Redis após cancelamento bem-sucedido', async () => {
+    mockPrisma.assinante.findFirst.mockResolvedValue(ASSINANTE);
+    mockAsaas.cancelSubscription.mockResolvedValue(null);
+    mockPrisma.assinante.update.mockResolvedValue({ ...ASSINANTE, status: 'cancelado' });
+    mockPrisma.usuario.update.mockResolvedValue({});
+
+    await cancelarAssinatura(USUARIO_ID);
+
+    expect(mockRedis.del).toHaveBeenCalledWith(`billing:status:${USUARIO_ID}`);
+  });
+
+  test('prossegue cancelamento mesmo se Redis estiver indisponível', async () => {
+    mockPrisma.assinante.findFirst.mockResolvedValue(ASSINANTE);
+    mockAsaas.cancelSubscription.mockResolvedValue(null);
+    mockPrisma.assinante.update.mockResolvedValue({ ...ASSINANTE, status: 'cancelado' });
+    mockPrisma.usuario.update.mockResolvedValue({});
+    mockGetRedisClient.mockRejectedValueOnce(new Error('Redis down'));
+
+    await cancelarAssinatura(USUARIO_ID);
+
+    expect(mockPrisma.assinante.update).toHaveBeenCalled();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -270,19 +313,63 @@ describe('cancelarAssinatura', () => {
 // ---------------------------------------------------------------------------
 
 describe('getStatusAssinatura', () => {
-  test('retorna assinante quando existir', async () => {
+  test('retorna do cache quando há cache hit', async () => {
+    mockRedis.get.mockResolvedValue(JSON.stringify(ASSINANTE));
+
+    const result = await getStatusAssinatura(USUARIO_ID);
+
+    expect(result).toEqual(ASSINANTE);
+    expect(mockPrisma.assinante.findFirst).not.toHaveBeenCalled();
+    expect(mockRedis.get).toHaveBeenCalledWith(`billing:status:${USUARIO_ID}`);
+  });
+
+  test('consulta o DB e salva no cache quando há cache miss', async () => {
+    mockRedis.get.mockResolvedValue(null);
     mockPrisma.assinante.findFirst.mockResolvedValue(ASSINANTE);
 
     const result = await getStatusAssinatura(USUARIO_ID);
 
     expect(result).toEqual(ASSINANTE);
+    expect(mockPrisma.assinante.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { usuario_id: USUARIO_ID, deleted_at: null } }),
+    );
+    expect(mockRedis.set).toHaveBeenCalledWith(
+      `billing:status:${USUARIO_ID}`,
+      JSON.stringify(ASSINANTE),
+      { EX: 60 },
+    );
   });
 
-  test('retorna null quando não existir', async () => {
+  test('retorna null quando não existir assinante (cache miss)', async () => {
+    mockRedis.get.mockResolvedValue(null);
     mockPrisma.assinante.findFirst.mockResolvedValue(null);
 
     const result = await getStatusAssinatura(USUARIO_ID);
 
     expect(result).toBeNull();
+    expect(mockRedis.set).toHaveBeenCalledWith(
+      `billing:status:${USUARIO_ID}`,
+      JSON.stringify(null),
+      { EX: 60 },
+    );
+  });
+
+  test('funciona normalmente quando Redis está indisponível (fallback para DB)', async () => {
+    mockGetRedisClient.mockRejectedValue(new Error('Redis down'));
+    mockPrisma.assinante.findFirst.mockResolvedValue(ASSINANTE);
+
+    const result = await getStatusAssinatura(USUARIO_ID);
+
+    expect(result).toEqual(ASSINANTE);
+    expect(mockPrisma.assinante.findFirst).toHaveBeenCalled();
+  });
+
+  test('retorna assinante quando existir (compatibilidade com comportamento original)', async () => {
+    mockRedis.get.mockResolvedValue(null);
+    mockPrisma.assinante.findFirst.mockResolvedValue(ASSINANTE);
+
+    const result = await getStatusAssinatura(USUARIO_ID);
+
+    expect(result).toEqual(ASSINANTE);
   });
 });

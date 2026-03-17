@@ -1,5 +1,8 @@
 import prisma from '../utils/database.js';
 import logger from '../logger.js';
+import { getRedisClient } from '../utils/redisClient.js';
+
+const BILLING_STATUS_CACHE_PREFIX = 'billing:status:';
 
 /**
  * Maps assinante status to the corresponding usuario status.
@@ -57,6 +60,14 @@ export async function atualizarStatusAssinante(assinanteId, usuarioId, novoStatu
     { assinanteId, usuarioId, novoStatus, novoStatusUsuario },
     'Status do assinante atualizado',
   );
+
+  // Invalidate billing status cache (best-effort)
+  try {
+    const redis = await getRedisClient();
+    await redis.del(`${BILLING_STATUS_CACHE_PREFIX}${usuarioId}`);
+  } catch {
+    // Redis unavailable — ignore
+  }
 }
 
 /**
