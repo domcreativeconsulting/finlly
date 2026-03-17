@@ -5,6 +5,7 @@ import { criarAssinatura, cancelarAssinatura, getStatusAssinatura } from '../ser
 import { processarWebhookAsaas } from '../services/webhookService.js';
 import { reconciliarAssinaturas } from '../services/reconciliacaoService.js';
 import { jwtAuthMiddleware } from '../middleware/jwtAuth.js';
+import { requireAtivo } from '../middleware/requireAtivo.js';
 import { toValidationError } from '../errors/toValidationError.js';
 import { AppError } from '../errors/AppError.js';
 import logger from '../logger.js';
@@ -106,7 +107,7 @@ router.post(
  * POST /billing/subscribe
  * Creates or updates a subscription for the authenticated user.
  */
-router.post('/billing/subscribe', billingLimiter, jwtAuthMiddleware, async (req, res, next) => {
+router.post('/billing/subscribe', billingLimiter, jwtAuthMiddleware, requireAtivo, async (req, res, next) => {
   const parsed = subscribeSchema.safeParse(req.body);
   if (!parsed.success) return next(toValidationError(parsed.error));
 
