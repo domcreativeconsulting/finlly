@@ -60,7 +60,7 @@ export async function reconciliarAssinaturas() {
   try {
     const assinantes = await prisma.assinante.findMany({
       where: {
-        status: { in: ['ativo', 'inadimplente'] },
+        status: { in: ['ativo', 'inadimplente', 'pendente'] },
         provider_subscription_id: { not: null },
         deleted_at: null,
       },
@@ -73,7 +73,7 @@ export async function reconciliarAssinaturas() {
         const subscriptionData = await asaas.getSubscription(assinante.provider_subscription_id);
 
         const novoStatus = mapAsaasStatusToLocal(subscriptionData.status);
-        if (novoStatus) {
+        if (novoStatus && assinante.status !== novoStatus) {
           await atualizarStatusAssinante(assinante.id, assinante.usuario_id, novoStatus);
 
           logger.info(
