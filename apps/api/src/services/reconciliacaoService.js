@@ -126,38 +126,34 @@ export async function reconciliarAssinaturas() {
         for (const payment of payments) {
           if (!payment.id) continue;
 
-          const existing = await prisma.assinantePagamento.findFirst({
-            where: { provider_payment_id: payment.id },
-          });
-
           const paymentStatus = mapPaymentStatus(payment.status);
 
-          if (existing) {
-            await prisma.assinantePagamento.update({
-              where: { id: existing.id },
-              data: {
-                status: paymentStatus,
-                valor: payment.value ?? existing.valor,
-                data_pagamento: payment.paymentDate ? new Date(payment.paymentDate) : existing.data_pagamento,
-                data_vencimento: payment.dueDate ? new Date(payment.dueDate) : existing.data_vencimento,
-                updated_at: new Date(),
-              },
-            });
-          } else {
-            await prisma.assinantePagamento.create({
-              data: {
-                assinante_id: assinante.id,
-                usuario_id: assinante.usuario_id,
-                status: paymentStatus,
-                valor: payment.value ?? 0,
+          await prisma.assinantePagamento.upsert({
+            where: {
+              provider_payment: {
                 provider: 'asaas',
                 provider_payment_id: payment.id,
-                descricao: payment.description ?? null,
-                data_pagamento: payment.paymentDate ? new Date(payment.paymentDate) : null,
-                data_vencimento: payment.dueDate ? new Date(payment.dueDate) : null,
               },
-            });
-          }
+            },
+            create: {
+              assinante_id: assinante.id,
+              usuario_id: assinante.usuario_id,
+              status: paymentStatus,
+              valor: payment.value ?? 0,
+              provider: 'asaas',
+              provider_payment_id: payment.id,
+              descricao: payment.description ?? null,
+              data_pagamento: payment.paymentDate ? new Date(payment.paymentDate) : null,
+              data_vencimento: payment.dueDate ? new Date(payment.dueDate) : null,
+            },
+            update: {
+              status: paymentStatus,
+              valor: payment.value ?? 0,
+              data_pagamento: payment.paymentDate ? new Date(payment.paymentDate) : undefined,
+              data_vencimento: payment.dueDate ? new Date(payment.dueDate) : undefined,
+              updated_at: new Date(),
+            },
+          });
         }
 
         atualizados++;

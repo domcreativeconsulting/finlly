@@ -81,8 +81,14 @@ async function handlePaymentConfirmed(payment) {
     data: { status: 'ativo', proxima_cobranca: proximaCobranca },
   });
 
-  await prisma.assinantePagamento.create({
-    data: {
+  await prisma.assinantePagamento.upsert({
+    where: {
+      provider_payment: {
+        provider: 'asaas',
+        provider_payment_id: payment.id,
+      },
+    },
+    create: {
       assinante_id: assinante.id,
       usuario_id: assinante.usuario_id,
       status: 'pago',
@@ -92,6 +98,13 @@ async function handlePaymentConfirmed(payment) {
       descricao: payment.description ?? null,
       data_pagamento: payment.paymentDate ? new Date(payment.paymentDate) : new Date(),
       data_vencimento: payment.dueDate ? new Date(payment.dueDate) : null,
+    },
+    update: {
+      status: 'pago',
+      valor: payment.value ?? 0,
+      data_pagamento: payment.paymentDate ? new Date(payment.paymentDate) : new Date(),
+      data_vencimento: payment.dueDate ? new Date(payment.dueDate) : null,
+      updated_at: new Date(),
     },
   });
 
@@ -131,8 +144,14 @@ async function handlePaymentOverdue(payment) {
     data: { status: 'inadimplente' },
   });
 
-  await prisma.assinantePagamento.create({
-    data: {
+  await prisma.assinantePagamento.upsert({
+    where: {
+      provider_payment: {
+        provider: 'asaas',
+        provider_payment_id: payment.id,
+      },
+    },
+    create: {
       assinante_id: assinante.id,
       usuario_id: assinante.usuario_id,
       status: 'pendente',
@@ -141,6 +160,12 @@ async function handlePaymentOverdue(payment) {
       provider_payment_id: payment.id,
       descricao: payment.description ?? null,
       data_vencimento: payment.dueDate ? new Date(payment.dueDate) : null,
+    },
+    update: {
+      status: 'pendente',
+      valor: payment.value ?? 0,
+      data_vencimento: payment.dueDate ? new Date(payment.dueDate) : null,
+      updated_at: new Date(),
     },
   });
 
