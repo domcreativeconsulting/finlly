@@ -12,6 +12,7 @@ const mockPrisma = {
     findFirst: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
+    upsert: jest.fn(),
   },
   usuario: {
     update: jest.fn(),
@@ -57,6 +58,7 @@ beforeEach(() => {
   mockPrisma.assinantePagamento.findFirst.mockResolvedValue(null);
   mockPrisma.assinantePagamento.create.mockResolvedValue({});
   mockPrisma.assinantePagamento.update.mockResolvedValue({});
+  mockPrisma.assinantePagamento.upsert.mockResolvedValue({});
   mockPrisma.usuario.update.mockResolvedValue({});
 });
 
@@ -238,25 +240,29 @@ describe('reconciliarAssinaturas', () => {
           { id: 'pay_001', status: 'CONFIRMED', value: 29.9, dueDate: '2026-04-01', paymentDate: '2026-03-15' },
         ]),
       );
-      mockPrisma.assinantePagamento.findFirst.mockResolvedValue(null);
 
       await reconciliarAssinaturas();
 
-      expect(mockPrisma.assinantePagamento.create).toHaveBeenCalledWith(
+      expect(mockPrisma.assinantePagamento.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          where: {
+            provider_payment: {
+              provider: 'asaas',
+              provider_payment_id: 'pay_001',
+            },
+          },
+          create: expect.objectContaining({
             provider_payment_id: 'pay_001',
             status: 'pago',
             assinante_id: ASSINANTE_ATIVO.id,
             usuario_id: ASSINANTE_ATIVO.usuario_id,
           }),
+          update: expect.objectContaining({ status: 'pago' }),
         }),
       );
-      expect(mockPrisma.assinantePagamento.update).not.toHaveBeenCalled();
     });
 
     it('updates payment when provider_payment_id already exists', async () => {
-      const existingPayment = { id: 'local-pay-uuid', provider_payment_id: 'pay_001', valor: 29.9 };
       mockPrisma.assinante.findMany.mockResolvedValue([ASSINANTE_ATIVO]);
       mockAsaas.getSubscription.mockResolvedValue({ status: 'ACTIVE' });
       mockAsaas.getPaymentsBySubscription.mockResolvedValue(
@@ -264,17 +270,14 @@ describe('reconciliarAssinaturas', () => {
           { id: 'pay_001', status: 'CONFIRMED', value: 29.9, dueDate: '2026-04-01', paymentDate: '2026-03-15' },
         ]),
       );
-      mockPrisma.assinantePagamento.findFirst.mockResolvedValue(existingPayment);
 
       await reconciliarAssinaturas();
 
-      expect(mockPrisma.assinantePagamento.update).toHaveBeenCalledWith(
+      expect(mockPrisma.assinantePagamento.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { id: existingPayment.id },
-          data: expect.objectContaining({ status: 'pago' }),
+          update: expect.objectContaining({ status: 'pago' }),
         }),
       );
-      expect(mockPrisma.assinantePagamento.create).not.toHaveBeenCalled();
     });
   });
 

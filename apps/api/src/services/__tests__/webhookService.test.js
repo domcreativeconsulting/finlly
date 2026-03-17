@@ -18,6 +18,7 @@ const mockPrisma = {
   },
   assinantePagamento: {
     create: jest.fn(),
+    upsert: jest.fn(),
   },
   usuario: {
     update: jest.fn(),
@@ -59,6 +60,7 @@ beforeEach(() => {
   mockPrisma.webhookEvent.updateMany.mockResolvedValue({ count: 1 });
   mockPrisma.assinante.update.mockResolvedValue({});
   mockPrisma.assinantePagamento.create.mockResolvedValue({});
+  mockPrisma.assinantePagamento.upsert.mockResolvedValue({});
   mockPrisma.usuario.update.mockResolvedValue({});
 });
 
@@ -220,9 +222,10 @@ describe('PAYMENT_CONFIRMED', () => {
       }),
     );
 
-    expect(mockPrisma.assinantePagamento.create).toHaveBeenCalledWith(
+    expect(mockPrisma.assinantePagamento.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ status: 'pago', usuario_id: ASSINANTE.usuario_id }),
+        create: expect.objectContaining({ status: 'pago', usuario_id: ASSINANTE.usuario_id }),
+        update: expect.objectContaining({ status: 'pago' }),
       }),
     );
 
@@ -284,9 +287,10 @@ describe('PAYMENT_OVERDUE', () => {
       }),
     );
 
-    expect(mockPrisma.assinantePagamento.create).toHaveBeenCalledWith(
+    expect(mockPrisma.assinantePagamento.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ status: 'pendente' }),
+        create: expect.objectContaining({ status: 'pendente' }),
+        update: expect.objectContaining({ status: 'pendente' }),
       }),
     );
   });
@@ -486,5 +490,74 @@ describe('evento desconhecido', () => {
 
     expect(result).toEqual({ processed: true, event: 'UNKNOWN_EVENT' });
     expect(mockPrisma.assinante.update).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tests: upsert de pagamento — idempotência
+// ---------------------------------------------------------------------------
+
+describe('upsert de pagamento — idempotência', () => {
+  test('PAYMENT_CONFIRMED chamado duas vezes com mesmo payment.id → upsert chamado duas vezes sem erro', async () => {
+    mockPrisma.assinante.findFirst.mockResolvedValue(ASSINANTE);
+    mockPrisma.assinantePagamento.upsert.mockResolvedValue({ id: 'pag-uuid-001' });
+
+    const payload = makePayload('PAYMENT_CONFIRMED');
+    const rawBody = Buffer.from(JSON.stringify(payload));
+    const sig = makeSignature(rawBody);
+
+    // Primeira chamada
+    await processarWebhookAsaas(payload, rawBody, sig);
+
+    // Segunda chamada (simula que o event não foi marcado como processado ainda)
+    // Resetamos o findFirst do webhookEvent para retornar null novamente
+    mockPrisma.webhookEvent.findFirst.mockResolvedValue(null);
+    await expect(
+      processarWebhookAsaas(payload, rawBody, sig),
+    ).resolves.not.toThrow();
+
+    expect(mockPrisma.assinantePagamento.upsert).toHaveBeenCalledTimes(2);
+  });
+
+  test('PAYMENT_CONFIRMED usa upsert com status "pago" e provider_payment_id correto', async () => {
+    mockPrisma.assinante.findFirst.mockResolvedValue(ASSINANTE);
+    mockPrisma.assinantePagamento.upsert.mockResolvedValue({ id: 'pag-uuid-001' });
+
+    const payload = makePayload('PAYMENT_CONFIRMED');
+    const rawBody = Buffer.from(JSON.stringify(payload));
+    const sig = makeSignature(rawBody);
+
+    await processarWebhookAsaas(payload, rawBody, sig);
+
+    expect(mockPrisma.assinantePagamento.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          provider_payment: {
+            provider: 'asaas',
+            provider_payment_id: payload.payment.id,
+          },
+        },
+        create: expect.objectContaining({ status: 'pago' }),
+        update: expect.objectContaining({ status: 'pago' }),
+      }),
+    );
+  });
+
+  test('PAYMENT_OVERDUE usa upsert com status "pendente"', async () => {
+    mockPrisma.assinante.findFirst.mockResolvedValue(ASSINANTE);
+    mockPrisma.assinantePagamento.upsert.mockResolvedValue({ id: 'pag-uuid-002' });
+
+    const payload = makePayload('PAYMENT_OVERDUE');
+    const rawBody = Buffer.from(JSON.stringify(payload));
+    const sig = makeSignature(rawBody);
+
+    await processarWebhookAsaas(payload, rawBody, sig);
+
+    expect(mockPrisma.assinantePagamento.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({ status: 'pendente' }),
+        update: expect.objectContaining({ status: 'pendente' }),
+      }),
+    );
   });
 });

@@ -304,6 +304,7 @@ model AssinantePagamento {
   assinante Assinante @relation(fields: [assinante_id], references: [id], onDelete: Cascade, map: "fk_apagamentos_assinante")
   usuario   Usuario   @relation(fields: [usuario_id], references: [id], onDelete: Restrict, map: "fk_apagamentos_usuario")
 
+  @@unique([provider, provider_payment_id], name: "provider_payment", map: "uq_apagamentos_provider_payment")
   @@index([assinante_id], map: "idx_apagamentos_assinante")
   @@index([usuario_id, status], map: "idx_apagamentos_usuario")
   @@map("assinantes_pagamentos")
