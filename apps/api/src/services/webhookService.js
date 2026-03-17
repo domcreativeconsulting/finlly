@@ -4,6 +4,7 @@ import prisma from '../utils/database.js';
 import { AppError } from '../errors/AppError.js';
 import { config } from '../config/env.js';
 import logger from '../logger.js';
+import { atualizarStatusAssinante, mapAsaasStatusToLocal } from './assinanteStatusService.js';
 
 /**
  * Calculates a SHA-256 hex digest of the given payload object.
@@ -76,10 +77,7 @@ async function handlePaymentConfirmed(payment) {
 
   const proximaCobranca = payment.dueDate ? new Date(payment.dueDate) : null;
 
-  await prisma.assinante.update({
-    where: { id: assinante.id },
-    data: { status: 'ativo', proxima_cobranca: proximaCobranca },
-  });
+  await atualizarStatusAssinante(assinante.id, assinante.usuario_id, 'ativo', { proxima_cobranca: proximaCobranca });
 
   await prisma.assinantePagamento.upsert({
     where: {
@@ -106,11 +104,6 @@ async function handlePaymentConfirmed(payment) {
       data_vencimento: payment.dueDate ? new Date(payment.dueDate) : null,
       updated_at: new Date(),
     },
-  });
-
-  await prisma.usuario.update({
-    where: { id: assinante.usuario_id },
-    data: { status: 'ativo' },
   });
 
   logger.info({ usuarioId: assinante.usuario_id, paymentId: payment.id }, 'Pagamento confirmado');
@@ -139,10 +132,7 @@ async function handlePaymentOverdue(payment) {
     return;
   }
 
-  await prisma.assinante.update({
-    where: { id: assinante.id },
-    data: { status: 'inadimplente' },
-  });
+  await atualizarStatusAssinante(assinante.id, assinante.usuario_id, 'inadimplente');
 
   await prisma.assinantePagamento.upsert({
     where: {
@@ -167,11 +157,6 @@ async function handlePaymentOverdue(payment) {
       data_vencimento: payment.dueDate ? new Date(payment.dueDate) : null,
       updated_at: new Date(),
     },
-  });
-
-  await prisma.usuario.update({
-    where: { id: assinante.usuario_id },
-    data: { status: 'bloqueado_inadimplencia' },
   });
 
   logger.info({ usuarioId: assinante.usuario_id, paymentId: payment.id }, 'Pagamento inadimplente');
@@ -201,24 +186,24 @@ async function handleSubscriptionUpdated(subscription) {
     return;
   }
 
-  const updateData = {};
-  if (subscription.nextDueDate) updateData.proxima_cobranca = new Date(subscription.nextDueDate);
-  const statusMap = { ACTIVE: 'ativo', INACTIVE: 'cancelado', OVERDUE: 'inadimplente' };
-  if (subscription.status && statusMap[subscription.status]) {
-    updateData.status = statusMap[subscription.status];
-  }
+  const proxima_cobranca = subscription.nextDueDate ? new Date(subscription.nextDueDate) : undefined;
+  const novoStatus = mapAsaasStatusToLocal(subscription.status);
 
-  if (Object.keys(updateData).length === 0) {
+  if (!novoStatus && proxima_cobranca === undefined) {
     logger.info({ subscriptionId }, 'SUBSCRIPTION_UPDATED sem campos alteráveis');
     return;
   }
 
-  await prisma.assinante.update({
-    where: { id: assinante.id },
-    data: updateData,
-  });
+  if (novoStatus) {
+    await atualizarStatusAssinante(assinante.id, assinante.usuario_id, novoStatus, { proxima_cobranca });
+  } else {
+    await prisma.assinante.update({
+      where: { id: assinante.id },
+      data: { proxima_cobranca },
+    });
+  }
 
-  logger.info({ usuarioId: assinante.usuario_id, updateData }, 'Assinante atualizado por SUBSCRIPTION_UPDATED');
+  logger.info({ usuarioId: assinante.usuario_id, novoStatus, proxima_cobranca }, 'Assinante atualizado por SUBSCRIPTION_UPDATED');
 }
 
 /**
@@ -244,15 +229,7 @@ async function handleDeleted(payment) {
     return;
   }
 
-  await prisma.assinante.update({
-    where: { id: assinante.id },
-    data: { status: 'cancelado' },
-  });
-
-  await prisma.usuario.update({
-    where: { id: assinante.usuario_id },
-    data: { status: 'ativo' },
-  });
+  await atualizarStatusAssinante(assinante.id, assinante.usuario_id, 'cancelado');
 
   logger.info({ usuarioId: assinante.usuario_id }, 'Assinatura cancelada por evento de deleção');
 }

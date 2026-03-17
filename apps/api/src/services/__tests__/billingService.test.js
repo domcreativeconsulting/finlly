@@ -227,7 +227,7 @@ describe('cancelarAssinatura', () => {
     await cancelarAssinatura(USUARIO_ID);
 
     expect(mockPrisma.assinante.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: { status: 'cancelado' } }),
+      expect.objectContaining({ data: expect.objectContaining({ status: 'cancelado' }) }),
     );
     expect(mockPrisma.usuario.update).toHaveBeenCalledWith(
       expect.objectContaining({ data: { status: 'ativo' } }),
