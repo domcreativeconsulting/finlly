@@ -427,6 +427,52 @@ describe('SUBSCRIPTION_UPDATED', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Tests: dedupe por payload_hash
+// ---------------------------------------------------------------------------
+
+describe('dedupe por payload_hash', () => {
+  test('payload idêntico com event_id diferente → retorna { skipped: true }', async () => {
+    // findFirst retorna registro processado (encontrado via payload_hash match)
+    mockPrisma.webhookEvent.findFirst.mockResolvedValue({
+      id: 99n,
+      processado: true,
+      erro: null,
+    });
+
+    const payload = makePayload('PAYMENT_CONFIRMED');
+    // Simula event_id diferente mas payload igual
+    payload.id = 'evt_duplicate_hash';
+    const rawBody = Buffer.from(JSON.stringify(payload));
+    const sig = makeSignature(rawBody);
+
+    const result = await processarWebhookAsaas(payload, rawBody, sig);
+
+    expect(result).toEqual({ skipped: true });
+    expect(mockPrisma.assinante.update).not.toHaveBeenCalled();
+  });
+
+  test('payload_hash é incluído no create ao registrar novo evento', async () => {
+    mockPrisma.webhookEvent.findFirst.mockResolvedValue(null);
+    mockPrisma.webhookEvent.create.mockResolvedValue({ id: 2n });
+    mockPrisma.assinante.findFirst.mockResolvedValue(ASSINANTE);
+
+    const payload = makePayload('PAYMENT_CONFIRMED');
+    const rawBody = Buffer.from(JSON.stringify(payload));
+    const sig = makeSignature(rawBody);
+
+    await processarWebhookAsaas(payload, rawBody, sig);
+
+    expect(mockPrisma.webhookEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          payload_hash: expect.stringMatching(/^[a-f0-9]{64}$/),
+        }),
+      }),
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Tests: unknown event
 // ---------------------------------------------------------------------------
 

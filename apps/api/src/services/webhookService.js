@@ -1,9 +1,28 @@
-import { createHmac, timingSafeEqual } from 'crypto';
+import { createHash, createHmac, timingSafeEqual } from 'crypto';
 import { Buffer } from 'buffer';
 import prisma from '../utils/database.js';
 import { AppError } from '../errors/AppError.js';
 import { config } from '../config/env.js';
 import logger from '../logger.js';
+
+/**
+ * Calculates a SHA-256 hex digest of the given payload object.
+ * Used as a secondary deduplication key in webhook_events.
+ *
+ * JSON.stringify is used without key sorting by design: the payload is passed
+ * directly from the Asaas webhook request without any transformation, so the
+ * key order is always consistent for the same event. This matches the backfill
+ * query in the migration, which uses payload::text (Postgres JSON text output).
+ * Note: the Postgres text representation may differ from JSON.stringify for
+ * existing rows — the backfill covers only dev/test data and is best-effort.
+ * @param {object} payload
+ * @returns {string} 64-char hex string
+ */
+function computePayloadHash(payload) {
+  return createHash('sha256')
+    .update(JSON.stringify(payload))
+    .digest('hex');
+}
 
 /**
  * Verifies the HMAC-SHA256 signature of a webhook payload.
@@ -230,8 +249,16 @@ export async function processarWebhookAsaas(payload, rawBody, signatureHeader) {
   }
 
   // Idempotency: findFirst + create/update with retry-on-failure support
+  const payloadHash = computePayloadHash(payload);
+
   const existing = await prisma.webhookEvent.findFirst({
-    where: { provider: 'asaas', event_id: String(payload.id) },
+    where: {
+      provider: 'asaas',
+      OR: [
+        { event_id: String(payload.id) },
+        { payload_hash: payloadHash },
+      ],
+    },
   });
 
   if (existing) {
@@ -240,7 +267,7 @@ export async function processarWebhookAsaas(payload, rawBody, signatureHeader) {
     // existing.erro != null → previous attempt failed, allow retry: reset error and refresh payload
     await prisma.webhookEvent.update({
       where: { id: existing.id },
-      data: { erro: null, payload },
+      data: { erro: null, payload, payload_hash: payloadHash },
     });
   } else {
     await prisma.webhookEvent.create({
@@ -249,6 +276,7 @@ export async function processarWebhookAsaas(payload, rawBody, signatureHeader) {
         event_id: String(payload.id),
         event_type: payload.event,
         payload,
+        payload_hash: payloadHash,
         processado: false,
       },
     });
