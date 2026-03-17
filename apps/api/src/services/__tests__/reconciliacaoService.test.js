@@ -31,11 +31,26 @@ const mockAsaas = {
   getPaymentsBySubscription: jest.fn(),
 };
 
+const mockAtualizarStatusAssinante = jest.fn().mockResolvedValue(undefined);
+
 jest.unstable_mockModule('../../utils/database.js', () => ({ default: mockPrisma }));
 jest.unstable_mockModule('../../utils/redisClient.js', () => ({ getRedisClient: mockGetRedisClient }));
 jest.unstable_mockModule('../../lib/asaas/asaasClient.js', () => ({ asaas: mockAsaas }));
 jest.unstable_mockModule('../../logger.js', () => ({
   default: { info: jest.fn(), error: jest.fn(), warn: jest.fn() },
+}));
+jest.unstable_mockModule('../assinanteStatusService.js', () => ({
+  atualizarStatusAssinante: mockAtualizarStatusAssinante,
+  mapAsaasStatusToLocal: (status) => {
+    switch (status) {
+      case 'ACTIVE': return 'ativo';
+      case 'PENDING': return 'pendente';
+      case 'OVERDUE': return 'inadimplente';
+      case 'INACTIVE':
+      case 'CANCELLED': return 'cancelado';
+      default: return null;
+    }
+  },
 }));
 
 // ---------------------------------------------------------------------------
@@ -60,6 +75,7 @@ beforeEach(() => {
   mockPrisma.assinantePagamento.update.mockResolvedValue({});
   mockPrisma.assinantePagamento.upsert.mockResolvedValue({});
   mockPrisma.usuario.update.mockResolvedValue({});
+  mockAtualizarStatusAssinante.mockResolvedValue(undefined);
 });
 
 // ---------------------------------------------------------------------------
@@ -120,17 +136,19 @@ describe('reconciliarAssinaturas', () => {
 
   describe('Asaas ACTIVE status', () => {
     it('updates assinante to ativo and usuario to ativo when Asaas returns ACTIVE', async () => {
-      mockPrisma.assinante.findMany.mockResolvedValue([ASSINANTE_ATIVO]);
+      const assinanteInadimplente = { ...ASSINANTE_ATIVO, status: 'inadimplente' };
+      mockPrisma.assinante.findMany.mockResolvedValue([assinanteInadimplente]);
       mockAsaas.getSubscription.mockResolvedValue({ status: 'ACTIVE' });
       mockAsaas.getPaymentsBySubscription.mockResolvedValue(makePaymentsResponse());
 
       const result = await reconciliarAssinaturas();
 
       expect(result).toEqual({ total: 1, atualizados: 1, erros: 0 });
-      expect(mockPrisma.usuario.update).toHaveBeenCalledWith({
-        where: { id: ASSINANTE_ATIVO.usuario_id },
-        data: { status: 'ativo' },
-      });
+      expect(mockAtualizarStatusAssinante).toHaveBeenCalledWith(
+        assinanteInadimplente.id,
+        assinanteInadimplente.usuario_id,
+        'ativo',
+      );
     });
 
     it('restores usuario to ativo if was bloqueado_inadimplencia when Asaas returns ACTIVE', async () => {
@@ -141,16 +159,22 @@ describe('reconciliarAssinaturas', () => {
 
       await reconciliarAssinaturas();
 
-      expect(mockPrisma.assinante.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: assinanteComStatusInadimplente.id },
-          data: expect.objectContaining({ status: 'ativo' }),
-        }),
+      expect(mockAtualizarStatusAssinante).toHaveBeenCalledWith(
+        assinanteComStatusInadimplente.id,
+        assinanteComStatusInadimplente.usuario_id,
+        'ativo',
       );
-      expect(mockPrisma.usuario.update).toHaveBeenCalledWith({
-        where: { id: assinanteComStatusInadimplente.usuario_id },
-        data: { status: 'ativo' },
-      });
+    });
+
+    it('skips status update when status already matches', async () => {
+      mockPrisma.assinante.findMany.mockResolvedValue([ASSINANTE_ATIVO]);
+      mockAsaas.getSubscription.mockResolvedValue({ status: 'ACTIVE' });
+      mockAsaas.getPaymentsBySubscription.mockResolvedValue(makePaymentsResponse());
+
+      const result = await reconciliarAssinaturas();
+
+      expect(result).toEqual({ total: 1, atualizados: 1, erros: 0 });
+      expect(mockAtualizarStatusAssinante).not.toHaveBeenCalled();
     });
   });
 
@@ -163,16 +187,11 @@ describe('reconciliarAssinaturas', () => {
       const result = await reconciliarAssinaturas();
 
       expect(result).toEqual({ total: 1, atualizados: 1, erros: 0 });
-      expect(mockPrisma.assinante.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: ASSINANTE_ATIVO.id },
-          data: expect.objectContaining({ status: 'inadimplente' }),
-        }),
+      expect(mockAtualizarStatusAssinante).toHaveBeenCalledWith(
+        ASSINANTE_ATIVO.id,
+        ASSINANTE_ATIVO.usuario_id,
+        'inadimplente',
       );
-      expect(mockPrisma.usuario.update).toHaveBeenCalledWith({
-        where: { id: ASSINANTE_ATIVO.usuario_id },
-        data: { status: 'bloqueado_inadimplencia' },
-      });
     });
   });
 
@@ -185,16 +204,11 @@ describe('reconciliarAssinaturas', () => {
       const result = await reconciliarAssinaturas();
 
       expect(result).toEqual({ total: 1, atualizados: 1, erros: 0 });
-      expect(mockPrisma.assinante.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: ASSINANTE_INADIMPLENTE.id },
-          data: expect.objectContaining({ status: 'cancelado' }),
-        }),
+      expect(mockAtualizarStatusAssinante).toHaveBeenCalledWith(
+        ASSINANTE_INADIMPLENTE.id,
+        ASSINANTE_INADIMPLENTE.usuario_id,
+        'cancelado',
       );
-      expect(mockPrisma.usuario.update).toHaveBeenCalledWith({
-        where: { id: ASSINANTE_INADIMPLENTE.usuario_id },
-        data: { status: 'ativo' },
-      });
     });
 
     it('updates assinante to cancelado when Asaas returns INACTIVE', async () => {
@@ -204,10 +218,10 @@ describe('reconciliarAssinaturas', () => {
 
       await reconciliarAssinaturas();
 
-      expect(mockPrisma.assinante.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ status: 'cancelado' }),
-        }),
+      expect(mockAtualizarStatusAssinante).toHaveBeenCalledWith(
+        ASSINANTE_ATIVO.id,
+        ASSINANTE_ATIVO.usuario_id,
+        'cancelado',
       );
     });
   });

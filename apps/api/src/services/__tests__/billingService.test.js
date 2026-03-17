@@ -26,6 +26,8 @@ const mockAsaas = {
   cancelSubscription: jest.fn(),
 };
 
+const mockAtualizarStatusAssinante = jest.fn().mockResolvedValue(undefined);
+
 jest.unstable_mockModule('../../utils/database.js', () => ({
   default: mockPrisma,
 }));
@@ -37,6 +39,10 @@ jest.unstable_mockModule('../../lib/asaas/asaasClient.js', () => ({
 
 jest.unstable_mockModule('../../logger.js', () => ({
   default: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
+}));
+
+jest.unstable_mockModule('../assinanteStatusService.js', () => ({
+  atualizarStatusAssinante: mockAtualizarStatusAssinante,
 }));
 
 // ---------------------------------------------------------------------------
@@ -55,6 +61,7 @@ beforeAll(async () => {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockAtualizarStatusAssinante.mockResolvedValue(undefined);
 });
 
 // ---------------------------------------------------------------------------
@@ -221,16 +228,13 @@ describe('cancelarAssinatura', () => {
   test('cancela assinatura ativa com sucesso', async () => {
     mockPrisma.assinante.findFirst.mockResolvedValue(ASSINANTE);
     mockAsaas.cancelSubscription.mockResolvedValue(null);
-    mockPrisma.assinante.update.mockResolvedValue({ ...ASSINANTE, status: 'cancelado' });
-    mockPrisma.usuario.update.mockResolvedValue({});
 
     await cancelarAssinatura(USUARIO_ID);
 
-    expect(mockPrisma.assinante.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: { status: 'cancelado' } }),
-    );
-    expect(mockPrisma.usuario.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: { status: 'ativo' } }),
+    expect(mockAtualizarStatusAssinante).toHaveBeenCalledWith(
+      ASSINANTE.id,
+      ASSINANTE.usuario_id,
+      'cancelado',
     );
   });
 
@@ -255,13 +259,14 @@ describe('cancelarAssinatura', () => {
   test('prossegue cancelamento local mesmo se Asaas falhar', async () => {
     mockPrisma.assinante.findFirst.mockResolvedValue(ASSINANTE);
     mockAsaas.cancelSubscription.mockRejectedValue(new Error('Asaas error'));
-    mockPrisma.assinante.update.mockResolvedValue({ ...ASSINANTE, status: 'cancelado' });
-    mockPrisma.usuario.update.mockResolvedValue({});
 
     await cancelarAssinatura(USUARIO_ID);
 
-    expect(mockPrisma.assinante.update).toHaveBeenCalled();
-    expect(mockPrisma.usuario.update).toHaveBeenCalled();
+    expect(mockAtualizarStatusAssinante).toHaveBeenCalledWith(
+      ASSINANTE.id,
+      ASSINANTE.usuario_id,
+      'cancelado',
+    );
   });
 });
 
