@@ -8,7 +8,14 @@ const mockPrisma = {
 jest.unstable_mockModule('../../utils/database.js', () => ({ default: mockPrisma }));
 jest.unstable_mockModule('../../logger.js', () => ({ default: { info: jest.fn() } }));
 
-const { atualizarStatusAssinante, mapAsaasStatusToLocal } = await import('../assinanteStatusService.js');
+let atualizarStatusAssinante;
+let mapAsaasStatusToLocal;
+
+beforeAll(async () => {
+  const mod = await import('../assinanteStatusService.js');
+  atualizarStatusAssinante = mod.atualizarStatusAssinante;
+  mapAsaasStatusToLocal = mod.mapAsaasStatusToLocal;
+});
 
 const ASSINANTE_ID = 'assinante-uuid-001';
 const USUARIO_ID = 'usuario-uuid-001';
@@ -40,7 +47,6 @@ describe('mapAsaasStatusToLocal', () => {
 // ---------------------------------------------------------------------------
 // atualizarStatusAssinante
 // ---------------------------------------------------------------------------
-
 describe('atualizarStatusAssinante', () => {
   test('ativo — atualiza assinante e usuario para ativo', async () => {
     await atualizarStatusAssinante(ASSINANTE_ID, USUARIO_ID, 'ativo');
