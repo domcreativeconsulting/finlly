@@ -2,6 +2,7 @@ import prisma from '../utils/database.js';
 import { AppError } from '../errors/AppError.js';
 import { asaas } from '../lib/asaas/asaasClient.js';
 import logger from '../logger.js';
+import { atualizarStatusAssinante } from './assinanteStatusService.js';
 
 /** Base prices in BRL */
 const PRECOS = {
@@ -160,15 +161,7 @@ export async function cancelarAssinatura(usuarioId) {
     }
   }
 
-  await prisma.assinante.update({
-    where: { id: assinante.id },
-    data: { status: 'cancelado' },
-  });
-
-  await prisma.usuario.update({
-    where: { id: usuarioId },
-    data: { status: 'ativo' },
-  });
+  await atualizarStatusAssinante(assinante.id, assinante.usuario_id, 'cancelado');
 
   logger.info({ usuarioId }, 'Assinatura cancelada');
 }

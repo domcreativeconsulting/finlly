@@ -276,7 +276,7 @@ describe('PAYMENT_OVERDUE', () => {
     expect(mockPrisma.assinante.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: ASSINANTE.id },
-        data: { status: 'inadimplente' },
+        data: expect.objectContaining({ status: 'inadimplente' }),
       }),
     );
 
@@ -314,7 +314,7 @@ describe('PAYMENT_DELETED', () => {
     expect(mockPrisma.assinante.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: ASSINANTE.id },
-        data: { status: 'cancelado' },
+        data: expect.objectContaining({ status: 'cancelado' }),
       }),
     );
 
@@ -350,7 +350,7 @@ describe('SUBSCRIPTION_DELETED', () => {
     expect(result).toEqual({ processed: true, event: 'SUBSCRIPTION_DELETED' });
     expect(mockPrisma.assinante.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: { status: 'cancelado' },
+        data: expect.objectContaining({ status: 'cancelado' }),
       }),
     );
   });
