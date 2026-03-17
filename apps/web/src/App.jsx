@@ -9,6 +9,8 @@ import ResetPasswordPage from './pages/auth/ResetPasswordPage.jsx';
 import VerifyEmailPage from './pages/auth/VerifyEmailPage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
 import PerfilPage from './pages/PerfilPage.jsx';
+import CheckoutPage from './pages/CheckoutPage.jsx';
+import BillingStatusPage from './pages/BillingStatusPage.jsx';
 import { ProtectedRoute } from './components/ProtectedRoute.jsx';
 
 export default function App() {
@@ -34,6 +36,14 @@ export default function App() {
         <Route
           path="/perfil"
           element={<ProtectedRoute element={<PerfilPage />} />}
+        />
+        <Route
+          path="/checkout"
+          element={<ProtectedRoute element={<CheckoutPage />} />}
+        />
+        <Route
+          path="/billing/status"
+          element={<ProtectedRoute element={<BillingStatusPage />} />}
         />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/logout" element={<Navigate to="/login" replace />} />
