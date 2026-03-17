@@ -134,6 +134,50 @@ async function handlePaymentOverdue(payment) {
 }
 
 /**
+ * Handles SUBSCRIPTION_UPDATED events.
+ * Updates assinante fields that may have changed: proxima_cobranca, status.
+ * @param {object} subscription - subscription object from Asaas payload
+ */
+async function handleSubscriptionUpdated(subscription) {
+  const usuarioId = subscription.externalReference;
+  const subscriptionId = subscription.id;
+
+  const assinante = await prisma.assinante.findFirst({
+    where: {
+      deleted_at: null,
+      OR: [
+        ...(usuarioId ? [{ usuario_id: usuarioId }] : []),
+        ...(subscriptionId ? [{ provider_subscription_id: subscriptionId }] : []),
+      ],
+    },
+  });
+
+  if (!assinante) {
+    logger.warn({ usuarioId, subscriptionId }, 'Assinante não encontrado para SUBSCRIPTION_UPDATED');
+    return;
+  }
+
+  const updateData = {};
+  if (subscription.nextDueDate) updateData.proxima_cobranca = new Date(subscription.nextDueDate);
+  const statusMap = { ACTIVE: 'ativo', INACTIVE: 'cancelado', OVERDUE: 'inadimplente' };
+  if (subscription.status && statusMap[subscription.status]) {
+    updateData.status = statusMap[subscription.status];
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    logger.info({ subscriptionId }, 'SUBSCRIPTION_UPDATED sem campos alteráveis');
+    return;
+  }
+
+  await prisma.assinante.update({
+    where: { id: assinante.id },
+    data: updateData,
+  });
+
+  logger.info({ usuarioId: assinante.usuario_id, updateData }, 'Assinante atualizado por SUBSCRIPTION_UPDATED');
+}
+
+/**
  * Handles PAYMENT_DELETED and SUBSCRIPTION_DELETED events.
  * @param {object} payment - payment or subscription object from Asaas payload
  */
@@ -185,8 +229,20 @@ export async function processarWebhookAsaas(payload, rawBody, signatureHeader) {
     throw AppError.unauthorized('Assinatura inválida');
   }
 
-  // Idempotency: try to insert the event — if it already exists, skip
-  try {
+  // Idempotency: findFirst + create/update with retry-on-failure support
+  const existing = await prisma.webhookEvent.findFirst({
+    where: { provider: 'asaas', event_id: String(payload.id) },
+  });
+
+  if (existing) {
+    if (existing.processado) return { skipped: true };     // already processed successfully
+    if (existing.erro === null) return { skipped: true };  // in-flight, avoid concurrent reentry
+    // existing.erro != null → previous attempt failed, allow retry: reset error and refresh payload
+    await prisma.webhookEvent.update({
+      where: { id: existing.id },
+      data: { erro: null, payload },
+    });
+  } else {
     await prisma.webhookEvent.create({
       data: {
         provider: 'asaas',
@@ -196,12 +252,6 @@ export async function processarWebhookAsaas(payload, rawBody, signatureHeader) {
         processado: false,
       },
     });
-  } catch (err) {
-    if (err?.code === 'P2002') {
-      // Unique constraint violation — event already processed
-      return { skipped: true };
-    }
-    throw err;
   }
 
   const eventType = payload.event;
@@ -214,6 +264,8 @@ export async function processarWebhookAsaas(payload, rawBody, signatureHeader) {
       await handlePaymentOverdue(payment);
     } else if (eventType === 'PAYMENT_DELETED' || eventType === 'SUBSCRIPTION_DELETED') {
       await handleDeleted(payment);
+    } else if (eventType === 'SUBSCRIPTION_UPDATED') {
+      await handleSubscriptionUpdated(payment);
     } else {
       logger.info({ eventType }, 'Evento Asaas ignorado');
     }

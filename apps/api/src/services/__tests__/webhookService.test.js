@@ -8,7 +8,9 @@ import { Buffer } from 'buffer';
 const mockPrisma = {
   webhookEvent: {
     create: jest.fn(),
+    update: jest.fn(),
     updateMany: jest.fn(),
+    findFirst: jest.fn(),
   },
   assinante: {
     findFirst: jest.fn(),
@@ -50,8 +52,10 @@ beforeAll(async () => {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  // Default: webhook event creation succeeds
+  // Default: evento não existe (novo)
+  mockPrisma.webhookEvent.findFirst.mockResolvedValue(null);
   mockPrisma.webhookEvent.create.mockResolvedValue({ id: 1n });
+  mockPrisma.webhookEvent.update.mockResolvedValue({});
   mockPrisma.webhookEvent.updateMany.mockResolvedValue({ count: 1 });
   mockPrisma.assinante.update.mockResolvedValue({});
   mockPrisma.assinantePagamento.create.mockResolvedValue({});
@@ -122,17 +126,75 @@ describe('verificação de assinatura', () => {
 // ---------------------------------------------------------------------------
 
 describe('idempotência', () => {
-  test('segundo processamento do mesmo event_id retorna { skipped: true }', async () => {
+  test('evento já processado (processado=true) → retorna { skipped: true } sem chamar handlers', async () => {
+    mockPrisma.webhookEvent.findFirst.mockResolvedValue({
+      id: 1n,
+      processado: true,
+      erro: null,
+    });
+
     const payload = makePayload('PAYMENT_CONFIRMED');
     const rawBody = Buffer.from(JSON.stringify(payload));
     const sig = makeSignature(rawBody);
 
-    const prismaError = new Error('Unique constraint failed');
-    prismaError.code = 'P2002';
-    mockPrisma.webhookEvent.create.mockRejectedValue(prismaError);
+    const result = await processarWebhookAsaas(payload, rawBody, sig);
+
+    expect(result).toEqual({ skipped: true });
+    expect(mockPrisma.assinante.update).not.toHaveBeenCalled();
+  });
+
+  test('evento em andamento (processado=false, erro=null, exists) → retorna { skipped: true }', async () => {
+    mockPrisma.webhookEvent.findFirst.mockResolvedValue({
+      id: 1n,
+      processado: false,
+      erro: null,
+    });
+
+    const payload = makePayload('PAYMENT_CONFIRMED');
+    const rawBody = Buffer.from(JSON.stringify(payload));
+    const sig = makeSignature(rawBody);
 
     const result = await processarWebhookAsaas(payload, rawBody, sig);
+
     expect(result).toEqual({ skipped: true });
+    expect(mockPrisma.assinante.update).not.toHaveBeenCalled();
+  });
+
+  test('evento que falhou antes (processado=false, erro!=null) → reprocessa', async () => {
+    mockPrisma.webhookEvent.findFirst.mockResolvedValue({
+      id: 1n,
+      processado: false,
+      erro: 'Erro anterior',
+    });
+    mockPrisma.webhookEvent.update.mockResolvedValue({});
+    mockPrisma.assinante.findFirst.mockResolvedValue(ASSINANTE);
+
+    const payload = makePayload('PAYMENT_CONFIRMED');
+    const rawBody = Buffer.from(JSON.stringify(payload));
+    const sig = makeSignature(rawBody);
+
+    const result = await processarWebhookAsaas(payload, rawBody, sig);
+
+    expect(result).toEqual({ processed: true, event: 'PAYMENT_CONFIRMED' });
+    expect(mockPrisma.webhookEvent.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ erro: null }) }),
+    );
+    expect(mockPrisma.assinante.update).toHaveBeenCalled();
+  });
+
+  test('evento novo (não existe) → cria e processa', async () => {
+    mockPrisma.webhookEvent.findFirst.mockResolvedValue(null);
+    mockPrisma.webhookEvent.create.mockResolvedValue({ id: 2n });
+    mockPrisma.assinante.findFirst.mockResolvedValue(ASSINANTE);
+
+    const payload = makePayload('PAYMENT_CONFIRMED');
+    const rawBody = Buffer.from(JSON.stringify(payload));
+    const sig = makeSignature(rawBody);
+
+    const result = await processarWebhookAsaas(payload, rawBody, sig);
+
+    expect(result).toEqual({ processed: true, event: 'PAYMENT_CONFIRMED' });
+    expect(mockPrisma.webhookEvent.create).toHaveBeenCalled();
   });
 });
 
@@ -287,6 +349,80 @@ describe('SUBSCRIPTION_DELETED', () => {
         data: { status: 'cancelado' },
       }),
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tests: SUBSCRIPTION_UPDATED
+// ---------------------------------------------------------------------------
+
+describe('SUBSCRIPTION_UPDATED', () => {
+  test('atualiza proxima_cobranca e status quando subscription tem nextDueDate e status ACTIVE', async () => {
+    mockPrisma.assinante.findFirst.mockResolvedValue(ASSINANTE);
+    const payload = {
+      id: 'evt_sub_upd_001',
+      event: 'SUBSCRIPTION_UPDATED',
+      subscription: {
+        id: ASSINANTE.provider_subscription_id,
+        externalReference: ASSINANTE.usuario_id,
+        value: 49.9,
+        nextDueDate: '2026-04-16',
+        status: 'ACTIVE',
+      },
+    };
+    const rawBody = Buffer.from(JSON.stringify(payload));
+    const sig = makeSignature(rawBody);
+
+    const result = await processarWebhookAsaas(payload, rawBody, sig);
+
+    expect(result).toEqual({ processed: true, event: 'SUBSCRIPTION_UPDATED' });
+    expect(mockPrisma.assinante.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: ASSINANTE.id },
+        data: expect.objectContaining({
+          status: 'ativo',
+        }),
+      }),
+    );
+  });
+
+  test('SUBSCRIPTION_UPDATED com status INACTIVE → assinante.status = cancelado', async () => {
+    mockPrisma.assinante.findFirst.mockResolvedValue(ASSINANTE);
+    const payload = {
+      id: 'evt_sub_upd_002',
+      event: 'SUBSCRIPTION_UPDATED',
+      subscription: {
+        id: ASSINANTE.provider_subscription_id,
+        externalReference: ASSINANTE.usuario_id,
+        status: 'INACTIVE',
+      },
+    };
+    const rawBody = Buffer.from(JSON.stringify(payload));
+    const sig = makeSignature(rawBody);
+
+    const result = await processarWebhookAsaas(payload, rawBody, sig);
+
+    expect(result).toEqual({ processed: true, event: 'SUBSCRIPTION_UPDATED' });
+    expect(mockPrisma.assinante.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: 'cancelado' }),
+      }),
+    );
+  });
+
+  test('SUBSCRIPTION_UPDATED sem assinante → não lança erro', async () => {
+    mockPrisma.assinante.findFirst.mockResolvedValue(null);
+    const payload = {
+      id: 'evt_sub_upd_003',
+      event: 'SUBSCRIPTION_UPDATED',
+      subscription: { id: 'sub_desconhecido', externalReference: null },
+    };
+    const rawBody = Buffer.from(JSON.stringify(payload));
+    const sig = makeSignature(rawBody);
+
+    const result = await processarWebhookAsaas(payload, rawBody, sig);
+    expect(result).toEqual({ processed: true, event: 'SUBSCRIPTION_UPDATED' });
+    expect(mockPrisma.assinante.update).not.toHaveBeenCalled();
   });
 });
 
