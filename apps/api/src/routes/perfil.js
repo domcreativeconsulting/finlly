@@ -3,6 +3,7 @@ import { rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
 import { getPerfil, updatePerfil } from '../services/perfilService.js';
 import { jwtAuthMiddleware } from '../middleware/jwtAuth.js';
+import { requireAtivo } from '../middleware/requireAtivo.js';
 import { AppError } from '../errors/AppError.js';
 import { toValidationError } from '../errors/toValidationError.js';
 import logger from '../logger.js';
@@ -84,13 +85,13 @@ router.get('/perfil', perfilLimiter, jwtAuthMiddleware, handleGetPerfil);
  * PATCH /perfil
  * Atualiza parcialmente o perfil do usuário autenticado.
  */
-router.patch('/perfil', perfilLimiter, jwtAuthMiddleware, handleUpdatePerfil);
+router.patch('/perfil', perfilLimiter, jwtAuthMiddleware, requireAtivo, handleUpdatePerfil);
 
 /**
  * PUT /users/me  (alias para compatibilidade com a spec da task)
  * Delega para o mesmo handler de PATCH /perfil.
  */
-router.put('/users/me', perfilLimiter, jwtAuthMiddleware, handleUpdatePerfil);
+router.put('/users/me', perfilLimiter, jwtAuthMiddleware, requireAtivo, handleUpdatePerfil);
 
 /**
  * GET /users/me  (alias para compatibilidade com a spec da task)

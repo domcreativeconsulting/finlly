@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
+import { InadimplenteGuard } from '../components/InadimplenteGuard.jsx';
 
 export default function DashboardPage() {
   const { usuario, logout } = useAuth();
@@ -22,18 +23,20 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <main style={styles.main}>
-        <h2 style={styles.welcome}>
-          Olá, {usuario?.nome || 'usuário'}! 👋
-        </h2>
-        <p style={styles.subtitle}>Bem-vindo ao seu painel financeiro.</p>
+      <InadimplenteGuard>
+        <main style={styles.main}>
+          <h2 style={styles.welcome}>
+            Olá, {usuario?.nome || 'usuário'}! 👋
+          </h2>
+          <p style={styles.subtitle}>Bem-vindo ao seu painel financeiro.</p>
 
-        <div style={styles.card}>
-          <p style={{ color: '#6b7280' }}>
-            Em breve você terá acesso ao seu painel completo.
-          </p>
-        </div>
-      </main>
+          <div style={styles.card}>
+            <p style={{ color: '#6b7280' }}>
+              Em breve você terá acesso ao seu painel completo.
+            </p>
+          </div>
+        </main>
+      </InadimplenteGuard>
     </div>
   );
 }
