@@ -316,13 +316,15 @@ model WebhookEvent {
   event_id      String    @db.VarChar(255)
   event_type    String    @db.VarChar(100)
   payload       Json      @db.JsonB
+  payload_hash  String    @db.Char(64)
   processado    Boolean   @default(false)
   processado_em DateTime? @db.Timestamptz(6)
   erro          String?
   created_at    DateTime  @default(now()) @db.Timestamptz(6)
 
-  @@unique([provider, event_id], map: "uq_webhook_provider_event")
-  @@index([processado], map: "idx_webhook_processado")
+  @@unique([provider, event_id],     map: "uq_webhook_provider_event")
+  @@unique([provider, payload_hash], map: "uq_webhook_provider_hash")
+  @@index([processado],              map: "idx_webhook_processado")
   @@map("webhook_events")
 }
 
