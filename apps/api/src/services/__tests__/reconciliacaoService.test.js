@@ -57,10 +57,13 @@ jest.unstable_mockModule('../assinanteStatusService.js', () => ({
 // Service under test
 // ---------------------------------------------------------------------------
 let reconciliarAssinaturas;
+let mockLogger;
 
 beforeAll(async () => {
   const mod = await import('../reconciliacaoService.js');
   reconciliarAssinaturas = mod.reconciliarAssinaturas;
+  const loggerMod = await import('../../logger.js');
+  mockLogger = loggerMod.default;
 });
 
 beforeEach(() => {
@@ -141,7 +144,7 @@ describe('reconciliarAssinaturas', () => {
 
       const result = await reconciliarAssinaturas();
 
-      expect(result).toEqual({ total: 1, atualizados: 1, erros: 0 });
+      expect(result).toEqual({ total: 1, atualizados: 1, erros: 0, divergencias: 1 });
       expect(mockAtualizarStatusAssinante).toHaveBeenCalledWith(
         assinanteInadimplente.id,
         assinanteInadimplente.usuario_id,
@@ -183,7 +186,7 @@ describe('reconciliarAssinaturas', () => {
 
       const result = await reconciliarAssinaturas();
 
-      expect(result).toEqual({ total: 1, atualizados: 1, erros: 0 });
+      expect(result).toEqual({ total: 1, atualizados: 1, erros: 0, divergencias: 1 });
       expect(mockAtualizarStatusAssinante).toHaveBeenCalledWith(
         ASSINANTE_ATIVO.id,
         ASSINANTE_ATIVO.usuario_id,
@@ -200,7 +203,7 @@ describe('reconciliarAssinaturas', () => {
 
       const result = await reconciliarAssinaturas();
 
-      expect(result).toEqual({ total: 1, atualizados: 1, erros: 0 });
+      expect(result).toEqual({ total: 1, atualizados: 1, erros: 0, divergencias: 1 });
       expect(mockAtualizarStatusAssinante).toHaveBeenCalledWith(
         ASSINANTE_INADIMPLENTE.id,
         ASSINANTE_INADIMPLENTE.usuario_id,
@@ -260,7 +263,7 @@ describe('reconciliarAssinaturas', () => {
 
       const result = await reconciliarAssinaturas();
 
-      expect(result).toEqual({ total: 2, atualizados: 1, erros: 1 });
+      expect(result).toEqual({ total: 2, atualizados: 1, erros: 1, divergencias: 0 });
     });
   });
 
@@ -315,22 +318,58 @@ describe('reconciliarAssinaturas', () => {
   });
 
   describe('Summary return', () => {
-    it('returns correct { total, atualizados, erros } summary', async () => {
+    it('returns correct { total, atualizados, erros, divergencias } summary', async () => {
       mockPrisma.assinante.findMany.mockResolvedValue([ASSINANTE_ATIVO, ASSINANTE_INADIMPLENTE]);
       mockAsaas.getSubscription.mockResolvedValue({ status: 'ACTIVE' });
       mockAsaas.getPaymentsBySubscription.mockResolvedValue(makePaymentsResponse());
 
       const result = await reconciliarAssinaturas();
 
-      expect(result).toEqual({ total: 2, atualizados: 2, erros: 0 });
+      expect(result).toEqual({ total: 2, atualizados: 2, erros: 0, divergencias: 1 });
     });
 
-    it('returns { total: 0, atualizados: 0, erros: 0 } when no active assinantes exist', async () => {
+    it('returns { total: 0, atualizados: 0, erros: 0, divergencias: 0 } when no active assinantes exist', async () => {
       mockPrisma.assinante.findMany.mockResolvedValue([]);
 
       const result = await reconciliarAssinaturas();
 
-      expect(result).toEqual({ total: 0, atualizados: 0, erros: 0 });
+      expect(result).toEqual({ total: 0, atualizados: 0, erros: 0, divergencias: 0 });
+    });
+  });
+
+  describe('Divergence alerts (logger.warn)', () => {
+    it('calls logger.warn with full context when local status differs from Asaas', async () => {
+      mockPrisma.assinante.findMany.mockResolvedValue([ASSINANTE_ATIVO]);
+      mockAsaas.getSubscription.mockResolvedValue({ status: 'OVERDUE' });
+      mockAsaas.getPaymentsBySubscription.mockResolvedValue(makePaymentsResponse());
+
+      const result = await reconciliarAssinaturas();
+
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        {
+          assinanteId: ASSINANTE_ATIVO.id,
+          usuarioId: ASSINANTE_ATIVO.usuario_id,
+          statusLocal: ASSINANTE_ATIVO.status,
+          statusAsaas: 'OVERDUE',
+          novoStatus: 'inadimplente',
+        },
+        'Divergência detectada: status local difere do Asaas',
+      );
+      expect(result).toEqual({ total: 1, atualizados: 1, erros: 0, divergencias: 1 });
+    });
+
+    it('does not call logger.warn when local status already matches Asaas', async () => {
+      mockPrisma.assinante.findMany.mockResolvedValue([ASSINANTE_ATIVO]);
+      mockAsaas.getSubscription.mockResolvedValue({ status: 'ACTIVE' });
+      mockAsaas.getPaymentsBySubscription.mockResolvedValue(makePaymentsResponse());
+
+      const result = await reconciliarAssinaturas();
+
+      const divergenceWarnCalls = mockLogger.warn.mock.calls.filter(
+        (args) => args[1] === 'Divergência detectada: status local difere do Asaas',
+      );
+      expect(divergenceWarnCalls).toHaveLength(0);
+      expect(result).toEqual({ total: 1, atualizados: 1, erros: 0, divergencias: 0 });
     });
   });
 });

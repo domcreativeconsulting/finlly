@@ -41,7 +41,7 @@ function mapPaymentStatus(asaasPaymentStatus) {
  * Reconciles subscriptions and payments from Asaas against the local database.
  * Uses a distributed Redis lock to prevent concurrent execution.
  *
- * @returns {Promise<{ skipped: true }|{ total: number, atualizados: number, erros: number }>}
+ * @returns {Promise<{ skipped: true }|{ total: number, atualizados: number, erros: number, divergencias: number }>}
  */
 export async function reconciliarAssinaturas() {
   const redis = await getRedisClient();
@@ -56,6 +56,7 @@ export async function reconciliarAssinaturas() {
   let total = 0;
   let atualizados = 0;
   let erros = 0;
+  let divergencias = 0;
 
   try {
     const assinantes = await prisma.assinante.findMany({
@@ -74,17 +75,20 @@ export async function reconciliarAssinaturas() {
 
         const novoStatus = mapAsaasStatusToLocal(subscriptionData.status);
         if (novoStatus && assinante.status !== novoStatus) {
-          await atualizarStatusAssinante(assinante.id, assinante.usuario_id, novoStatus);
-
-          logger.info(
+          logger.warn(
             {
               assinanteId: assinante.id,
               usuarioId: assinante.usuario_id,
-              asaasStatus: subscriptionData.status,
-              localStatus: novoStatus,
+              statusLocal: assinante.status,
+              statusAsaas: subscriptionData.status,
+              novoStatus,
             },
-            'Assinante sincronizado',
+            'Divergência detectada: status local difere do Asaas',
           );
+          divergencias++;
+          await atualizarStatusAssinante(assinante.id, assinante.usuario_id, novoStatus);
+
+          logger.info({ assinanteId: assinante.id, novoStatus }, 'Assinante sincronizado');
         }
 
         // Sync payments
@@ -134,8 +138,8 @@ export async function reconciliarAssinaturas() {
       }
     }
 
-    logger.info({ total, atualizados, erros }, 'Reconciliação concluída');
-    return { total, atualizados, erros };
+    logger.info({ total, atualizados, erros, divergencias }, 'Reconciliação concluída');
+    return { total, atualizados, erros, divergencias };
   } finally {
     try {
       await redis.del(LOCK_KEY);
