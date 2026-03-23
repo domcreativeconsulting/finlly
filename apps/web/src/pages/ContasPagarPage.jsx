@@ -130,6 +130,9 @@ export default function ContasPagarPage() {
   const [modalPagarAberto, setModalPagarAberto] = useState(false);
   const [contaParaPagar, setContaParaPagar] = useState(null);
   const [dataPagamento, setDataPagamento] = useState(todayISO());
+  const [contaIdPagamento, setContaIdPagamento] = useState('');
+  const [observacoesPagamento, setObservacoesPagamento] = useState('');
+  const [comprovante, setComprovante] = useState(null);
   const [pagando, setPagando] = useState(false);
 
   const carregarLista = useCallback(async () => {
@@ -297,13 +300,20 @@ export default function ContasPagarPage() {
   function abrirModalPagar(conta) {
     setContaParaPagar(conta);
     setDataPagamento(todayISO());
+    setContaIdPagamento(conta.conta_id || '');
+    setObservacoesPagamento('');
+    setComprovante(null);
     setModalPagarAberto(true);
+    carregarSelects();
   }
 
   function fecharModalPagar() {
     setModalPagarAberto(false);
     setContaParaPagar(null);
     setDataPagamento(todayISO());
+    setContaIdPagamento('');
+    setObservacoesPagamento('');
+    setComprovante(null);
   }
 
   async function handleConfirmarPagamento(e) {
@@ -311,8 +321,17 @@ export default function ContasPagarPage() {
     if (!contaParaPagar) return;
     setPagando(true);
     try {
-      await contasPagarService.pagar(contaParaPagar.id, { data_pagamento: dataPagamento });
-      toast.success('Conta marcada como paga!');
+      const payload = { data_pagamento: dataPagamento };
+      if (contaIdPagamento) payload.conta_id = contaIdPagamento;
+      if (observacoesPagamento) payload.observacoes = observacoesPagamento;
+
+      await contasPagarService.pagar(contaParaPagar.id, payload);
+
+      if (comprovante) {
+        toast.success(`Conta marcada como paga! Comprovante "${comprovante.name}" salvo localmente.`);
+      } else {
+        toast.success('Conta marcada como paga!');
+      }
       fecharModalPagar();
       carregarLista();
     } catch (err) {
@@ -700,7 +719,7 @@ export default function ContasPagarPage() {
       {/* Modal pagar */}
       {modalPagarAberto && (
         <div style={s.modalOverlay} role="dialog" aria-modal="true" aria-label="Registrar pagamento">
-          <div style={{ ...s.modalBox, maxWidth: '380px' }}>
+          <div style={{ ...s.modalBox, maxWidth: '420px' }}>
             <h2 style={s.modalTitle}>Registrar Pagamento</h2>
             <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#374151' }}>
               {contaParaPagar?.descricao}
@@ -714,6 +733,48 @@ export default function ContasPagarPage() {
                   onChange={(e) => setDataPagamento(e.target.value)}
                   style={s.input}
                   required
+                />
+              </div>
+              <div style={s.formGroup}>
+                <label style={s.label}>Conta bancária de débito</label>
+                <select
+                  value={contaIdPagamento}
+                  onChange={(e) => setContaIdPagamento(e.target.value)}
+                  style={s.input}
+                  disabled={loadingSelects}
+                >
+                  <option value="">Selecione uma conta (opcional)</option>
+                  {contas.map((c) => (
+                    <option key={c.id} value={c.id}>{c.nome}</option>
+                  ))}
+                </select>
+              </div>
+              <div style={s.formGroup}>
+                <label style={s.label}>Observações do pagamento</label>
+                <textarea
+                  value={observacoesPagamento}
+                  onChange={(e) => setObservacoesPagamento(e.target.value)}
+                  style={{ ...s.input, resize: 'vertical', minHeight: '72px' }}
+                  maxLength={500}
+                  placeholder="Opcional"
+                />
+              </div>
+              <div style={s.formGroup}>
+                <label style={s.label}>Comprovante (opcional)</label>
+                <input
+                  type="file"
+                  accept="image/*,application/pdf"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file && file.size > 5 * 1024 * 1024) {
+                      toast.error('Comprovante deve ter no máximo 5MB.');
+                      e.target.value = '';
+                      setComprovante(null);
+                    } else {
+                      setComprovante(file || null);
+                    }
+                  }}
+                  style={{ fontSize: '14px' }}
                 />
               </div>
               <div style={s.modalActions}>
