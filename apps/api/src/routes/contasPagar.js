@@ -39,6 +39,7 @@ const writeLimiter = rateLimit({
 const STATUS_ENUM = ['pendente', 'pago', 'cancelado', 'estornado', 'falhou'];
 const RECORRENCIA_ENUM = ['diario', 'semanal', 'quinzenal', 'mensal', 'bimestral', 'trimestral', 'semestral', 'anual'];
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+const SORTABLE_FIELDS = ['data_vencimento', 'valor', 'descricao', 'created_at', 'status'];
 
 const ListQuerySchema = z.object({
   status: z.enum(STATUS_ENUM).optional(),
@@ -49,6 +50,9 @@ const ListQuerySchema = z.object({
   busca: z.string().max(100).optional(),
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
+  cursor: z.string().uuid().optional(),
+  order_by: z.enum(SORTABLE_FIELDS).default('data_vencimento'),
+  order_dir: z.enum(['asc', 'desc']).default('asc'),
 });
 
 const CreateContaPagarSchema = z.object({
