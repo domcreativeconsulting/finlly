@@ -4,6 +4,7 @@ import { FileText } from 'lucide-react';
 import AppSidebar from '../components/AppSidebar.jsx';
 import { InadimplenteGuard } from '../components/InadimplenteGuard.jsx';
 import { contasPagarService } from '../services/contasPagar.service.js';
+import api from '../services/api.js';
 
 const STATUS_LABELS = {
   pendente: 'Pendente',
@@ -20,6 +21,17 @@ const STATUS_COLORS = {
   estornado: { background: '#ffedd5', color: '#9a3412' },
   falhou: { background: '#fee2e2', color: '#991b1b' },
 };
+
+const RECORRENCIA_OPCOES = [
+  { value: 'diario', label: 'Diário' },
+  { value: 'semanal', label: 'Semanal' },
+  { value: 'quinzenal', label: 'Quinzenal' },
+  { value: 'mensal', label: 'Mensal' },
+  { value: 'bimestral', label: 'Bimestral' },
+  { value: 'trimestral', label: 'Trimestral' },
+  { value: 'semestral', label: 'Semestral' },
+  { value: 'anual', label: 'Anual' },
+];
 
 function formatBRL(valor) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor);
@@ -51,6 +63,10 @@ function StatusBadge({ status }) {
   );
 }
 
+function todayISO() {
+  return new Date().toISOString().substring(0, 10);
+}
+
 const EMPTY_FORM = {
   descricao: '',
   valor: '',
@@ -58,6 +74,9 @@ const EMPTY_FORM = {
   categoria_id: '',
   conta_id: '',
   observacoes: '',
+  recorrente: false,
+  recorrencia: 'mensal',
+  total_parcelas: '',
 };
 
 export default function ContasPagarPage() {
@@ -72,6 +91,7 @@ export default function ContasPagarPage() {
     status: '',
     data_vencimento_de: '',
     data_vencimento_ate: '',
+    busca: '',
   });
   const [filtrosAtivos, setFiltrosAtivos] = useState({});
 
@@ -82,6 +102,17 @@ export default function ContasPagarPage() {
   const [contaEmEdicao, setContaEmEdicao] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [salvando, setSalvando] = useState(false);
+
+  // Categorias e contas para os selects do formulário
+  const [categorias, setCategorias] = useState([]);
+  const [contas, setContas] = useState([]);
+  const [loadingSelects, setLoadingSelects] = useState(false);
+
+  // Modal de pagamento
+  const [modalPagarAberto, setModalPagarAberto] = useState(false);
+  const [contaParaPagar, setContaParaPagar] = useState(null);
+  const [dataPagamento, setDataPagamento] = useState(todayISO());
+  const [pagando, setPagando] = useState(false);
 
   const carregarLista = useCallback(async () => {
     setLoading(true);
@@ -106,6 +137,22 @@ export default function ContasPagarPage() {
     carregarLista();
   }, [carregarLista]);
 
+  async function carregarSelects() {
+    setLoadingSelects(true);
+    try {
+      const [resCateg, resContas] = await Promise.all([
+        api.get('/categorias', { params: { tipo: 'saida', limit: 500 } }),
+        api.get('/contas', { params: { limit: 500 } }),
+      ]);
+      setCategorias(resCateg.data?.data ?? resCateg.data ?? []);
+      setContas(resContas.data?.data ?? resContas.data ?? []);
+    } catch {
+      toast.error('Não foi possível carregar categorias e contas.');
+    } finally {
+      setLoadingSelects(false);
+    }
+  }
+
   function handleFiltroChange(e) {
     const { name, value } = e.target;
     setFiltros((prev) => ({ ...prev, [name]: value }));
@@ -118,7 +165,7 @@ export default function ContasPagarPage() {
   }
 
   function handleLimpar() {
-    setFiltros({ status: '', data_vencimento_de: '', data_vencimento_ate: '' });
+    setFiltros({ status: '', data_vencimento_de: '', data_vencimento_ate: '', busca: '' });
     setFiltrosAtivos({});
     setPage(1);
   }
@@ -127,6 +174,7 @@ export default function ContasPagarPage() {
     setContaEmEdicao(null);
     setForm(EMPTY_FORM);
     setModalAberto(true);
+    carregarSelects();
   }
 
   function abrirModalEdicao(conta) {
@@ -141,8 +189,12 @@ export default function ContasPagarPage() {
       categoria_id: conta.categoria_id || '',
       conta_id: conta.conta_id || '',
       observacoes: conta.observacoes || '',
+      recorrente: false,
+      recorrencia: 'mensal',
+      total_parcelas: '',
     });
     setModalAberto(true);
+    carregarSelects();
   }
 
   function fecharModal() {
@@ -152,8 +204,8 @@ export default function ContasPagarPage() {
   }
 
   function handleFormChange(e) {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setForm((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   }
 
   async function handleSalvar(e) {
@@ -174,6 +226,14 @@ export default function ContasPagarPage() {
         conta_id: form.conta_id || null,
         observacoes: form.observacoes || null,
       };
+
+      if (!contaEmEdicao && form.recorrente) {
+        payload.recorrente = true;
+        payload.recorrencia = form.recorrencia;
+        if (form.total_parcelas) {
+          payload.total_parcelas = parseInt(form.total_parcelas, 10);
+        }
+      }
 
       if (contaEmEdicao) {
         await contasPagarService.atualizar(contaEmEdicao.id, payload);
@@ -201,6 +261,47 @@ export default function ContasPagarPage() {
       carregarLista();
     } catch (err) {
       const msg = err?.response?.data?.message || 'Erro ao excluir conta.';
+      toast.error(msg);
+    }
+  }
+
+  function abrirModalPagar(conta) {
+    setContaParaPagar(conta);
+    setDataPagamento(todayISO());
+    setModalPagarAberto(true);
+  }
+
+  function fecharModalPagar() {
+    setModalPagarAberto(false);
+    setContaParaPagar(null);
+    setDataPagamento(todayISO());
+  }
+
+  async function handleConfirmarPagamento(e) {
+    e.preventDefault();
+    if (!contaParaPagar) return;
+    setPagando(true);
+    try {
+      await contasPagarService.pagar(contaParaPagar.id, { data_pagamento: dataPagamento });
+      toast.success('Conta marcada como paga!');
+      fecharModalPagar();
+      carregarLista();
+    } catch (err) {
+      const msg = err?.response?.data?.message || 'Erro ao registrar pagamento.';
+      toast.error(msg);
+    } finally {
+      setPagando(false);
+    }
+  }
+
+  async function handleCancelar(conta) {
+    if (!window.confirm(`Cancelar a conta "${conta.descricao}"?`)) return;
+    try {
+      await contasPagarService.cancelar(conta.id);
+      toast.success('Conta cancelada!');
+      carregarLista();
+    } catch (err) {
+      const msg = err?.response?.data?.message || 'Erro ao cancelar conta.';
       toast.error(msg);
     }
   }
@@ -265,6 +366,14 @@ export default function ContasPagarPage() {
             <div style={s.content}>
               {/* Filtros */}
               <form style={s.filtersBar} onSubmit={handleFiltrar}>
+                <input
+                  type="text"
+                  name="busca"
+                  value={filtros.busca}
+                  onChange={handleFiltroChange}
+                  style={{ ...s.input, width: '180px' }}
+                  placeholder="Buscar por descrição..."
+                />
                 <select
                   name="status"
                   value={filtros.status}
@@ -334,7 +443,7 @@ export default function ContasPagarPage() {
                             <StatusBadge status={conta.status} />
                           </td>
                           <td style={s.td}>{conta.categoria?.nome || '-'}</td>
-                          <td style={{ ...s.td, textAlign: 'center' }}>
+                          <td style={{ ...s.td, textAlign: 'center', whiteSpace: 'nowrap' }}>
                             <button
                               style={s.btnLink}
                               onClick={() => abrirModalEdicao(conta)}
@@ -343,6 +452,26 @@ export default function ContasPagarPage() {
                             >
                               Editar
                             </button>
+                            {conta.status === 'pendente' && (
+                              <>
+                                {' | '}
+                                <button
+                                  style={{ ...s.btnLink, color: '#16a34a' }}
+                                  onClick={() => abrirModalPagar(conta)}
+                                  title="Registrar pagamento"
+                                >
+                                  Pagar
+                                </button>
+                                {' | '}
+                                <button
+                                  style={{ ...s.btnLink, color: '#d97706' }}
+                                  onClick={() => handleCancelar(conta)}
+                                  title="Cancelar conta"
+                                >
+                                  Cancelar
+                                </button>
+                              </>
+                            )}
                             {' | '}
                             <button
                               style={{ ...s.btnLink, color: '#dc2626' }}
@@ -387,10 +516,10 @@ export default function ContasPagarPage() {
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Modal criar/editar */}
       {modalAberto && (
         <div style={s.modalOverlay} role="dialog" aria-modal="true" aria-label="Formulário de conta a pagar">
-          <div style={s.modalBox}>
+          <div style={{ ...s.modalBox, maxHeight: '90vh', overflowY: 'auto' }}>
             <h2 style={s.modalTitle}>
               {contaEmEdicao ? 'Editar Conta a Pagar' : 'Nova Conta a Pagar'}
             </h2>
@@ -434,6 +563,38 @@ export default function ContasPagarPage() {
                   />
                 </div>
               </div>
+              <div style={s.formRow}>
+                <div style={{ ...s.formGroup, flex: 1 }}>
+                  <label style={s.label}>Categoria</label>
+                  <select
+                    name="categoria_id"
+                    value={form.categoria_id}
+                    onChange={handleFormChange}
+                    style={s.input}
+                    disabled={loadingSelects}
+                  >
+                    <option value="">{loadingSelects ? 'Carregando...' : 'Sem categoria'}</option>
+                    {categorias.map((c) => (
+                      <option key={c.id} value={c.id}>{c.nome}</option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{ ...s.formGroup, flex: 1 }}>
+                  <label style={s.label}>Conta</label>
+                  <select
+                    name="conta_id"
+                    value={form.conta_id}
+                    onChange={handleFormChange}
+                    style={s.input}
+                    disabled={loadingSelects}
+                  >
+                    <option value="">{loadingSelects ? 'Carregando...' : 'Sem conta'}</option>
+                    {contas.map((c) => (
+                      <option key={c.id} value={c.id}>{c.nome}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
               <div style={s.formGroup}>
                 <label style={s.label}>Observações</label>
                 <textarea
@@ -445,12 +606,93 @@ export default function ContasPagarPage() {
                   placeholder="Observações opcionais..."
                 />
               </div>
+
+              {/* Parcelamento — apenas na criação */}
+              {!contaEmEdicao && (
+                <div style={{ ...s.formGroup, borderTop: '1px solid #e5e7eb', paddingTop: '16px' }}>
+                  <label style={{ ...s.label, display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      name="recorrente"
+                      checked={form.recorrente}
+                      onChange={handleFormChange}
+                    />
+                    Parcelar / Recorrente
+                  </label>
+
+                  {form.recorrente && (
+                    <div style={{ ...s.formRow, marginTop: '12px' }}>
+                      <div style={{ ...s.formGroup, flex: 1, marginBottom: 0 }}>
+                        <label style={s.label}>Recorrência *</label>
+                        <select
+                          name="recorrencia"
+                          value={form.recorrencia}
+                          onChange={handleFormChange}
+                          style={s.input}
+                          required
+                        >
+                          {RECORRENCIA_OPCOES.map((o) => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div style={{ ...s.formGroup, flex: 1, marginBottom: 0 }}>
+                        <label style={s.label}>Nº de parcelas *</label>
+                        <input
+                          name="total_parcelas"
+                          type="number"
+                          min="2"
+                          max="360"
+                          value={form.total_parcelas}
+                          onChange={handleFormChange}
+                          style={s.input}
+                          required
+                          placeholder="Ex: 12"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div style={s.modalActions}>
                 <button type="button" style={s.btnGhost} onClick={fecharModal} disabled={salvando}>
                   Cancelar
                 </button>
                 <button type="submit" style={s.btnPrimary} disabled={salvando}>
                   {salvando ? 'Salvando...' : contaEmEdicao ? 'Salvar Alterações' : 'Criar Conta'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal pagar */}
+      {modalPagarAberto && (
+        <div style={s.modalOverlay} role="dialog" aria-modal="true" aria-label="Registrar pagamento">
+          <div style={{ ...s.modalBox, maxWidth: '380px' }}>
+            <h2 style={s.modalTitle}>Registrar Pagamento</h2>
+            <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#374151' }}>
+              {contaParaPagar?.descricao}
+            </p>
+            <form onSubmit={handleConfirmarPagamento}>
+              <div style={s.formGroup}>
+                <label style={s.label}>Data do pagamento *</label>
+                <input
+                  type="date"
+                  value={dataPagamento}
+                  onChange={(e) => setDataPagamento(e.target.value)}
+                  style={s.input}
+                  required
+                />
+              </div>
+              <div style={s.modalActions}>
+                <button type="button" style={s.btnGhost} onClick={fecharModalPagar} disabled={pagando}>
+                  Cancelar
+                </button>
+                <button type="submit" style={{ ...s.btnPrimary, background: '#16a34a' }} disabled={pagando}>
+                  {pagando ? 'Registrando...' : 'Confirmar Pagamento'}
                 </button>
               </div>
             </form>
