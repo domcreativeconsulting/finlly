@@ -1,13 +1,14 @@
+import { randomUUID } from 'crypto';
 import prisma from '../utils/database.js';
 import { AppError } from '../errors/AppError.js';
 
 /**
  * List contas a pagar for a user with optional filters and pagination.
  * @param {string} userId
- * @param {{ status?, categoria_id?, conta_id?, data_vencimento_de?, data_vencimento_ate?, page?, limit? }} filters
+ * @param {{ status?, categoria_id?, conta_id?, data_vencimento_de?, data_vencimento_ate?, busca?, page?, limit? }} filters
  */
 export async function listContasPagar(userId, filters = {}) {
-  const { status, categoria_id, conta_id, data_vencimento_de, data_vencimento_ate } = filters;
+  const { status, categoria_id, conta_id, data_vencimento_de, data_vencimento_ate, busca } = filters;
   const page = filters.page ?? 1;
   const limit = Math.min(filters.limit ?? 20, 100);
   const skip = (page - 1) * limit;
@@ -20,6 +21,7 @@ export async function listContasPagar(userId, filters = {}) {
   if (status) where.status = status;
   if (categoria_id) where.categoria_id = categoria_id;
   if (conta_id) where.conta_id = conta_id;
+  if (busca) where.descricao = { contains: busca, mode: 'insensitive' };
 
   if (data_vencimento_de || data_vencimento_ate) {
     where.data_vencimento = {};
@@ -70,20 +72,69 @@ export async function getContaPagar(id, userId) {
   return { ...conta, valor: Number(conta.valor) };
 }
 
+/** @type {Record<string, (d: Date, n: number) => Date>} */
+const RECORRENCIA_OFFSET = {
+  diario: (d, n) => { const r = new Date(d); r.setDate(r.getDate() + n); return r; },
+  semanal: (d, n) => { const r = new Date(d); r.setDate(r.getDate() + 7 * n); return r; },
+  quinzenal: (d, n) => { const r = new Date(d); r.setDate(r.getDate() + 15 * n); return r; },
+  mensal: (d, n) => { const r = new Date(d); r.setMonth(r.getMonth() + n); return r; },
+  bimestral: (d, n) => { const r = new Date(d); r.setMonth(r.getMonth() + 2 * n); return r; },
+  trimestral: (d, n) => { const r = new Date(d); r.setMonth(r.getMonth() + 3 * n); return r; },
+  semestral: (d, n) => { const r = new Date(d); r.setMonth(r.getMonth() + 6 * n); return r; },
+  anual: (d, n) => { const r = new Date(d); r.setMonth(r.getMonth() + 12 * n); return r; },
+};
+
 /**
- * Create a new conta a pagar.
+ * Create a new conta a pagar. Supports parcelamento when total_parcelas is provided.
  * @param {string} userId
- * @param {{ descricao, valor, data_vencimento, categoria_id?, conta_id?, observacoes?, recorrente? }} data
+ * @param {{ descricao, valor, data_vencimento, categoria_id?, conta_id?, observacoes?, recorrente?, total_parcelas?, recorrencia? }} data
  */
 export async function createContaPagar(userId, data) {
-  const { descricao, valor, data_vencimento, categoria_id, conta_id, observacoes, recorrente } = data;
+  const { descricao, valor, data_vencimento, categoria_id, conta_id, observacoes, recorrente, total_parcelas, recorrencia } = data;
+  const baseDate = new Date(data_vencimento + 'T00:00:00.000Z');
+
+  if (total_parcelas) {
+    const grupo_recorrencia_id = randomUUID();
+    const offsetFn = RECORRENCIA_OFFSET[recorrencia ?? 'mensal'];
+    const parcelas = Array.from({ length: total_parcelas }, (_, i) => ({
+      usuario_id: userId,
+      descricao,
+      valor,
+      data_vencimento: offsetFn(baseDate, i),
+      categoria_id: categoria_id ?? null,
+      conta_id: conta_id ?? null,
+      observacoes: observacoes ?? null,
+      recorrente: recorrente ?? true,
+      recorrencia: recorrencia ?? 'mensal',
+      parcela_atual: i + 1,
+      total_parcelas,
+      grupo_recorrencia_id,
+      status: 'pendente',
+    }));
+
+    await prisma.contaPagar.createMany({ data: parcelas });
+
+    const primeira = await prisma.contaPagar.findFirst({
+      where: { grupo_recorrencia_id, usuario_id: userId, parcela_atual: 1 },
+      include: {
+        categoria: { select: { nome: true, cor: true, icone: true } },
+        conta: { select: { nome: true } },
+      },
+    });
+
+    return {
+      parcelas: total_parcelas,
+      grupo_recorrencia_id,
+      data: [{ ...primeira, valor: Number(primeira.valor) }],
+    };
+  }
 
   const conta = await prisma.contaPagar.create({
     data: {
       usuario_id: userId,
       descricao,
       valor,
-      data_vencimento: new Date(data_vencimento + 'T00:00:00.000Z'),
+      data_vencimento: baseDate,
       categoria_id: categoria_id ?? null,
       conta_id: conta_id ?? null,
       observacoes: observacoes ?? null,
@@ -152,4 +203,64 @@ export async function deleteContaPagar(id, userId) {
     where: { id },
     data: { deleted_at: new Date() },
   });
+}
+
+/**
+ * Register payment for a conta a pagar.
+ * @param {string} id
+ * @param {string} userId
+ * @param {{ data_pagamento?: string }} options
+ */
+export async function pagarContaPagar(id, userId, { data_pagamento } = {}) {
+  const existing = await prisma.contaPagar.findFirst({
+    where: { id, usuario_id: userId, deleted_at: null },
+    select: { id: true, status: true, valor: true },
+  });
+
+  if (!existing) throw AppError.notFound('Conta a pagar não encontrada');
+  if (existing.status === 'pago') throw AppError.badRequest('Conta a pagar já está paga');
+
+  const dataPagamento = data_pagamento ? new Date(data_pagamento + 'T00:00:00.000Z') : new Date();
+
+  const conta = await prisma.contaPagar.update({
+    where: { id },
+    data: {
+      status: 'pago',
+      data_pagamento: dataPagamento,
+      updated_at: new Date(),
+    },
+    include: {
+      categoria: { select: { nome: true, cor: true, icone: true } },
+      conta: { select: { nome: true } },
+    },
+  });
+
+  return { ...conta, valor: Number(conta.valor) };
+}
+
+/**
+ * Cancel a conta a pagar.
+ * @param {string} id
+ * @param {string} userId
+ */
+export async function cancelarContaPagar(id, userId) {
+  const existing = await prisma.contaPagar.findFirst({
+    where: { id, usuario_id: userId, deleted_at: null },
+    select: { id: true, status: true },
+  });
+
+  if (!existing) throw AppError.notFound('Conta a pagar não encontrada');
+  if (existing.status === 'pago') throw AppError.badRequest('Não é possível cancelar uma conta já paga');
+  if (existing.status === 'cancelado') throw AppError.badRequest('Conta a pagar já está cancelada');
+
+  const conta = await prisma.contaPagar.update({
+    where: { id },
+    data: { status: 'cancelado', updated_at: new Date() },
+    include: {
+      categoria: { select: { nome: true, cor: true, icone: true } },
+      conta: { select: { nome: true } },
+    },
+  });
+
+  return { ...conta, valor: Number(conta.valor) };
 }
