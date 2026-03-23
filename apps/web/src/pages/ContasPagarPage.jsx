@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { FileText } from 'lucide-react';
 import AppSidebar from '../components/AppSidebar.jsx';
@@ -51,29 +52,70 @@ function StatusBadge({ status }) {
   );
 }
 
+const RECORRENCIA_OPTIONS = [
+  { value: 'diario', label: 'Diário' },
+  { value: 'semanal', label: 'Semanal' },
+  { value: 'quinzenal', label: 'Quinzenal' },
+  { value: 'mensal', label: 'Mensal' },
+  { value: 'bimestral', label: 'Bimestral' },
+  { value: 'trimestral', label: 'Trimestral' },
+  { value: 'semestral', label: 'Semestral' },
+  { value: 'anual', label: 'Anual' },
+];
+
+const SEARCH_DEBOUNCE_MS = 400;
+
 const EMPTY_FORM = {
   descricao: '',
   valor: '',
   data_vencimento: '',
-  categoria_id: '',
-  conta_id: '',
   observacoes: '',
+  recorrente: false,
+  recorrencia: 'mensal',
+  total_parcelas: '',
 };
 
+function getPeriodDates(period) {
+  const today = new Date();
+  if (period === 'mes_corrente') {
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    return {
+      data_vencimento_de: firstDay.toISOString().substring(0, 10),
+      data_vencimento_ate: lastDay.toISOString().substring(0, 10),
+    };
+  }
+  if (period === 'proximos_30') {
+    const future = new Date(today);
+    future.setDate(future.getDate() + 30);
+    return {
+      data_vencimento_de: today.toISOString().substring(0, 10),
+      data_vencimento_ate: future.toISOString().substring(0, 10),
+    };
+  }
+  return { data_vencimento_de: '', data_vencimento_ate: '' };
+}
+
 export default function ContasPagarPage() {
+  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
 
   const [lista, setLista] = useState([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const [busca, setBusca] = useState('');
+  const [periodo, setPeriodo] = useState('');
   const [filtros, setFiltros] = useState({
     status: '',
     data_vencimento_de: '',
     data_vencimento_ate: '',
   });
   const [filtrosAtivos, setFiltrosAtivos] = useState({});
+
+  const debounceRef = useRef(null);
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -93,6 +135,7 @@ export default function ContasPagarPage() {
       });
       const result = await contasPagarService.listar(params);
       setLista(result.data);
+      setTotal(result.total ?? 0);
       setTotalPages(result.totalPages);
     } catch (err) {
       const msg = err?.response?.data?.message || 'Erro ao carregar contas a pagar.';
@@ -111,13 +154,36 @@ export default function ContasPagarPage() {
     setFiltros((prev) => ({ ...prev, [name]: value }));
   }
 
+  function handleBuscaChange(e) {
+    const value = e.target.value;
+    setBusca(value);
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setPage(1);
+      setFiltrosAtivos((prev) => ({ ...prev, busca: value }));
+    }, SEARCH_DEBOUNCE_MS);
+  }
+
+  function handlePeriodoChange(e) {
+    const value = e.target.value;
+    setPeriodo(value);
+    const datas = getPeriodDates(value);
+    setFiltros((prev) => ({
+      ...prev,
+      data_vencimento_de: datas.data_vencimento_de,
+      data_vencimento_ate: datas.data_vencimento_ate,
+    }));
+  }
+
   function handleFiltrar(e) {
     e.preventDefault();
     setPage(1);
-    setFiltrosAtivos({ ...filtros });
+    setFiltrosAtivos({ ...filtros, busca });
   }
 
   function handleLimpar() {
+    setBusca('');
+    setPeriodo('');
     setFiltros({ status: '', data_vencimento_de: '', data_vencimento_ate: '' });
     setFiltrosAtivos({});
     setPage(1);
@@ -138,9 +204,10 @@ export default function ContasPagarPage() {
       descricao: conta.descricao || '',
       valor: conta.valor !== undefined ? String(conta.valor) : '',
       data_vencimento: vencimento,
-      categoria_id: conta.categoria_id || '',
-      conta_id: conta.conta_id || '',
       observacoes: conta.observacoes || '',
+      recorrente: conta.recorrente || false,
+      recorrencia: conta.recorrencia || 'mensal',
+      total_parcelas: conta.total_parcelas ? String(conta.total_parcelas) : '',
     });
     setModalAberto(true);
   }
@@ -152,28 +219,40 @@ export default function ContasPagarPage() {
   }
 
   function handleFormChange(e) {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setForm((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   }
 
   async function handleSalvar(e) {
     e.preventDefault();
+    if (!form.descricao.trim()) {
+      toast.error('Informe a descrição.');
+      return;
+    }
+    const valor = parseFloat(form.valor);
+    if (isNaN(valor) || valor <= 0) {
+      toast.error('Informe um valor válido.');
+      return;
+    }
+    if (!form.data_vencimento) {
+      toast.error('Informe a data de vencimento.');
+      return;
+    }
     setSalvando(true);
     try {
-      const valor = parseFloat(form.valor);
-      if (isNaN(valor) || valor <= 0) {
-        toast.error('Informe um valor válido.');
-        setSalvando(false);
-        return;
-      }
       const payload = {
         descricao: form.descricao,
         valor,
         data_vencimento: form.data_vencimento,
-        categoria_id: form.categoria_id || null,
-        conta_id: form.conta_id || null,
         observacoes: form.observacoes || null,
+        recorrente: form.recorrente,
       };
+      if (form.recorrente) {
+        payload.recorrencia = form.recorrencia;
+        if (form.total_parcelas) {
+          payload.total_parcelas = parseInt(form.total_parcelas, 10);
+        }
+      }
 
       if (contaEmEdicao) {
         await contasPagarService.atualizar(contaEmEdicao.id, payload);
@@ -205,13 +284,37 @@ export default function ContasPagarPage() {
     }
   }
 
+  async function handlePagar(conta) {
+    if (!window.confirm(`Confirmar pagamento de "${conta.descricao}"?`)) return;
+    try {
+      await contasPagarService.pagar(conta.id);
+      toast.success('Pagamento registrado com sucesso!');
+      carregarLista();
+    } catch (err) {
+      const msg = err?.response?.data?.message || 'Erro ao registrar pagamento.';
+      toast.error(msg);
+    }
+  }
+
+  async function handleCancelar(conta) {
+    if (!window.confirm(`Cancelar a conta "${conta.descricao}"?`)) return;
+    try {
+      await contasPagarService.cancelar(conta.id);
+      toast.success('Conta cancelada com sucesso!');
+      carregarLista();
+    } catch (err) {
+      const msg = err?.response?.data?.message || 'Erro ao cancelar conta.';
+      toast.error(msg);
+    }
+  }
+
   return (
     <div style={s.pageWrapper}>
       <div style={s.page}>
         <AppSidebar
           sidebarOpen={sidebarOpen}
           isExpanded={sidebarExpanded}
-          currentPath="/contas-pagar"
+          currentPath={location.pathname}
           onHoverChange={setSidebarExpanded}
         />
 
@@ -265,11 +368,18 @@ export default function ContasPagarPage() {
             <div style={s.content}>
               {/* Filtros */}
               <form style={s.filtersBar} onSubmit={handleFiltrar}>
+                <input
+                  type="text"
+                  value={busca}
+                  onChange={handleBuscaChange}
+                  style={{ ...s.input, maxWidth: '220px' }}
+                  placeholder="Buscar por descrição..."
+                />
                 <select
                   name="status"
                   value={filtros.status}
                   onChange={handleFiltroChange}
-                  style={s.select}
+                  style={{ ...s.select, width: 'auto' }}
                 >
                   <option value="">Todos os status</option>
                   <option value="pendente">Pendente</option>
@@ -278,22 +388,15 @@ export default function ContasPagarPage() {
                   <option value="estornado">Estornado</option>
                   <option value="falhou">Falhou</option>
                 </select>
-                <input
-                  type="date"
-                  name="data_vencimento_de"
-                  value={filtros.data_vencimento_de}
-                  onChange={handleFiltroChange}
-                  style={s.input}
-                  placeholder="Vencimento de"
-                />
-                <input
-                  type="date"
-                  name="data_vencimento_ate"
-                  value={filtros.data_vencimento_ate}
-                  onChange={handleFiltroChange}
-                  style={s.input}
-                  placeholder="Vencimento até"
-                />
+                <select
+                  value={periodo}
+                  onChange={handlePeriodoChange}
+                  style={{ ...s.select, width: 'auto' }}
+                >
+                  <option value="">Todos os períodos</option>
+                  <option value="mes_corrente">Mês corrente</option>
+                  <option value="proximos_30">Próximos 30 dias</option>
+                </select>
                 <button type="submit" style={s.btnSecondary}>
                   Filtrar
                 </button>
@@ -315,10 +418,9 @@ export default function ContasPagarPage() {
                     <thead>
                       <tr>
                         <th style={s.th}>Descrição</th>
-                        <th style={{ ...s.th, textAlign: 'right' }}>Valor</th>
                         <th style={s.th}>Vencimento</th>
+                        <th style={{ ...s.th, textAlign: 'right' }}>Valor</th>
                         <th style={s.th}>Status</th>
-                        <th style={s.th}>Categoria</th>
                         <th style={{ ...s.th, textAlign: 'center' }}>Ações</th>
                       </tr>
                     </thead>
@@ -326,32 +428,53 @@ export default function ContasPagarPage() {
                       {lista.map((conta) => (
                         <tr key={conta.id} style={s.tr}>
                           <td style={s.td}>{conta.descricao}</td>
+                          <td style={s.td}>{formatDate(conta.data_vencimento)}</td>
                           <td style={{ ...s.td, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                             {formatBRL(conta.valor)}
                           </td>
-                          <td style={s.td}>{formatDate(conta.data_vencimento)}</td>
                           <td style={s.td}>
                             <StatusBadge status={conta.status} />
                           </td>
-                          <td style={s.td}>{conta.categoria?.nome || '-'}</td>
-                          <td style={{ ...s.td, textAlign: 'center' }}>
+                          <td style={{ ...s.td, textAlign: 'center', whiteSpace: 'nowrap' }}>
+                            {conta.status === 'pendente' && (
+                              <>
+                                <button
+                                  style={{ ...s.btnLink, color: '#16a34a' }}
+                                  onClick={() => handlePagar(conta)}
+                                  title="Registrar pagamento"
+                                >
+                                  ✅ Pagar
+                                </button>
+                                {' | '}
+                              </>
+                            )}
                             <button
                               style={s.btnLink}
                               onClick={() => abrirModalEdicao(conta)}
-                              disabled={conta.status === 'pago'}
-                              title={conta.status === 'pago' ? 'Conta paga não pode ser editada' : 'Editar'}
+                              title="Editar"
                             >
-                              Editar
+                              ✏️ Editar
                             </button>
                             {' | '}
                             <button
                               style={{ ...s.btnLink, color: '#dc2626' }}
                               onClick={() => handleExcluir(conta)}
-                              disabled={conta.status === 'pago'}
-                              title={conta.status === 'pago' ? 'Conta paga não pode ser excluída' : 'Excluir'}
+                              title="Excluir"
                             >
-                              Excluir
+                              🗑️ Excluir
                             </button>
+                            {conta.status === 'pendente' && (
+                              <>
+                                {' | '}
+                                <button
+                                  style={{ ...s.btnLink, color: '#9a3412' }}
+                                  onClick={() => handleCancelar(conta)}
+                                  title="Cancelar conta"
+                                >
+                                  ❌ Cancelar
+                                </button>
+                              </>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -361,7 +484,7 @@ export default function ContasPagarPage() {
               )}
 
               {/* Paginação */}
-              {!loading && !error && totalPages > 1 && (
+              {!loading && !error && totalPages >= 1 && (
                 <div style={s.pagination}>
                   <button
                     style={s.btnSecondary}
@@ -371,7 +494,7 @@ export default function ContasPagarPage() {
                     Anterior
                   </button>
                   <span style={s.pageInfo}>
-                    Página {page} de {totalPages}
+                    Página {page} de {totalPages} · {total} registro{total !== 1 ? 's' : ''}
                   </span>
                   <button
                     style={s.btnSecondary}
@@ -445,6 +568,48 @@ export default function ContasPagarPage() {
                   placeholder="Observações opcionais..."
                 />
               </div>
+              <div style={{ ...s.formGroup, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input
+                  type="checkbox"
+                  id="recorrente"
+                  name="recorrente"
+                  checked={form.recorrente}
+                  onChange={handleFormChange}
+                  style={{ width: 'auto', cursor: 'pointer' }}
+                />
+                <label htmlFor="recorrente" style={{ ...s.label, marginBottom: 0, cursor: 'pointer' }}>
+                  Recorrente / Parcelado
+                </label>
+              </div>
+              {form.recorrente && (
+                <div style={s.formRow}>
+                  <div style={{ ...s.formGroup, flex: 1 }}>
+                    <label style={s.label}>Recorrência</label>
+                    <select
+                      name="recorrencia"
+                      value={form.recorrencia}
+                      onChange={handleFormChange}
+                      style={s.select}
+                    >
+                      {RECORRENCIA_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div style={{ ...s.formGroup, flex: 1 }}>
+                    <label style={s.label}>Parcelado em X vezes</label>
+                    <input
+                      name="total_parcelas"
+                      type="number"
+                      min="2"
+                      value={form.total_parcelas}
+                      onChange={handleFormChange}
+                      style={s.input}
+                      placeholder="Ex: 12"
+                    />
+                  </div>
+                </div>
+              )}
               <div style={s.modalActions}>
                 <button type="button" style={s.btnGhost} onClick={fecharModal} disabled={salvando}>
                   Cancelar
@@ -638,12 +803,14 @@ const s = {
   },
   // Form inputs
   select: {
+    width: '100%',
     padding: '8px 12px',
     border: '1px solid #e5e7eb',
     borderRadius: '8px',
     fontSize: '14px',
     color: '#374151',
     background: '#ffffff',
+    boxSizing: 'border-box',
   },
   input: {
     width: '100%',
