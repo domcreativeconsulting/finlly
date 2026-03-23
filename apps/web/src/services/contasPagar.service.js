@@ -25,4 +25,14 @@ export const contasPagarService = {
     const response = await api.delete(`/contas-pagar/${id}`);
     return response.data;
   },
+
+  async pagar(id, data = {}) {
+    const response = await api.post(`/contas-pagar/${id}/pagar`, data);
+    return response.data;
+  },
+
+  async cancelar(id) {
+    const response = await api.patch(`/contas-pagar/${id}/cancelar`);
+    return response.data;
+  },
 };
