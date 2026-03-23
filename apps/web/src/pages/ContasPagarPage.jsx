@@ -79,6 +79,21 @@ const EMPTY_FORM = {
   total_parcelas: '',
 };
 
+function SortableTh({ field, label, sortField, sortDir, onSort, style }) {
+  const active = sortField === field;
+  return (
+    <th
+      style={{ ...style, cursor: 'pointer', userSelect: 'none' }}
+      onClick={() => onSort(field)}
+    >
+      {label}{' '}
+      <span style={{ fontSize: '11px', opacity: active ? 1 : 0.3 }}>
+        {active ? (sortDir === 'asc' ? '▲' : '▼') : '▲'}
+      </span>
+    </th>
+  );
+}
+
 export default function ContasPagarPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
@@ -97,6 +112,9 @@ export default function ContasPagarPage() {
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [sortField, setSortField] = useState('data_vencimento');
+  const [sortDir, setSortDir] = useState('asc');
 
   const [modalAberto, setModalAberto] = useState(false);
   const [contaEmEdicao, setContaEmEdicao] = useState(null);
@@ -118,20 +136,21 @@ export default function ContasPagarPage() {
     setLoading(true);
     setError(null);
     try {
-      const params = { page, limit: 20, ...filtrosAtivos };
+      const params = { page, limit: 20, order_by: sortField, order_dir: sortDir, ...filtrosAtivos };
       Object.keys(params).forEach((k) => {
         if (params[k] === '' || params[k] === null || params[k] === undefined) delete params[k];
       });
       const result = await contasPagarService.listar(params);
       setLista(result.data);
       setTotalPages(result.totalPages);
+      setTotal(result.total ?? 0);
     } catch (err) {
       const msg = err?.response?.data?.message || 'Erro ao carregar contas a pagar.';
       setError(msg);
     } finally {
       setLoading(false);
     }
-  }, [page, filtrosAtivos]);
+  }, [page, filtrosAtivos, sortField, sortDir]);
 
   useEffect(() => {
     carregarLista();
@@ -167,6 +186,16 @@ export default function ContasPagarPage() {
   function handleLimpar() {
     setFiltros({ status: '', data_vencimento_de: '', data_vencimento_ate: '', busca: '' });
     setFiltrosAtivos({});
+    setPage(1);
+  }
+
+  function handleSort(field) {
+    if (sortField === field) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortDir('asc');
+    }
     setPage(1);
   }
 
@@ -423,10 +452,10 @@ export default function ContasPagarPage() {
                   <table style={s.table}>
                     <thead>
                       <tr>
-                        <th style={s.th}>Descrição</th>
-                        <th style={{ ...s.th, textAlign: 'right' }}>Valor</th>
-                        <th style={s.th}>Vencimento</th>
-                        <th style={s.th}>Status</th>
+                        <SortableTh field="descricao" label="Descrição" sortField={sortField} sortDir={sortDir} onSort={handleSort} style={s.th} />
+                        <SortableTh field="valor" label="Valor" sortField={sortField} sortDir={sortDir} onSort={handleSort} style={{ ...s.th, textAlign: 'right' }} />
+                        <SortableTh field="data_vencimento" label="Vencimento" sortField={sortField} sortDir={sortDir} onSort={handleSort} style={s.th} />
+                        <SortableTh field="status" label="Status" sortField={sortField} sortDir={sortDir} onSort={handleSort} style={s.th} />
                         <th style={s.th}>Categoria</th>
                         <th style={{ ...s.th, textAlign: 'center' }}>Ações</th>
                       </tr>
@@ -500,7 +529,7 @@ export default function ContasPagarPage() {
                     Anterior
                   </button>
                   <span style={s.pageInfo}>
-                    Página {page} de {totalPages}
+                    Página {page} de {totalPages} · {total} registro{total !== 1 ? 's' : ''}
                   </span>
                   <button
                     style={s.btnSecondary}

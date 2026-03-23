@@ -2,16 +2,26 @@ import { randomUUID } from 'crypto';
 import prisma from '../utils/database.js';
 import { AppError } from '../errors/AppError.js';
 
+const ALLOWED_SORT_FIELDS = new Set(['data_vencimento', 'valor', 'descricao', 'created_at', 'status']);
+
 /**
  * List contas a pagar for a user with optional filters and pagination.
  * @param {string} userId
- * @param {{ status?, categoria_id?, conta_id?, data_vencimento_de?, data_vencimento_ate?, busca?, page?, limit? }} filters
+ * @param {{
+ *   status?, categoria_id?, conta_id?,
+ *   data_vencimento_de?, data_vencimento_ate?, busca?,
+ *   page?, limit?,
+ *   cursor?,       // UUID do último item → ativa cursor-based pagination
+ *   order_by?,     // campo de ordenação (default: 'data_vencimento')
+ *   order_dir?,    // 'asc' | 'desc' (default: 'asc')
+ * }} filters
  */
 export async function listContasPagar(userId, filters = {}) {
-  const { status, categoria_id, conta_id, data_vencimento_de, data_vencimento_ate, busca } = filters;
+  const { status, categoria_id, conta_id, data_vencimento_de, data_vencimento_ate, busca, cursor } = filters;
   const page = filters.page ?? 1;
   const limit = Math.min(filters.limit ?? 20, 100);
-  const skip = (page - 1) * limit;
+  const orderBy = ALLOWED_SORT_FIELDS.has(filters.order_by) ? filters.order_by : 'data_vencimento';
+  const orderDir = filters.order_dir === 'desc' ? 'desc' : 'asc';
 
   const where = {
     usuario_id: userId,
@@ -29,6 +39,40 @@ export async function listContasPagar(userId, filters = {}) {
     if (data_vencimento_ate) where.data_vencimento.lte = new Date(data_vencimento_ate + 'T00:00:00.000Z');
   }
 
+  // Cursor-based pagination
+  if (cursor) {
+    const [contas, total] = await Promise.all([
+      prisma.contaPagar.findMany({
+        where,
+        include: {
+          categoria: { select: { nome: true, cor: true, icone: true } },
+          conta: { select: { nome: true } },
+        },
+        orderBy: [{ [orderBy]: orderDir }, { id: 'asc' }],
+        take: limit + 1,
+        cursor: { id: cursor },
+        skip: 1,
+      }),
+      prisma.contaPagar.count({ where }),
+    ]);
+
+    const hasMore = contas.length > limit;
+    if (hasMore) contas.pop();
+    const nextCursor = hasMore ? contas[contas.length - 1].id : null;
+
+    return {
+      data: contas.map((c) => ({ ...c, valor: Number(c.valor) })),
+      total,
+      page: null,
+      totalPages: Math.ceil(total / limit),
+      nextCursor,
+      hasPreviousPage: true,
+    };
+  }
+
+  // Offset-based pagination (default)
+  const skip = (page - 1) * limit;
+
   const [contas, total] = await Promise.all([
     prisma.contaPagar.findMany({
       where,
@@ -36,7 +80,7 @@ export async function listContasPagar(userId, filters = {}) {
         categoria: { select: { nome: true, cor: true, icone: true } },
         conta: { select: { nome: true } },
       },
-      orderBy: [{ data_vencimento: 'asc' }, { created_at: 'desc' }],
+      orderBy: [{ [orderBy]: orderDir }, { id: 'asc' }],
       skip,
       take: limit,
     }),
@@ -50,6 +94,7 @@ export async function listContasPagar(userId, filters = {}) {
     total,
     page,
     totalPages: Math.ceil(total / limit),
+    nextCursor: data.length === limit ? data[data.length - 1].id : null,
   };
 }
 
