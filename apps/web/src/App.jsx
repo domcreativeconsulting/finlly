@@ -12,6 +12,7 @@ import PerfilPage from './pages/PerfilPage.jsx';
 import CheckoutPage from './pages/CheckoutPage.jsx';
 import BillingStatusPage from './pages/BillingStatusPage.jsx';
 import { ProtectedRoute } from './components/ProtectedRoute.jsx';
+import ContasPagarPage from './pages/ContasPagarPage.jsx';
 
 export default function App() {
   return (
@@ -44,6 +45,10 @@ export default function App() {
         <Route
           path="/billing/status"
           element={<ProtectedRoute element={<BillingStatusPage />} />}
+        />
+        <Route
+          path="/contas-pagar"
+          element={<ProtectedRoute element={<ContasPagarPage />} />}
         />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/logout" element={<Navigate to="/login" replace />} />
