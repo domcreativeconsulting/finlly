@@ -430,6 +430,32 @@ describe('POST /contas-pagar/:id/pagar', () => {
     expect(res.body.code).toBe('VALIDATION_ERROR');
   });
 
+  test('retorna 200 com conta_id válido no body (cria movimentação)', async () => {
+    const contaPaga = { ...contaBase, status: 'pago', data_pagamento: '2025-01-15T00:00:00.000Z' };
+    mockPagarContaPagar.mockResolvedValue(contaPaga);
+
+    const app = makeApp();
+    const res = await request(app, 'POST', '/contas-pagar/conta-uuid-001/pagar', {
+      conta_id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('pago');
+    expect(mockPagarContaPagar).toHaveBeenCalledWith(
+      'conta-uuid-001',
+      'usuario-uuid-001',
+      expect.objectContaining({ conta_id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479' }),
+    );
+  });
+
+  test('retorna 422 quando conta_id não é UUID válido', async () => {
+    const app = makeApp();
+    const res = await request(app, 'POST', '/contas-pagar/conta-uuid-001/pagar', { conta_id: 'nao-e-uuid' });
+
+    expect(res.status).toBe(422);
+    expect(res.body.code).toBe('VALIDATION_ERROR');
+  });
+
   test('retorna 404 quando conta não encontrada', async () => {
     const { AppError } = await import('../../errors/AppError.js');
     mockPagarContaPagar.mockRejectedValue(AppError.notFound('Conta a pagar não encontrada'));

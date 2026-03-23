@@ -252,32 +252,55 @@ export async function deleteContaPagar(id, userId) {
 
 /**
  * Register payment for a conta a pagar.
+ * Atomically updates the status and creates a MovimentacaoCaixa (saida) when conta_id is available.
  * @param {string} id
  * @param {string} userId
- * @param {{ data_pagamento?: string }} options
+ * @param {{ data_pagamento?: string, conta_id?: string, observacoes?: string }} options
  */
-export async function pagarContaPagar(id, userId, { data_pagamento } = {}) {
+export async function pagarContaPagar(id, userId, { data_pagamento, conta_id: contaIdOverride, observacoes } = {}) {
   const existing = await prisma.contaPagar.findFirst({
     where: { id, usuario_id: userId, deleted_at: null },
-    select: { id: true, status: true, valor: true },
+    select: { id: true, status: true, valor: true, conta_id: true, categoria_id: true, descricao: true },
   });
 
   if (!existing) throw AppError.notFound('Conta a pagar não encontrada');
   if (existing.status === 'pago') throw AppError.badRequest('Conta a pagar já está paga');
 
   const dataPagamento = data_pagamento ? new Date(data_pagamento + 'T00:00:00.000Z') : new Date();
+  const contaIdParaMovimentacao = contaIdOverride ?? existing.conta_id;
 
-  const conta = await prisma.contaPagar.update({
-    where: { id },
-    data: {
-      status: 'pago',
-      data_pagamento: dataPagamento,
-      updated_at: new Date(),
-    },
-    include: {
-      categoria: { select: { nome: true, cor: true, icone: true } },
-      conta: { select: { nome: true } },
-    },
+  const [conta] = await prisma.$transaction(async (tx) => {
+    const contaAtualizada = await tx.contaPagar.update({
+      where: { id },
+      data: {
+        status: 'pago',
+        data_pagamento: dataPagamento,
+        updated_at: new Date(),
+      },
+      include: {
+        categoria: { select: { nome: true, cor: true, icone: true } },
+        conta: { select: { nome: true } },
+      },
+    });
+
+    let movimentacao = null;
+    if (contaIdParaMovimentacao) {
+      movimentacao = await tx.movimentacaoCaixa.create({
+        data: {
+          usuario_id: userId,
+          conta_id: contaIdParaMovimentacao,
+          tipo: 'saida',
+          valor: existing.valor,
+          descricao: `Pagamento: ${existing.descricao}`,
+          data: dataPagamento,
+          categoria_id: existing.categoria_id ?? null,
+          conta_pagar_id: id,
+          observacoes: observacoes ?? null,
+        },
+      });
+    }
+
+    return [contaAtualizada, movimentacao];
   });
 
   return { ...conta, valor: Number(conta.valor) };

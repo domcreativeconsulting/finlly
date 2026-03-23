@@ -82,6 +82,8 @@ const UpdateContaPagarSchema = z
 
 const PagarSchema = z.object({
   data_pagamento: z.string().regex(ISO_DATE_REGEX).optional(),
+  conta_id: z.string().uuid().optional(),
+  observacoes: z.string().max(500).optional(),
 });
 
 async function handleList(req, res, next) {
