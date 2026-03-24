@@ -7,6 +7,7 @@ const mockPrisma = {
   categoria: {
     findMany: jest.fn(),
     createMany: jest.fn(),
+    create: jest.fn(),
     findFirst: jest.fn(),
     update: jest.fn(),
   },
@@ -20,12 +21,14 @@ jest.unstable_mockModule('../../utils/database.js', () => ({
 // Import service under test (must happen after mocks are registered)
 // ---------------------------------------------------------------------------
 let createDefaultCategories;
+let createCategoria;
 let updateCategoria;
 let deleteCategoria;
 
 beforeAll(async () => {
   const mod = await import('../categoriaService.js');
   createDefaultCategories = mod.createDefaultCategories;
+  createCategoria = mod.createCategoria;
   updateCategoria = mod.updateCategoria;
   deleteCategoria = mod.deleteCategoria;
 });
@@ -103,6 +106,49 @@ describe('createDefaultCategories', () => {
 });
 
 // ---------------------------------------------------------------------------
+// createCategoria
+// ---------------------------------------------------------------------------
+describe('createCategoria', () => {
+  test('creates a category successfully', async () => {
+    const nova = { id: CAT_ID, usuario_id: USER_ID, nome: 'Salário', tipo: 'entrada', icone: null, cor: null, pai_id: null, is_sistema: false };
+    mockPrisma.categoria.create.mockResolvedValue(nova);
+
+    const result = await createCategoria(USER_ID, { nome: 'Salário', tipo: 'entrada' });
+
+    expect(result.nome).toBe('Salário');
+    expect(mockPrisma.categoria.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ usuario_id: USER_ID, nome: 'Salário', tipo: 'entrada' }) })
+    );
+  });
+
+  test('throws CONFLICT on P2002 (duplicate nome+tipo)', async () => {
+    const p2002 = Object.assign(new Error('Unique constraint failed'), { code: 'P2002' });
+    mockPrisma.categoria.create.mockRejectedValue(p2002);
+
+    await expect(createCategoria(USER_ID, { nome: 'Salário', tipo: 'entrada' })).rejects.toMatchObject({
+      code: 'CONFLICT',
+      status: 409,
+    });
+  });
+
+  test('re-throws non-P2002 errors', async () => {
+    const genericErr = new Error('Database error');
+    mockPrisma.categoria.create.mockRejectedValue(genericErr);
+
+    await expect(createCategoria(USER_ID, { nome: 'Salário', tipo: 'entrada' })).rejects.toThrow('Database error');
+  });
+
+  test('throws NOT_FOUND when pai_id does not exist', async () => {
+    mockPrisma.categoria.findFirst.mockResolvedValue(null);
+
+    await expect(createCategoria(USER_ID, { nome: 'Sub', tipo: 'entrada', pai_id: 'nonexistent-id' })).rejects.toMatchObject({
+      code: 'NOT_FOUND',
+      status: 404,
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
 // updateCategoria
 // ---------------------------------------------------------------------------
 describe('updateCategoria', () => {
@@ -147,6 +193,27 @@ describe('updateCategoria', () => {
       code: 'FORBIDDEN',
       status: 403,
     });
+  });
+
+  test('throws CONFLICT on P2002 (duplicate nome+tipo)', async () => {
+    const existing = { id: CAT_ID, usuario_id: USER_ID, nome: 'Salário', tipo: 'entrada', is_sistema: false, deleted_at: null };
+    mockPrisma.categoria.findFirst.mockResolvedValue(existing);
+    const p2002 = Object.assign(new Error('Unique constraint failed'), { code: 'P2002' });
+    mockPrisma.categoria.update.mockRejectedValue(p2002);
+
+    await expect(updateCategoria(CAT_ID, USER_ID, { nome: 'Freelance' })).rejects.toMatchObject({
+      code: 'CONFLICT',
+      status: 409,
+    });
+  });
+
+  test('re-throws non-P2002 errors on update', async () => {
+    const existing = { id: CAT_ID, usuario_id: USER_ID, nome: 'Salário', tipo: 'entrada', is_sistema: false, deleted_at: null };
+    mockPrisma.categoria.findFirst.mockResolvedValue(existing);
+    const genericErr = new Error('Database error');
+    mockPrisma.categoria.update.mockRejectedValue(genericErr);
+
+    await expect(updateCategoria(CAT_ID, USER_ID, { nome: 'Novo' })).rejects.toThrow('Database error');
   });
 });
 

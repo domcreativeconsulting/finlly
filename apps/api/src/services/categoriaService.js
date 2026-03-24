@@ -77,19 +77,25 @@ export async function createCategoria(userId, data) {
     if (!pai) throw AppError.notFound('Categoria pai não encontrada');
   }
 
-  const categoria = await prisma.categoria.create({
-    data: {
-      usuario_id: userId,
-      nome,
-      tipo,
-      icone: icone ?? null,
-      cor: cor ?? null,
-      pai_id: pai_id ?? null,
-      is_sistema: false,
-    },
-  });
-
-  return categoria;
+  try {
+    const categoria = await prisma.categoria.create({
+      data: {
+        usuario_id: userId,
+        nome,
+        tipo,
+        icone: icone ?? null,
+        cor: cor ?? null,
+        pai_id: pai_id ?? null,
+        is_sistema: false,
+      },
+    });
+    return categoria;
+  } catch (err) {
+    if (err.code === 'P2002') {
+      throw AppError.conflict(`Já existe uma categoria "${nome}" do tipo "${tipo}" para este usuário`);
+    }
+    throw err;
+  }
 }
 
 /**
@@ -148,10 +154,19 @@ export async function updateCategoria(id, userId, data) {
     throw AppError.forbidden('Não é possível editar categoria de outro usuário');
   }
 
-  return prisma.categoria.update({
-    where: { id },
-    data: { ...data, updated_at: new Date() },
-  });
+  try {
+    return await prisma.categoria.update({
+      where: { id },
+      data: { ...data, updated_at: new Date() },
+    });
+  } catch (err) {
+    if (err.code === 'P2002') {
+      const nomeFinal = data.nome ?? categoria.nome;
+      const tipoFinal = data.tipo ?? categoria.tipo;
+      throw AppError.conflict(`Já existe uma categoria "${nomeFinal}" do tipo "${tipoFinal}" para este usuário`);
+    }
+    throw err;
+  }
 }
 
 /**
