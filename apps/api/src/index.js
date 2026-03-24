@@ -15,6 +15,7 @@ import perfilRouter from './routes/perfil.js';
 import billingRouter from './routes/billing.js';
 import { startReconciliacaoJob } from './jobs/reconciliacao.job.js';
 import contasPagarRouter from './routes/contasPagar.js';
+import contasReceberRouter from './routes/contasReceber.js';
 
 const app = express();
 
@@ -36,6 +37,7 @@ app.use(authRouter);
 app.use(perfilRouter);
 app.use(billingRouter);
 app.use(contasPagarRouter);
+app.use(contasReceberRouter);
 
 app.get('/', (req, res) => {
   res.send('Hello World!');
