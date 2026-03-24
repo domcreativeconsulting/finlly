@@ -9,6 +9,8 @@ const mockUpdateContaPagar = jest.fn();
 const mockDeleteContaPagar = jest.fn();
 const mockPagarContaPagar = jest.fn();
 const mockCancelarContaPagar = jest.fn();
+const mockGetGrupoParcelas = jest.fn();
+const mockCancelarGrupoParcelas = jest.fn();
 
 // express-rate-limit → passthrough em testes
 jest.unstable_mockModule('express-rate-limit', () => ({
@@ -24,6 +26,8 @@ jest.unstable_mockModule('../../services/contasPagarService.js', () => ({
   deleteContaPagar: mockDeleteContaPagar,
   pagarContaPagar: mockPagarContaPagar,
   cancelarContaPagar: mockCancelarContaPagar,
+  getGrupoParcelas: mockGetGrupoParcelas,
+  cancelarGrupoParcelas: mockCancelarGrupoParcelas,
 }));
 
 // logger

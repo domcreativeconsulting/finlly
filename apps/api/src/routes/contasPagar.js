@@ -9,6 +9,8 @@ import {
   deleteContaPagar,
   pagarContaPagar,
   cancelarContaPagar,
+  getGrupoParcelas,
+  cancelarGrupoParcelas,
 } from '../services/contasPagarService.js';
 import { jwtAuthMiddleware } from '../middleware/jwtAuth.js';
 import { requireAtivo } from '../middleware/requireAtivo.js';
@@ -45,6 +47,7 @@ const ListQuerySchema = z.object({
   status: z.enum(STATUS_ENUM).optional(),
   categoria_id: z.string().uuid().optional(),
   conta_id: z.string().uuid().optional(),
+  grupo_recorrencia_id: z.string().uuid().optional(),
   data_vencimento_de: z.string().regex(ISO_DATE_REGEX).optional(),
   data_vencimento_ate: z.string().regex(ISO_DATE_REGEX).optional(),
   busca: z.string().max(100).optional(),
@@ -167,8 +170,29 @@ async function handleCancelar(req, res, next) {
   }
 }
 
+async function handleGetGrupo(req, res, next) {
+  try {
+    const parcelas = await getGrupoParcelas(req.params.grupoId, req.user.sub);
+    return res.status(200).json(parcelas);
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function handleCancelarGrupo(req, res, next) {
+  try {
+    const result = await cancelarGrupoParcelas(req.params.grupoId, req.user.sub);
+    logger.info({ msg: 'Grupo de parcelas cancelado', userId: req.user.sub, grupoId: req.params.grupoId });
+    return res.status(200).json(result);
+  } catch (err) {
+    return next(err);
+  }
+}
+
 router.get('/contas-pagar', readLimiter, jwtAuthMiddleware, requireAtivo, handleList);
 router.post('/contas-pagar', writeLimiter, jwtAuthMiddleware, requireAtivo, handleCreate);
+router.get('/contas-pagar/grupos/:grupoId', readLimiter, jwtAuthMiddleware, requireAtivo, handleGetGrupo);
+router.patch('/contas-pagar/grupos/:grupoId/cancelar', writeLimiter, jwtAuthMiddleware, requireAtivo, handleCancelarGrupo);
 router.get('/contas-pagar/:id', readLimiter, jwtAuthMiddleware, requireAtivo, handleGet);
 router.put('/contas-pagar/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, handleUpdate);
 router.patch('/contas-pagar/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, handleUpdate);

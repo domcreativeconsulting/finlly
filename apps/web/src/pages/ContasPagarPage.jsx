@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { toast } from 'react-toastify';
 import { FileText } from 'lucide-react';
 import AppSidebar from '../components/AppSidebar.jsx';
@@ -134,6 +134,9 @@ export default function ContasPagarPage() {
   const [observacoesPagamento, setObservacoesPagamento] = useState('');
   const [comprovante, setComprovante] = useState(null);
   const [pagando, setPagando] = useState(false);
+
+  // Grupos expandidos (accordion)
+  const [gruposExpandidos, setGruposExpandidos] = useState(new Set());
 
   const carregarLista = useCallback(async () => {
     setLoading(true);
@@ -271,8 +274,11 @@ export default function ContasPagarPage() {
         await contasPagarService.atualizar(contaEmEdicao.id, payload);
         toast.success('Conta atualizada com sucesso!');
       } else {
-        await contasPagarService.criar(payload);
+        const res = await contasPagarService.criar(payload);
         toast.success('Conta criada com sucesso!');
+        if (res?.grupo_recorrencia_id) {
+          setGruposExpandidos((prev) => new Set([...prev, res.grupo_recorrencia_id]));
+        }
       }
 
       fecharModal();
@@ -350,6 +356,42 @@ export default function ContasPagarPage() {
       carregarLista();
     } catch (err) {
       const msg = err?.response?.data?.message || 'Erro ao cancelar conta.';
+      toast.error(msg);
+    }
+  }
+
+  function toggleGrupo(grupoId) {
+    setGruposExpandidos((prev) => {
+      const next = new Set(prev);
+      if (next.has(grupoId)) next.delete(grupoId);
+      else next.add(grupoId);
+      return next;
+    });
+  }
+
+  const grupos = useMemo(() => {
+    const map = new Map();
+    lista.forEach((conta) => {
+      if (conta.grupo_recorrencia_id) {
+        if (!map.has(conta.grupo_recorrencia_id)) {
+          map.set(conta.grupo_recorrencia_id, []);
+        }
+        map.get(conta.grupo_recorrencia_id).push(conta);
+      } else {
+        map.set(conta.id, [conta]);
+      }
+    });
+    return Array.from(map.entries());
+  }, [lista]);
+
+  async function handleCancelarGrupo(grupoId, descricao) {
+    if (!window.confirm(`Cancelar todas as parcelas pendentes de "${descricao}"?`)) return;
+    try {
+      const result = await contasPagarService.cancelarGrupo(grupoId);
+      toast.success(`${result.canceladas} parcela(s) cancelada(s)!`);
+      carregarLista();
+    } catch (err) {
+      const msg = err?.response?.data?.message || 'Erro ao cancelar grupo.';
       toast.error(msg);
     }
   }
@@ -480,58 +522,174 @@ export default function ContasPagarPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {lista.map((conta) => (
-                        <tr key={conta.id} style={s.tr}>
-                          <td style={s.td}>{conta.descricao}</td>
-                          <td style={{ ...s.td, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                            {formatBRL(conta.valor)}
-                          </td>
-                          <td style={s.td}>{formatDate(conta.data_vencimento)}</td>
-                          <td style={s.td}>
-                            <StatusBadge status={conta.status} />
-                          </td>
-                          <td style={s.td}>{conta.categoria?.nome || '-'}</td>
-                          <td style={{ ...s.td, textAlign: 'center', whiteSpace: 'nowrap' }}>
-                            <button
-                              style={s.btnLink}
-                              onClick={() => abrirModalEdicao(conta)}
-                              disabled={conta.status === 'pago'}
-                              title={conta.status === 'pago' ? 'Conta paga não pode ser editada' : 'Editar'}
-                            >
-                              Editar
-                            </button>
-                            {conta.status === 'pendente' && (
-                              <>
+                      {grupos.map(([grupoId, contas]) => {
+                        const isGrupo = contas.length > 1;
+                        if (!isGrupo) {
+                          const conta = contas[0];
+                          return (
+                            <tr key={conta.id} style={s.tr}>
+                              <td style={s.td}>{conta.descricao}</td>
+                              <td style={{ ...s.td, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                                {formatBRL(conta.valor)}
+                              </td>
+                              <td style={s.td}>{formatDate(conta.data_vencimento)}</td>
+                              <td style={s.td}>
+                                <StatusBadge status={conta.status} />
+                              </td>
+                              <td style={s.td}>{conta.categoria?.nome || '-'}</td>
+                              <td style={{ ...s.td, textAlign: 'center', whiteSpace: 'nowrap' }}>
+                                <button
+                                  style={s.btnLink}
+                                  onClick={() => abrirModalEdicao(conta)}
+                                  disabled={conta.status === 'pago'}
+                                  title={conta.status === 'pago' ? 'Conta paga não pode ser editada' : 'Editar'}
+                                >
+                                  Editar
+                                </button>
+                                {conta.status === 'pendente' && (
+                                  <>
+                                    {' | '}
+                                    <button
+                                      style={{ ...s.btnLink, color: '#16a34a' }}
+                                      onClick={() => abrirModalPagar(conta)}
+                                      title="Registrar pagamento"
+                                    >
+                                      Pagar
+                                    </button>
+                                    {' | '}
+                                    <button
+                                      style={{ ...s.btnLink, color: '#d97706' }}
+                                      onClick={() => handleCancelar(conta)}
+                                      title="Cancelar conta"
+                                    >
+                                      Cancelar
+                                    </button>
+                                  </>
+                                )}
                                 {' | '}
                                 <button
-                                  style={{ ...s.btnLink, color: '#16a34a' }}
-                                  onClick={() => abrirModalPagar(conta)}
-                                  title="Registrar pagamento"
+                                  style={{ ...s.btnLink, color: '#dc2626' }}
+                                  onClick={() => handleExcluir(conta)}
+                                  disabled={conta.status === 'pago'}
+                                  title={conta.status === 'pago' ? 'Conta paga não pode ser excluída' : 'Excluir'}
                                 >
-                                  Pagar
+                                  Excluir
                                 </button>
-                                {' | '}
+                              </td>
+                            </tr>
+                          );
+                        }
+
+                        // Grupo parcelado
+                        const expanded = gruposExpandidos.has(grupoId);
+                        const totalValor = contas.reduce((sum, c) => sum + c.valor, 0);
+                        const proxPendente = contas.find((c) => c.status === 'pendente');
+                        const pagas = contas.filter((c) => c.status === 'pago').length;
+                        const pendentes = contas.filter((c) => c.status === 'pendente').length;
+                        const temPendentes = pendentes > 0;
+                        const descricaoGrupo = contas[0].descricao;
+                        const totalParcelas = contas[0].total_parcelas || contas.length;
+
+                        return [
+                          <tr
+                            key={grupoId}
+                            style={{ ...s.tr, backgroundColor: '#f0f9ff', cursor: 'pointer' }}
+                            role="button"
+                            aria-expanded={expanded}
+                            tabIndex={0}
+                            onClick={() => toggleGrupo(grupoId)}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleGrupo(grupoId); } }}
+                          >
+                            <td style={s.td}>
+                              <span style={{ marginRight: '6px', fontSize: '11px' }}>{expanded ? '▼' : '▶'}</span>
+                              <strong>{descricaoGrupo}</strong>
+                              <span style={{ fontSize: '11px', color: '#6b7280', marginLeft: '6px' }}>
+                                {contas.length}/{totalParcelas} parcelas
+                              </span>
+                            </td>
+                            <td style={{ ...s.td, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                              {formatBRL(totalValor)}
+                            </td>
+                            <td style={s.td}>{proxPendente ? formatDate(proxPendente.data_vencimento) : '-'}</td>
+                            <td style={s.td}>
+                              <span style={{ fontSize: '12px', color: '#374151' }}>
+                                {pagas > 0 && <span style={{ color: '#166534' }}>{pagas} paga{pagas !== 1 ? 's' : ''}</span>}
+                                {pagas > 0 && pendentes > 0 && ' • '}
+                                {pendentes > 0 && <span style={{ color: '#854d0e' }}>{pendentes} pendente{pendentes !== 1 ? 's' : ''}</span>}
+                              </span>
+                            </td>
+                            <td style={s.td}>{contas[0].categoria?.nome || '-'}</td>
+                            <td style={{ ...s.td, textAlign: 'center', whiteSpace: 'nowrap' }} onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                              {temPendentes && (
                                 <button
                                   style={{ ...s.btnLink, color: '#d97706' }}
-                                  onClick={() => handleCancelar(conta)}
-                                  title="Cancelar conta"
+                                  onClick={() => handleCancelarGrupo(grupoId, descricaoGrupo)}
+                                  title="Cancelar parcelas pendentes do grupo"
                                 >
-                                  Cancelar
+                                  Cancelar grupo
                                 </button>
-                              </>
-                            )}
-                            {' | '}
-                            <button
-                              style={{ ...s.btnLink, color: '#dc2626' }}
-                              onClick={() => handleExcluir(conta)}
-                              disabled={conta.status === 'pago'}
-                              title={conta.status === 'pago' ? 'Conta paga não pode ser excluída' : 'Excluir'}
-                            >
-                              Excluir
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                              )}
+                            </td>
+                          </tr>,
+                          ...(expanded ? contas.map((conta) => (
+                            <tr key={conta.id} style={{ ...s.tr, backgroundColor: '#f8fafc' }}>
+                              <td style={{ ...s.td, paddingLeft: '32px' }}>
+                                {conta.descricao}
+                                <span style={{ fontSize: '11px', color: '#6b7280', marginLeft: '6px' }}>
+                                  {conta.parcela_atual}/{conta.total_parcelas}
+                                </span>
+                              </td>
+                              <td style={{ ...s.td, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                                {formatBRL(conta.valor)}
+                              </td>
+                              <td style={s.td}>{formatDate(conta.data_vencimento)}</td>
+                              <td style={s.td}>
+                                <StatusBadge status={conta.status} />
+                              </td>
+                              <td style={s.td}>{conta.categoria?.nome || '-'}</td>
+                              <td style={{ ...s.td, textAlign: 'center', whiteSpace: 'nowrap' }}>
+                                <button
+                                  style={s.btnLink}
+                                  onClick={() => abrirModalEdicao(conta)}
+                                  disabled={conta.status === 'pago'}
+                                  title={conta.status === 'pago' ? 'Conta paga não pode ser editada' : 'Editar'}
+                                >
+                                  Editar
+                                </button>
+                                {conta.status === 'pendente' && (
+                                  <>
+                                    {' | '}
+                                    <button
+                                      style={{ ...s.btnLink, color: '#16a34a' }}
+                                      onClick={() => abrirModalPagar(conta)}
+                                      title="Registrar pagamento"
+                                    >
+                                      Pagar
+                                    </button>
+                                    {' | '}
+                                    <button
+                                      style={{ ...s.btnLink, color: '#d97706' }}
+                                      onClick={() => handleCancelar(conta)}
+                                      title="Cancelar parcela"
+                                    >
+                                      Cancelar
+                                    </button>
+                                  </>
+                                )}
+                                {' | '}
+                                <button
+                                  style={{ ...s.btnLink, color: '#dc2626' }}
+                                  onClick={() => handleExcluir(conta)}
+                                  disabled={conta.status === 'pago'}
+                                  title={conta.status === 'pago' ? 'Conta paga não pode ser excluída' : 'Excluir'}
+                                >
+                                  Excluir
+                                </button>
+                              </td>
+                            </tr>
+                          )) : []),
+                        ];
+                      })}
                     </tbody>
                   </table>
                 </div>
