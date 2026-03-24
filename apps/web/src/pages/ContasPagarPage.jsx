@@ -5,6 +5,7 @@ import AppSidebar from '../components/AppSidebar.jsx';
 import { InadimplenteGuard } from '../components/InadimplenteGuard.jsx';
 import { contasPagarService } from '../services/contasPagar.service.js';
 import api from '../services/api.js';
+import { useAuth } from '../hooks/useAuth.js';
 
 const STATUS_LABELS = {
   pendente: 'Pendente',
@@ -101,11 +102,13 @@ function SortableTh({ field, label, sortField, sortDir, onSort, style }) {
 
 export default function ContasPagarPage() {
   const navigate = useNavigate();
+  const { usuario } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [menuAbertoId, setMenuAbertoId] = useState(null);
 
   const [lista, setLista] = useState([]);
+  const [listaCompleta, setListaCompleta] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -170,9 +173,23 @@ export default function ContasPagarPage() {
     }
   }, [page, filtrosAtivos, sortField, sortDir]);
 
+  const carregarListaCompleta = useCallback(async () => {
+    try {
+      // Fetch all records (up to 500) for accurate summary card calculation
+      const result = await contasPagarService.listar({ limit: 500, order_by: 'data_vencimento', order_dir: 'asc' });
+      setListaCompleta(result.data ?? []);
+    } catch {
+      // silently fail; summary will show empty state
+    }
+  }, []);
+
   useEffect(() => {
     carregarLista();
   }, [carregarLista]);
+
+  useEffect(() => {
+    carregarListaCompleta();
+  }, [carregarListaCompleta]);
 
   useEffect(() => {
     carregarSelects();
@@ -300,6 +317,7 @@ export default function ContasPagarPage() {
 
       fecharModal();
       carregarLista();
+      carregarListaCompleta();
     } catch (err) {
       const msg = err?.response?.data?.message || 'Erro ao salvar conta.';
       toast.error(msg);
@@ -314,6 +332,7 @@ export default function ContasPagarPage() {
       await contasPagarService.excluir(conta.id);
       toast.success('Conta excluída com sucesso!');
       carregarLista();
+      carregarListaCompleta();
     } catch (err) {
       const msg = err?.response?.data?.message || 'Erro ao excluir conta.';
       toast.error(msg);
@@ -357,6 +376,7 @@ export default function ContasPagarPage() {
       }
       fecharModalPagar();
       carregarLista();
+      carregarListaCompleta();
     } catch (err) {
       const msg = err?.response?.data?.message || 'Erro ao registrar pagamento.';
       toast.error(msg);
@@ -371,6 +391,7 @@ export default function ContasPagarPage() {
       await contasPagarService.cancelar(conta.id);
       toast.success('Conta cancelada!');
       carregarLista();
+      carregarListaCompleta();
     } catch (err) {
       const msg = err?.response?.data?.message || 'Erro ao cancelar conta.';
       toast.error(msg);
@@ -416,7 +437,7 @@ export default function ContasPagarPage() {
     let atrasadas = { count: 0, valor: 0 };
     let pagasNoMes = { count: 0, valor: 0 };
 
-    lista.forEach((c) => {
+    listaCompleta.forEach((c) => {
       const venc = parseVencDate(c.data_vencimento);
       const valor = Number(c.valor || 0);
 
@@ -443,8 +464,18 @@ export default function ContasPagarPage() {
       }
     });
 
-    return { pendentes, provisionadas, agendadas, atrasadas, pagasNoMes, total: { count: total, valor: lista.reduce((s, c) => s + Number(c.valor || 0), 0) } };
-  }, [lista, hoje, total]);
+    return {
+      pendentes,
+      provisionadas,
+      agendadas,
+      atrasadas,
+      pagasNoMes,
+      total: {
+        count: listaCompleta.length,
+        valor: listaCompleta.reduce((s, c) => s + Number(c.valor || 0), 0),
+      },
+    };
+  }, [listaCompleta, hoje]);
 
   async function handleCancelarGrupo(grupoId, descricao) {
     if (!window.confirm(`Cancelar todas as parcelas pendentes de "${descricao}"?`)) return;
@@ -452,6 +483,7 @@ export default function ContasPagarPage() {
       const result = await contasPagarService.cancelarGrupo(grupoId);
       toast.success(`${result.canceladas} parcela(s) cancelada(s)!`);
       carregarLista();
+      carregarListaCompleta();
     } catch (err) {
       const msg = err?.response?.data?.message || 'Erro ao cancelar grupo.';
       toast.error(msg);
@@ -504,7 +536,7 @@ export default function ContasPagarPage() {
               <button style={s.btnPrimary} onClick={abrirModalNovo}>
                 + Nova conta
               </button>
-              <button style={s.btnOutline}>
+              <button style={s.btnOutline} onClick={() => navigate('/contas')}>
                 🏦 Nova conta financeira
               </button>
               <button style={s.btnOutline} onClick={() => navigate('/categorias')}>
@@ -516,6 +548,17 @@ export default function ContasPagarPage() {
               >
                 🔽 Filtros
               </button>
+              {usuario && (
+                <div
+                  style={s.avatar}
+                  title={usuario.nome || usuario.email || 'Usuário'}
+                >
+                  {(usuario.nome
+                    ? usuario.nome.split(' ').filter(Boolean).map((n) => n[0]).slice(0, 2).join('')
+                    : (usuario.email ? usuario.email[0] : 'U')
+                  ).toUpperCase()}
+                </div>
+              )}
             </div>
           </div>
 
@@ -1650,5 +1693,20 @@ const s = {
     padding: '14px',
     fontSize: '13px',
     letterSpacing: '0.01em',
+  },
+  avatar: {
+    width: '36px',
+    height: '36px',
+    borderRadius: '50%',
+    background: '#1e3a5f',
+    color: '#ffffff',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '13px',
+    fontWeight: 700,
+    cursor: 'default',
+    flexShrink: 0,
+    userSelect: 'none',
   },
 };
