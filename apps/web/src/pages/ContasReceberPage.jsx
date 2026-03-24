@@ -275,7 +275,11 @@ export default function ContasReceberPage() {
         toast.success('Conta atualizada com sucesso!');
       } else {
         const res = await contasReceberService.criar(payload);
-        toast.success('Conta a receber criada com sucesso!');
+        if (res?.parcelas) {
+          toast.success(`${res.parcelas} parcelas criadas com sucesso!`);
+        } else {
+          toast.success('Conta a receber criada com sucesso!');
+        }
         if (res?.grupo_recorrencia_id) {
           setGruposExpandidos((prev) => new Set([...prev, res.grupo_recorrencia_id]));
         }
@@ -446,7 +450,7 @@ export default function ContasReceberPage() {
               </div>
             </div>
             <div style={s.topBarRight}>
-              <button style={s.btnPrimary} onClick={abrirModalNovo}>
+              <button style={{ ...s.btnPrimary, background: '#22c55e' }} onClick={abrirModalNovo}>
                 + Nova Conta a Receber
               </button>
             </div>
