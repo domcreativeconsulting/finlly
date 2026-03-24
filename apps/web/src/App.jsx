@@ -14,6 +14,8 @@ import BillingStatusPage from './pages/BillingStatusPage.jsx';
 import { ProtectedRoute } from './components/ProtectedRoute.jsx';
 import ContasPagarPage from './pages/ContasPagarPage.jsx';
 import ContasReceberPage from './pages/ContasReceberPage.jsx';
+import CategoriasPage from './pages/CategoriasPage.jsx';
+import ContasPage from './pages/ContasPage.jsx';
 
 export default function App() {
   return (
@@ -54,6 +56,14 @@ export default function App() {
         <Route
           path="/contas-receber"
           element={<ProtectedRoute element={<ContasReceberPage />} />}
+        />
+        <Route
+          path="/categorias"
+          element={<ProtectedRoute element={<CategoriasPage />} />}
+        />
+        <Route
+          path="/contas"
+          element={<ProtectedRoute element={<ContasPage />} />}
         />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/logout" element={<Navigate to="/login" replace />} />
