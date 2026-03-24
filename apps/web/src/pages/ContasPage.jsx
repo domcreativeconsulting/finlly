@@ -303,112 +303,183 @@ export default function ContasPage() {
           </div>
 
           {/* Content */}
-          <div
-            style={{
-              background: '#fff',
-              borderRadius: '12px',
-              boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-              overflow: 'hidden',
-            }}
-          >
-            {loading ? (
-              <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
-                Carregando...
-              </div>
-            ) : error ? (
-              <div style={{ padding: '40px', textAlign: 'center', color: '#991b1b' }}>{error}</div>
-            ) : lista.length === 0 ? (
-              <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
-                Nenhuma carteira encontrada.
-              </div>
-            ) : (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                      <th style={thStyle}>Nome</th>
-                      <th style={thStyle}>Tipo</th>
-                      <th style={thStyle}>Saldo</th>
-                      <th style={thStyle}>Status</th>
-                      <th style={thStyle}>Incluir no Total</th>
-                      <th style={{ ...thStyle, textAlign: 'right' }}>Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {lista.map((conta) => (
-                      <tr key={conta.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                        <td style={tdStyle}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            {conta.cor && (
-                              <span
-                                style={{
-                                  width: '12px',
-                                  height: '12px',
-                                  borderRadius: '3px',
-                                  background: conta.cor,
-                                  flexShrink: 0,
-                                }}
-                              />
-                            )}
-                            <span style={{ fontWeight: 500, color: '#1e293b' }}>
-                              {conta.icone ? `${conta.icone} ` : ''}{conta.nome}
-                            </span>
-                          </div>
-                        </td>
-                        <td style={tdStyle}>
-                          {TIPO_CONTA_LABELS[conta.tipo] || conta.tipo}
-                        </td>
-                        <td style={tdStyle}>
-                          <span
-                            style={{
-                              fontWeight: 600,
-                              color: (conta.saldo ?? 0) >= 0 ? '#166534' : '#991b1b',
-                            }}
-                          >
-                            {formatBRL(conta.saldo)}
-                          </span>
-                        </td>
-                        <td style={tdStyle}>
-                          <StatusBadge status={conta.status} />
-                        </td>
-                        <td style={tdStyle}>
-                          <span
-                            style={{
-                              display: 'inline-block',
-                              padding: '2px 8px',
-                              borderRadius: '999px',
-                              fontSize: '11px',
-                              fontWeight: 600,
-                              background: conta.incluir_total ? '#dcfce7' : '#f3f4f6',
-                              color: conta.incluir_total ? '#166534' : '#6b7280',
-                            }}
-                          >
-                            {conta.incluir_total ? 'Sim' : 'Não'}
-                          </span>
-                        </td>
-                        <td style={{ ...tdStyle, textAlign: 'right' }}>
-                          <span style={{ display: 'inline-flex', gap: '8px' }}>
-                            <button
-                              onClick={() => abrirModalEdicao(conta)}
-                              style={btnActionEdit}
-                            >
-                              Editar
-                            </button>
-                            <button
-                              onClick={() => abrirModalExcluir(conta)}
-                              style={btnActionDelete}
-                            >
-                              Excluir
-                            </button>
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+          {loading ? (
+            <div
+              style={{
+                background: '#fff',
+                borderRadius: '12px',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+                padding: '40px',
+                textAlign: 'center',
+                color: '#64748b',
+              }}
+            >
+              Carregando...
+            </div>
+          ) : error ? (
+            <div
+              style={{
+                background: '#fff',
+                borderRadius: '12px',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+                padding: '40px',
+                textAlign: 'center',
+                color: '#991b1b',
+              }}
+            >
+              {error}
+            </div>
+          ) : lista.length === 0 ? (
+            <div
+              style={{
+                background: '#fff',
+                borderRadius: '12px',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+                padding: '60px 40px',
+                textAlign: 'center',
+              }}
+            >
+              <div style={{ fontSize: '48px', marginBottom: '16px' }}>💳</div>
+              <p style={{ color: '#1e293b', fontWeight: 600, fontSize: '16px', margin: '0 0 8px' }}>
+                Nenhuma carteira encontrada
+              </p>
+              <p style={{ color: '#64748b', fontSize: '14px', margin: '0 0 24px' }}>
+                Crie sua primeira carteira para controlar seu saldo.
+              </p>
+              <button onClick={abrirModalNovo} style={btnPrimary}>
+                + Criar primeira carteira
+              </button>
+            </div>
+          ) : (
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                gap: '16px',
+              }}
+            >
+              {lista.map((conta) => (
+                <div
+                  key={conta.id}
+                  style={{
+                    background: '#fff',
+                    borderRadius: '14px',
+                    boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    borderTop: `4px solid ${conta.cor || DEFAULT_COLOR}`,
+                  }}
+                >
+                  {/* Card header */}
+                  <div style={{ padding: '16px 16px 12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                      <span
+                        style={{
+                          width: '36px',
+                          height: '36px',
+                          borderRadius: '50%',
+                          background: conta.cor || DEFAULT_COLOR,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '18px',
+                          flexShrink: 0,
+                          color: '#fff',
+                        }}
+                      >
+                        {conta.icone || '💳'}
+                      </span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p
+                          style={{
+                            margin: 0,
+                            fontWeight: 700,
+                            fontSize: '15px',
+                            color: '#1e293b',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                        >
+                          {conta.nome}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Type badge + status badge row */}
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px' }}>
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          padding: '2px 10px',
+                          borderRadius: '999px',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          background: '#e0f2fe',
+                          color: '#0369a1',
+                        }}
+                      >
+                        {TIPO_CONTA_LABELS[conta.tipo] || conta.tipo}
+                      </span>
+                      <StatusBadge status={conta.status} />
+                      {conta.incluir_total && (
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            padding: '2px 8px',
+                            borderRadius: '999px',
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            background: '#f0fdf4',
+                            color: '#166534',
+                          }}
+                        >
+                          ✓ No total
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Balance */}
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: '22px',
+                        fontWeight: 700,
+                        color: (conta.saldo ?? 0) >= 0 ? '#166534' : '#991b1b',
+                      }}
+                    >
+                      {formatBRL(conta.saldo)}
+                    </p>
+                  </div>
+
+                  {/* Card footer with actions */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: '8px',
+                      padding: '10px 16px',
+                      borderTop: '1px solid #f1f5f9',
+                      background: '#f8fafc',
+                    }}
+                  >
+                    <button
+                      onClick={() => abrirModalEdicao(conta)}
+                      style={{ ...btnActionEdit, flex: 1 }}
+                    >
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => abrirModalExcluir(conta)}
+                      style={{ ...btnActionDelete, flex: 1 }}
+                    >
+                      Excluir
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </main>
 
         {/* Modal criar/editar */}
@@ -578,22 +649,6 @@ const inputStyle = {
   boxSizing: 'border-box',
 };
 
-const thStyle = {
-  padding: '12px 16px',
-  textAlign: 'left',
-  fontSize: '12px',
-  fontWeight: 600,
-  color: '#64748b',
-  textTransform: 'uppercase',
-  letterSpacing: '0.05em',
-};
-
-const tdStyle = {
-  padding: '12px 16px',
-  fontSize: '14px',
-  color: '#334155',
-  verticalAlign: 'middle',
-};
 
 const overlayStyle = {
   position: 'fixed',
