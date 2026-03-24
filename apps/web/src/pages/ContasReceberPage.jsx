@@ -1,0 +1,1194 @@
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { toast } from 'react-toastify';
+import { DollarSign } from 'lucide-react';
+import AppSidebar from '../components/AppSidebar.jsx';
+import { InadimplenteGuard } from '../components/InadimplenteGuard.jsx';
+import { contasReceberService } from '../services/contasReceber.service.js';
+import api from '../services/api.js';
+
+const STATUS_LABELS = {
+  pendente: 'Pendente',
+  recebido: 'Recebido',
+  cancelado: 'Cancelado',
+  estornado: 'Estornado',
+  falhou: 'Falhou',
+};
+
+const STATUS_COLORS = {
+  pendente: { background: '#fef9c3', color: '#854d0e' },
+  recebido: { background: '#dcfce7', color: '#166534' },
+  cancelado: { background: '#f3f4f6', color: '#6b7280' },
+  estornado: { background: '#ffedd5', color: '#9a3412' },
+  falhou: { background: '#fee2e2', color: '#991b1b' },
+};
+
+const RECORRENCIA_OPCOES = [
+  { value: 'diario', label: 'Diário' },
+  { value: 'semanal', label: 'Semanal' },
+  { value: 'quinzenal', label: 'Quinzenal' },
+  { value: 'mensal', label: 'Mensal' },
+  { value: 'bimestral', label: 'Bimestral' },
+  { value: 'trimestral', label: 'Trimestral' },
+  { value: 'semestral', label: 'Semestral' },
+  { value: 'anual', label: 'Anual' },
+];
+
+function formatBRL(valor) {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor);
+}
+
+function formatDate(data_vencimento) {
+  if (!data_vencimento) return '-';
+  const datePart = String(data_vencimento).substring(0, 10);
+  const [year, month, day] = datePart.split('-').map(Number);
+  if (!year || !month || !day) return '-';
+  return new Date(year, month - 1, day).toLocaleDateString('pt-BR');
+}
+
+function StatusBadge({ status }) {
+  const style = STATUS_COLORS[status] || STATUS_COLORS.pendente;
+  return (
+    <span
+      style={{
+        display: 'inline-block',
+        padding: '2px 10px',
+        borderRadius: '999px',
+        fontSize: '12px',
+        fontWeight: 600,
+        ...style,
+      }}
+    >
+      {STATUS_LABELS[status] || status}
+    </span>
+  );
+}
+
+function todayISO() {
+  return new Date().toISOString().substring(0, 10);
+}
+
+const EMPTY_FORM = {
+  descricao: '',
+  valor: '',
+  data_vencimento: '',
+  categoria_id: '',
+  conta_id: '',
+  observacoes: '',
+  recorrente: false,
+  recorrencia: 'mensal',
+  total_parcelas: '',
+};
+
+function SortableTh({ field, label, sortField, sortDir, onSort, style }) {
+  const active = sortField === field;
+  return (
+    <th
+      style={{ ...style, cursor: 'pointer', userSelect: 'none' }}
+      onClick={() => onSort(field)}
+    >
+      {label}{' '}
+      <span style={{ fontSize: '11px', opacity: active ? 1 : 0.3 }}>
+        {active ? (sortDir === 'asc' ? '▲' : '▼') : '▲'}
+      </span>
+    </th>
+  );
+}
+
+export default function ContasReceberPage() {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
+
+  const [lista, setLista] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const [filtros, setFiltros] = useState({
+    status: '',
+    data_vencimento_de: '',
+    data_vencimento_ate: '',
+    busca: '',
+  });
+  const [filtrosAtivos, setFiltrosAtivos] = useState({});
+
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [sortField, setSortField] = useState('data_vencimento');
+  const [sortDir, setSortDir] = useState('asc');
+
+  const [modalAberto, setModalAberto] = useState(false);
+  const [contaEmEdicao, setContaEmEdicao] = useState(null);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [salvando, setSalvando] = useState(false);
+
+  // Categorias e contas para os selects do formulário
+  const [categorias, setCategorias] = useState([]);
+  const [contas, setContas] = useState([]);
+  const [loadingSelects, setLoadingSelects] = useState(false);
+
+  // Modal de recebimento
+  const [modalReceberAberto, setModalReceberAberto] = useState(false);
+  const [contaParaReceber, setContaParaReceber] = useState(null);
+  const [dataRecebimento, setDataRecebimento] = useState(todayISO());
+  const [contaIdRecebimento, setContaIdRecebimento] = useState('');
+  const [observacoesRecebimento, setObservacoesRecebimento] = useState('');
+  const [comprovante, setComprovante] = useState(null);
+  const [recebendo, setRecebendo] = useState(false);
+
+  // Grupos expandidos (accordion)
+  const [gruposExpandidos, setGruposExpandidos] = useState(new Set());
+
+  const carregarLista = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params = { page, limit: 20, order_by: sortField, order_dir: sortDir, ...filtrosAtivos };
+      Object.keys(params).forEach((k) => {
+        if (params[k] === '' || params[k] === null || params[k] === undefined) delete params[k];
+      });
+      const result = await contasReceberService.listar(params);
+      setLista(result.data);
+      setTotalPages(result.totalPages);
+      setTotal(result.total ?? 0);
+    } catch (err) {
+      const msg = err?.response?.data?.message || 'Erro ao carregar contas a receber.';
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, filtrosAtivos, sortField, sortDir]);
+
+  useEffect(() => {
+    carregarLista();
+  }, [carregarLista]);
+
+  async function carregarSelects() {
+    setLoadingSelects(true);
+    try {
+      const [resCateg, resContas] = await Promise.all([
+        api.get('/categorias', { params: { tipo: 'entrada', limit: 500 } }),
+        api.get('/contas', { params: { limit: 500 } }),
+      ]);
+      setCategorias(resCateg.data?.data ?? resCateg.data ?? []);
+      setContas(resContas.data?.data ?? resContas.data ?? []);
+    } catch {
+      toast.error('Não foi possível carregar categorias e contas.');
+    } finally {
+      setLoadingSelects(false);
+    }
+  }
+
+  function handleFiltroChange(e) {
+    const { name, value } = e.target;
+    setFiltros((prev) => ({ ...prev, [name]: value }));
+  }
+
+  function handleFiltrar(e) {
+    e.preventDefault();
+    setPage(1);
+    setFiltrosAtivos({ ...filtros });
+  }
+
+  function handleLimpar() {
+    setFiltros({ status: '', data_vencimento_de: '', data_vencimento_ate: '', busca: '' });
+    setFiltrosAtivos({});
+    setPage(1);
+  }
+
+  function handleSort(field) {
+    if (sortField === field) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortDir('asc');
+    }
+    setPage(1);
+  }
+
+  function abrirModalNovo() {
+    setContaEmEdicao(null);
+    setForm(EMPTY_FORM);
+    setModalAberto(true);
+    carregarSelects();
+  }
+
+  function abrirModalEdicao(conta) {
+    setContaEmEdicao(conta);
+    const vencimento = conta.data_vencimento
+      ? conta.data_vencimento.substring(0, 10)
+      : '';
+    setForm({
+      descricao: conta.descricao || '',
+      valor: conta.valor !== undefined ? String(conta.valor) : '',
+      data_vencimento: vencimento,
+      categoria_id: conta.categoria_id || '',
+      conta_id: conta.conta_id || '',
+      observacoes: conta.observacoes || '',
+      recorrente: false,
+      recorrencia: 'mensal',
+      total_parcelas: '',
+    });
+    setModalAberto(true);
+    carregarSelects();
+  }
+
+  function fecharModal() {
+    setModalAberto(false);
+    setContaEmEdicao(null);
+    setForm(EMPTY_FORM);
+  }
+
+  function handleFormChange(e) {
+    const { name, value, type, checked } = e.target;
+    setForm((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+  }
+
+  async function handleSalvar(e) {
+    e.preventDefault();
+    setSalvando(true);
+    try {
+      const valor = parseFloat(form.valor);
+      if (isNaN(valor) || valor <= 0) {
+        toast.error('Informe um valor válido.');
+        setSalvando(false);
+        return;
+      }
+      const payload = {
+        descricao: form.descricao,
+        valor,
+        data_vencimento: form.data_vencimento,
+        categoria_id: form.categoria_id || null,
+        conta_id: form.conta_id || null,
+        observacoes: form.observacoes || null,
+      };
+
+      if (!contaEmEdicao && form.recorrente) {
+        payload.recorrente = true;
+        payload.recorrencia = form.recorrencia;
+        if (form.total_parcelas) {
+          payload.total_parcelas = parseInt(form.total_parcelas, 10);
+        }
+      }
+
+      if (contaEmEdicao) {
+        await contasReceberService.atualizar(contaEmEdicao.id, payload);
+        toast.success('Conta atualizada com sucesso!');
+      } else {
+        const res = await contasReceberService.criar(payload);
+        toast.success('Conta a receber criada com sucesso!');
+        if (res?.grupo_recorrencia_id) {
+          setGruposExpandidos((prev) => new Set([...prev, res.grupo_recorrencia_id]));
+        }
+      }
+
+      fecharModal();
+      carregarLista();
+    } catch (err) {
+      const msg = err?.response?.data?.message || 'Erro ao salvar conta.';
+      toast.error(msg);
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  async function handleExcluir(conta) {
+    if (!window.confirm(`Excluir a conta "${conta.descricao}"?`)) return;
+    try {
+      await contasReceberService.excluir(conta.id);
+      toast.success('Excluída!');
+      carregarLista();
+    } catch (err) {
+      const msg = err?.response?.data?.message || 'Erro ao excluir conta.';
+      toast.error(msg);
+    }
+  }
+
+  function abrirModalReceber(conta) {
+    setContaParaReceber(conta);
+    setDataRecebimento(todayISO());
+    setContaIdRecebimento(conta.conta_id || '');
+    setObservacoesRecebimento('');
+    setComprovante(null);
+    setModalReceberAberto(true);
+    carregarSelects();
+  }
+
+  function fecharModalReceber() {
+    setModalReceberAberto(false);
+    setContaParaReceber(null);
+    setDataRecebimento(todayISO());
+    setContaIdRecebimento('');
+    setObservacoesRecebimento('');
+    setComprovante(null);
+  }
+
+  async function handleConfirmarRecebimento(e) {
+    e.preventDefault();
+    if (!contaParaReceber) return;
+    setRecebendo(true);
+    try {
+      const payload = { data_recebimento: dataRecebimento };
+      if (contaIdRecebimento) payload.conta_id = contaIdRecebimento;
+      if (observacoesRecebimento) payload.observacoes = observacoesRecebimento;
+
+      await contasReceberService.receber(contaParaReceber.id, payload);
+
+      if (comprovante) {
+        toast.success(`Recebida! Comprovante "${comprovante.name}" salvo localmente.`);
+      } else {
+        toast.success('Recebida!');
+      }
+      fecharModalReceber();
+      carregarLista();
+    } catch (err) {
+      const msg = err?.response?.data?.message || 'Erro ao registrar recebimento.';
+      toast.error(msg);
+    } finally {
+      setRecebendo(false);
+    }
+  }
+
+  async function handleCancelar(conta) {
+    if (conta.status === 'recebido' || conta.status === 'cancelado') return;
+    if (!window.confirm(`Cancelar a conta "${conta.descricao}"?`)) return;
+    try {
+      await contasReceberService.cancelar(conta.id);
+      toast.success('Cancelada!');
+      carregarLista();
+    } catch (err) {
+      const msg = err?.response?.data?.message || 'Erro ao cancelar conta.';
+      toast.error(msg);
+    }
+  }
+
+  function toggleGrupo(grupoId) {
+    setGruposExpandidos((prev) => {
+      const next = new Set(prev);
+      if (next.has(grupoId)) next.delete(grupoId);
+      else next.add(grupoId);
+      return next;
+    });
+  }
+
+  const grupos = useMemo(() => {
+    const map = new Map();
+    lista.forEach((conta) => {
+      if (conta.grupo_recorrencia_id) {
+        if (!map.has(conta.grupo_recorrencia_id)) {
+          map.set(conta.grupo_recorrencia_id, []);
+        }
+        map.get(conta.grupo_recorrencia_id).push(conta);
+      } else {
+        map.set(conta.id, [conta]);
+      }
+    });
+    return Array.from(map.entries());
+  }, [lista]);
+
+  async function handleCancelarGrupo(grupoId, descricao) {
+    if (!window.confirm(`Cancelar todas as parcelas pendentes de "${descricao}"?`)) return;
+    try {
+      const result = await contasReceberService.cancelarGrupo(grupoId);
+      toast.success(`${result.canceladas} parcela(s) cancelada(s)!`);
+      carregarLista();
+    } catch (err) {
+      const msg = err?.response?.data?.message || 'Erro ao cancelar grupo.';
+      toast.error(msg);
+    }
+  }
+
+  return (
+    <div style={s.pageWrapper}>
+      <div style={s.page}>
+        <AppSidebar
+          sidebarOpen={sidebarOpen}
+          isExpanded={sidebarExpanded}
+          currentPath="/contas-receber"
+          onHoverChange={setSidebarExpanded}
+        />
+
+        <div
+          style={{
+            ...s.mainArea,
+            marginLeft: !sidebarOpen
+              ? '0px'
+              : sidebarExpanded
+                ? '236px'
+                : '108px',
+            transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          }}
+        >
+          {/* Header */}
+          <div style={s.topBar}>
+            <div style={s.topBarLeft}>
+              <button
+                style={s.hamburger}
+                aria-label="Menu"
+                onClick={() => {
+                  if (!sidebarOpen) {
+                    setSidebarOpen(true);
+                    setSidebarExpanded(true);
+                  } else {
+                    setSidebarExpanded(!sidebarExpanded);
+                  }
+                }}
+              >
+                ☰
+              </button>
+              <div style={s.pageTitleIcon} aria-hidden="true">
+                <DollarSign size={32} color="#4b5563" strokeWidth={1.5} />
+              </div>
+              <div>
+                <div style={s.pageTitleRow}>
+                  <h1 style={s.pageTitle}>Contas a Receber</h1>
+                </div>
+                <p style={s.pageSubtitle}>Gerencie suas contas a receber</p>
+              </div>
+            </div>
+            <div style={s.topBarRight}>
+              <button style={s.btnPrimary} onClick={abrirModalNovo}>
+                + Nova Conta a Receber
+              </button>
+            </div>
+          </div>
+
+          {/* Content */}
+          <InadimplenteGuard>
+            <div style={s.content}>
+              {/* Filtros */}
+              <form style={s.filtersBar} onSubmit={handleFiltrar}>
+                <input
+                  type="text"
+                  name="busca"
+                  value={filtros.busca}
+                  onChange={handleFiltroChange}
+                  style={{ ...s.input, width: '180px' }}
+                  placeholder="Buscar por descrição..."
+                />
+                <select
+                  name="status"
+                  value={filtros.status}
+                  onChange={handleFiltroChange}
+                  style={s.select}
+                >
+                  <option value="">Todos os status</option>
+                  <option value="pendente">Pendente</option>
+                  <option value="recebido">Recebido</option>
+                  <option value="cancelado">Cancelado</option>
+                  <option value="estornado">Estornado</option>
+                  <option value="falhou">Falhou</option>
+                </select>
+                <input
+                  type="date"
+                  name="data_vencimento_de"
+                  value={filtros.data_vencimento_de}
+                  onChange={handleFiltroChange}
+                  style={s.input}
+                  placeholder="Vencimento de"
+                />
+                <input
+                  type="date"
+                  name="data_vencimento_ate"
+                  value={filtros.data_vencimento_ate}
+                  onChange={handleFiltroChange}
+                  style={s.input}
+                  placeholder="Vencimento até"
+                />
+                <button type="submit" style={s.btnSecondary}>
+                  Filtrar
+                </button>
+                <button type="button" style={s.btnGhost} onClick={handleLimpar}>
+                  Limpar
+                </button>
+              </form>
+
+              {/* Tabela */}
+              {loading ? (
+                <div style={s.centered}>Carregando...</div>
+              ) : error ? (
+                <div style={s.errorBox}>{error}</div>
+              ) : lista.length === 0 ? (
+                <div style={s.centered}>Nenhuma conta encontrada.</div>
+              ) : (
+                <div style={s.tableWrapper}>
+                  <table style={s.table}>
+                    <thead>
+                      <tr>
+                        <SortableTh field="descricao" label="Descrição" sortField={sortField} sortDir={sortDir} onSort={handleSort} style={s.th} />
+                        <SortableTh field="valor" label="Valor" sortField={sortField} sortDir={sortDir} onSort={handleSort} style={{ ...s.th, textAlign: 'right' }} />
+                        <SortableTh field="data_vencimento" label="Vencimento" sortField={sortField} sortDir={sortDir} onSort={handleSort} style={s.th} />
+                        <SortableTh field="status" label="Status" sortField={sortField} sortDir={sortDir} onSort={handleSort} style={s.th} />
+                        <th style={s.th}>Categoria</th>
+                        <th style={{ ...s.th, textAlign: 'center' }}>Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {grupos.map(([grupoId, contas]) => {
+                        const isGrupo = contas.length > 1;
+                        if (!isGrupo) {
+                          const conta = contas[0];
+                          return (
+                            <tr key={conta.id} style={s.tr}>
+                              <td style={s.td}>{conta.descricao}</td>
+                              <td style={{ ...s.td, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                                {formatBRL(conta.valor)}
+                              </td>
+                              <td style={s.td}>{formatDate(conta.data_vencimento)}</td>
+                              <td style={s.td}>
+                                <StatusBadge status={conta.status} />
+                              </td>
+                              <td style={s.td}>{conta.categoria?.nome || '-'}</td>
+                              <td style={{ ...s.td, textAlign: 'center', whiteSpace: 'nowrap' }}>
+                                <button
+                                  style={s.btnLink}
+                                  onClick={() => abrirModalEdicao(conta)}
+                                  disabled={conta.status === 'recebido'}
+                                  title={conta.status === 'recebido' ? 'Conta recebida não pode ser editada' : 'Editar'}
+                                >
+                                  Editar
+                                </button>
+                                {conta.status === 'pendente' && (
+                                  <>
+                                    {' | '}
+                                    <button
+                                      style={{ ...s.btnLink, color: '#16a34a' }}
+                                      onClick={() => abrirModalReceber(conta)}
+                                      title="Registrar recebimento"
+                                    >
+                                      Receber
+                                    </button>
+                                    {' | '}
+                                    <button
+                                      style={{ ...s.btnLink, color: '#d97706' }}
+                                      onClick={() => handleCancelar(conta)}
+                                      title="Cancelar conta"
+                                    >
+                                      Cancelar
+                                    </button>
+                                  </>
+                                )}
+                                {' | '}
+                                <button
+                                  style={{ ...s.btnLink, color: '#dc2626' }}
+                                  onClick={() => handleExcluir(conta)}
+                                  disabled={conta.status === 'recebido'}
+                                  title={conta.status === 'recebido' ? 'Conta recebida não pode ser excluída' : 'Excluir'}
+                                >
+                                  Excluir
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        }
+
+                        // Grupo parcelado
+                        const expanded = gruposExpandidos.has(grupoId);
+                        const totalValor = contas.reduce((sum, c) => sum + c.valor, 0);
+                        const proxPendente = contas.find((c) => c.status === 'pendente');
+                        const recebidas = contas.filter((c) => c.status === 'recebido').length;
+                        const pendentes = contas.filter((c) => c.status === 'pendente').length;
+                        const temPendentes = pendentes > 0;
+                        const descricaoGrupo = contas[0].descricao;
+                        const totalParcelas = contas[0].total_parcelas || contas.length;
+
+                        return [
+                          <tr
+                            key={grupoId}
+                            style={{ ...s.tr, backgroundColor: '#f0f9ff', cursor: 'pointer' }}
+                            role="button"
+                            aria-expanded={expanded}
+                            tabIndex={0}
+                            onClick={() => toggleGrupo(grupoId)}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleGrupo(grupoId); } }}
+                          >
+                            <td style={s.td}>
+                              <span style={{ marginRight: '6px', fontSize: '11px' }}>{expanded ? '▼' : '▶'}</span>
+                              <strong>{descricaoGrupo}</strong>
+                              <span style={{ fontSize: '11px', color: '#6b7280', marginLeft: '6px' }}>
+                                {contas.length}/{totalParcelas} parcelas
+                              </span>
+                            </td>
+                            <td style={{ ...s.td, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                              {formatBRL(totalValor)}
+                            </td>
+                            <td style={s.td}>{proxPendente ? formatDate(proxPendente.data_vencimento) : '-'}</td>
+                            <td style={s.td}>
+                              <span style={{ fontSize: '12px', color: '#374151' }}>
+                                {recebidas > 0 && <span style={{ color: '#166534' }}>{recebidas} recebida{recebidas !== 1 ? 's' : ''}</span>}
+                                {recebidas > 0 && pendentes > 0 && ' • '}
+                                {pendentes > 0 && <span style={{ color: '#854d0e' }}>{pendentes} pendente{pendentes !== 1 ? 's' : ''}</span>}
+                              </span>
+                            </td>
+                            <td style={s.td}>{contas[0].categoria?.nome || '-'}</td>
+                            <td style={{ ...s.td, textAlign: 'center', whiteSpace: 'nowrap' }} onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                              {temPendentes && (
+                                <button
+                                  style={{ ...s.btnLink, color: '#d97706' }}
+                                  onClick={() => handleCancelarGrupo(grupoId, descricaoGrupo)}
+                                  title="Cancelar parcelas pendentes do grupo"
+                                >
+                                  Cancelar grupo
+                                </button>
+                              )}
+                            </td>
+                          </tr>,
+                          ...(expanded ? contas.map((conta) => (
+                            <tr key={conta.id} style={{ ...s.tr, backgroundColor: '#f8fafc' }}>
+                              <td style={{ ...s.td, paddingLeft: '32px' }}>
+                                {conta.descricao}
+                                <span style={{ fontSize: '11px', color: '#6b7280', marginLeft: '6px' }}>
+                                  {conta.parcela_atual}/{conta.total_parcelas}
+                                </span>
+                              </td>
+                              <td style={{ ...s.td, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                                {formatBRL(conta.valor)}
+                              </td>
+                              <td style={s.td}>{formatDate(conta.data_vencimento)}</td>
+                              <td style={s.td}>
+                                <StatusBadge status={conta.status} />
+                              </td>
+                              <td style={s.td}>{conta.categoria?.nome || '-'}</td>
+                              <td style={{ ...s.td, textAlign: 'center', whiteSpace: 'nowrap' }}>
+                                <button
+                                  style={s.btnLink}
+                                  onClick={() => abrirModalEdicao(conta)}
+                                  disabled={conta.status === 'recebido'}
+                                  title={conta.status === 'recebido' ? 'Conta recebida não pode ser editada' : 'Editar'}
+                                >
+                                  Editar
+                                </button>
+                                {conta.status === 'pendente' && (
+                                  <>
+                                    {' | '}
+                                    <button
+                                      style={{ ...s.btnLink, color: '#16a34a' }}
+                                      onClick={() => abrirModalReceber(conta)}
+                                      title="Registrar recebimento"
+                                    >
+                                      Receber
+                                    </button>
+                                    {' | '}
+                                    <button
+                                      style={{ ...s.btnLink, color: '#d97706' }}
+                                      onClick={() => handleCancelar(conta)}
+                                      title="Cancelar parcela"
+                                    >
+                                      Cancelar
+                                    </button>
+                                  </>
+                                )}
+                                {' | '}
+                                <button
+                                  style={{ ...s.btnLink, color: '#dc2626' }}
+                                  onClick={() => handleExcluir(conta)}
+                                  disabled={conta.status === 'recebido'}
+                                  title={conta.status === 'recebido' ? 'Conta recebida não pode ser excluída' : 'Excluir'}
+                                >
+                                  Excluir
+                                </button>
+                              </td>
+                            </tr>
+                          )) : []),
+                        ];
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Paginação */}
+              {!loading && !error && totalPages > 1 && (
+                <div style={s.pagination}>
+                  <button
+                    style={s.btnSecondary}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page <= 1}
+                  >
+                    Anterior
+                  </button>
+                  <span style={s.pageInfo}>
+                    Página {page} de {totalPages} · {total} registro{total !== 1 ? 's' : ''}
+                  </span>
+                  <button
+                    style={s.btnSecondary}
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page >= totalPages}
+                  >
+                    Próximo
+                  </button>
+                </div>
+              )}
+            </div>
+          </InadimplenteGuard>
+        </div>
+      </div>
+
+      {/* Modal criar/editar */}
+      {modalAberto && (
+        <div style={s.modalOverlay} role="dialog" aria-modal="true" aria-label="Formulário de conta a receber">
+          <div style={{ ...s.modalBox, maxHeight: '90vh', overflowY: 'auto' }}>
+            <h2 style={s.modalTitle}>
+              {contaEmEdicao ? 'Editar Conta a Receber' : 'Nova Conta a Receber'}
+            </h2>
+            <form onSubmit={handleSalvar}>
+              <div style={s.formGroup}>
+                <label style={s.label}>Descrição *</label>
+                <input
+                  name="descricao"
+                  value={form.descricao}
+                  onChange={handleFormChange}
+                  style={s.input}
+                  maxLength={255}
+                  required
+                  placeholder="Ex: Venda de produto"
+                />
+              </div>
+              <div style={s.formRow}>
+                <div style={{ ...s.formGroup, flex: 1 }}>
+                  <label style={s.label}>Valor (R$) *</label>
+                  <input
+                    name="valor"
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    value={form.valor}
+                    onChange={handleFormChange}
+                    style={s.input}
+                    required
+                    placeholder="0,00"
+                  />
+                </div>
+                <div style={{ ...s.formGroup, flex: 1 }}>
+                  <label style={s.label}>Vencimento *</label>
+                  <input
+                    name="data_vencimento"
+                    type="date"
+                    value={form.data_vencimento}
+                    onChange={handleFormChange}
+                    style={s.input}
+                    required
+                  />
+                </div>
+              </div>
+              <div style={s.formRow}>
+                <div style={{ ...s.formGroup, flex: 1 }}>
+                  <label style={s.label}>Categoria</label>
+                  <select
+                    name="categoria_id"
+                    value={form.categoria_id}
+                    onChange={handleFormChange}
+                    style={s.input}
+                    disabled={loadingSelects}
+                  >
+                    <option value="">{loadingSelects ? 'Carregando...' : 'Sem categoria'}</option>
+                    {categorias.map((c) => (
+                      <option key={c.id} value={c.id}>{c.nome}</option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{ ...s.formGroup, flex: 1 }}>
+                  <label style={s.label}>Conta</label>
+                  <select
+                    name="conta_id"
+                    value={form.conta_id}
+                    onChange={handleFormChange}
+                    style={s.input}
+                    disabled={loadingSelects}
+                  >
+                    <option value="">{loadingSelects ? 'Carregando...' : 'Sem conta'}</option>
+                    {contas.map((c) => (
+                      <option key={c.id} value={c.id}>{c.nome}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div style={s.formGroup}>
+                <label style={s.label}>Observações</label>
+                <textarea
+                  name="observacoes"
+                  value={form.observacoes}
+                  onChange={handleFormChange}
+                  style={{ ...s.input, height: '80px', resize: 'vertical' }}
+                  maxLength={1000}
+                  placeholder="Observações opcionais..."
+                />
+              </div>
+
+              {/* Parcelamento — apenas na criação */}
+              {!contaEmEdicao && (
+                <div style={{ ...s.formGroup, borderTop: '1px solid #e5e7eb', paddingTop: '16px' }}>
+                  <label style={{ ...s.label, display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      name="recorrente"
+                      checked={form.recorrente}
+                      onChange={handleFormChange}
+                    />
+                    Parcelar / Recorrente
+                  </label>
+
+                  {form.recorrente && (
+                    <div style={{ ...s.formRow, marginTop: '12px' }}>
+                      <div style={{ ...s.formGroup, flex: 1, marginBottom: 0 }}>
+                        <label style={s.label}>Recorrência *</label>
+                        <select
+                          name="recorrencia"
+                          value={form.recorrencia}
+                          onChange={handleFormChange}
+                          style={s.input}
+                          required
+                        >
+                          {RECORRENCIA_OPCOES.map((o) => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div style={{ ...s.formGroup, flex: 1, marginBottom: 0 }}>
+                        <label style={s.label}>Nº de parcelas *</label>
+                        <input
+                          name="total_parcelas"
+                          type="number"
+                          min="2"
+                          max="360"
+                          value={form.total_parcelas}
+                          onChange={handleFormChange}
+                          style={s.input}
+                          required
+                          placeholder="Ex: 12"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div style={s.modalActions}>
+                <button type="button" style={s.btnGhost} onClick={fecharModal} disabled={salvando}>
+                  Cancelar
+                </button>
+                <button type="submit" style={s.btnPrimary} disabled={salvando}>
+                  {salvando ? 'Salvando...' : contaEmEdicao ? 'Salvar Alterações' : 'Criar Conta'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal receber */}
+      {modalReceberAberto && (
+        <div style={s.modalOverlay} role="dialog" aria-modal="true" aria-label="Registrar recebimento">
+          <div style={{ ...s.modalBox, maxWidth: '420px' }}>
+            <h2 style={s.modalTitle}>Registrar Recebimento</h2>
+            <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#374151' }}>
+              {contaParaReceber?.descricao}
+            </p>
+            <form onSubmit={handleConfirmarRecebimento}>
+              <div style={s.formGroup}>
+                <label style={s.label}>Data do recebimento *</label>
+                <input
+                  type="date"
+                  value={dataRecebimento}
+                  onChange={(e) => setDataRecebimento(e.target.value)}
+                  style={s.input}
+                  required
+                />
+              </div>
+              <div style={s.formGroup}>
+                <label style={s.label}>Conta bancária de crédito</label>
+                <select
+                  value={contaIdRecebimento}
+                  onChange={(e) => setContaIdRecebimento(e.target.value)}
+                  style={s.input}
+                  disabled={loadingSelects}
+                >
+                  <option value="">Selecione uma conta (opcional)</option>
+                  {contas.map((c) => (
+                    <option key={c.id} value={c.id}>{c.nome}</option>
+                  ))}
+                </select>
+              </div>
+              <div style={s.formGroup}>
+                <label style={s.label}>Observações do recebimento</label>
+                <textarea
+                  value={observacoesRecebimento}
+                  onChange={(e) => setObservacoesRecebimento(e.target.value)}
+                  style={{ ...s.input, resize: 'vertical', minHeight: '72px' }}
+                  maxLength={500}
+                  placeholder="Opcional"
+                />
+              </div>
+              <div style={s.formGroup}>
+                <label style={s.label}>Comprovante (opcional)</label>
+                <input
+                  type="file"
+                  accept="image/*,application/pdf"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file && file.size > 5 * 1024 * 1024) {
+                      toast.error('Comprovante deve ter no máximo 5MB.');
+                      e.target.value = '';
+                      setComprovante(null);
+                    } else {
+                      setComprovante(file || null);
+                    }
+                  }}
+                  style={{ fontSize: '14px' }}
+                />
+              </div>
+              <div style={s.modalActions}>
+                <button type="button" style={s.btnGhost} onClick={fecharModalReceber} disabled={recebendo}>
+                  Cancelar
+                </button>
+                <button type="submit" style={{ ...s.btnPrimary, background: '#16a34a' }} disabled={recebendo}>
+                  {recebendo ? 'Registrando...' : 'Confirmar Recebimento'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const s = {
+  pageWrapper: {
+    minHeight: '100vh',
+    background: '#f3f4f6',
+  },
+  page: {
+    display: 'flex',
+    minHeight: '100vh',
+  },
+  mainArea: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    minHeight: '100vh',
+  },
+  topBar: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '20px 32px',
+    background: '#ffffff',
+    borderBottom: '1px solid #e5e7eb',
+    gap: '16px',
+  },
+  topBarLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+  },
+  topBarRight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+  },
+  hamburger: {
+    background: 'none',
+    border: 'none',
+    fontSize: '22px',
+    cursor: 'pointer',
+    color: '#4b5563',
+    padding: '4px 8px',
+    borderRadius: '6px',
+  },
+  pageTitleIcon: {
+    display: 'flex',
+    alignItems: 'center',
+  },
+  pageTitleRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+  },
+  pageTitle: {
+    margin: 0,
+    fontSize: '24px',
+    fontWeight: 700,
+    color: '#111827',
+  },
+  pageSubtitle: {
+    margin: '2px 0 0 0',
+    fontSize: '14px',
+    color: '#6b7280',
+  },
+  content: {
+    padding: '24px 32px',
+    flex: 1,
+  },
+  filtersBar: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    marginBottom: '24px',
+    flexWrap: 'wrap',
+    background: '#ffffff',
+    padding: '16px',
+    borderRadius: '12px',
+    border: '1px solid #e5e7eb',
+  },
+  tableWrapper: {
+    background: '#ffffff',
+    borderRadius: '12px',
+    border: '1px solid #e5e7eb',
+    overflowX: 'auto',
+  },
+  table: {
+    width: '100%',
+    borderCollapse: 'collapse',
+    fontSize: '14px',
+    color: '#111827',
+  },
+  th: {
+    padding: '12px 16px',
+    fontWeight: 600,
+    color: '#374151',
+    fontSize: '13px',
+    borderBottom: '1px solid #e5e7eb',
+    textAlign: 'left',
+    background: '#f9fafb',
+  },
+  tr: {
+    borderBottom: '1px solid #f3f4f6',
+  },
+  td: {
+    padding: '12px 16px',
+    color: '#374151',
+    fontSize: '14px',
+    verticalAlign: 'middle',
+  },
+  pagination: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '16px',
+    marginTop: '24px',
+  },
+  pageInfo: {
+    fontSize: '14px',
+    color: '#6b7280',
+  },
+  centered: {
+    textAlign: 'center',
+    padding: '48px',
+    color: '#6b7280',
+    fontSize: '15px',
+    background: '#ffffff',
+    borderRadius: '12px',
+    border: '1px solid #e5e7eb',
+  },
+  errorBox: {
+    background: '#fee2e2',
+    color: '#991b1b',
+    padding: '16px',
+    borderRadius: '8px',
+    fontSize: '14px',
+    border: '1px solid #fecaca',
+  },
+  // Buttons
+  btnPrimary: {
+    padding: '10px 20px',
+    background: '#2563eb',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '14px',
+    fontWeight: 600,
+    cursor: 'pointer',
+  },
+  btnSecondary: {
+    padding: '8px 16px',
+    background: '#f3f4f6',
+    color: '#374151',
+    border: '1px solid #e5e7eb',
+    borderRadius: '8px',
+    fontSize: '14px',
+    fontWeight: 500,
+    cursor: 'pointer',
+  },
+  btnGhost: {
+    padding: '8px 16px',
+    background: 'transparent',
+    color: '#6b7280',
+    border: '1px solid #e5e7eb',
+    borderRadius: '8px',
+    fontSize: '14px',
+    cursor: 'pointer',
+  },
+  btnLink: {
+    background: 'none',
+    border: 'none',
+    color: '#2563eb',
+    fontSize: '13px',
+    cursor: 'pointer',
+    padding: '2px 4px',
+    textDecoration: 'underline',
+  },
+  // Form inputs
+  select: {
+    padding: '8px 12px',
+    border: '1px solid #e5e7eb',
+    borderRadius: '8px',
+    fontSize: '14px',
+    color: '#374151',
+    background: '#ffffff',
+  },
+  input: {
+    width: '100%',
+    padding: '8px 12px',
+    border: '1px solid #e5e7eb',
+    borderRadius: '8px',
+    fontSize: '14px',
+    color: '#374151',
+    background: '#ffffff',
+    boxSizing: 'border-box',
+  },
+  label: {
+    display: 'block',
+    marginBottom: '4px',
+    fontSize: '13px',
+    fontWeight: 500,
+    color: '#374151',
+  },
+  formGroup: {
+    marginBottom: '16px',
+  },
+  formRow: {
+    display: 'flex',
+    gap: '16px',
+    marginBottom: '0',
+  },
+  // Modal
+  modalOverlay: {
+    position: 'fixed',
+    inset: 0,
+    background: 'rgba(0,0,0,0.4)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1000,
+  },
+  modalBox: {
+    background: '#ffffff',
+    borderRadius: '12px',
+    padding: '32px',
+    width: '100%',
+    maxWidth: '520px',
+    boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+  },
+  modalTitle: {
+    margin: '0 0 24px 0',
+    fontSize: '20px',
+    fontWeight: 700,
+    color: '#111827',
+  },
+  modalActions: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    gap: '12px',
+    marginTop: '24px',
+  },
+};
