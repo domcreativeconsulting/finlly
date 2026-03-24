@@ -2,6 +2,7 @@ import js from '@eslint/js';
 import reactPlugin from 'eslint-plugin-react';
 import reactHooksPlugin from 'eslint-plugin-react-hooks';
 import prettierConfig from 'eslint-config-prettier';
+import globals from 'globals';
 
 export default [
   {
@@ -16,7 +17,7 @@ export default [
     ],
   },
   {
-    files: ['apps/**/*.{js,jsx}'],
+    files: ['apps/web/**/*.{js,jsx}'],
     languageOptions: {
       parserOptions: {
         ecmaVersion: 2020,
@@ -26,12 +27,7 @@ export default [
         },
       },
       globals: {
-        console: 'readonly',
-        process: 'readonly',
-        document: 'readonly',
-        window: 'readonly',
-        setTimeout: 'readonly',
-        clearTimeout: 'readonly',
+        ...globals.browser,
       },
     },
     plugins: {
@@ -72,39 +68,28 @@ export default [
     files: ['apps/api/**/*.js'],
     languageOptions: {
       globals: {
-        fetch: 'readonly',
-        Buffer: 'readonly',
-        process: 'readonly',
-        URL: 'readonly',
-        URLSearchParams: 'readonly',
-        setTimeout: 'readonly',
-        clearTimeout: 'readonly',
-        setInterval: 'readonly',
-        clearInterval: 'readonly',
-        global: 'readonly',
-        __dirname: 'readonly',
-        __filename: 'readonly',
-        AbortController: 'readonly',
+        ...globals.node,
       },
     },
     rules: {
+      ...js.configs.recommended.rules,
+      ...prettierConfig.rules,
       'no-console': ['warn'],
+      'no-unused-vars': [
+        'warn',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          destructuredArrayIgnorePattern: '^_',
+        },
+      ],
     },
   },
   {
     files: ['apps/api/src/**/__tests__/**/*.js'],
     languageOptions: {
       globals: {
-        describe: 'readonly',
-        test: 'readonly',
-        expect: 'readonly',
-        beforeAll: 'readonly',
-        beforeEach: 'readonly',
-        afterAll: 'readonly',
-        afterEach: 'readonly',
-        it: 'readonly',
-        jest: 'readonly',
-        Buffer: 'readonly',
+        ...globals.jest,
         DOMException: 'readonly',
       },
     },

@@ -4,6 +4,7 @@ import { FileText } from 'lucide-react';
 import AppSidebar from '../components/AppSidebar.jsx';
 import { InadimplenteGuard } from '../components/InadimplenteGuard.jsx';
 import { contasPagarService } from '../services/contasPagar.service.js';
+import { anexosService } from '../services/anexos.service.js';
 import api from '../services/api.js';
 
 const STATUS_LABELS = {
@@ -328,7 +329,13 @@ export default function ContasPagarPage() {
       await contasPagarService.pagar(contaParaPagar.id, payload);
 
       if (comprovante) {
-        toast.success(`Conta marcada como paga! Comprovante "${comprovante.name}" salvo localmente.`);
+        try {
+          await anexosService.upload(contaParaPagar.id, comprovante);
+          toast.success(`Conta marcada como paga! Comprovante "${comprovante.name}" enviado.`);
+        } catch (uploadErr) {
+          console.error('Falha no upload do comprovante:', uploadErr);
+          toast.warn('Conta marcada como paga, mas o upload do comprovante falhou. Tente novamente mais tarde.');
+        }
       } else {
         toast.success('Conta marcada como paga!');
       }
