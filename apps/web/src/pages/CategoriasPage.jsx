@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Fragment } from 'react';
 import { toast } from 'react-toastify';
 import AppSidebar from '../components/AppSidebar.jsx';
 import { InadimplenteGuard } from '../components/InadimplenteGuard.jsx';
@@ -66,6 +66,16 @@ export default function CategoriasPage() {
   const [modalExcluirAberto, setModalExcluirAberto] = useState(false);
   const [categoriaParaExcluir, setCategoriaParaExcluir] = useState(null);
   const [excluindo, setExcluindo] = useState(false);
+
+  const [expandidos, setExpandidos] = useState(new Set());
+
+  function toggleExpandido(id) {
+    setExpandidos((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
 
   const carregarLista = useCallback(async () => {
     setLoading(true);
@@ -196,6 +206,13 @@ export default function CategoriasPage() {
 
   const categoriasPaiDisponiveis = lista.filter((c) => !c.pai_id);
 
+  const idsNaLista = new Set(lista.map((c) => c.id));
+  const categoriasRaiz = lista.filter((c) => !c.pai_id || !idsNaLista.has(c.pai_id));
+  const categoriasComFilhos = categoriasRaiz.filter((c) => c.filhos?.length > 0);
+  const todasExpandidas =
+    categoriasComFilhos.length > 0 && categoriasComFilhos.every((c) => expandidos.has(c.id));
+  const listaById = new Map(lista.map((c) => [c.id, c]));
+
   const contentMarginLeft = sidebarExpanded ? '236px' : '108px';
 
   return (
@@ -305,13 +322,38 @@ export default function CategoriasPage() {
               overflow: 'hidden',
             }}
           >
+            {!loading && !error && categoriasComFilhos.length > 0 && (
+              <div
+                style={{
+                  padding: '10px 16px',
+                  borderBottom: '1px solid #f1f5f9',
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                }}
+              >
+                <button
+                  onClick={() => {
+                    if (todasExpandidas) {
+                      setExpandidos(new Set());
+                    } else {
+                      setExpandidos(
+                        new Set(categoriasComFilhos.map((c) => c.id)),
+                      );
+                    }
+                  }}
+                  style={btnSecondarySmall}
+                >
+                  {todasExpandidas ? 'Recolher todos' : 'Expandir todos'}
+                </button>
+              </div>
+            )}
             {loading ? (
               <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
                 Carregando...
               </div>
             ) : error ? (
               <div style={{ padding: '40px', textAlign: 'center', color: '#991b1b' }}>{error}</div>
-            ) : lista.length === 0 ? (
+            ) : categoriasRaiz.length === 0 ? (
               <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
                 Nenhuma categoria encontrada.
               </div>
@@ -324,97 +366,171 @@ export default function CategoriasPage() {
                       <th style={thStyle}>Tipo</th>
                       <th style={thStyle}>Ícone</th>
                       <th style={thStyle}>Cor</th>
-                      <th style={thStyle}>Categoria Pai</th>
                       <th style={thStyle}>Sistema</th>
                       <th style={{ ...thStyle, textAlign: 'right' }}>Ações</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {lista.map((cat) => (
-                      <tr
-                        key={cat.id}
-                        style={{ borderBottom: '1px solid #f1f5f9' }}
-                      >
-                        <td style={tdStyle}>
-                          <span style={{ fontWeight: 500, color: '#1e293b' }}>{cat.nome}</span>
-                          {cat.filhos && cat.filhos.length > 0 && (
-                            <span
-                              style={{
-                                marginLeft: '6px',
-                                fontSize: '11px',
-                                color: '#94a3b8',
-                              }}
-                            >
-                              ({cat.filhos.length} subcategoria{cat.filhos.length !== 1 ? 's' : ''})
-                            </span>
-                          )}
-                        </td>
-                        <td style={tdStyle}>
-                          <TipoBadge tipo={cat.tipo} />
-                        </td>
-                        <td style={tdStyle}>{cat.icone || '-'}</td>
-                        <td style={tdStyle}>
-                          {cat.cor ? (
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {categoriasRaiz.map((cat) => (
+                      <Fragment key={cat.id}>
+                        <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <td style={tdStyle}>
+                            {cat.filhos && cat.filhos.length > 0 ? (
+                              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <button
+                                  onClick={() => toggleExpandido(cat.id)}
+                                  style={toggleBtnStyle}
+                                  aria-label={expandidos.has(cat.id) ? 'Recolher' : 'Expandir'}
+                                >
+                                  {expandidos.has(cat.id) ? '▼' : '▶'}
+                                </button>
+                                <span style={{ fontWeight: 600, color: '#1e293b' }}>{cat.nome}</span>
+                                <span style={{ color: '#94a3b8', fontSize: '12px', marginLeft: '4px' }}>
+                                  ({cat.filhos.length} subcategoria{cat.filhos.length !== 1 ? 's' : ''})
+                                </span>
+                              </span>
+                            ) : (
+                              <span style={{ marginLeft: '24px', fontWeight: 600, color: '#1e293b' }}>
+                                {cat.nome}
+                              </span>
+                            )}
+                          </td>
+                          <td style={tdStyle}>
+                            <TipoBadge tipo={cat.tipo} />
+                          </td>
+                          <td style={tdStyle}>{cat.icone || '-'}</td>
+                          <td style={tdStyle}>
+                            {cat.cor ? (
+                              <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span
+                                  style={{
+                                    width: '16px',
+                                    height: '16px',
+                                    borderRadius: '4px',
+                                    background: cat.cor,
+                                    border: '1px solid #e2e8f0',
+                                    display: 'inline-block',
+                                  }}
+                                />
+                                {cat.cor}
+                              </span>
+                            ) : (
+                              '-'
+                            )}
+                          </td>
+                          <td style={tdStyle}>
+                            {cat.is_sistema ? (
                               <span
                                 style={{
-                                  width: '16px',
-                                  height: '16px',
-                                  borderRadius: '4px',
-                                  background: cat.cor,
-                                  border: '1px solid #e2e8f0',
                                   display: 'inline-block',
+                                  padding: '2px 8px',
+                                  borderRadius: '999px',
+                                  fontSize: '11px',
+                                  fontWeight: 600,
+                                  background: '#e0f2fe',
+                                  color: '#0369a1',
                                 }}
-                              />
-                              {cat.cor}
-                            </span>
-                          ) : (
-                            '-'
-                          )}
-                        </td>
-                        <td style={tdStyle}>
-                          {cat.pai_id
-                            ? lista.find((c) => c.id === cat.pai_id)?.nome || cat.pai_id
-                            : '-'}
-                        </td>
-                        <td style={tdStyle}>
-                          {cat.is_sistema ? (
-                            <span
-                              style={{
-                                display: 'inline-block',
-                                padding: '2px 8px',
-                                borderRadius: '999px',
-                                fontSize: '11px',
-                                fontWeight: 600,
-                                background: '#e0f2fe',
-                                color: '#0369a1',
-                              }}
-                            >
-                              Sistema
-                            </span>
-                          ) : (
-                            <span style={{ color: '#94a3b8', fontSize: '12px' }}>Personalizada</span>
-                          )}
-                        </td>
-                        <td style={{ ...tdStyle, textAlign: 'right' }}>
-                          {!cat.is_sistema && (
-                            <span style={{ display: 'inline-flex', gap: '8px' }}>
-                              <button
-                                onClick={() => abrirModalEdicao(cat)}
-                                style={btnActionEdit}
                               >
-                                Editar
-                              </button>
-                              <button
-                                onClick={() => abrirModalExcluir(cat)}
-                                style={btnActionDelete}
-                              >
-                                Excluir
-                              </button>
-                            </span>
-                          )}
-                        </td>
-                      </tr>
+                                Sistema
+                              </span>
+                            ) : (
+                              <span style={{ color: '#94a3b8', fontSize: '12px' }}>Personalizada</span>
+                            )}
+                          </td>
+                          <td style={{ ...tdStyle, textAlign: 'right' }}>
+                            {!cat.is_sistema && (
+                              <span style={{ display: 'inline-flex', gap: '8px' }}>
+                                <button
+                                  onClick={() => abrirModalEdicao(cat)}
+                                  style={btnActionEdit}
+                                >
+                                  Editar
+                                </button>
+                                <button
+                                  onClick={() => abrirModalExcluir(cat)}
+                                  style={btnActionDelete}
+                                >
+                                  Excluir
+                                </button>
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                        {expandidos.has(cat.id) &&
+                          cat.filhos.map((filho) => {
+                            const filhoCompleto =
+                              listaById.get(filho.id) || { ...filho, pai_id: cat.id };
+                            return (
+                              <tr key={filho.id} style={subRowStyle}>
+                                <td style={tdStyle}>
+                                  <span style={subNameStyle}>↳ {filho.nome}</span>
+                                </td>
+                                <td style={tdStyle}>
+                                  <TipoBadge tipo={filhoCompleto.tipo} />
+                                </td>
+                                <td style={tdStyle}>{filhoCompleto.icone || '-'}</td>
+                                <td style={tdStyle}>
+                                  {filhoCompleto.cor ? (
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                      <span
+                                        style={{
+                                          width: '16px',
+                                          height: '16px',
+                                          borderRadius: '4px',
+                                          background: filhoCompleto.cor,
+                                          border: '1px solid #e2e8f0',
+                                          display: 'inline-block',
+                                        }}
+                                      />
+                                      {filhoCompleto.cor}
+                                    </span>
+                                  ) : (
+                                    '-'
+                                  )}
+                                </td>
+                                <td style={tdStyle}>
+                                  {filhoCompleto.is_sistema ? (
+                                    <span
+                                      style={{
+                                        display: 'inline-block',
+                                        padding: '2px 8px',
+                                        borderRadius: '999px',
+                                        fontSize: '11px',
+                                        fontWeight: 600,
+                                        background: '#e0f2fe',
+                                        color: '#0369a1',
+                                      }}
+                                    >
+                                      Sistema
+                                    </span>
+                                  ) : (
+                                    <span style={{ color: '#94a3b8', fontSize: '12px' }}>
+                                      Personalizada
+                                    </span>
+                                  )}
+                                </td>
+                                <td style={{ ...tdStyle, textAlign: 'right' }}>
+                                  {!filhoCompleto.is_sistema && (
+                                    <span style={{ display: 'inline-flex', gap: '8px' }}>
+                                      <button
+                                        onClick={() => abrirModalEdicao(filhoCompleto)}
+                                        style={btnActionEdit}
+                                      >
+                                        Editar
+                                      </button>
+                                      <button
+                                        onClick={() => abrirModalExcluir(filhoCompleto)}
+                                        style={btnActionDelete}
+                                      >
+                                        Excluir
+                                      </button>
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                      </Fragment>
                     ))}
                   </tbody>
                 </table>
@@ -685,4 +801,28 @@ const btnActionDelete = {
   fontSize: '12px',
   fontWeight: 600,
   cursor: 'pointer',
+};
+
+const toggleBtnStyle = {
+  background: 'none',
+  border: 'none',
+  cursor: 'pointer',
+  padding: '0 6px 0 0',
+  color: '#64748b',
+  fontSize: '12px',
+  lineHeight: 1,
+  flexShrink: 0,
+};
+
+const subRowStyle = {
+  background: '#f8fafc',
+  borderBottom: '1px solid #f1f5f9',
+};
+
+const subNameStyle = {
+  paddingLeft: '32px',
+  color: '#475569',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '6px',
 };
