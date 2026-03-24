@@ -35,4 +35,14 @@ export const contasPagarService = {
     const response = await api.patch(`/contas-pagar/${id}/cancelar`);
     return response.data;
   },
+
+  async listarGrupo(grupoId) {
+    const response = await api.get(`/contas-pagar/grupos/${grupoId}`);
+    return response.data;
+  },
+
+  async cancelarGrupo(grupoId) {
+    const response = await api.patch(`/contas-pagar/grupos/${grupoId}/cancelar`);
+    return response.data;
+  },
 };

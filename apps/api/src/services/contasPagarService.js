@@ -17,7 +17,7 @@ const ALLOWED_SORT_FIELDS = new Set(['data_vencimento', 'valor', 'descricao', 'c
  * }} filters
  */
 export async function listContasPagar(userId, filters = {}) {
-  const { status, categoria_id, conta_id, data_vencimento_de, data_vencimento_ate, busca, cursor } = filters;
+  const { status, categoria_id, conta_id, data_vencimento_de, data_vencimento_ate, busca, cursor, grupo_recorrencia_id } = filters;
   const page = filters.page ?? 1;
   const limit = Math.min(filters.limit ?? 20, 100);
   const orderBy = ALLOWED_SORT_FIELDS.has(filters.order_by) ? filters.order_by : 'data_vencimento';
@@ -32,6 +32,7 @@ export async function listContasPagar(userId, filters = {}) {
   if (categoria_id) where.categoria_id = categoria_id;
   if (conta_id) where.conta_id = conta_id;
   if (busca) where.descricao = { contains: busca, mode: 'insensitive' };
+  if (grupo_recorrencia_id) where.grupo_recorrencia_id = grupo_recorrencia_id;
 
   if (data_vencimento_de || data_vencimento_ate) {
     where.data_vencimento = {};
@@ -331,4 +332,48 @@ export async function cancelarContaPagar(id, userId) {
   });
 
   return { ...conta, valor: Number(conta.valor) };
+}
+
+/**
+ * Get all parcelas of a grupo, ordered by parcela_atual.
+ * @param {string} grupoId
+ * @param {string} userId
+ */
+export async function getGrupoParcelas(grupoId, userId) {
+  const parcelas = await prisma.contaPagar.findMany({
+    where: { grupo_recorrencia_id: grupoId, usuario_id: userId, deleted_at: null },
+    include: {
+      categoria: { select: { nome: true, cor: true, icone: true } },
+      conta: { select: { nome: true } },
+    },
+    orderBy: { parcela_atual: 'asc' },
+  });
+  if (parcelas.length === 0) throw AppError.notFound('Grupo de parcelas não encontrado');
+  return parcelas.map((c) => ({ ...c, valor: Number(c.valor) }));
+}
+
+/**
+ * Cancel only the 'pendente' parcelas in a grupo (pago/cancelado are preserved).
+ * @param {string} grupoId
+ * @param {string} userId
+ */
+export async function cancelarGrupoParcelas(grupoId, userId) {
+  const result = await prisma.contaPagar.updateMany({
+    where: {
+      grupo_recorrencia_id: grupoId,
+      usuario_id: userId,
+      status: 'pendente',
+      deleted_at: null,
+    },
+    data: { status: 'cancelado', updated_at: new Date() },
+  });
+
+  if (result.count === 0) {
+    const existente = await prisma.contaPagar.findFirst({
+      where: { grupo_recorrencia_id: grupoId, usuario_id: userId, deleted_at: null },
+    });
+    if (!existente) throw AppError.notFound('Grupo de parcelas não encontrado');
+  }
+
+  return { canceladas: result.count };
 }
