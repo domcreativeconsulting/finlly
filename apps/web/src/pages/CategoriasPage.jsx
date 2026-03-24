@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, Fragment } from 'react';
 import { toast } from 'react-toastify';
 import AppSidebar from '../components/AppSidebar.jsx';
 import { InadimplenteGuard } from '../components/InadimplenteGuard.jsx';
@@ -66,6 +66,8 @@ export default function CategoriasPage() {
   const [modalExcluirAberto, setModalExcluirAberto] = useState(false);
   const [categoriaParaExcluir, setCategoriaParaExcluir] = useState(null);
   const [excluindo, setExcluindo] = useState(false);
+
+  const [paisExpandidos, setPaisExpandidos] = useState(new Set());
 
   const carregarLista = useCallback(async () => {
     setLoading(true);
@@ -159,6 +161,9 @@ export default function CategoriasPage() {
       }
 
       fecharModal();
+      if (form.pai_id) {
+        setPaisExpandidos((prev) => new Set([...prev, form.pai_id]));
+      }
       carregarLista();
     } catch (err) {
       const msg = err?.response?.data?.message || 'Erro ao salvar categoria.';
@@ -194,7 +199,34 @@ export default function CategoriasPage() {
     }
   }
 
+  function togglePai(id) {
+    setPaisExpandidos((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function abrirModalNovoFilho(pai) {
+    setCategoriaEmEdicao(null);
+    setForm({ ...EMPTY_FORM, pai_id: pai.id, tipo: pai.tipo });
+    setModalAberto(true);
+  }
+
   const categoriasPaiDisponiveis = lista.filter((c) => !c.pai_id);
+
+  const { pais, filhosPorPai } = useMemo(() => {
+    const pais = lista.filter((c) => !c.pai_id);
+    const filhosPorPai = new Map();
+    lista.forEach((c) => {
+      if (c.pai_id) {
+        if (!filhosPorPai.has(c.pai_id)) filhosPorPai.set(c.pai_id, []);
+        filhosPorPai.get(c.pai_id).push(c);
+      }
+    });
+    return { pais, filhosPorPai };
+  }, [lista]);
 
   const contentMarginLeft = sidebarExpanded ? '236px' : '108px';
 
@@ -324,98 +356,100 @@ export default function CategoriasPage() {
                       <th style={thStyle}>Tipo</th>
                       <th style={thStyle}>Ícone</th>
                       <th style={thStyle}>Cor</th>
-                      <th style={thStyle}>Categoria Pai</th>
                       <th style={thStyle}>Sistema</th>
                       <th style={{ ...thStyle, textAlign: 'right' }}>Ações</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {lista.map((cat) => (
-                      <tr
-                        key={cat.id}
-                        style={{ borderBottom: '1px solid #f1f5f9' }}
-                      >
-                        <td style={tdStyle}>
-                          <span style={{ fontWeight: 500, color: '#1e293b' }}>{cat.nome}</span>
-                          {cat.filhos && cat.filhos.length > 0 && (
-                            <span
-                              style={{
-                                marginLeft: '6px',
-                                fontSize: '11px',
-                                color: '#94a3b8',
-                              }}
-                            >
-                              ({cat.filhos.length} subcategoria{cat.filhos.length !== 1 ? 's' : ''})
-                            </span>
-                          )}
-                        </td>
-                        <td style={tdStyle}>
-                          <TipoBadge tipo={cat.tipo} />
-                        </td>
-                        <td style={tdStyle}>{cat.icone || '-'}</td>
-                        <td style={tdStyle}>
-                          {cat.cor ? (
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span
-                                style={{
-                                  width: '16px',
-                                  height: '16px',
-                                  borderRadius: '4px',
-                                  background: cat.cor,
-                                  border: '1px solid #e2e8f0',
-                                  display: 'inline-block',
-                                }}
-                              />
-                              {cat.cor}
-                            </span>
-                          ) : (
-                            '-'
-                          )}
-                        </td>
-                        <td style={tdStyle}>
-                          {cat.pai_id
-                            ? lista.find((c) => c.id === cat.pai_id)?.nome || cat.pai_id
-                            : '-'}
-                        </td>
-                        <td style={tdStyle}>
-                          {cat.is_sistema ? (
-                            <span
-                              style={{
-                                display: 'inline-block',
-                                padding: '2px 8px',
-                                borderRadius: '999px',
-                                fontSize: '11px',
-                                fontWeight: 600,
-                                background: '#e0f2fe',
-                                color: '#0369a1',
-                              }}
-                            >
-                              Sistema
-                            </span>
-                          ) : (
-                            <span style={{ color: '#94a3b8', fontSize: '12px' }}>Personalizada</span>
-                          )}
-                        </td>
-                        <td style={{ ...tdStyle, textAlign: 'right' }}>
-                          {!cat.is_sistema && (
-                            <span style={{ display: 'inline-flex', gap: '8px' }}>
-                              <button
-                                onClick={() => abrirModalEdicao(cat)}
-                                style={btnActionEdit}
-                              >
-                                Editar
-                              </button>
-                              <button
-                                onClick={() => abrirModalExcluir(cat)}
-                                style={btnActionDelete}
-                              >
-                                Excluir
-                              </button>
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
+                    {pais.map((cat) => {
+                      const filhos = filhosPorPai.get(cat.id) ?? [];
+                      const expandido = paisExpandidos.has(cat.id);
+                      return (
+                        <Fragment key={cat.id}>
+                          <tr key={cat.id} style={{ borderBottom: '1px solid #f1f5f9', background: '#f8fafc' }}>
+                            <td style={tdStyle}>
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                                {filhos.length > 0 && (
+                                  <button
+                                    onClick={() => togglePai(cat.id)}
+                                    style={btnToggleExpand}
+                                  >
+                                    {expandido ? '▼' : '▶'}
+                                  </button>
+                                )}
+                                <span style={{ fontWeight: 700, color: '#1e293b' }}>{cat.nome}</span>
+                                {filhos.length > 0 && (
+                                  <span style={subcatBadge}>
+                                    {filhos.length} subcat{filhos.length !== 1 ? 's' : ''}
+                                  </span>
+                                )}
+                              </span>
+                            </td>
+                            <td style={tdStyle}><TipoBadge tipo={cat.tipo} /></td>
+                            <td style={tdStyle}>{cat.icone || '-'}</td>
+                            <td style={tdStyle}>
+                              {cat.cor ? (
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span style={{ width: '16px', height: '16px', borderRadius: '4px', background: cat.cor, border: '1px solid #e2e8f0', display: 'inline-block' }} />
+                                  {cat.cor}
+                                </span>
+                              ) : '-'}
+                            </td>
+                            <td style={tdStyle}>
+                              {cat.is_sistema ? (
+                                <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '999px', fontSize: '11px', fontWeight: 600, background: '#e0f2fe', color: '#0369a1' }}>Sistema</span>
+                              ) : (
+                                <span style={{ color: '#94a3b8', fontSize: '12px' }}>Personalizada</span>
+                              )}
+                            </td>
+                            <td style={{ ...tdStyle, textAlign: 'right' }}>
+                              <span style={{ display: 'inline-flex', gap: '8px' }}>
+                                <button onClick={() => abrirModalNovoFilho(cat)} style={btnActionSub}>+ Sub</button>
+                                {!cat.is_sistema && (
+                                  <>
+                                    <button onClick={() => abrirModalEdicao(cat)} style={btnActionEdit}>Editar</button>
+                                    <button onClick={() => abrirModalExcluir(cat)} style={btnActionDelete}>Excluir</button>
+                                  </>
+                                )}
+                              </span>
+                            </td>
+                          </tr>
+                          {expandido && filhos.map((filho) => (
+                            <tr key={filho.id} style={{ borderBottom: '1px solid #f1f5f9', background: '#fafbfc' }}>
+                              <td style={{ ...tdStyle, paddingLeft: '36px' }}>
+                                <span style={{ color: '#94a3b8', marginRight: '6px' }}>└</span>
+                                <span style={{ color: '#1e293b' }}>{filho.nome}</span>
+                              </td>
+                              <td style={tdStyle}><TipoBadge tipo={filho.tipo} /></td>
+                              <td style={tdStyle}>{filho.icone || '-'}</td>
+                              <td style={tdStyle}>
+                                {filho.cor ? (
+                                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span style={{ width: '16px', height: '16px', borderRadius: '4px', background: filho.cor, border: '1px solid #e2e8f0', display: 'inline-block' }} />
+                                    {filho.cor}
+                                  </span>
+                                ) : '-'}
+                              </td>
+                              <td style={tdStyle}>
+                                {filho.is_sistema ? (
+                                  <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '999px', fontSize: '11px', fontWeight: 600, background: '#e0f2fe', color: '#0369a1' }}>Sistema</span>
+                                ) : (
+                                  <span style={{ color: '#94a3b8', fontSize: '12px' }}>Personalizada</span>
+                                )}
+                              </td>
+                              <td style={{ ...tdStyle, textAlign: 'right' }}>
+                                {!filho.is_sistema && (
+                                  <span style={{ display: 'inline-flex', gap: '8px' }}>
+                                    <button onClick={() => abrirModalEdicao(filho)} style={btnActionEdit}>Editar</button>
+                                    <button onClick={() => abrirModalExcluir(filho)} style={btnActionDelete}>Excluir</button>
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </Fragment>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -685,4 +719,33 @@ const btnActionDelete = {
   fontSize: '12px',
   fontWeight: 600,
   cursor: 'pointer',
+};
+
+const btnActionSub = {
+  background: '#f0fdf4',
+  color: '#166534',
+  border: 'none',
+  borderRadius: '6px',
+  padding: '5px 10px',
+  fontSize: '12px',
+  fontWeight: 600,
+  cursor: 'pointer',
+};
+
+const btnToggleExpand = {
+  background: 'none',
+  border: 'none',
+  cursor: 'pointer',
+  padding: '0 2px',
+  fontSize: '12px',
+  color: '#64748b',
+  lineHeight: 1,
+};
+
+const subcatBadge = {
+  fontSize: '11px',
+  color: '#94a3b8',
+  background: '#e2e8f0',
+  borderRadius: '999px',
+  padding: '1px 7px',
 };
