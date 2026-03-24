@@ -8,6 +8,8 @@ import {
   Target,
   Paperclip,
   LogOut,
+  Tag,
+  Wallet,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth.js';
 import logoIcon from '../assets/logo.png';
@@ -27,6 +29,16 @@ const NAV_ITEMS = [
     icon: <ArrowDownCircle size={20} />,
     label: 'Contas a receber',
     path: '/contas-receber',
+  },
+  {
+    icon: <Tag size={20} />,
+    label: 'Categorias',
+    path: '/categorias',
+  },
+  {
+    icon: <Wallet size={20} />,
+    label: 'Carteiras',
+    path: '/contas',
   },
   {
     icon: <TrendingUp size={20} />,
