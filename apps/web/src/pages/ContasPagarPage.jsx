@@ -1,10 +1,14 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import AppSidebar from '../components/AppSidebar.jsx';
 import { InadimplenteGuard } from '../components/InadimplenteGuard.jsx';
 import { contasPagarService } from '../services/contasPagar.service.js';
+import { categoriasService } from '../services/categorias.service.js';
 import api from '../services/api.js';
+
+const TIPO_MODAL_CAT = 'saida';
+const DEFAULT_FORM_CAT = { nome: '', icone: '', cor: '#33528a', pai_id: '' };
 
 const STATUS_LABELS = {
   pendente: 'Pendente',
@@ -156,6 +160,15 @@ export default function ContasPagarPage() {
 
   // Grupos expandidos (accordion)
   const [gruposExpandidos, setGruposExpandidos] = useState(new Set());
+
+  // Modal de categorias inline
+  const [modalCategoriasAberto, setModalCategoriasAberto] = useState(false);
+  const [listaCategoriasModal, setListaCategoriasModal] = useState([]);
+  const [loadingCategoriasModal, setLoadingCategoriasModal] = useState(false);
+  const [formCat, setFormCat] = useState(DEFAULT_FORM_CAT);
+  const [salvandoCat, setSalvandoCat] = useState(false);
+  const [catEmEdicao, setCatEmEdicao] = useState(null);
+  const [excluindoCatId, setExcluindoCatId] = useState(null);
 
   const carregarLista = useCallback(async () => {
     setLoading(true);
@@ -475,6 +488,78 @@ export default function ContasPagarPage() {
     }
   }
 
+  async function carregarCategoriasModal() {
+    setLoadingCategoriasModal(true);
+    try {
+      const res = await api.get('/categorias', { params: { tipo: TIPO_MODAL_CAT, limit: 500, include_sistema: true } });
+      setListaCategoriasModal(res.data?.data ?? res.data ?? []);
+    } catch {
+      toast.error('Erro ao carregar categorias.');
+    } finally {
+      setLoadingCategoriasModal(false);
+    }
+  }
+
+  function abrirModalCategorias() {
+    setModalCategoriasAberto(true);
+    setFormCat(DEFAULT_FORM_CAT);
+    setCatEmEdicao(null);
+    carregarCategoriasModal();
+  }
+
+  function fecharModalCategorias() {
+    setModalCategoriasAberto(false);
+    setFormCat(DEFAULT_FORM_CAT);
+    setCatEmEdicao(null);
+    carregarSelects();
+  }
+
+  async function handleSalvarCategoria(e) {
+    e.preventDefault();
+    setSalvandoCat(true);
+    try {
+      if (catEmEdicao) {
+        await categoriasService.atualizar(catEmEdicao.id, {
+          nome: formCat.nome.trim(),
+          icone: formCat.icone.trim() || null,
+          cor: formCat.cor || null,
+          pai_id: formCat.pai_id || null,
+        });
+        toast.success('Categoria atualizada!');
+      } else {
+        await categoriasService.criar({
+          nome: formCat.nome.trim(),
+          tipo: TIPO_MODAL_CAT,
+          icone: formCat.icone.trim() || null,
+          cor: formCat.cor || null,
+          pai_id: formCat.pai_id || null,
+        });
+        toast.success('Categoria criada!');
+      }
+      setFormCat(DEFAULT_FORM_CAT);
+      setCatEmEdicao(null);
+      carregarCategoriasModal();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Erro ao salvar categoria.');
+    } finally {
+      setSalvandoCat(false);
+    }
+  }
+
+  async function handleExcluirCategoria(cat) {
+    if (!window.confirm(`Excluir a categoria "${cat.nome}"?`)) return;
+    setExcluindoCatId(cat.id);
+    try {
+      await categoriasService.excluir(cat.id);
+      toast.success('Categoria excluída!');
+      carregarCategoriasModal();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Erro ao excluir categoria.');
+    } finally {
+      setExcluindoCatId(null);
+    }
+  }
+
   return (
     <div style={s.pageWrapper}>
       <div style={s.page}>
@@ -524,7 +609,7 @@ export default function ContasPagarPage() {
               <button style={s.btnOutline}>
                 🏦 Nova conta financeira
               </button>
-              <button style={s.btnOutline} onClick={() => navigate('/categorias')}>
+              <button style={s.btnOutline} onClick={abrirModalCategorias}>
                 🏷️ Categorias
               </button>
               <button
@@ -1212,6 +1297,114 @@ export default function ContasPagarPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Categorias inline */}
+      {modalCategoriasAberto && (
+        <div style={s.modalOverlay} role="dialog" aria-modal="true">
+          <div style={{ ...s.modalBox, maxWidth: '600px', maxHeight: '80vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1e293b' }}>
+                Categorias e Subcategorias — Saída
+              </h2>
+              <button onClick={fecharModalCategorias} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#6b7280' }}>✕</button>
+            </div>
+
+            <form onSubmit={handleSalvarCategoria} style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', marginBottom: '20px', flexWrap: 'wrap' }}>
+              <div style={{ flex: 2, minWidth: '140px' }}>
+                <label style={{ fontSize: '12px', color: '#64748b', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Nome *</label>
+                <input
+                  type="text"
+                  value={formCat.nome}
+                  onChange={e => setFormCat(prev => ({ ...prev, nome: e.target.value }))}
+                  required
+                  placeholder="Ex: Alimentação"
+                  style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', width: '100%', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div style={{ flex: 1, minWidth: '120px' }}>
+                <label style={{ fontSize: '12px', color: '#64748b', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Categoria pai</label>
+                <select
+                  value={formCat.pai_id}
+                  onChange={e => setFormCat(prev => ({ ...prev, pai_id: e.target.value }))}
+                  style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', width: '100%', boxSizing: 'border-box' }}
+                >
+                  <option value="">Nenhuma (categoria principal)</option>
+                  {listaCategoriasModal.filter(c => !c.pai_id && (!catEmEdicao || c.id !== catEmEdicao.id)).map(c => (
+                    <option key={c.id} value={c.id}>{c.nome}</option>
+                  ))}
+                </select>
+              </div>
+              <button type="submit" disabled={salvandoCat} style={{ background: '#33528a', color: '#fff', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                {salvandoCat ? 'Salvando...' : catEmEdicao ? 'Salvar' : '+ Adicionar'}
+              </button>
+              {catEmEdicao && (
+                <button type="button" onClick={() => { setCatEmEdicao(null); setFormCat(DEFAULT_FORM_CAT); }} style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '8px 14px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
+                  Cancelar
+                </button>
+              )}
+            </form>
+
+            {loadingCategoriasModal ? (
+              <div style={{ textAlign: 'center', color: '#64748b', padding: '20px' }}>Carregando...</div>
+            ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                    <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>Categoria</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>Tipo</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'right', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {listaCategoriasModal.filter(c => !c.pai_id).map(cat => (
+                    <React.Fragment key={cat.id}>
+                      <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '10px 12px', fontWeight: 600, color: '#1e293b' }}>{cat.nome}</td>
+                        <td style={{ padding: '10px 12px' }}>
+                          <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '999px', fontSize: '11px', fontWeight: 600, background: '#fee2e2', color: '#991b1b' }}>Principal</span>
+                        </td>
+                        <td style={{ padding: '10px 12px', textAlign: 'right' }}>
+                          {!cat.is_sistema && (
+                            <>
+                              <button onClick={() => { setCatEmEdicao(cat); setFormCat({ nome: cat.nome, icone: cat.icone || '', cor: cat.cor || '#33528a', pai_id: cat.pai_id || '' }); }} style={{ background: '#e0f2fe', color: '#0369a1', border: 'none', borderRadius: '6px', padding: '4px 10px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', marginRight: '6px' }}>✏️</button>
+                              <button onClick={() => handleExcluirCategoria(cat)} disabled={excluindoCatId === cat.id} style={{ background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: '6px', padding: '4px 10px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>🗑️</button>
+                            </>
+                          )}
+                        </td>
+                      </tr>
+                      {listaCategoriasModal.filter(f => f.pai_id === cat.id).map(filho => (
+                        <tr key={filho.id} style={{ borderBottom: '1px solid #f1f5f9', background: '#fafbfc' }}>
+                          <td style={{ padding: '10px 12px 10px 28px', color: '#334155' }}>↳ {filho.nome}</td>
+                          <td style={{ padding: '10px 12px' }}>
+                            <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '999px', fontSize: '11px', fontWeight: 600, background: '#e2e8f0', color: '#64748b' }}>Subcategoria</span>
+                          </td>
+                          <td style={{ padding: '10px 12px', textAlign: 'right' }}>
+                            {!filho.is_sistema && (
+                              <>
+                                <button onClick={() => { setCatEmEdicao(filho); setFormCat({ nome: filho.nome, icone: filho.icone || '', cor: filho.cor || '#33528a', pai_id: filho.pai_id || '' }); }} style={{ background: '#e0f2fe', color: '#0369a1', border: 'none', borderRadius: '6px', padding: '4px 10px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', marginRight: '6px' }}>✏️</button>
+                                <button onClick={() => handleExcluirCategoria(filho)} disabled={excluindoCatId === filho.id} style={{ background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: '6px', padding: '4px 10px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>🗑️</button>
+                              </>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </React.Fragment>
+                  ))}
+                  {listaCategoriasModal.length === 0 && (
+                    <tr key="empty"><td colSpan={3} style={{ padding: '20px', textAlign: 'center', color: '#94a3b8' }}>Nenhuma categoria cadastrada.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
+              <button onClick={fecharModalCategorias} style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
+                Fechar
+              </button>
+            </div>
           </div>
         </div>
       )}
