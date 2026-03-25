@@ -19,6 +19,10 @@ import {
   faCircleCheck,
   faCheck,
   faXmark,
+  faClipboardList,
+  faPenToSquare,
+  faPaperclip,
+  faEllipsis,
 } from '@fortawesome/free-solid-svg-icons';
 
 const TIPO_MODAL_CAT = 'entrada';
@@ -682,7 +686,7 @@ export default function ContasReceberPage() {
                   </div>
                 </div>
                 <div style={s.summaryCard}>
-                  <div style={s.summaryIcon}>📋</div>
+                  <div style={s.summaryIcon}><FontAwesomeIcon icon={faClipboardList} /></div>
                   <div style={s.summaryInfo}>
                     <div style={s.summaryLabel}>Total</div>
                     <div style={s.summaryValue}>{formatBRL(resumo.total.valor)}</div>
@@ -876,7 +880,7 @@ export default function ContasReceberPage() {
                                 <td style={{ ...s.td, textAlign: 'center', whiteSpace: 'nowrap' }}>
                                   {conta.status === 'recebido' ? (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}>
-                                      <span title="Comprovante" style={{ cursor: 'pointer', fontSize: '16px' }}>📎</span>
+                                      <span title="Comprovante" style={{ cursor: 'pointer', fontSize: '16px' }}><FontAwesomeIcon icon={faPaperclip} /></span>
                                       <span style={{ fontSize: '12px', color: '#6b7280' }}>
                                         Recebido em {formatDate(conta.data_recebimento)}
                                       </span>
@@ -888,9 +892,9 @@ export default function ContasReceberPage() {
                                         onClick={() => abrirModalEdicao(conta)}
                                         title="Editar"
                                       >
-                                        ✏️
+                                        <FontAwesomeIcon icon={faPenToSquare} />
                                       </button>
-                                      <span title="Comprovante" style={{ cursor: 'pointer', fontSize: '16px' }}>📎</span>
+                                      <span title="Comprovante" style={{ cursor: 'pointer', fontSize: '16px' }}><FontAwesomeIcon icon={faPaperclip} /></span>
                                       {(conta.status === 'pendente') && (
                                         <button
                                           style={s.btnReceber}
@@ -906,7 +910,7 @@ export default function ContasReceberPage() {
                                           title="Mais opções"
                                           onClick={() => setMenuAbertoId((id) => id === conta.id ? null : conta.id)}
                                         >
-                                          ···
+                                          <FontAwesomeIcon icon={faEllipsis} />
                                         </button>
                                         {menuAbertoId === conta.id && (
                                           <div style={s.dropdownMenu}>
@@ -1021,15 +1025,15 @@ export default function ContasReceberPage() {
                                   <td style={{ ...s.td, textAlign: 'center', whiteSpace: 'nowrap' }}>
                                     {conta.status === 'recebido' ? (
                                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}>
-                                        <span title="Comprovante" style={{ cursor: 'pointer', fontSize: '16px' }}>📎</span>
+                                        <span title="Comprovante" style={{ cursor: 'pointer', fontSize: '16px' }}><FontAwesomeIcon icon={faPaperclip} /></span>
                                         <span style={{ fontSize: '12px', color: '#6b7280' }}>
                                           Recebido em {formatDate(conta.data_recebimento)}
                                         </span>
                                       </div>
                                     ) : (
                                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}>
-                                        <button style={s.iconBtn} onClick={() => abrirModalEdicao(conta)} title="Editar">✏️</button>
-                                        <span title="Comprovante" style={{ cursor: 'pointer', fontSize: '16px' }}>📎</span>
+                                        <button style={s.iconBtn} onClick={() => abrirModalEdicao(conta)} title="Editar"><FontAwesomeIcon icon={faPenToSquare} /></button>
+                                        <span title="Comprovante" style={{ cursor: 'pointer', fontSize: '16px' }}><FontAwesomeIcon icon={faPaperclip} /></span>
                                         {conta.status === 'pendente' && (
                                           <button style={s.btnReceber} onClick={() => abrirModalReceber(conta)} title="Registrar recebimento">
                                             <FontAwesomeIcon icon={faCheck} /> Receber
@@ -1041,7 +1045,7 @@ export default function ContasReceberPage() {
                                             title="Mais opções"
                                             onClick={() => setMenuAbertoId((id) => id === conta.id ? null : conta.id)}
                                           >
-                                            ···
+                                            <FontAwesomeIcon icon={faEllipsis} />
                                           </button>
                                           {menuAbertoId === conta.id && (
                                             <div style={s.dropdownMenu}>
@@ -1383,7 +1387,7 @@ export default function ContasReceberPage() {
                         <td style={{ padding: '10px 12px', textAlign: 'right' }}>
                           {!cat.is_sistema && (
                             <>
-                              <button onClick={() => { setCatEmEdicao(cat); setFormCat({ nome: cat.nome, icone: cat.icone || '', cor: cat.cor || '#33528a', pai_id: cat.pai_id || '' }); }} style={{ background: '#e0f2fe', color: '#0369a1', border: 'none', borderRadius: '6px', padding: '4px 10px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', marginRight: '6px' }}>✏️</button>
+                              <button onClick={() => { setCatEmEdicao(cat); setFormCat({ nome: cat.nome, icone: cat.icone || '', cor: cat.cor || '#33528a', pai_id: cat.pai_id || '' }); }} style={{ background: '#e0f2fe', color: '#0369a1', border: 'none', borderRadius: '6px', padding: '4px 10px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', marginRight: '6px' }}><FontAwesomeIcon icon={faPenToSquare} /></button>
                               <button onClick={() => handleExcluirCategoria(cat)} disabled={excluindoCatId === cat.id} style={{ background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: '6px', padding: '4px 10px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>🗑️</button>
                             </>
                           )}
@@ -1398,7 +1402,7 @@ export default function ContasReceberPage() {
                           <td style={{ padding: '10px 12px', textAlign: 'right' }}>
                             {!filho.is_sistema && (
                               <>
-                                <button onClick={() => { setCatEmEdicao(filho); setFormCat({ nome: filho.nome, icone: filho.icone || '', cor: filho.cor || '#33528a', pai_id: filho.pai_id || '' }); }} style={{ background: '#e0f2fe', color: '#0369a1', border: 'none', borderRadius: '6px', padding: '4px 10px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', marginRight: '6px' }}>✏️</button>
+                                <button onClick={() => { setCatEmEdicao(filho); setFormCat({ nome: filho.nome, icone: filho.icone || '', cor: filho.cor || '#33528a', pai_id: filho.pai_id || '' }); }} style={{ background: '#e0f2fe', color: '#0369a1', border: 'none', borderRadius: '6px', padding: '4px 10px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', marginRight: '6px' }}><FontAwesomeIcon icon={faPenToSquare} /></button>
                                 <button onClick={() => handleExcluirCategoria(filho)} disabled={excluindoCatId === filho.id} style={{ background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: '6px', padding: '4px 10px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>🗑️</button>
                               </>
                             )}
