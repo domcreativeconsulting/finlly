@@ -1375,7 +1375,7 @@ export default function ContasReceberPage() {
                           )}
                         </td>
                       </tr>
-                      {listaCategoriasModal.filter(f => f.pai_id === cat.id).map(filho => (
+                      {listaCategoriasModal.filter(f => f.pai_id === cat.id || f.pai_id === String(cat.id)).map(filho => (
                         <tr key={filho.id} style={{ borderBottom: '1px solid #f1f5f9', background: '#fafbfc' }}>
                           <td style={{ padding: '10px 12px 10px 28px', color: '#334155' }}>↳ {filho.nome}</td>
                           <td style={{ padding: '10px 12px' }}>
@@ -1393,7 +1393,7 @@ export default function ContasReceberPage() {
                       ))}
                     </React.Fragment>
                   ))}
-                  {listaCategoriasModal.length === 0 && (
+                  {listaCategoriasModal.filter(c => !c.pai_id).length === 0 && (
                     <tr key="empty"><td colSpan={3} style={{ padding: '20px', textAlign: 'center', color: '#94a3b8' }}>Nenhuma categoria cadastrada.</td></tr>
                   )}
                 </tbody>
