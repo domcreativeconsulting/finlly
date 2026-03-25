@@ -491,7 +491,7 @@ export default function ContasPagarPage() {
   async function carregarCategoriasModal() {
     setLoadingCategoriasModal(true);
     try {
-      const res = await api.get('/categorias', { params: { tipo: TIPO_MODAL_CAT, limit: 500, include_sistema: true } });
+      const res = await api.get('/categorias', { params: { tipo: TIPO_MODAL_CAT, limit: 500 } });
       setListaCategoriasModal(res.data?.data ?? res.data ?? []);
     } catch {
       toast.error('Erro ao carregar categorias.');
