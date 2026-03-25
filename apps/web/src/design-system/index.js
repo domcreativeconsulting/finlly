@@ -6,4 +6,4 @@ export { default as Card } from './components/Card.jsx';
 export { default as Badge } from './components/Badge.jsx';
 export { Table, Thead, Th, Tbody, Tr, Td } from './components/Table.jsx';
 
-export { colors, typography, spacing, radius, shadows } from './tokens.js';
+export { tokens, colors, typography, spacing, radius, shadows } from './tokens.js';

@@ -12,48 +12,131 @@ body {
 }
 
 :root {
+  /* === TIPOGRAFIA === */
   --font-family: 'Inter', sans-serif;
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-base: 14px;
+  --font-size-md: 15px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 20px;
+  --font-size-3xl: 24px;
+  --font-size-4xl: 28px;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --line-height-tight: 1.2;
+  --line-height-base: 1.5;
+  --line-height-relaxed: 1.75;
 
+  /* === CORES — PRIMÁRIA === */
   --color-primary: #33528a;
   --color-primary-dark: #1e3a5f;
   --color-primary-light: #2563eb;
   --color-primary-bg: #eff6ff;
+  --color-primary-disabled: #93c5fd;
 
-  --color-bg: #f3f4f6;
-  --color-surface: #ffffff;
-  --color-border: #e5e7eb;
-
-  --color-text: #111827;
-  --color-text-muted: #6b7280;
-
+  /* === CORES — SUCESSO === */
   --color-success: #16a34a;
   --color-success-bg: #dcfce7;
   --color-success-text: #166534;
+  --color-success-border: #bbf7d0;
 
+  /* === CORES — ERRO === */
   --color-error: #dc2626;
   --color-error-bg: #fef2f2;
   --color-error-border: #fecaca;
   --color-error-text: #991b1b;
+  --color-error-light: #f87171;
 
+  /* === CORES — AVISO === */
   --color-warning: #f59e0b;
   --color-warning-bg: #fef9c3;
+  --color-warning-text: #854d0e;
+  --color-warning-border: #fde68a;
 
+  /* === CORES — INFO === */
+  --color-info: #0369a1;
+  --color-info-bg: #e0f2fe;
+  --color-info-text: #0369a1;
+
+  /* === CORES — NEUTROS === */
+  --color-neutral-50: #f8fafc;
+  --color-neutral-100: #f3f4f6;
+  --color-neutral-200: #e5e7eb;
+  --color-neutral-300: #d1d5db;
+  --color-neutral-400: #9ca3af;
+  --color-neutral-500: #6b7280;
+  --color-neutral-600: #4b5563;
+  --color-neutral-700: #374151;
+  --color-neutral-800: #1e293b;
+  --color-neutral-900: #111827;
+
+  /* === CORES — SUPERFÍCIE === */
+  --color-bg: #f3f4f6;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f0f9ff;
+  --color-border: #e5e7eb;
+  --color-border-focus: #2563eb;
+
+  /* === CORES — TEXTO === */
+  --color-text: #111827;
+  --color-text-muted: #6b7280;
+  --color-text-subtle: #9ca3af;
+  --color-text-inverse: #ffffff;
+
+  /* === CORES — OVERLAY === */
+  --color-overlay: rgba(0, 0, 0, 0.45);
+  --color-overlay-light: rgba(255, 255, 255, 0.18);
+
+  /* === ESPAÇAMENTO === */
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 20px;
+  --spacing-6: 24px;
+  --spacing-7: 28px;
+  --spacing-8: 32px;
+  --spacing-10: 40px;
+  --spacing-12: 48px;
+  --spacing-16: 64px;
+
+  /* === BORDAS === */
+  --radius-xs: 4px;
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;
   --radius-xl: 16px;
+  --radius-2xl: 20px;
   --radius-full: 999px;
 
+  /* === SOMBRAS === */
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.05);
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
   --shadow-md: 0 1px 4px rgba(0,0,0,0.07);
-  --shadow-lg: 0 8px 30px rgba(0,0,0,0.13);
-  --shadow-xl: 0 20px 60px rgba(0,0,0,0.2);
+  --shadow-lg: 0 4px 24px rgba(0,0,0,0.08);
+  --shadow-xl: 0 8px 30px rgba(0,0,0,0.13);
+  --shadow-2xl: 0 20px 60px rgba(0,0,0,0.2);
 
+  /* === TRANSIÇÕES === */
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.2s ease;
+  --transition-slow: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* === Z-INDEX === */
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-modal-backdrop: 1000;
+  --z-modal: 1050;
+  --z-toast: 2000;
+
+  /* Aplicação global */
   font-family: var(--font-family);
-  line-height: 1.5;
-  font-weight: 400;
-  margin: 0;
-  height: 100%;
+  line-height: var(--line-height-base);
+  font-weight: var(--font-weight-regular);
   color: var(--color-text);
   background-color: var(--color-bg);
 }
@@ -64,21 +147,23 @@ body {
   min-height: 100vh;
   background-color: var(--color-bg);
   color: var(--color-text);
+  font-family: var(--font-family);
 }
 
 #root {
   width: 100%;
 }
 
-h1 { font-size: 24px; font-weight: 700; color: var(--color-text); }
-h2 { font-size: 20px; font-weight: 600; color: var(--color-text); }
-h3 { font-size: 16px; font-weight: 600; color: var(--color-text); }
-h4 { font-size: 14px; font-weight: 500; color: var(--color-text); }
-p  { font-size: 14px; font-weight: 400; color: var(--color-text); }
+/* === TIPOGRAFIA GLOBAL === */
+h1 { font-size: var(--font-size-3xl); font-weight: var(--font-weight-bold); color: var(--color-text); margin: 0; }
+h2 { font-size: var(--font-size-2xl); font-weight: var(--font-weight-semibold); color: var(--color-text); margin: 0; }
+h3 { font-size: var(--font-size-xl); font-weight: var(--font-weight-semibold); color: var(--color-text); margin: 0; }
+h4 { font-size: var(--font-size-base); font-weight: var(--font-weight-medium); color: var(--color-text); margin: 0; }
+p  { font-size: var(--font-size-base); font-weight: var(--font-weight-regular); color: var(--color-text); margin: 0; }
 
 button, input, select, textarea {
   font-family: var(--font-family);
-  font-size: 14px;
+  font-size: var(--font-size-base);
 }
 
 @keyframes spin {
