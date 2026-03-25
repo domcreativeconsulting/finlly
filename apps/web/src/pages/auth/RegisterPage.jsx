@@ -14,6 +14,7 @@ import {
   faCheck,
   faCircleInfo,
 } from '@fortawesome/free-solid-svg-icons';
+import { colors, radius } from '../../design-system/tokens.js';
 
 const RegisterSchema = z
   .object({

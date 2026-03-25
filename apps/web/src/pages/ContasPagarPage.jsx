@@ -24,6 +24,8 @@ import {
   faPaperclip,
   faEllipsis,
 } from '@fortawesome/free-solid-svg-icons';
+import { Button, Input, Select, Modal, Badge } from '../design-system/index.js';
+import { colors, typography, radius, shadows } from '../design-system/tokens.js';
 
 const TIPO_MODAL_CAT = 'saida';
 const DEFAULT_FORM_CAT = { nome: '', icone: '', cor: '#33528a', pai_id: '' };
@@ -68,20 +70,17 @@ function formatDate(data_vencimento) {
 }
 
 function StatusBadge({ status }) {
-  const style = STATUS_COLORS[status] || STATUS_COLORS.pendente;
+  const variantMap = {
+    pendente: 'warning',
+    pago: 'success',
+    cancelado: 'neutral',
+    estornado: 'orange',
+    falhou: 'error',
+  };
   return (
-    <span
-      style={{
-        display: 'inline-block',
-        padding: '2px 10px',
-        borderRadius: '999px',
-        fontSize: '12px',
-        fontWeight: 600,
-        ...style,
-      }}
-    >
+    <Badge variant={variantMap[status] || 'neutral'}>
       {STATUS_LABELS[status] || status}
-    </span>
+    </Badge>
   );
 }
 
@@ -621,21 +620,19 @@ export default function ContasPagarPage() {
               </div>
             </div>
             <div style={s.topBarRight}>
-              <button style={s.btnPrimary} onClick={abrirModalNovo}>
-                + Nova conta
-              </button>
-              <button style={s.btnOutline}>
+              <Button onClick={abrirModalNovo}>+ Nova conta</Button>
+              <Button variant="outline">
                 <FontAwesomeIcon icon={faBuilding} /> Nova conta financeira
-              </button>
-              <button style={s.btnOutline} onClick={abrirModalCategorias}>
+              </Button>
+              <Button variant="outline" onClick={abrirModalCategorias}>
                 <FontAwesomeIcon icon={faTag} /> Categorias
-              </button>
-              <button
-                style={{ ...s.btnOutline, ...(filtrosVisiveis ? s.btnOutlineActive : {}) }}
+              </Button>
+              <Button
+                variant={filtrosVisiveis ? 'primary' : 'outline'}
                 onClick={() => setFiltrosVisiveis((v) => !v)}
               >
                 <FontAwesomeIcon icon={faChevronDown} /> Filtros
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -797,12 +794,12 @@ export default function ContasPagarPage() {
                         />
                       </div>
                       <div style={{ flex: 1 }} />
-                      <button type="submit" style={s.btnPrimary}>
+                      <Button type="submit">
                         <FontAwesomeIcon icon={faCheck} /> Aplicar
-                      </button>
-                      <button type="button" style={s.btnOutline} onClick={handleLimpar}>
+                      </Button>
+                      <Button type="button" variant="outline" onClick={handleLimpar}>
                         Limpar
-                      </button>
+                      </Button>
                     </div>
                   </form>
                 </div>
@@ -1074,23 +1071,23 @@ export default function ContasPagarPage() {
                 {/* Paginação */}
                 {!loading && !error && totalPages > 1 && (
                   <div style={s.pagination}>
-                    <button
-                      style={s.btnSecondary}
+                    <Button
+                      variant="secondary"
                       onClick={() => setPage((p) => Math.max(1, p - 1))}
                       disabled={page <= 1}
                     >
                       Anterior
-                    </button>
+                    </Button>
                     <span style={s.pageInfo}>
                       Página {page} de {totalPages} · {total} registro{total !== 1 ? 's' : ''}
                     </span>
-                    <button
-                      style={s.btnSecondary}
+                    <Button
+                      variant="secondary"
                       onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                       disabled={page >= totalPages}
                     >
                       Próximo
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -1105,16 +1102,13 @@ export default function ContasPagarPage() {
       </div>
 
       {/* Modal criar/editar */}
-      {modalAberto && (
-        <div style={s.modalOverlay} role="dialog" aria-modal="true">
-          <div style={{ ...s.modalBox, maxHeight: '90vh', overflowY: 'auto' }}>
-            {/* Cabeçalho com botão X */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-              <h2 style={{ ...s.modalTitle, margin: 0 }}>
-                {contaEmEdicao ? 'Editar Conta a Pagar' : 'Nova conta a pagar'}
-              </h2>
-              <button onClick={fecharModal} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#6b7280' }}><FontAwesomeIcon icon={faXmark} /></button>
-            </div>
+      <Modal
+        open={modalAberto}
+        onClose={fecharModal}
+        title={contaEmEdicao ? 'Editar Conta a Pagar' : 'Nova conta a pagar'}
+        maxWidth="520px"
+        style={{ maxHeight: '90vh', overflowY: 'auto' }}
+      >
             <form onSubmit={handleSalvar}>
               {/* 1. Descrição */}
               <div style={s.formGroup}>
@@ -1237,19 +1231,18 @@ export default function ContasPagarPage() {
 
               {/* Botões */}
               <div style={s.modalActions}>
-                <button type="button" style={s.btnGhost} onClick={fecharModal} disabled={salvando}>Cancelar</button>
-                <button type="submit" style={s.btnPrimary} disabled={salvando}>{salvando ? 'Salvando...' : 'Salvar'}</button>
+                <Button type="button" variant="ghost" onClick={fecharModal} disabled={salvando}>Cancelar</Button>
+                <Button type="submit" loading={salvando}>{salvando ? 'Salvando...' : 'Salvar'}</Button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+      </Modal>
 
-      {/* Modal pagar */}
-      {modalPagarAberto && (
-        <div style={s.modalOverlay} role="dialog" aria-modal="true" aria-label="Registrar pagamento">
-          <div style={{ ...s.modalBox, maxWidth: '420px' }}>
-            <h2 style={s.modalTitle}>Registrar Pagamento</h2>
+      <Modal
+        open={modalPagarAberto}
+        onClose={fecharModalPagar}
+        title="Registrar Pagamento"
+        maxWidth="420px"
+      >
             <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#374151' }}>
               {contaParaPagar?.descricao}
             </p>
@@ -1307,29 +1300,24 @@ export default function ContasPagarPage() {
                 />
               </div>
               <div style={s.modalActions}>
-                <button type="button" style={s.btnGhost} onClick={fecharModalPagar} disabled={pagando}>
+                <Button type="button" variant="ghost" onClick={fecharModalPagar} disabled={pagando}>
                   Cancelar
-                </button>
-                <button type="submit" style={{ ...s.btnPrimary, background: '#16a34a' }} disabled={pagando}>
+                </Button>
+                <Button type="submit" loading={pagando} style={{ background: colors.success }}>
                   {pagando ? 'Registrando...' : 'Confirmar Pagamento'}
-                </button>
+                </Button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+      </Modal>
 
       {/* Modal de Categorias inline */}
-      {modalCategoriasAberto && (
-        <div style={s.modalOverlay} role="dialog" aria-modal="true">
-          <div style={{ ...s.modalBox, maxWidth: '600px', maxHeight: '80vh', overflowY: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1e293b' }}>
-                Categorias e Subcategorias — Saída
-              </h2>
-              <button onClick={fecharModalCategorias} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#6b7280' }}><FontAwesomeIcon icon={faXmark} /></button>
-            </div>
-
+      <Modal
+        open={modalCategoriasAberto}
+        onClose={fecharModalCategorias}
+        title="Categorias e Subcategorias — Saída"
+        maxWidth="600px"
+        style={{ maxHeight: '80vh', overflowY: 'auto' }}
+      >
             <form onSubmit={handleSalvarCategoria} style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', marginBottom: '20px', flexWrap: 'wrap' }}>
               <div style={{ flex: 2, minWidth: '140px' }}>
                 <label style={{ fontSize: '12px', color: '#64748b', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Nome *</label>
@@ -1419,13 +1407,11 @@ export default function ContasPagarPage() {
             )}
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
-              <button onClick={fecharModalCategorias} style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
+              <Button variant="secondary" onClick={fecharModalCategorias}>
                 Fechar
-              </button>
+              </Button>
             </div>
-          </div>
-        </div>
-      )}
+      </Modal>
     </div>
   );
 }
@@ -1433,7 +1419,7 @@ export default function ContasPagarPage() {
 const s = {
   pageWrapper: {
     minHeight: '100vh',
-    background: '#f3f4f6',
+    background: colors.bg,
     display: 'flex',
     flexDirection: 'column',
   },
@@ -1453,8 +1439,8 @@ const s = {
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: '16px 28px',
-    background: '#ffffff',
-    borderBottom: '1px solid #e5e7eb',
+    background: colors.white,
+    borderBottom: `1px solid ${colors.border}`,
     gap: '16px',
   },
   topBarLeft: {
@@ -1473,21 +1459,20 @@ const s = {
     border: 'none',
     fontSize: '22px',
     cursor: 'pointer',
-    color: '#4b5563',
+    color: colors.neutral600,
     padding: '4px 8px',
-    borderRadius: '6px',
+    borderRadius: radius.sm,
   },
   pageTitle: {
     margin: 0,
-    fontSize: '22px',
-    fontWeight: 700,
-    color: '#111827',
+    fontSize: typography.sizes['4xl'],
+    fontWeight: typography.weights.bold,
+    color: colors.neutral900,
   },
   content: {
     padding: '20px 28px',
     flex: 1,
   },
-  // Summary Cards
   summaryRow: {
     display: 'flex',
     gap: '14px',
@@ -1496,10 +1481,10 @@ const s = {
   },
   summaryCard: {
     flex: '1 1 140px',
-    background: '#ffffff',
-    borderRadius: '10px',
-    border: '1px solid #e5e7eb',
-    boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+    background: colors.white,
+    borderRadius: radius.lg,
+    border: `1px solid ${colors.border}`,
+    boxShadow: shadows.md,
     padding: '14px 16px',
     display: 'flex',
     alignItems: 'flex-start',
@@ -1516,29 +1501,28 @@ const s = {
     minWidth: 0,
   },
   summaryLabel: {
-    fontSize: '12px',
-    color: '#6b7280',
-    fontWeight: 500,
+    fontSize: typography.sizes.sm,
+    color: colors.neutral500,
+    fontWeight: typography.weights.medium,
     marginBottom: '2px',
     whiteSpace: 'nowrap',
   },
   summaryValue: {
-    fontSize: '15px',
-    fontWeight: 700,
-    color: '#111827',
+    fontSize: typography.sizes.lg,
+    fontWeight: typography.weights.bold,
+    color: colors.neutral900,
     whiteSpace: 'nowrap',
   },
   summaryCount: {
-    fontSize: '11px',
-    color: '#9ca3af',
+    fontSize: typography.sizes.xs,
+    color: colors.neutral400,
     marginTop: '2px',
   },
-  // Filter Card
   filterCard: {
-    background: '#ffffff',
-    borderRadius: '10px',
-    border: '1px solid #e5e7eb',
-    boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+    background: colors.white,
+    borderRadius: radius.lg,
+    border: `1px solid ${colors.border}`,
+    boxShadow: shadows.md,
     padding: '16px 20px',
     marginBottom: '20px',
   },
@@ -1549,13 +1533,13 @@ const s = {
     marginBottom: '14px',
   },
   filterCardTitle: {
-    fontWeight: 700,
-    fontSize: '15px',
-    color: '#111827',
+    fontWeight: typography.weights.bold,
+    fontSize: typography.sizes.lg,
+    color: colors.neutral900,
   },
   filterCardHint: {
-    fontSize: '12px',
-    color: '#9ca3af',
+    fontSize: typography.sizes.sm,
+    color: colors.neutral400,
   },
   filterRow: {
     display: 'flex',
@@ -1571,9 +1555,9 @@ const s = {
     gap: '4px',
   },
   filterLabel: {
-    fontSize: '12px',
-    fontWeight: 500,
-    color: '#6b7280',
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.medium,
+    color: colors.neutral500,
   },
   filterInputWrapper: {
     position: 'relative',
@@ -1589,31 +1573,30 @@ const s = {
   filterInput: {
     width: '100%',
     padding: '8px 10px 8px 30px',
-    border: '1px solid #d1d5db',
-    borderRadius: '7px',
-    fontSize: '13px',
-    color: '#374151',
-    background: '#ffffff',
+    border: `1px solid ${colors.neutral300}`,
+    borderRadius: radius.md,
+    fontSize: typography.sizes.base,
+    color: colors.neutral700,
+    background: colors.white,
     boxSizing: 'border-box',
     outline: 'none',
   },
   filterInputPlain: {
     width: '100%',
     padding: '8px 10px',
-    border: '1px solid #d1d5db',
-    borderRadius: '7px',
-    fontSize: '13px',
-    color: '#374151',
-    background: '#ffffff',
+    border: `1px solid ${colors.neutral300}`,
+    borderRadius: radius.md,
+    fontSize: typography.sizes.base,
+    color: colors.neutral700,
+    background: colors.white,
     boxSizing: 'border-box',
     outline: 'none',
   },
-  // Table Card
   tableCard: {
-    background: '#ffffff',
-    borderRadius: '10px',
-    border: '1px solid #e5e7eb',
-    boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+    background: colors.white,
+    borderRadius: radius.lg,
+    border: `1px solid ${colors.border}`,
+    boxShadow: shadows.md,
     overflow: 'hidden',
   },
   tableCardHeader: {
@@ -1621,17 +1604,17 @@ const s = {
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: '14px 20px',
-    borderBottom: '1px solid #e5e7eb',
-    background: '#f9fafb',
+    borderBottom: `1px solid ${colors.border}`,
+    background: colors.neutral50,
   },
   tableCardTitle: {
-    fontWeight: 700,
-    fontSize: '15px',
-    color: '#111827',
+    fontWeight: typography.weights.bold,
+    fontSize: typography.sizes.lg,
+    color: colors.neutral900,
   },
   tableCardCount: {
-    fontSize: '13px',
-    color: '#6b7280',
+    fontSize: typography.sizes.base,
+    color: colors.neutral500,
   },
   tableWrapper: {
     overflowX: 'auto',
@@ -1639,26 +1622,26 @@ const s = {
   table: {
     width: '100%',
     borderCollapse: 'collapse',
-    fontSize: '14px',
-    color: '#111827',
+    fontSize: typography.sizes.md,
+    color: colors.neutral900,
   },
   th: {
     padding: '11px 14px',
-    fontWeight: 600,
-    color: '#374151',
-    fontSize: '12px',
-    borderBottom: '1px solid #e5e7eb',
+    fontWeight: typography.weights.semibold,
+    color: colors.neutral700,
+    fontSize: typography.sizes.sm,
+    borderBottom: `1px solid ${colors.border}`,
     textAlign: 'left',
-    background: '#f9fafb',
+    background: colors.neutral50,
     whiteSpace: 'nowrap',
   },
   tr: {
-    borderBottom: '1px solid #f3f4f6',
+    borderBottom: `1px solid ${colors.neutral100}`,
   },
   td: {
     padding: '11px 14px',
-    color: '#374151',
-    fontSize: '13px',
+    color: colors.neutral700,
+    fontSize: typography.sizes.base,
     verticalAlign: 'middle',
   },
   pagination: {
@@ -1667,98 +1650,51 @@ const s = {
     justifyContent: 'center',
     gap: '16px',
     padding: '16px',
-    borderTop: '1px solid #f3f4f6',
+    borderTop: `1px solid ${colors.neutral100}`,
   },
   pageInfo: {
-    fontSize: '14px',
-    color: '#6b7280',
+    fontSize: typography.sizes.md,
+    color: colors.neutral500,
   },
   centered: {
     textAlign: 'center',
     padding: '48px',
-    color: '#6b7280',
-    fontSize: '15px',
+    color: colors.neutral500,
+    fontSize: typography.sizes.lg,
   },
   errorBox: {
-    background: '#fee2e2',
-    color: '#991b1b',
+    background: colors.errorBg,
+    color: colors.errorText,
     padding: '16px 20px',
-    fontSize: '14px',
-    border: '1px solid #fecaca',
+    fontSize: typography.sizes.md,
+    border: `1px solid ${colors.errorBorder}`,
   },
   badgeAtrasado: {
     display: 'inline-block',
     padding: '2px 8px',
-    borderRadius: '999px',
-    fontSize: '12px',
-    fontWeight: 600,
-    background: '#fee2e2',
-    color: '#991b1b',
-  },
-  // Buttons
-  btnPrimary: {
-    padding: '9px 18px',
-    background: '#1e3a5f',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '13px',
-    fontWeight: 600,
-    cursor: 'pointer',
-    whiteSpace: 'nowrap',
-  },
-  btnOutline: {
-    padding: '8px 14px',
-    background: 'transparent',
-    color: '#374151',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
-    fontSize: '13px',
-    fontWeight: 500,
-    cursor: 'pointer',
-    whiteSpace: 'nowrap',
-  },
-  btnOutlineActive: {
-    background: '#eff6ff',
-    borderColor: '#2563eb',
-    color: '#2563eb',
-  },
-  btnSecondary: {
-    padding: '8px 16px',
-    background: '#f3f4f6',
-    color: '#374151',
-    border: '1px solid #e5e7eb',
-    borderRadius: '8px',
-    fontSize: '14px',
-    fontWeight: 500,
-    cursor: 'pointer',
-  },
-  btnGhost: {
-    padding: '8px 16px',
-    background: 'transparent',
-    color: '#6b7280',
-    border: '1px solid #e5e7eb',
-    borderRadius: '8px',
-    fontSize: '14px',
-    cursor: 'pointer',
+    borderRadius: radius.full,
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.semibold,
+    background: colors.errorBg,
+    color: colors.errorText,
   },
   btnLink: {
     background: 'none',
     border: 'none',
-    color: '#2563eb',
-    fontSize: '13px',
+    color: colors.primaryLight,
+    fontSize: typography.sizes.base,
     cursor: 'pointer',
     padding: '2px 4px',
     textDecoration: 'underline',
   },
   btnPagar: {
     padding: '5px 12px',
-    background: '#16a34a',
-    color: '#ffffff',
+    background: colors.success,
+    color: colors.white,
     border: 'none',
-    borderRadius: '6px',
-    fontSize: '12px',
-    fontWeight: 600,
+    borderRadius: radius.md,
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.semibold,
     cursor: 'pointer',
     whiteSpace: 'nowrap',
   },
@@ -1768,7 +1704,7 @@ const s = {
     fontSize: '15px',
     cursor: 'pointer',
     padding: '2px 4px',
-    borderRadius: '4px',
+    borderRadius: radius.sm,
     lineHeight: 1,
   },
   dropdownMenu: {
@@ -1776,10 +1712,10 @@ const s = {
     right: 0,
     top: '100%',
     marginTop: '4px',
-    background: '#ffffff',
-    border: '1px solid #e5e7eb',
-    borderRadius: '8px',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+    background: colors.white,
+    border: `1px solid ${colors.border}`,
+    borderRadius: radius.md,
+    boxShadow: shadows.lg,
     zIndex: 100,
     minWidth: '140px',
     overflow: 'hidden',
@@ -1791,35 +1727,34 @@ const s = {
     background: 'none',
     border: 'none',
     textAlign: 'left',
-    fontSize: '13px',
+    fontSize: typography.sizes.base,
     cursor: 'pointer',
-    color: '#374151',
+    color: colors.neutral700,
   },
-  // Form inputs
   select: {
     padding: '8px 12px',
-    border: '1px solid #e5e7eb',
-    borderRadius: '8px',
-    fontSize: '14px',
-    color: '#374151',
-    background: '#ffffff',
+    border: `1px solid ${colors.border}`,
+    borderRadius: radius.md,
+    fontSize: typography.sizes.md,
+    color: colors.neutral700,
+    background: colors.white,
   },
   input: {
     width: '100%',
     padding: '10px 12px',
-    border: '1px solid #e5e7eb',
-    borderRadius: '8px',
-    fontSize: '14px',
-    color: '#374151',
-    background: '#ffffff',
+    border: `1px solid ${colors.border}`,
+    borderRadius: radius.md,
+    fontSize: typography.sizes.md,
+    color: colors.neutral700,
+    background: colors.white,
     boxSizing: 'border-box',
   },
   label: {
     display: 'block',
     marginBottom: '4px',
-    fontSize: '13px',
-    fontWeight: 500,
-    color: '#374151',
+    fontSize: typography.sizes.base,
+    fontWeight: typography.weights.medium,
+    color: colors.neutral700,
   },
   formGroup: {
     marginBottom: '16px',
@@ -1829,43 +1764,18 @@ const s = {
     gap: '16px',
     marginBottom: '0',
   },
-  // Modal
-  modalOverlay: {
-    position: 'fixed',
-    inset: 0,
-    background: 'rgba(0,0,0,0.4)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1000,
-  },
-  modalBox: {
-    background: '#ffffff',
-    borderRadius: '12px',
-    padding: '32px',
-    width: '100%',
-    maxWidth: '520px',
-    boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
-  },
-  modalTitle: {
-    margin: '0 0 24px 0',
-    fontSize: '20px',
-    fontWeight: 700,
-    color: '#111827',
-  },
   modalActions: {
     display: 'flex',
     justifyContent: 'flex-end',
     gap: '12px',
     marginTop: '24px',
   },
-  // Footer
   footer: {
-    background: '#1e293b',
-    color: '#94a3b8',
+    background: colors.neutral800,
+    color: colors.neutral400,
     textAlign: 'center',
     padding: '14px',
-    fontSize: '13px',
+    fontSize: typography.sizes.base,
     letterSpacing: '0.01em',
   },
 };

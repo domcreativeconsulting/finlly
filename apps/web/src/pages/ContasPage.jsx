@@ -4,7 +4,9 @@ import AppSidebar from '../components/AppSidebar.jsx';
 import { InadimplenteGuard } from '../components/InadimplenteGuard.jsx';
 import { contasService } from '../services/contas.service.js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCreditCard, faCheck, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { faCreditCard, faCheck } from '@fortawesome/free-solid-svg-icons';
+import { Button, Input, Select, Modal, Badge, Card } from '../design-system/index.js';
+import { colors, typography, radius } from '../design-system/tokens.js';
 
 const DEFAULT_COLOR = '#33528a';
 
@@ -24,30 +26,16 @@ const STATUS_LABELS = {
   inativa: 'Inativa',
 };
 
-const STATUS_COLORS = {
-  ativa: { background: '#dcfce7', color: '#166534' },
-  inativa: { background: '#f3f4f6', color: '#6b7280' },
-};
-
 function formatBRL(valor) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor ?? 0);
 }
 
 function StatusBadge({ status }) {
-  const style = STATUS_COLORS[status] || STATUS_COLORS.inativa;
+  const variantMap = { ativa: 'success', inativa: 'neutral' };
   return (
-    <span
-      style={{
-        display: 'inline-block',
-        padding: '2px 10px',
-        borderRadius: '999px',
-        fontSize: '12px',
-        fontWeight: 600,
-        ...style,
-      }}
-    >
+    <Badge variant={variantMap[status] || 'neutral'}>
       {STATUS_LABELS[status] || status}
-    </span>
+    </Badge>
   );
 }
 
@@ -194,7 +182,7 @@ export default function ContasPage() {
 
   return (
     <InadimplenteGuard>
-      <div style={{ display: 'flex', minHeight: '100vh', background: '#f0f4f8' }}>
+      <div style={{ display: 'flex', minHeight: '100vh', background: colors.bg }}>
         <AppSidebar
           sidebarOpen={sidebarOpen}
           currentPath="/contas"
@@ -221,137 +209,87 @@ export default function ContasPage() {
             }}
           >
             <div>
-              <h1 style={{ margin: 0, fontSize: '24px', fontWeight: 700, color: '#1e293b' }}>
+              <h1 style={{ margin: 0, fontSize: typography.sizes['5xl'], fontWeight: typography.weights.bold, color: colors.neutral800 }}>
                 Carteiras
               </h1>
-              <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '14px' }}>
+              <p style={{ margin: '4px 0 0', color: colors.neutral500, fontSize: typography.sizes.md }}>
                 Gerencie suas contas financeiras
               </p>
             </div>
-            <button
-              onClick={abrirModalNovo}
-              style={{
-                background: '#33528a',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '8px',
-                padding: '10px 20px',
-                fontSize: '14px',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              + Nova Carteira
-            </button>
+            <Button onClick={abrirModalNovo}>+ Nova Carteira</Button>
           </div>
 
           {/* Saldo total card */}
           <div
             style={{
-              background: '#33528a',
-              borderRadius: '12px',
+              background: colors.primary,
+              borderRadius: radius.lg,
               padding: '20px 24px',
               marginBottom: '20px',
-              color: '#fff',
+              color: colors.white,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
             }}
           >
             <div>
-              <p style={{ margin: 0, fontSize: '13px', opacity: 0.8 }}>Saldo Total (contas ativas)</p>
+              <p style={{ margin: 0, fontSize: typography.sizes.base, opacity: 0.8 }}>Saldo Total (contas ativas)</p>
               <p
                 style={{
                   margin: '4px 0 0',
-                  fontSize: '28px',
-                  fontWeight: 700,
+                  fontSize: typography.sizes['6xl'],
+                  fontWeight: typography.weights.bold,
                   color: saldoTotal >= 0 ? '#86efac' : '#fca5a5',
                 }}
               >
                 {formatBRL(saldoTotal)}
               </p>
             </div>
-            <div style={{ opacity: 0.7, fontSize: '13px' }}>
+            <div style={{ opacity: 0.7, fontSize: typography.sizes.base }}>
               {lista.filter((c) => c.status === 'ativa').length} conta(s) ativa(s)
             </div>
           </div>
 
           {/* Filtro de status */}
-          <div
-            style={{
-              background: '#fff',
-              borderRadius: '12px',
-              padding: '16px 20px',
-              marginBottom: '20px',
-              display: 'flex',
-              gap: '12px',
-              alignItems: 'flex-end',
-              flexWrap: 'wrap',
-              boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-            }}
-          >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label style={{ fontSize: '12px', color: '#64748b', fontWeight: 500 }}>Status</label>
-              <select
-                value={filtroStatus}
-                onChange={(e) => setFiltroStatus(e.target.value)}
-                style={inputStyle}
-              >
-                <option value="">Todos</option>
-                <option value="ativa">Ativa</option>
-                <option value="inativa">Inativa</option>
-              </select>
+          <Card padding="16px 20px" style={{ marginBottom: '20px' }}>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: typography.sizes.sm, color: colors.neutral500, fontWeight: typography.weights.medium }}>Status</label>
+                <Select
+                  value={filtroStatus}
+                  onChange={(e) => setFiltroStatus(e.target.value)}
+                  style={{ width: '160px' }}
+                >
+                  <option value="">Todos</option>
+                  <option value="ativa">Ativa</option>
+                  <option value="inativa">Inativa</option>
+                </Select>
+              </div>
             </div>
-          </div>
+          </Card>
 
           {/* Content */}
           {loading ? (
-            <div
-              style={{
-                background: '#fff',
-                borderRadius: '12px',
-                boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-                padding: '40px',
-                textAlign: 'center',
-                color: '#64748b',
-              }}
-            >
-              Carregando...
-            </div>
+            <Card>
+              <div style={{ padding: '24px', textAlign: 'center', color: colors.neutral500 }}>Carregando...</div>
+            </Card>
           ) : error ? (
-            <div
-              style={{
-                background: '#fff',
-                borderRadius: '12px',
-                boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-                padding: '40px',
-                textAlign: 'center',
-                color: '#991b1b',
-              }}
-            >
-              {error}
-            </div>
+            <Card>
+              <div style={{ padding: '24px', textAlign: 'center', color: colors.errorText }}>{error}</div>
+            </Card>
           ) : lista.length === 0 ? (
-            <div
-              style={{
-                background: '#fff',
-                borderRadius: '12px',
-                boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-                padding: '60px 40px',
-                textAlign: 'center',
-              }}
-            >
-              <div style={{ fontSize: '48px', marginBottom: '16px' }}><FontAwesomeIcon icon={faCreditCard} /></div>
-              <p style={{ color: '#1e293b', fontWeight: 600, fontSize: '16px', margin: '0 0 8px' }}>
-                Nenhuma carteira encontrada
-              </p>
-              <p style={{ color: '#64748b', fontSize: '14px', margin: '0 0 24px' }}>
-                Crie sua primeira carteira para controlar seu saldo.
-              </p>
-              <button onClick={abrirModalNovo} style={btnPrimary}>
-                + Criar primeira carteira
-              </button>
-            </div>
+            <Card>
+              <div style={{ padding: '40px', textAlign: 'center' }}>
+                <div style={{ fontSize: '48px', marginBottom: '16px' }}><FontAwesomeIcon icon={faCreditCard} /></div>
+                <p style={{ color: colors.neutral800, fontWeight: typography.weights.semibold, fontSize: typography.sizes.xl, margin: '0 0 8px' }}>
+                  Nenhuma carteira encontrada
+                </p>
+                <p style={{ color: colors.neutral500, fontSize: typography.sizes.md, margin: '0 0 24px' }}>
+                  Crie sua primeira carteira para controlar seu saldo.
+                </p>
+                <Button onClick={abrirModalNovo}>+ Criar primeira carteira</Button>
+              </div>
+            </Card>
           ) : (
             <div
               style={{
@@ -364,7 +302,7 @@ export default function ContasPage() {
                 <div
                   key={conta.id}
                   style={{
-                    background: '#fff',
+                    background: colors.white,
                     borderRadius: '14px',
                     boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
                     overflow: 'hidden',
@@ -387,7 +325,7 @@ export default function ContasPage() {
                           justifyContent: 'center',
                           fontSize: '18px',
                           flexShrink: 0,
-                          color: '#fff',
+                          color: colors.white,
                         }}
                       >
                         {conta.icone ? conta.icone : <FontAwesomeIcon icon={faCreditCard} />}
@@ -396,9 +334,9 @@ export default function ContasPage() {
                         <p
                           style={{
                             margin: 0,
-                            fontWeight: 700,
-                            fontSize: '15px',
-                            color: '#1e293b',
+                            fontWeight: typography.weights.bold,
+                            fontSize: typography.sizes.lg,
+                            color: colors.neutral800,
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
@@ -411,34 +349,14 @@ export default function ContasPage() {
 
                     {/* Type badge + status badge row */}
                     <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px' }}>
-                      <span
-                        style={{
-                          display: 'inline-block',
-                          padding: '2px 10px',
-                          borderRadius: '999px',
-                          fontSize: '11px',
-                          fontWeight: 600,
-                          background: '#e0f2fe',
-                          color: '#0369a1',
-                        }}
-                      >
+                      <Badge variant="primary" style={{ fontSize: typography.sizes.xs }}>
                         {TIPO_CONTA_LABELS[conta.tipo] || conta.tipo}
-                      </span>
+                      </Badge>
                       <StatusBadge status={conta.status} />
                       {conta.incluir_total && (
-                        <span
-                          style={{
-                            display: 'inline-block',
-                            padding: '2px 8px',
-                            borderRadius: '999px',
-                            fontSize: '11px',
-                            fontWeight: 600,
-                            background: '#f0fdf4',
-                            color: '#166534',
-                          }}
-                        >
+                        <Badge variant="success" style={{ fontSize: typography.sizes.xs }}>
                           <FontAwesomeIcon icon={faCheck} /> No total
-                        </span>
+                        </Badge>
                       )}
                     </div>
 
@@ -446,9 +364,9 @@ export default function ContasPage() {
                     <p
                       style={{
                         margin: 0,
-                        fontSize: '22px',
-                        fontWeight: 700,
-                        color: (conta.saldo ?? 0) >= 0 ? '#166534' : '#991b1b',
+                        fontSize: typography.sizes['4xl'],
+                        fontWeight: typography.weights.bold,
+                        color: (conta.saldo ?? 0) >= 0 ? colors.successText : colors.errorText,
                       }}
                     >
                       {formatBRL(conta.saldo)}
@@ -461,22 +379,26 @@ export default function ContasPage() {
                       display: 'flex',
                       gap: '8px',
                       padding: '10px 16px',
-                      borderTop: '1px solid #f1f5f9',
-                      background: '#f8fafc',
+                      borderTop: `1px solid ${colors.border}`,
+                      background: colors.neutral50,
                     }}
                   >
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => abrirModalEdicao(conta)}
-                      style={{ ...btnActionEdit, flex: 1 }}
+                      style={{ flex: 1, background: '#e0f2fe', color: '#0369a1' }}
                     >
                       Editar
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => abrirModalExcluir(conta)}
-                      style={{ ...btnActionDelete, flex: 1 }}
+                      style={{ flex: 1, background: colors.errorBg, color: colors.errorText }}
                     >
                       Excluir
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -485,244 +407,119 @@ export default function ContasPage() {
         </main>
 
         {/* Modal criar/editar */}
-        {modalAberto && (
-          <div style={overlayStyle}>
-            <div style={modalStyle}>
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: '20px',
-                }}
-              >
-                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1e293b' }}>
-                  {contaEmEdicao ? 'Editar Carteira' : 'Nova Carteira'}
-                </h2>
-                <button onClick={fecharModal} style={btnClose}>
-                  <FontAwesomeIcon icon={faXmark} />
-                </button>
-              </div>
-              <form onSubmit={handleSalvar}>
-                <div style={formGroup}>
-                  <label style={labelStyle}>Nome *</label>
-                  <input
-                    type="text"
-                    name="nome"
-                    value={form.nome}
-                    onChange={handleFormChange}
-                    required
-                    style={inputStyle}
-                    placeholder="Ex: Conta Corrente Itaú"
-                  />
-                </div>
-                <div style={formGroup}>
-                  <label style={labelStyle}>Tipo *</label>
-                  <select
-                    name="tipo"
-                    value={form.tipo}
-                    onChange={handleFormChange}
-                    required
-                    style={inputStyle}
-                  >
-                    {TIPO_CONTA_OPCOES.map((t) => (
-                      <option key={t.value} value={t.value}>
-                        {t.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div style={formGroup}>
-                  <label style={labelStyle}>Cor (opcional)</label>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <input
-                      type="color"
-                      name="cor"
-                      value={form.cor || DEFAULT_COLOR}
-                      onChange={handleFormChange}
-                      style={{ width: '40px', height: '36px', padding: '2px', border: '1px solid #e2e8f0', borderRadius: '6px', cursor: 'pointer' }}
-                    />
-                    <input
-                      type="text"
-                      name="cor"
-                      value={form.cor || ''}
-                      onChange={handleFormChange}
-                      style={{ ...inputStyle, flex: 1 }}
-                      placeholder="#33528a"
-                      maxLength={7}
-                    />
-                  </div>
-                </div>
-                <div style={formGroup}>
-                  <label style={labelStyle}>Ícone (opcional)</label>
-                  <input
-                    type="text"
-                    name="icone"
-                    value={form.icone}
-                    onChange={handleFormChange}
-                    style={inputStyle}
-                    placeholder="Ex: 🏦"
-                    maxLength={50}
-                  />
-                </div>
-                <div style={{ ...formGroup, flexDirection: 'row', alignItems: 'center', gap: '10px' }}>
-                  <input
-                    type="checkbox"
-                    id="incluir_total"
-                    name="incluir_total"
-                    checked={form.incluir_total}
-                    onChange={handleFormChange}
-                    style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-                  />
-                  <label htmlFor="incluir_total" style={{ ...labelStyle, cursor: 'pointer' }}>
-                    Incluir no saldo total
-                  </label>
-                </div>
-                {contaEmEdicao && (
-                  <div style={formGroup}>
-                    <label style={labelStyle}>Status</label>
-                    <select
-                      name="status"
-                      value={form.status}
-                      onChange={handleFormChange}
-                      style={inputStyle}
-                    >
-                      <option value="ativa">Ativa</option>
-                      <option value="inativa">Inativa</option>
-                    </select>
-                  </div>
-                )}
-                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '24px' }}>
-                  <button type="button" onClick={fecharModal} style={btnSecondary}>
-                    Cancelar
-                  </button>
-                  <button type="submit" disabled={salvando} style={btnPrimary}>
-                    {salvando ? 'Salvando...' : contaEmEdicao ? 'Salvar' : 'Criar'}
-                  </button>
-                </div>
-              </form>
+        <Modal
+          open={modalAberto}
+          onClose={fecharModal}
+          title={contaEmEdicao ? 'Editar Carteira' : 'Nova Carteira'}
+          maxWidth="520px"
+        >
+          <form onSubmit={handleSalvar}>
+            <div style={formGroup}>
+              <label style={labelStyle}>Nome *</label>
+              <Input
+                type="text"
+                name="nome"
+                value={form.nome}
+                onChange={handleFormChange}
+                required
+                placeholder="Ex: Conta Corrente Itaú"
+              />
             </div>
-          </div>
-        )}
+            <div style={formGroup}>
+              <label style={labelStyle}>Tipo *</label>
+              <Select name="tipo" value={form.tipo} onChange={handleFormChange} required>
+                {TIPO_CONTA_OPCOES.map((t) => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
+              </Select>
+            </div>
+            <div style={formGroup}>
+              <label style={labelStyle}>Cor (opcional)</label>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input
+                  type="color"
+                  name="cor"
+                  value={form.cor || DEFAULT_COLOR}
+                  onChange={handleFormChange}
+                  style={{ width: '40px', height: '40px', padding: '2px', border: `1px solid ${colors.border}`, borderRadius: radius.md, cursor: 'pointer' }}
+                />
+                <Input
+                  type="text"
+                  name="cor"
+                  value={form.cor || ''}
+                  onChange={handleFormChange}
+                  placeholder="#33528a"
+                  maxLength={7}
+                />
+              </div>
+            </div>
+            <div style={formGroup}>
+              <label style={labelStyle}>Ícone (opcional)</label>
+              <Input
+                type="text"
+                name="icone"
+                value={form.icone}
+                onChange={handleFormChange}
+                placeholder="Ex: ��"
+                maxLength={50}
+              />
+            </div>
+            <div style={{ ...formGroup, flexDirection: 'row', alignItems: 'center', gap: '10px' }}>
+              <input
+                type="checkbox"
+                id="incluir_total"
+                name="incluir_total"
+                checked={form.incluir_total}
+                onChange={handleFormChange}
+                style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+              />
+              <label htmlFor="incluir_total" style={{ ...labelStyle, cursor: 'pointer' }}>
+                Incluir no saldo total
+              </label>
+            </div>
+            {contaEmEdicao && (
+              <div style={formGroup}>
+                <label style={labelStyle}>Status</label>
+                <Select name="status" value={form.status} onChange={handleFormChange}>
+                  <option value="ativa">Ativa</option>
+                  <option value="inativa">Inativa</option>
+                </Select>
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '24px' }}>
+              <Button type="button" variant="secondary" onClick={fecharModal}>Cancelar</Button>
+              <Button type="submit" loading={salvando}>
+                {salvando ? 'Salvando...' : contaEmEdicao ? 'Salvar' : 'Criar'}
+              </Button>
+            </div>
+          </form>
+        </Modal>
 
         {/* Modal excluir */}
-        {modalExcluirAberto && contaParaExcluir && (
-          <div style={overlayStyle}>
-            <div style={{ ...modalStyle, maxWidth: '420px' }}>
-              <h2 style={{ margin: '0 0 12px', fontSize: '18px', fontWeight: 700, color: '#1e293b' }}>
-                Excluir Carteira
-              </h2>
-              <p style={{ color: '#475569', marginBottom: '8px' }}>
-                Tem certeza que deseja excluir a carteira{' '}
-                <strong>{contaParaExcluir.nome}</strong>?
-              </p>
-              <p style={{ color: '#64748b', fontSize: '13px', marginBottom: '24px' }}>
-                Caso a carteira possua movimentações, não será possível excluí-la. Inative-a em vez disso.
-              </p>
-              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                <button onClick={fecharModalExcluir} style={btnSecondary}>
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleExcluir}
-                  disabled={excluindo}
-                  style={{ ...btnPrimary, background: '#dc2626' }}
-                >
-                  {excluindo ? 'Excluindo...' : 'Excluir'}
-                </button>
-              </div>
-            </div>
+        <Modal
+          open={modalExcluirAberto && !!contaParaExcluir}
+          onClose={fecharModalExcluir}
+          title="Excluir Carteira"
+          maxWidth="420px"
+        >
+          <p style={{ color: colors.secondaryText, marginBottom: '8px' }}>
+            Tem certeza que deseja excluir a carteira{' '}
+            <strong>{contaParaExcluir?.nome}</strong>?
+          </p>
+          <p style={{ color: colors.neutral500, fontSize: typography.sizes.base, marginBottom: '24px' }}>
+            Caso a carteira possua movimentações, não será possível excluí-la. Inative-a em vez disso.
+          </p>
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+            <Button variant="secondary" onClick={fecharModalExcluir}>Cancelar</Button>
+            <Button variant="danger" loading={excluindo} onClick={handleExcluir}>
+              {excluindo ? 'Excluindo...' : 'Excluir'}
+            </Button>
           </div>
-        )}
+        </Modal>
       </div>
     </InadimplenteGuard>
   );
 }
 
-const inputStyle = {
-  border: '1px solid #e2e8f0',
-  borderRadius: '8px',
-  padding: '8px 12px',
-  fontSize: '14px',
-  color: '#1e293b',
-  background: '#fff',
-  outline: 'none',
-  width: '100%',
-  boxSizing: 'border-box',
-};
-
-
-const overlayStyle = {
-  position: 'fixed',
-  inset: 0,
-  background: 'rgba(0,0,0,0.4)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  zIndex: 2000,
-};
-
-const modalStyle = {
-  background: '#fff',
-  borderRadius: '16px',
-  padding: '28px',
-  width: '100%',
-  maxWidth: '520px',
-  boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
-};
-
 const formGroup = { display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '16px' };
-const labelStyle = { fontSize: '13px', fontWeight: 600, color: '#475569' };
-
-const btnPrimary = {
-  background: '#33528a',
-  color: '#fff',
-  border: 'none',
-  borderRadius: '8px',
-  padding: '10px 20px',
-  fontSize: '14px',
-  fontWeight: 600,
-  cursor: 'pointer',
-};
-
-const btnSecondary = {
-  background: '#f1f5f9',
-  color: '#475569',
-  border: '1px solid #e2e8f0',
-  borderRadius: '8px',
-  padding: '10px 20px',
-  fontSize: '14px',
-  fontWeight: 600,
-  cursor: 'pointer',
-};
-
-const btnClose = {
-  background: 'none',
-  border: 'none',
-  cursor: 'pointer',
-  fontSize: '18px',
-  color: '#94a3b8',
-  padding: '4px',
-};
-
-const btnActionEdit = {
-  background: '#e0f2fe',
-  color: '#0369a1',
-  border: 'none',
-  borderRadius: '6px',
-  padding: '5px 12px',
-  fontSize: '12px',
-  fontWeight: 600,
-  cursor: 'pointer',
-};
-
-const btnActionDelete = {
-  background: '#fee2e2',
-  color: '#991b1b',
-  border: 'none',
-  borderRadius: '6px',
-  padding: '5px 12px',
-  fontSize: '12px',
-  fontWeight: 600,
-  cursor: 'pointer',
-};
+const labelStyle = { fontSize: typography.sizes.base, fontWeight: typography.weights.semibold, color: colors.secondaryText };
