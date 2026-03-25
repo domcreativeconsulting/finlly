@@ -1375,7 +1375,7 @@ export default function ContasReceberPage() {
                           )}
                         </td>
                       </tr>
-                      {listaCategoriasModal.filter(f => f.pai_id === cat.id || f.pai_id === String(cat.id)).map(filho => (
+                      {(cat.filhos ?? []).map(filho => (
                         <tr key={filho.id} style={{ borderBottom: '1px solid #f1f5f9', background: '#fafbfc' }}>
                           <td style={{ padding: '10px 12px 10px 28px', color: '#334155' }}>↳ {filho.nome}</td>
                           <td style={{ padding: '10px 12px' }}>
