@@ -7,7 +7,14 @@ import { toast } from 'react-toastify';
 import { useAuth } from '../hooks/useAuth.js';
 import { perfilService } from '../services/perfil.service.js';
 import AppSidebar from '../components/AppSidebar.jsx';
-import { Save, Lock, CircleUser, CreditCard, DoorOpen } from 'lucide-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faFloppyDisk,
+  faLock,
+  faCircleUser,
+  faCreditCard,
+  faDoorOpen,
+} from '@fortawesome/free-solid-svg-icons';
 
 const TIMEZONES = [
   'America/Sao_Paulo',
@@ -344,7 +351,7 @@ export default function PerfilPage() {
                 ☰
               </button>
               <div style={s.pageTitleIcon} aria-hidden="true">
-                <CircleUser size={32} color="#4b5563" strokeWidth={1.5} />
+                <FontAwesomeIcon icon={faCircleUser} style={{ fontSize: '32px', color: '#4b5563' }} />
               </div>
               <div>
                 <div style={s.pageTitleRow}>
@@ -404,7 +411,7 @@ export default function PerfilPage() {
                       (e.currentTarget.style.backgroundColor = 'transparent')
                     }
                   >
-                    <CreditCard size={18} style={{ marginRight: '5px' }} />
+                    <FontAwesomeIcon icon={faCreditCard} style={{ fontSize: '18px', marginRight: '5px' }} />
                     Assinatura
                   </button>
 
@@ -419,12 +426,7 @@ export default function PerfilPage() {
                       (e.currentTarget.style.backgroundColor = 'transparent')
                     }
                   >
-                    <CircleUser
-                      size={18}
-                      color="#4b5563"
-                      strokeWidth={1.5}
-                      style={{ marginRight: '5px' }}
-                    />
+                    <FontAwesomeIcon icon={faCircleUser} style={{ fontSize: '18px', color: '#4b5563', marginRight: '5px' }} />
                     Perfil
                   </button>
 
@@ -444,7 +446,7 @@ export default function PerfilPage() {
                       (e.currentTarget.style.backgroundColor = 'transparent')
                     }
                   >
-                    <DoorOpen size={18} style={{ marginRight: '5px' }} />
+                    <FontAwesomeIcon icon={faDoorOpen} style={{ fontSize: '18px', marginRight: '5px' }} />
                     Sair
                   </button>
                 </div>
@@ -662,7 +664,7 @@ export default function PerfilPage() {
                           </>
                         ) : (
                           <>
-                            <Save size={18} style={{ marginRight: '5px' }} />
+                            <FontAwesomeIcon icon={faFloppyDisk} style={{ fontSize: '18px', marginRight: '5px' }} />
                             Salvar alterações
                           </>
                         )}
@@ -804,7 +806,7 @@ export default function PerfilPage() {
                           </>
                         ) : (
                           <>
-                            <Lock size={18} style={{ marginRight: '5px' }} />
+                            <FontAwesomeIcon icon={faLock} style={{ fontSize: '18px', marginRight: '5px' }} />
                             Alterar senha
                           </>
                         )}

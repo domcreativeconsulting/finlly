@@ -1,42 +1,43 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-  LayoutDashboard,
-  ArrowUpCircle,
-  ArrowDownCircle,
-  TrendingUp,
-  Target,
-  Paperclip,
-  LogOut,
-} from 'lucide-react';
+  faTableColumns,
+  faCircleUp,
+  faCircleDown,
+  faChartLine,
+  faBullseye,
+  faPaperclip,
+  faRightFromBracket,
+} from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../hooks/useAuth.js';
 import logoIcon from '../assets/logo.png';
 
 const NAV_ITEMS = [
   {
-    icon: <LayoutDashboard size={20} />,
+    icon: <FontAwesomeIcon icon={faTableColumns} style={{ fontSize: '20px' }} />,
     label: 'Dashboard',
     path: '/dashboard',
   },
   {
-    icon: <ArrowUpCircle size={20} />,
+    icon: <FontAwesomeIcon icon={faCircleUp} style={{ fontSize: '20px' }} />,
     label: 'Contas a pagar',
     path: '/contas-pagar',
   },
   {
-    icon: <ArrowDownCircle size={20} />,
+    icon: <FontAwesomeIcon icon={faCircleDown} style={{ fontSize: '20px' }} />,
     label: 'Contas a receber',
     path: '/contas-receber',
   },
   {
-    icon: <TrendingUp size={20} />,
+    icon: <FontAwesomeIcon icon={faChartLine} style={{ fontSize: '20px' }} />,
     label: 'Investimentos',
     path: '/investimentos',
   },
-  { icon: <Target size={20} />, label: 'Metas', path: '/metas' },
-  { icon: <Paperclip size={20} />, label: 'Anexos', path: '/anexos' },
+  { icon: <FontAwesomeIcon icon={faBullseye} style={{ fontSize: '20px' }} />, label: 'Metas', path: '/metas' },
+  { icon: <FontAwesomeIcon icon={faPaperclip} style={{ fontSize: '20px' }} />, label: 'Anexos', path: '/anexos' },
   {
-    icon: <LogOut size={20} />,
+    icon: <FontAwesomeIcon icon={faRightFromBracket} style={{ fontSize: '20px' }} />,
     label: 'Sair',
     path: '/logout',
     isLogout: true,
