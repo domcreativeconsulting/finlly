@@ -18,6 +18,7 @@ import contasPagarRouter from './routes/contasPagar.js';
 import contasReceberRouter from './routes/contasReceber.js';
 import categoriasRouter from './routes/categorias.js';
 import contasRouter from './routes/contas.js';
+import movimentacoesRouter from './routes/movimentacoes.js';
 
 const app = express();
 
@@ -42,6 +43,7 @@ app.use(contasPagarRouter);
 app.use(contasReceberRouter);
 app.use(categoriasRouter);
 app.use(contasRouter);
+app.use(movimentacoesRouter);
 
 app.get('/', (req, res) => {
   res.send('Hello World!');
