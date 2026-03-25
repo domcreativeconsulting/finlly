@@ -6,6 +6,14 @@ import { z } from 'zod';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../hooks/useAuth.js';
 import logo from '../../assets/logo.png';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faTriangleExclamation,
+  faEnvelope,
+  faLock,
+  faEye,
+  faEyeSlash,
+} from '@fortawesome/free-solid-svg-icons';
 
 const LoginSchema = z.object({
   email: z.string().email('E-mail inválido'),
@@ -93,7 +101,7 @@ export default function LoginPage() {
           {errorMsg && (
             <div style={styles.errorBox} role="alert">
               <span style={styles.errorIcon} aria-hidden="true">
-                ⚠️
+                <FontAwesomeIcon icon={faTriangleExclamation} />
               </span>
               {errorMsg}
             </div>
@@ -104,7 +112,7 @@ export default function LoginPage() {
             <div style={styles.fieldGroup}>
               <div style={styles.inputWrapper}>
                 <span style={styles.inputIcon} aria-hidden="true">
-                  ✉️
+                  <FontAwesomeIcon icon={faEnvelope} />
                 </span>
                 <input
                   id="email"
@@ -132,7 +140,7 @@ export default function LoginPage() {
             <div style={styles.fieldGroup}>
               <div style={styles.inputWrapper}>
                 <span style={styles.inputIcon} aria-hidden="true">
-                  🔒
+                  <FontAwesomeIcon icon={faLock} />
                 </span>
                 <input
                   id="senha"
@@ -153,7 +161,7 @@ export default function LoginPage() {
                   onClick={() => setMostrarSenha((v) => !v)}
                   aria-label={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
                 >
-                  {mostrarSenha ? '🙈' : '👁️'}
+                  {mostrarSenha ? <FontAwesomeIcon icon={faEyeSlash} /> : <FontAwesomeIcon icon={faEye} />}
                 </button>
               </div>
               {errors.senha ? (

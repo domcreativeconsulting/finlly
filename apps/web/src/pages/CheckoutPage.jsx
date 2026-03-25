@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useAuth } from '../hooks/useAuth.js';
 import { billingService } from '../services/billing.service.js';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCircleCheck } from '@fortawesome/free-solid-svg-icons';
 
 export default function CheckoutPage() {
   useAuth();
@@ -72,7 +74,7 @@ export default function CheckoutPage() {
           {success ? (
             <div style={styles.successBox}>
               <p style={styles.successText}>
-                ✅ Assinatura criada com sucesso!
+                <FontAwesomeIcon icon={faCircleCheck} /> Assinatura criada com sucesso!
               </p>
               <Link to="/billing/status" style={styles.statusLink}>
                 Ver status da assinatura →

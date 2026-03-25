@@ -4,6 +4,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '../../hooks/useAuth.js';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCircleCheck, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons';
 
 const ForgotSchema = z.object({
   email: z.string().email('E-mail inválido'),
@@ -54,7 +56,7 @@ export default function ForgotPasswordPage() {
       <div style={styles.page}>
         <div style={styles.card}>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>✅</div>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}><FontAwesomeIcon icon={faCircleCheck} /></div>
             <h2 style={styles.title}>Link enviado!</h2>
             <p style={{ color: '#374151', marginBottom: '8px' }}>
               Enviamos o link de recuperação para{' '}
@@ -84,7 +86,7 @@ export default function ForgotPasswordPage() {
 
         {errorMsg && (
           <div style={styles.errorBox} role="alert">
-            <span aria-hidden="true">⚠️</span> {errorMsg}
+            <span aria-hidden="true"><FontAwesomeIcon icon={faTriangleExclamation} /></span> {errorMsg}
           </div>
         )}
 

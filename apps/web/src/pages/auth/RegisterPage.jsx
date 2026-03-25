@@ -5,6 +5,15 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../hooks/useAuth.js';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faCircleCheck,
+  faTriangleExclamation,
+  faEye,
+  faEyeSlash,
+  faCheck,
+  faCircleInfo,
+} from '@fortawesome/free-solid-svg-icons';
 
 const RegisterSchema = z
   .object({
@@ -109,7 +118,7 @@ export default function RegisterPage() {
       <div style={styles.page}>
         <div style={styles.card}>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>✅</div>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}><FontAwesomeIcon icon={faCircleCheck} /></div>
             <h2 style={styles.title}>Conta criada!</h2>
             <p style={{ color: '#6b7280', marginBottom: '8px' }}>
               Confira seu e-mail para verificar a conta.
@@ -136,7 +145,7 @@ export default function RegisterPage() {
 
         {errorMsg && (
           <div style={styles.errorBox} role="alert">
-            <span aria-hidden="true">⚠️</span> {errorMsg}
+            <span aria-hidden="true"><FontAwesomeIcon icon={faTriangleExclamation} /></span> {errorMsg}
           </div>
         )}
 
@@ -208,7 +217,7 @@ export default function RegisterPage() {
                 onClick={() => setMostrarSenha((v) => !v)}
                 aria-label={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
               >
-                {mostrarSenha ? '🙈' : '👁️'}
+                {mostrarSenha ? <FontAwesomeIcon icon={faEyeSlash} /> : <FontAwesomeIcon icon={faEye} />}
               </button>
             </div>
 
@@ -244,7 +253,7 @@ export default function RegisterPage() {
                     color: req.ok ? '#22c55e' : '#9ca3af',
                   }}
                 >
-                  {req.ok ? '✓' : '○'} {req.label}
+                  {req.ok ? <FontAwesomeIcon icon={faCheck} /> : '○'} {req.label}
                 </li>
               ))}
             </ul>
@@ -279,7 +288,7 @@ export default function RegisterPage() {
                 onClick={() => setMostrarConfirmar((v) => !v)}
                 aria-label={mostrarConfirmar ? 'Ocultar senha' : 'Mostrar senha'}
               >
-                {mostrarConfirmar ? '🙈' : '👁️'}
+                {mostrarConfirmar ? <FontAwesomeIcon icon={faEyeSlash} /> : <FontAwesomeIcon icon={faEye} />}
               </button>
             </div>
             {errors.confirmarSenha && (
@@ -290,7 +299,7 @@ export default function RegisterPage() {
           </div>
 
           <p style={{ fontSize: '13px', color: '#9ca3af', marginBottom: '16px' }}>
-            ℹ️ Você receberá um e-mail para verificar sua conta.
+            <FontAwesomeIcon icon={faCircleInfo} /> Você receberá um e-mail para verificar sua conta.
           </p>
 
           <button
