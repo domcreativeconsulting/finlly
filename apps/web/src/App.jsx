@@ -25,7 +25,7 @@ export default function App() {
           to { transform: rotate(360deg); }
         }
         * { box-sizing: border-box; }
-        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+        body { margin: 0; }
       `}</style>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
