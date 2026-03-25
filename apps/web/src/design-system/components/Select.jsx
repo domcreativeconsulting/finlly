@@ -17,11 +17,11 @@ const Select = forwardRef(function Select(
     backgroundColor: colors.white,
     border: `1px solid ${error ? colors.error : focused ? colors.primaryLight : colors.neutral300}`,
     borderRadius: radius.md,
-    outline: focused ? `2px solid ${colors.primaryLight}` : 'none',
+    outline: focused ? `2px solid ${colors.primaryLight}` : '2px solid transparent',
     outlineOffset: '0px',
     boxSizing: 'border-box',
     cursor: 'pointer',
-    transition: 'border-color 0.15s, outline 0.15s',
+    transition: 'border-color 0.15s, outline-color 0.15s',
     appearance: 'auto',
     ...style,
   };
