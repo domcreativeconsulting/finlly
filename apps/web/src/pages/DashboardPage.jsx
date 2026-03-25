@@ -1,110 +1,67 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
 import { InadimplenteGuard } from '../components/InadimplenteGuard.jsx';
+import { Button, Card } from '../design-system/index.js';
+import { colors, typography } from '../design-system/tokens.js';
 
 export default function DashboardPage() {
   const { usuario, logout } = useAuth();
 
   return (
-    <div style={styles.page}>
-      <header style={styles.header}>
-        <h1 style={styles.logo}>Finlly</h1>
-        <div style={styles.headerActions}>
-          <Link to="/perfil" style={styles.perfilLink}>
-            Meu Perfil
+    <div style={{ height: '100vh', overflow: 'hidden', backgroundColor: colors.bg }}>
+      <header
+        style={{
+          backgroundColor: colors.white,
+          borderBottom: `1px solid ${colors.border}`,
+          padding: '16px 32px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
+        <h1
+          style={{
+            fontSize: typography.sizes['4xl'],
+            fontWeight: typography.weights.bold,
+            color: colors.primaryLight,
+            margin: 0,
+          }}
+        >
+          Finlly
+        </h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <Link to="/perfil" style={{ textDecoration: 'none' }}>
+            <Button variant="outline" size="sm">Meu Perfil</Button>
           </Link>
-          <button
-            onClick={logout}
-            style={styles.logoutButton}
-            aria-label="logout"
-          >
+          <Button variant="secondary" size="sm" onClick={logout} aria-label="logout">
             Sair
-          </button>
+          </Button>
         </div>
       </header>
 
       <InadimplenteGuard>
-        <main style={styles.main}>
-          <h2 style={styles.welcome}>
+        <main style={{ maxWidth: '900px', margin: '0 auto', padding: '40px 24px' }}>
+          <h2
+            style={{
+              fontSize: typography.sizes['6xl'],
+              fontWeight: typography.weights.bold,
+              color: colors.neutral900,
+              margin: '0 0 8px',
+            }}
+          >
             Olá, {usuario?.nome || 'usuário'}! 👋
           </h2>
-          <p style={styles.subtitle}>Bem-vindo ao seu painel financeiro.</p>
+          <p style={{ color: colors.neutral500, marginBottom: '32px' }}>
+            Bem-vindo ao seu painel financeiro.
+          </p>
 
-          <div style={styles.card}>
-            <p style={{ color: '#6b7280' }}>
+          <Card>
+            <p style={{ color: colors.neutral500 }}>
               Em breve você terá acesso ao seu painel completo.
             </p>
-          </div>
+          </Card>
         </main>
       </InadimplenteGuard>
     </div>
   );
 }
-
-const styles = {
-  page: {
-    height: '100vh',
-    overflow: 'hidden',
-    backgroundColor: '#f3f4f6',
-  },
-  header: {
-    backgroundColor: '#ffffff',
-    borderBottom: '1px solid #e5e7eb',
-    padding: '16px 32px',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  logo: {
-    fontSize: '22px',
-    fontWeight: '700',
-    color: '#2563eb',
-    margin: 0,
-  },
-  headerActions: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-  },
-  perfilLink: {
-    padding: '8px 16px',
-    fontSize: '14px',
-    fontWeight: '500',
-    color: '#2563eb',
-    textDecoration: 'none',
-    border: '1px solid #2563eb',
-    borderRadius: '6px',
-  },
-  logoutButton: {
-    padding: '8px 16px',
-    fontSize: '14px',
-    fontWeight: '500',
-    color: '#374151',
-    backgroundColor: '#ffffff',
-    border: '1px solid #d1d5db',
-    borderRadius: '6px',
-    cursor: 'pointer',
-  },
-  main: {
-    maxWidth: '900px',
-    margin: '0 auto',
-    padding: '40px 24px',
-    overflow: 'hidden',
-  },
-  welcome: {
-    fontSize: '28px',
-    fontWeight: '700',
-    color: '#111827',
-    margin: '0 0 8px',
-  },
-  subtitle: {
-    color: '#6b7280',
-    marginBottom: '32px',
-  },
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: '12px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-    padding: '32px',
-  },
-};

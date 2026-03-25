@@ -18,6 +18,8 @@ import {
   faTriangleExclamation,
   faCheck,
 } from '@fortawesome/free-solid-svg-icons';
+import { Button, Input, Select, Card } from '../design-system/index.js';
+import { colors, typography, radius, shadows } from '../design-system/tokens.js';
 
 const TIMEZONES = [
   'America/Sao_Paulo',
@@ -925,7 +927,7 @@ const s = {
     color: '#2563eb',
     backgroundColor: '#eff6ff',
     border: '1px solid #bfdbfe',
-    borderRadius: '20px',
+    borderRadius: radius.full,
     padding: '2px 10px',
     whiteSpace: 'nowrap',
   },
@@ -1123,12 +1125,12 @@ const s = {
     alignItems: 'center',
     gap: '6px',
     padding: '9px 20px',
-    fontSize: '14px',
-    fontWeight: '600',
-    color: '#ffffff',
-    backgroundColor: '#33528a',
+    fontSize: typography.sizes.md,
+    fontWeight: typography.weights.semibold,
+    color: colors.white,
+    backgroundColor: colors.primary,
     border: 'none',
-    borderRadius: '20px',
+    borderRadius: radius.md,
     cursor: 'pointer',
     transition: 'all 0.2s ease-in-out',
   },
@@ -1141,12 +1143,12 @@ const s = {
     alignItems: 'center',
     gap: '6px',
     padding: '9px 20px',
-    fontSize: '14px',
-    fontWeight: '600',
-    color: '#2563eb',
-    backgroundColor: '#eff6ff',
-    border: '1.5px solid #2563eb',
-    borderRadius: '20px',
+    fontSize: typography.sizes.md,
+    fontWeight: typography.weights.semibold,
+    color: colors.primaryLight,
+    backgroundColor: colors.primaryBg,
+    border: `1.5px solid ${colors.primaryLight}`,
+    borderRadius: radius.md,
     cursor: 'pointer',
     transition: 'all 0.2s ease-in-out',
   },
@@ -1195,7 +1197,7 @@ const s = {
     backgroundColor: '#33528a',
     color: '#FFFFFF',
     letterSpacing: '0.01em',
-    borderRadius: '20px',
+    borderRadius: radius.lg,
   },
 
   userDropdown: {
