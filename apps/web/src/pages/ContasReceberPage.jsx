@@ -76,12 +76,19 @@ const EMPTY_FORM = {
   descricao: '',
   valor: '',
   data_vencimento: '',
-  categoria_id: '',
+  tipo: 'variavel',
+  parcelas: '1',
   conta_id: '',
+  categoria_id: '',
+  subcategoria_id: '',
+  multa_percentual: '',
+  juros_mensal: '',
+  multa_fixa: '',
+  provisionado: false,
+  debito_automatico: false,
+  recorrencia: 'nenhuma',
+  recorrencia_quantidade: '1',
   observacoes: '',
-  recorrente: false,
-  recorrencia: 'mensal',
-  total_parcelas: '',
 };
 
 function SortableTh({ field, label, sortField, sortDir, onSort, style }) {
@@ -238,12 +245,19 @@ export default function ContasReceberPage() {
       descricao: conta.descricao || '',
       valor: conta.valor !== undefined ? String(conta.valor) : '',
       data_vencimento: vencimento,
-      categoria_id: conta.categoria_id || '',
+      tipo: conta.tipo || 'variavel',
+      parcelas: conta.parcelas ? String(conta.parcelas) : '1',
       conta_id: conta.conta_id || '',
+      categoria_id: conta.categoria_id || '',
+      subcategoria_id: conta.subcategoria_id || '',
+      multa_percentual: conta.multa_percentual ? String(conta.multa_percentual) : '',
+      juros_mensal: conta.juros_mensal ? String(conta.juros_mensal) : '',
+      multa_fixa: conta.multa_fixa ? String(conta.multa_fixa) : '',
+      provisionado: conta.provisionado || false,
+      debito_automatico: conta.debito_automatico || false,
+      recorrencia: conta.recorrencia || 'nenhuma',
+      recorrencia_quantidade: conta.recorrencia_quantidade ? String(conta.recorrencia_quantidade) : '1',
       observacoes: conta.observacoes || '',
-      recorrente: false,
-      recorrencia: 'mensal',
-      total_parcelas: '',
     });
     setModalAberto(true);
     carregarSelects();
@@ -275,17 +289,20 @@ export default function ContasReceberPage() {
         valor,
         data_vencimento: form.data_vencimento,
         categoria_id: form.categoria_id || null,
+        subcategoria_id: form.subcategoria_id || null,
         conta_id: form.conta_id || null,
         observacoes: form.observacoes || null,
+        tipo: form.tipo || 'variavel',
+        parcelas: form.parcelas ? parseInt(form.parcelas, 10) : 1,
+        multa_percentual: form.multa_percentual ? parseFloat(form.multa_percentual) : null,
+        juros_mensal: form.juros_mensal ? parseFloat(form.juros_mensal) : null,
+        multa_fixa: form.multa_fixa ? parseFloat(form.multa_fixa) : null,
+        provisionado: form.provisionado || false,
+        debito_automatico: form.debito_automatico || false,
+        recorrencia: form.recorrencia !== 'nenhuma' ? form.recorrencia : null,
+        recorrente: form.recorrencia !== 'nenhuma',
+        recorrencia_quantidade: form.recorrencia_quantidade ? parseInt(form.recorrencia_quantidade, 10) : 1,
       };
-
-      if (!contaEmEdicao && form.recorrente) {
-        payload.recorrente = true;
-        payload.recorrencia = form.recorrencia;
-        if (form.total_parcelas) {
-          payload.total_parcelas = parseInt(form.total_parcelas, 10);
-        }
-      }
 
       if (contaEmEdicao) {
         await contasReceberService.atualizar(contaEmEdicao.id, payload);
@@ -988,148 +1005,137 @@ export default function ContasReceberPage() {
       {modalAberto && (
         <div style={s.modalOverlay} role="dialog" aria-modal="true" aria-label="Formulário de conta a receber">
           <div style={{ ...s.modalBox, maxHeight: '90vh', overflowY: 'auto' }}>
-            <h2 style={s.modalTitle}>
-              {contaEmEdicao ? 'Editar Conta a Receber' : 'Nova Conta a Receber'}
-            </h2>
+            {/* Cabeçalho com botão X */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h2 style={{ ...s.modalTitle, margin: 0 }}>
+                {contaEmEdicao ? 'Editar conta a receber' : 'Nova conta a receber'}
+              </h2>
+              <button onClick={fecharModal} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#6b7280' }}>✕</button>
+            </div>
             <form onSubmit={handleSalvar}>
+              {/* 1. Descrição */}
               <div style={s.formGroup}>
                 <label style={s.label}>Descrição *</label>
-                <input
-                  name="descricao"
-                  value={form.descricao}
-                  onChange={handleFormChange}
-                  style={s.input}
-                  maxLength={255}
-                  required
-                  placeholder="Ex: Venda de produto"
-                />
+                <input name="descricao" value={form.descricao} onChange={handleFormChange} style={s.input} required placeholder="Descrição" maxLength={255} />
               </div>
+
+              {/* 2. Valor + Vencimento */}
               <div style={s.formRow}>
                 <div style={{ ...s.formGroup, flex: 1 }}>
                   <label style={s.label}>Valor (R$) *</label>
-                  <input
-                    name="valor"
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    value={form.valor}
-                    onChange={handleFormChange}
-                    style={s.input}
-                    required
-                    placeholder="0,00"
-                  />
+                  <input name="valor" type="number" step="0.01" min="0.01" value={form.valor} onChange={handleFormChange} style={s.input} required placeholder="0,00" />
                 </div>
                 <div style={{ ...s.formGroup, flex: 1 }}>
                   <label style={s.label}>Vencimento *</label>
-                  <input
-                    name="data_vencimento"
-                    type="date"
-                    value={form.data_vencimento}
-                    onChange={handleFormChange}
-                    style={s.input}
-                    required
-                  />
+                  <input name="data_vencimento" type="date" value={form.data_vencimento} onChange={handleFormChange} style={s.input} required />
                 </div>
               </div>
+
+              {/* 3. Tipo + Parcelas */}
+              <div style={s.formRow}>
+                <div style={{ ...s.formGroup, flex: 1 }}>
+                  <label style={s.label}>Tipo</label>
+                  <select name="tipo" value={form.tipo} onChange={handleFormChange} style={s.input}>
+                    <option value="variavel">Variável</option>
+                    <option value="fixo">Fixo</option>
+                  </select>
+                </div>
+                <div style={{ ...s.formGroup, flex: 1 }}>
+                  <label style={s.label}>Parcelas</label>
+                  <input name="parcelas" type="number" min="1" value={form.parcelas} onChange={handleFormChange} style={s.input} />
+                </div>
+              </div>
+
+              {/* 4. Conta de recebimento */}
+              <div style={s.formGroup}>
+                <label style={s.label}>Conta de recebimento</label>
+                <select name="conta_id" value={form.conta_id} onChange={handleFormChange} style={s.input} disabled={loadingSelects}>
+                  <option value="">Selecione...</option>
+                  {contas.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+                </select>
+              </div>
+
+              {/* 5. Categoria + Subcategoria */}
               <div style={s.formRow}>
                 <div style={{ ...s.formGroup, flex: 1 }}>
                   <label style={s.label}>Categoria</label>
-                  <select
-                    name="categoria_id"
-                    value={form.categoria_id}
-                    onChange={handleFormChange}
-                    style={s.input}
-                    disabled={loadingSelects}
-                  >
-                    <option value="">{loadingSelects ? 'Carregando...' : 'Sem categoria'}</option>
-                    {categorias.map((c) => (
-                      <option key={c.id} value={c.id}>{c.nome}</option>
-                    ))}
+                  <select name="categoria_id" value={form.categoria_id} onChange={handleFormChange} style={s.input} disabled={loadingSelects}>
+                    <option value="">Selecione...</option>
+                    {categorias.filter(c => !c.pai_id).map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
                   </select>
                 </div>
                 <div style={{ ...s.formGroup, flex: 1 }}>
-                  <label style={s.label}>Conta</label>
-                  <select
-                    name="conta_id"
-                    value={form.conta_id}
-                    onChange={handleFormChange}
-                    style={s.input}
-                    disabled={loadingSelects}
-                  >
-                    <option value="">{loadingSelects ? 'Carregando...' : 'Sem conta'}</option>
-                    {contas.map((c) => (
-                      <option key={c.id} value={c.id}>{c.nome}</option>
-                    ))}
+                  <label style={s.label}>Subcategoria</label>
+                  <select name="subcategoria_id" value={form.subcategoria_id} onChange={handleFormChange} style={s.input} disabled={loadingSelects || !form.categoria_id}>
+                    <option value="">Selecione...</option>
+                    {categorias.filter(c => c.pai_id === form.categoria_id || c.pai_id === Number(form.categoria_id)).map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
                   </select>
                 </div>
               </div>
-              <div style={s.formGroup}>
-                <label style={s.label}>Observações</label>
-                <textarea
-                  name="observacoes"
-                  value={form.observacoes}
-                  onChange={handleFormChange}
-                  style={{ ...s.input, height: '80px', resize: 'vertical' }}
-                  maxLength={1000}
-                  placeholder="Observações opcionais..."
-                />
+
+              {/* 6. Multa % + Juros %/mês + Multa fixa */}
+              <div style={s.formRow}>
+                <div style={{ ...s.formGroup, flex: 1 }}>
+                  <label style={s.label}>Multa (%)</label>
+                  <input name="multa_percentual" type="number" step="0.01" min="0" value={form.multa_percentual} onChange={handleFormChange} style={s.input} placeholder="0,00" />
+                </div>
+                <div style={{ ...s.formGroup, flex: 1 }}>
+                  <label style={s.label}>Juros (%/mês)</label>
+                  <input name="juros_mensal" type="number" step="0.01" min="0" value={form.juros_mensal} onChange={handleFormChange} style={s.input} placeholder="0,00" />
+                </div>
+                <div style={{ ...s.formGroup, flex: 1 }}>
+                  <label style={s.label}>Multa (fixa)</label>
+                  <input name="multa_fixa" type="number" step="0.01" min="0" value={form.multa_fixa} onChange={handleFormChange} style={s.input} placeholder="0,00" />
+                </div>
+              </div>
+              <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '-8px', marginBottom: '16px' }}>
+                Se a conta atrasar, o sistema calcula o &quot;A receber&quot; automaticamente.
+              </p>
+
+              {/* 7. Checkboxes: Provisionado + Débito automático */}
+              <div style={{ display: 'flex', gap: '24px', marginBottom: '16px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                  <input type="checkbox" name="provisionado" checked={form.provisionado} onChange={handleFormChange} />
+                  Provisionado (já separei o dinheiro)
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                  <input type="checkbox" name="debito_automatico" checked={form.debito_automatico} onChange={handleFormChange} />
+                  Débito automático (agendar)
+                </label>
               </div>
 
-              {/* Parcelamento — apenas na criação */}
-              {!contaEmEdicao && (
-                <div style={{ ...s.formGroup, borderTop: '1px solid #e5e7eb', paddingTop: '16px' }}>
-                  <label style={{ ...s.label, display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      name="recorrente"
-                      checked={form.recorrente}
-                      onChange={handleFormChange}
-                    />
-                    Parcelar / Recorrente
-                  </label>
-
-                  {form.recorrente && (
-                    <div style={{ ...s.formRow, marginTop: '12px' }}>
-                      <div style={{ ...s.formGroup, flex: 1, marginBottom: 0 }}>
-                        <label style={s.label}>Recorrência *</label>
-                        <select
-                          name="recorrencia"
-                          value={form.recorrencia}
-                          onChange={handleFormChange}
-                          style={s.input}
-                          required
-                        >
-                          {RECORRENCIA_OPCOES.map((o) => (
-                            <option key={o.value} value={o.value}>{o.label}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div style={{ ...s.formGroup, flex: 1, marginBottom: 0 }}>
-                        <label style={s.label}>Nº de parcelas *</label>
-                        <input
-                          name="total_parcelas"
-                          type="number"
-                          min="2"
-                          max="360"
-                          value={form.total_parcelas}
-                          onChange={handleFormChange}
-                          style={s.input}
-                          required
-                          placeholder="Ex: 12"
-                        />
-                      </div>
-                    </div>
-                  )}
+              {/* 8. Recorrência */}
+              <div style={s.formGroup}>
+                <label style={s.label}>Recorrência</label>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <select name="recorrencia" value={form.recorrencia} onChange={handleFormChange} style={{ ...s.input, flex: 2 }}>
+                    <option value="nenhuma">Nenhuma</option>
+                    <option value="diario">Diário</option>
+                    <option value="semanal">Semanal</option>
+                    <option value="quinzenal">Quinzenal</option>
+                    <option value="mensal">Mensal</option>
+                    <option value="bimestral">Bimestral</option>
+                    <option value="trimestral">Trimestral</option>
+                    <option value="semestral">Semestral</option>
+                    <option value="anual">Anual</option>
+                  </select>
+                  <input name="recorrencia_quantidade" type="number" min="1" value={form.recorrencia_quantidade} onChange={handleFormChange} style={{ ...s.input, flex: 1 }} />
                 </div>
-              )}
+                <p style={{ fontSize: '12px', color: '#6b7280', margin: '4px 0 0' }}>
+                  Ex.: a cada 2 meses, a cada 1 semana...
+                </p>
+              </div>
 
+              {/* 9. Observações */}
+              <div style={s.formGroup}>
+                <label style={s.label}>Observações</label>
+                <textarea name="observacoes" value={form.observacoes} onChange={handleFormChange} style={{ ...s.input, minHeight: '80px', resize: 'vertical' }} maxLength={1000} />
+              </div>
+
+              {/* Botões */}
               <div style={s.modalActions}>
-                <button type="button" style={s.btnGhost} onClick={fecharModal} disabled={salvando}>
-                  Cancelar
-                </button>
-                <button type="submit" style={s.btnPrimary} disabled={salvando}>
-                  {salvando ? 'Salvando...' : contaEmEdicao ? 'Salvar Alterações' : 'Criar Conta'}
-                </button>
+                <button type="button" style={s.btnGhost} onClick={fecharModal} disabled={salvando}>Cancelar</button>
+                <button type="submit" style={s.btnPrimary} disabled={salvando}>{salvando ? 'Salvando...' : 'Salvar'}</button>
               </div>
             </form>
           </div>
