@@ -6,6 +6,20 @@ import { InadimplenteGuard } from '../components/InadimplenteGuard.jsx';
 import { contasReceberService } from '../services/contasReceber.service.js';
 import { categoriasService } from '../services/categorias.service.js';
 import api from '../services/api.js';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faHourglassHalf,
+  faShieldHalved,
+  faCalendarDays,
+  faTriangleExclamation,
+  faBars,
+  faBuilding,
+  faTag,
+  faChevronDown,
+  faCircleCheck,
+  faCheck,
+  faXmark,
+} from '@fortawesome/free-solid-svg-icons';
 
 const TIPO_MODAL_CAT = 'entrada';
 const DEFAULT_FORM_CAT = { nome: '', icone: '', cor: '#33528a', pai_id: '' };
@@ -596,7 +610,7 @@ export default function ContasReceberPage() {
                   }
                 }}
               >
-                ☰
+                <FontAwesomeIcon icon={faBars} />
               </button>
               <div>
                 <h1 style={s.pageTitle}>Contas a receber</h1>
@@ -607,16 +621,16 @@ export default function ContasReceberPage() {
                 + Nova conta
               </button>
               <button style={s.btnOutline}>
-                🏦 Nova conta financeira
+                <FontAwesomeIcon icon={faBuilding} /> Nova conta financeira
               </button>
               <button style={s.btnOutline} onClick={abrirModalCategorias}>
-                🏷️ Categorias
+                <FontAwesomeIcon icon={faTag} /> Categorias
               </button>
               <button
                 style={{ ...s.btnOutline, ...(filtrosVisiveis ? s.btnOutlineActive : {}) }}
                 onClick={() => setFiltrosVisiveis((v) => !v)}
               >
-                🔽 Filtros
+                <FontAwesomeIcon icon={faChevronDown} /> Filtros
               </button>
             </div>
           </div>
@@ -628,7 +642,7 @@ export default function ContasReceberPage() {
               {/* Summary Cards */}
               <div style={s.summaryRow}>
                 <div style={s.summaryCard}>
-                  <div style={s.summaryIcon}>⏳</div>
+                  <div style={s.summaryIcon}><FontAwesomeIcon icon={faHourglassHalf} /></div>
                   <div style={s.summaryInfo}>
                     <div style={s.summaryLabel}>Pendentes</div>
                     <div style={s.summaryValue}>{formatBRL(resumo.pendentes.valor)}</div>
@@ -636,7 +650,7 @@ export default function ContasReceberPage() {
                   </div>
                 </div>
                 <div style={s.summaryCard}>
-                  <div style={s.summaryIcon}>🛡️</div>
+                  <div style={s.summaryIcon}><FontAwesomeIcon icon={faShieldHalved} /></div>
                   <div style={s.summaryInfo}>
                     <div style={s.summaryLabel}>Provisionadas</div>
                     <div style={s.summaryValue}>{formatBRL(resumo.provisionadas.valor)}</div>
@@ -644,7 +658,7 @@ export default function ContasReceberPage() {
                   </div>
                 </div>
                 <div style={s.summaryCard}>
-                  <div style={s.summaryIcon}>📅</div>
+                  <div style={s.summaryIcon}><FontAwesomeIcon icon={faCalendarDays} /></div>
                   <div style={s.summaryInfo}>
                     <div style={s.summaryLabel}>Agendadas</div>
                     <div style={s.summaryValue}>{formatBRL(resumo.agendadas.valor)}</div>
@@ -652,7 +666,7 @@ export default function ContasReceberPage() {
                   </div>
                 </div>
                 <div style={s.summaryCard}>
-                  <div style={s.summaryIcon}>⚠️</div>
+                  <div style={s.summaryIcon}><FontAwesomeIcon icon={faTriangleExclamation} /></div>
                   <div style={s.summaryInfo}>
                     <div style={s.summaryLabel}>Atrasadas</div>
                     <div style={{ ...s.summaryValue, color: '#dc2626' }}>{formatBRL(resumo.atrasadas.valor)}</div>
@@ -660,7 +674,7 @@ export default function ContasReceberPage() {
                   </div>
                 </div>
                 <div style={s.summaryCard}>
-                  <div style={s.summaryIcon}>✅</div>
+                  <div style={s.summaryIcon}><FontAwesomeIcon icon={faCircleCheck} /></div>
                   <div style={s.summaryInfo}>
                     <div style={s.summaryLabel}>Recebidas no mês</div>
                     <div style={s.summaryValue}>{formatBRL(resumo.recebidasNoMes.valor)}</div>
@@ -780,7 +794,7 @@ export default function ContasReceberPage() {
                       </div>
                       <div style={{ flex: 1 }} />
                       <button type="submit" style={s.btnPrimary}>
-                        ✓ Aplicar
+                        <FontAwesomeIcon icon={faCheck} /> Aplicar
                       </button>
                       <button type="button" style={s.btnOutline} onClick={handleLimpar}>
                         Limpar
@@ -852,7 +866,7 @@ export default function ContasReceberPage() {
                                 <td style={s.td}>
                                   {isAtrasada ? (
                                     <div>
-                                      <span style={{ ...s.badgeAtrasado }}>⚠️ Atrasado</span>
+                                      <span style={{ ...s.badgeAtrasado }}><FontAwesomeIcon icon={faTriangleExclamation} /> Atrasado</span>
                                       <div style={{ fontSize: '11px', color: '#dc2626', fontWeight: 600, marginTop: '2px' }}>{diasAtraso}d</div>
                                     </div>
                                   ) : (
@@ -883,7 +897,7 @@ export default function ContasReceberPage() {
                                           onClick={() => abrirModalReceber(conta)}
                                           title="Registrar recebimento"
                                         >
-                                          ✓ Receber
+                                          <FontAwesomeIcon icon={faCheck} /> Receber
                                         </button>
                                       )}
                                       <div style={{ position: 'relative' }}>
@@ -997,7 +1011,7 @@ export default function ContasReceberPage() {
                                   <td style={s.td}>
                                     {isAtrasada ? (
                                       <div>
-                                        <span style={s.badgeAtrasado}>⚠️ Atrasado</span>
+                                        <span style={s.badgeAtrasado}><FontAwesomeIcon icon={faTriangleExclamation} /> Atrasado</span>
                                         <div style={{ fontSize: '11px', color: '#dc2626', fontWeight: 600, marginTop: '2px' }}>{diasAtraso}d</div>
                                       </div>
                                     ) : (
@@ -1018,7 +1032,7 @@ export default function ContasReceberPage() {
                                         <span title="Comprovante" style={{ cursor: 'pointer', fontSize: '16px' }}>📎</span>
                                         {conta.status === 'pendente' && (
                                           <button style={s.btnReceber} onClick={() => abrirModalReceber(conta)} title="Registrar recebimento">
-                                            ✓ Receber
+                                            <FontAwesomeIcon icon={faCheck} /> Receber
                                           </button>
                                         )}
                                         <div style={{ position: 'relative' }}>
@@ -1095,7 +1109,7 @@ export default function ContasReceberPage() {
               <h2 style={{ ...s.modalTitle, margin: 0 }}>
                 {contaEmEdicao ? 'Editar conta a receber' : 'Nova conta a receber'}
               </h2>
-              <button onClick={fecharModal} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#6b7280' }}>✕</button>
+              <button onClick={fecharModal} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#6b7280' }}><FontAwesomeIcon icon={faXmark} /></button>
             </div>
             <form onSubmit={handleSalvar}>
               {/* 1. Descrição */}
@@ -1309,7 +1323,7 @@ export default function ContasReceberPage() {
               <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1e293b' }}>
                 Categorias e Subcategorias — Entrada
               </h2>
-              <button onClick={fecharModalCategorias} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#6b7280' }}>✕</button>
+              <button onClick={fecharModalCategorias} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#6b7280' }}><FontAwesomeIcon icon={faXmark} /></button>
             </div>
 
             <form onSubmit={handleSalvarCategoria} style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', marginBottom: '20px', flexWrap: 'wrap' }}>

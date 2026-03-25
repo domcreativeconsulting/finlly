@@ -5,6 +5,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../hooks/useAuth.js';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faCircleCheck,
+  faTriangleExclamation,
+  faEye,
+  faEyeSlash,
+  faCheck,
+} from '@fortawesome/free-solid-svg-icons';
 
 const ResetSchema = z
   .object({
@@ -82,7 +90,7 @@ export default function ResetPasswordPage() {
       <div style={styles.page}>
         <div style={styles.card}>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}><FontAwesomeIcon icon={faTriangleExclamation} /></div>
             <h2 style={styles.title}>Link inválido</h2>
             <p style={{ color: '#6b7280', marginBottom: '24px' }}>
               O link de redefinição de senha é inválido ou expirou.
@@ -128,7 +136,7 @@ export default function ResetPasswordPage() {
       <div style={styles.page}>
         <div style={styles.card}>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>✅</div>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}><FontAwesomeIcon icon={faCircleCheck} /></div>
             <h2 style={styles.title}>Senha redefinida!</h2>
             <p style={{ color: '#6b7280' }}>
               Sua senha foi alterada com sucesso. Redirecionando...
@@ -149,7 +157,7 @@ export default function ResetPasswordPage() {
 
         {errorMsg && (
           <div style={styles.errorBox} role="alert">
-            <span aria-hidden="true">⚠️</span> {errorMsg}
+            <span aria-hidden="true"><FontAwesomeIcon icon={faTriangleExclamation} /></span> {errorMsg}
             {(errorMsg.includes('Token') || errorMsg.includes('inválido')) && (
               <>
                 {' '}
@@ -185,7 +193,7 @@ export default function ResetPasswordPage() {
                 onClick={() => setMostrarSenha((v) => !v)}
                 aria-label={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
               >
-                {mostrarSenha ? '🙈' : '👁️'}
+                {mostrarSenha ? <FontAwesomeIcon icon={faEyeSlash} /> : <FontAwesomeIcon icon={faEye} />}
               </button>
             </div>
 
@@ -221,7 +229,7 @@ export default function ResetPasswordPage() {
                     color: req.ok ? '#22c55e' : '#9ca3af',
                   }}
                 >
-                  {req.ok ? '✓' : '○'} {req.label}
+                  {req.ok ? <FontAwesomeIcon icon={faCheck} /> : '○'} {req.label}
                 </li>
               ))}
             </ul>
@@ -256,7 +264,7 @@ export default function ResetPasswordPage() {
                 onClick={() => setMostrarConfirmar((v) => !v)}
                 aria-label={mostrarConfirmar ? 'Ocultar senha' : 'Mostrar senha'}
               >
-                {mostrarConfirmar ? '🙈' : '👁️'}
+                {mostrarConfirmar ? <FontAwesomeIcon icon={faEyeSlash} /> : <FontAwesomeIcon icon={faEye} />}
               </button>
             </div>
             {errors.confirmarSenha && (

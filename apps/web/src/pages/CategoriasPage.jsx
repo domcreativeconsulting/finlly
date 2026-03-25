@@ -3,6 +3,8 @@ import { toast } from 'react-toastify';
 import AppSidebar from '../components/AppSidebar.jsx';
 import { InadimplenteGuard } from '../components/InadimplenteGuard.jsx';
 import { categoriasService } from '../services/categorias.service.js';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faXmark } from '@fortawesome/free-solid-svg-icons';
 
 const TIPO_LABELS = {
   entrada: 'Entrada',
@@ -473,7 +475,7 @@ export default function CategoriasPage() {
                   {categoriaEmEdicao ? 'Editar Categoria' : 'Nova Categoria'}
                 </h2>
                 <button onClick={fecharModal} style={btnClose}>
-                  ✕
+                  <FontAwesomeIcon icon={faXmark} />
                 </button>
               </div>
               <form onSubmit={handleSalvar}>

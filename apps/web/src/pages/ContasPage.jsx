@@ -3,6 +3,8 @@ import { toast } from 'react-toastify';
 import AppSidebar from '../components/AppSidebar.jsx';
 import { InadimplenteGuard } from '../components/InadimplenteGuard.jsx';
 import { contasService } from '../services/contas.service.js';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCreditCard, faCheck, faXmark } from '@fortawesome/free-solid-svg-icons';
 
 const DEFAULT_COLOR = '#33528a';
 
@@ -339,7 +341,7 @@ export default function ContasPage() {
                 textAlign: 'center',
               }}
             >
-              <div style={{ fontSize: '48px', marginBottom: '16px' }}>💳</div>
+              <div style={{ fontSize: '48px', marginBottom: '16px' }}><FontAwesomeIcon icon={faCreditCard} /></div>
               <p style={{ color: '#1e293b', fontWeight: 600, fontSize: '16px', margin: '0 0 8px' }}>
                 Nenhuma carteira encontrada
               </p>
@@ -388,7 +390,7 @@ export default function ContasPage() {
                           color: '#fff',
                         }}
                       >
-                        {conta.icone || '💳'}
+                        {conta.icone ? conta.icone : <FontAwesomeIcon icon={faCreditCard} />}
                       </span>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p
@@ -435,7 +437,7 @@ export default function ContasPage() {
                             color: '#166534',
                           }}
                         >
-                          ✓ No total
+                          <FontAwesomeIcon icon={faCheck} /> No total
                         </span>
                       )}
                     </div>
@@ -498,7 +500,7 @@ export default function ContasPage() {
                   {contaEmEdicao ? 'Editar Carteira' : 'Nova Carteira'}
                 </h2>
                 <button onClick={fecharModal} style={btnClose}>
-                  ✕
+                  <FontAwesomeIcon icon={faXmark} />
                 </button>
               </div>
               <form onSubmit={handleSalvar}>

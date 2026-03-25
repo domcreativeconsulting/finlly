@@ -14,6 +14,9 @@ import {
   faCircleUser,
   faCreditCard,
   faDoorOpen,
+  faBars,
+  faTriangleExclamation,
+  faCheck,
 } from '@fortawesome/free-solid-svg-icons';
 
 const TIMEZONES = [
@@ -348,7 +351,7 @@ export default function PerfilPage() {
                   }
                 }}
               >
-                ☰
+                <FontAwesomeIcon icon={faBars} />
               </button>
               <div style={s.pageTitleIcon} aria-hidden="true">
                 <FontAwesomeIcon icon={faCircleUser} style={{ fontSize: '32px', color: '#4b5563' }} />
@@ -458,7 +461,7 @@ export default function PerfilPage() {
           {/* Inline alerts */}
           {successMsg && (
             <div style={s.alertSuccess} role="alert">
-              <span>✓ {successMsg}</span>
+              <span><FontAwesomeIcon icon={faCheck} /> {successMsg}</span>
               <button
                 style={s.alertClose}
                 onClick={() => setSuccessMsg(null)}
@@ -470,7 +473,7 @@ export default function PerfilPage() {
           )}
           {errorMsg && (
             <div style={s.alertDanger} role="alert">
-              <span>⚠ {errorMsg}</span>
+              <span><FontAwesomeIcon icon={faTriangleExclamation} /> {errorMsg}</span>
               <button
                 style={s.alertClose}
                 onClick={() => setErrorMsg(null)}
@@ -682,7 +685,7 @@ export default function PerfilPage() {
                   <form onSubmit={handleSubmitSenha(handleSenha)} noValidate>
                     {senhaErrors.root && (
                       <div style={s.errorBox} role="alert">
-                        <span aria-hidden="true">⚠️</span>{' '}
+                        <span aria-hidden="true"><FontAwesomeIcon icon={faTriangleExclamation} /></span>{' '}
                         {senhaErrors.root.message}
                       </div>
                     )}
