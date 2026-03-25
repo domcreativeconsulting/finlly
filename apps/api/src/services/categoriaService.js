@@ -11,6 +11,7 @@ export async function listCategorias(userId, filters = {}) {
 
   const where = {
     deleted_at: null,
+    pai_id: null,
     OR: [
       { usuario_id: userId },
       ...(include_sistema !== false ? [{ is_sistema: true, usuario_id: null }] : []),
@@ -25,7 +26,7 @@ export async function listCategorias(userId, filters = {}) {
     include: {
       filhos: {
         where: { deleted_at: null },
-        select: { id: true, nome: true, tipo: true, icone: true, cor: true, is_sistema: true },
+        select: { id: true, nome: true, tipo: true, icone: true, cor: true, is_sistema: true, pai_id: true },
       },
     },
     orderBy: [{ nome: 'asc' }],
