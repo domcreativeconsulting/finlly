@@ -51,7 +51,6 @@
     "eslint-plugin-react": "^7.37.0",
     "eslint-plugin-react-hooks": "^5.0.0",
     "lint-staged": "^15.2.7",
-    "lucide-react": "^0.577.0",
     "mysql2": "^3.18.2",
     "pg": "^8.19.0",
     "prettier": "^3.3.3",
