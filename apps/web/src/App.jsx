@@ -16,6 +16,7 @@ import ContasPagarPage from './pages/ContasPagarPage.jsx';
 import ContasReceberPage from './pages/ContasReceberPage.jsx';
 import CategoriasPage from './pages/CategoriasPage.jsx';
 import ContasPage from './pages/ContasPage.jsx';
+import ExtratoPage from './pages/ExtratoPage.jsx';
 
 export default function App() {
   return (
@@ -64,6 +65,10 @@ export default function App() {
         <Route
           path="/contas"
           element={<ProtectedRoute element={<ContasPage />} />}
+        />
+        <Route
+          path="/extrato"
+          element={<ProtectedRoute element={<ExtratoPage />} />}
         />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/logout" element={<Navigate to="/login" replace />} />
