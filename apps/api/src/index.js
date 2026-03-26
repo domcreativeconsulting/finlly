@@ -20,6 +20,7 @@ import categoriasRouter from './routes/categorias.js';
 import contasRouter from './routes/contas.js';
 import movimentacoesRouter from './routes/movimentacoes.js';
 import cashMovementsRouter from './routes/cashMovements.js';
+import investimentosRouter from './routes/investimentos.js';
 
 const app = express();
 
@@ -46,6 +47,7 @@ app.use(categoriasRouter);
 app.use(contasRouter);
 app.use(movimentacoesRouter);
 app.use(cashMovementsRouter);
+app.use(investimentosRouter);
 
 app.get('/', (req, res) => {
   res.send('Hello World!');
