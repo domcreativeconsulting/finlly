@@ -21,6 +21,7 @@ import contasRouter from './routes/contas.js';
 import movimentacoesRouter from './routes/movimentacoes.js';
 import cashMovementsRouter from './routes/cashMovements.js';
 import investimentosRouter from './routes/investimentos.js';
+import metasRouter from './routes/metas.js';
 
 const app = express();
 
@@ -48,6 +49,7 @@ app.use(contasRouter);
 app.use(movimentacoesRouter);
 app.use(cashMovementsRouter);
 app.use(investimentosRouter);
+app.use(metasRouter);
 
 app.get('/', (req, res) => {
   res.send('Hello World!');
