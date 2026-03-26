@@ -62,6 +62,19 @@ function calcularPosicao(eventos) {
   };
 }
 
+function formatEvento(ev) {
+  return {
+    id: ev.id,
+    investmentId: ev.investimento_id,
+    type: ev.tipo,
+    amount: Number(ev.valor),
+    date: new Date(ev.data).toISOString().substring(0, 10),
+    description: ev.descricao ?? null,
+    createdAt: ev.created_at,
+    updatedAt: ev.updated_at,
+  };
+}
+
 function formatInvestimento(inv) {
   return {
     id: inv.id,
@@ -233,14 +246,7 @@ async function handleGet(req, res, next) {
       item: {
         ...formatted,
         posicao,
-        eventos: inv.eventos.map((ev) => ({
-          id: ev.id,
-          tipo: ev.tipo,
-          valor: Number(ev.valor),
-          data: String(ev.data).substring(0, 10),
-          descricao: ev.descricao ?? null,
-          createdAt: ev.created_at,
-        })),
+        eventos: inv.eventos.map(formatEvento),
       },
     });
   } catch (err) {
@@ -347,14 +353,7 @@ async function handleListEventos(req, res, next) {
     ]);
 
     return res.status(200).json({
-      items: eventos.map((ev) => ({
-        id: ev.id,
-        tipo: ev.tipo,
-        valor: Number(ev.valor),
-        data: String(ev.data).substring(0, 10),
-        descricao: ev.descricao ?? null,
-        createdAt: ev.created_at,
-      })),
+      items: eventos.map(formatEvento),
       total,
       page,
       totalPages: Math.ceil(total / perPage),
@@ -376,6 +375,15 @@ async function handleCreateEvento(req, res, next) {
     const inv = await prisma.investimento.findFirst({ where: { id, usuario_id: userId, deleted_at: null } });
     if (!inv) return next(AppError.notFound('Investimento não encontrado.'));
 
+    // RF5 — Coerência temporal: se o investimento tiver data_inicio, o evento não pode ser anterior a ela.
+    if (inv.data_inicio) {
+      const dataEvento = new Date(data + 'T00:00:00.000Z');
+      const dataInicio = new Date(new Date(inv.data_inicio).toISOString().substring(0, 10) + 'T00:00:00.000Z');
+      if (dataEvento < dataInicio) {
+        return next(new AppError('VALIDATION_ERROR', 'A data do evento não pode ser anterior à data de início do investimento.', 422));
+      }
+    }
+
     const ev = await prisma.investimentoEvento.create({
       data: {
         investimento_id: id,
@@ -389,16 +397,7 @@ async function handleCreateEvento(req, res, next) {
 
     logger.info({ msg: 'Evento de investimento criado', userId, investimentoId: id, eventoId: ev.id });
 
-    return res.status(201).json({
-      item: {
-        id: ev.id,
-        tipo: ev.tipo,
-        valor: Number(ev.valor),
-        data: String(ev.data).substring(0, 10),
-        descricao: ev.descricao ?? null,
-        createdAt: ev.created_at,
-      },
-    });
+    return res.status(201).json({ item: formatEvento(ev) });
   } catch (err) {
     return next(err);
   }
