@@ -1,99 +1,90 @@
 import prisma from '../utils/database.js';
 import { AppError } from '../errors/AppError.js';
 
-const ALLOWED_SORT_FIELDS = new Set(['data', 'valor', 'descricao', 'created_at', 'tipo']);
+const SORT_FIELD_MAP = {
+  date: 'data',
+  createdAt: 'created_at',
+  amount: 'valor',
+  description: 'descricao',
+};
 
 /**
  * List movimentações for a user with optional filters and pagination.
+ * Returns the official external API shape.
  * @param {string} userId
  * @param {{
- *   tipo?, conta_id?, categoria_id?,
- *   data_de?, data_ate?, busca?,
- *   page?, limit?,
- *   cursor?,
- *   order_by?,
- *   order_dir?,
+ *   dateFrom?, dateTo?, accountId?,
+ *   page?, perPage?,
+ *   sortBy?, sortOrder?,
  * }} filters
  */
 export async function listMovimentacoes(userId, filters = {}) {
-  const { tipo, conta_id, categoria_id, data_de, data_ate, busca, cursor } = filters;
+  const { dateFrom, dateTo, accountId } = filters;
   const page = filters.page ?? 1;
-  const limit = Math.min(filters.limit ?? 20, 100);
-  const orderBy = ALLOWED_SORT_FIELDS.has(filters.order_by) ? filters.order_by : 'data';
-  const orderDir = filters.order_dir === 'asc' ? 'asc' : 'desc';
+  const perPage = Math.min(filters.perPage ?? 20, 100);
+  const sortByField = SORT_FIELD_MAP[filters.sortBy] ?? 'data';
+  const sortOrder = filters.sortOrder === 'asc' ? 'asc' : 'desc';
+
+  // Validate accountId ownership
+  if (accountId) {
+    const conta = await prisma.conta.findFirst({
+      where: { id: accountId, usuario_id: userId, deleted_at: null },
+    });
+    if (!conta) throw AppError.forbidden('Conta não pertence ao usuário');
+  }
+
+  // Default period: start of current month to today (UTC)
+  const now = new Date();
+  const defaultDateFrom = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const defaultDateTo = new Date();
 
   const where = {
     usuario_id: userId,
     deleted_at: null,
+    data: {
+      gte: dateFrom ? new Date(dateFrom + 'T00:00:00.000Z') : defaultDateFrom,
+      lte: dateTo ? new Date(dateTo + 'T00:00:00.000Z') : defaultDateTo,
+    },
   };
 
-  if (tipo) where.tipo = tipo;
-  if (conta_id) where.conta_id = conta_id;
-  if (categoria_id) where.categoria_id = categoria_id;
-  if (busca) where.descricao = { contains: busca, mode: 'insensitive' };
+  if (accountId) where.conta_id = accountId;
 
-  if (data_de || data_ate) {
-    where.data = {};
-    if (data_de) where.data.gte = new Date(data_de + 'T00:00:00.000Z');
-    if (data_ate) where.data.lte = new Date(data_ate + 'T00:00:00.000Z');
-  }
-
-  const include = {
-    categoria: { select: { nome: true, cor: true, icone: true } },
-    conta: { select: { nome: true } },
-    conta_destino: { select: { nome: true } },
-  };
-
-  // Cursor-based pagination
-  if (cursor) {
-    const [movimentacoes, total] = await Promise.all([
-      prisma.movimentacaoCaixa.findMany({
-        where,
-        include,
-        orderBy: [{ [orderBy]: orderDir }, { id: 'asc' }],
-        take: limit + 1,
-        cursor: { id: cursor },
-        skip: 1,
-      }),
-      prisma.movimentacaoCaixa.count({ where }),
-    ]);
-
-    const hasMore = movimentacoes.length > limit;
-    if (hasMore) movimentacoes.pop();
-    const nextCursor = hasMore ? movimentacoes[movimentacoes.length - 1].id : null;
-
-    return {
-      data: movimentacoes.map((m) => ({ ...m, valor: Number(m.valor) })),
-      total,
-      page: null,
-      totalPages: Math.ceil(total / limit),
-      nextCursor,
-      hasPreviousPage: true,
-    };
-  }
-
-  // Offset-based pagination (default)
-  const skip = (page - 1) * limit;
+  const skip = (page - 1) * perPage;
 
   const [movimentacoes, total] = await Promise.all([
     prisma.movimentacaoCaixa.findMany({
       where,
-      include,
-      orderBy: [{ [orderBy]: orderDir }, { id: 'asc' }],
+      include: { conta: { select: { nome: true } } },
+      orderBy: [{ [sortByField]: sortOrder }, { id: 'asc' }],
       skip,
-      take: limit,
+      take: perPage,
     }),
     prisma.movimentacaoCaixa.count({ where }),
   ]);
 
-  const data = movimentacoes.map((m) => ({ ...m, valor: Number(m.valor) }));
+  const items = movimentacoes.map((m) => ({
+    id: m.id,
+    accountId: m.conta_id,
+    accountName: m.conta?.nome ?? null,
+    type: m.tipo === 'entrada' ? 'IN' : m.tipo === 'saida' ? 'OUT' : 'TRANSFER',
+    amount: Number(m.valor),
+    date: m.data.toISOString().slice(0, 10),
+    description: m.descricao,
+    originType: m.conta_pagar_id
+      ? 'ACCOUNTS_PAYABLE'
+      : m.conta_receber_id
+        ? 'ACCOUNTS_RECEIVABLE'
+        : 'MANUAL',
+    originId: m.conta_pagar_id ?? m.conta_receber_id ?? null,
+    createdAt: m.created_at.toISOString(),
+  }));
 
   return {
-    data,
-    total,
+    items,
     page,
-    totalPages: Math.ceil(total / limit),
-    nextCursor: data.length === limit ? data[data.length - 1].id : null,
+    perPage,
+    total,
+    totalPages: Math.ceil(total / perPage),
   };
 }
 

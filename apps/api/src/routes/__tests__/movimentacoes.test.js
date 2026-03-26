@@ -148,9 +148,26 @@ const movimentacaoBase = {
 // GET /movimentacoes
 // ============================================================
 
+const PAYABLE_ID = '55555555-5555-4555-8555-555555555555';
+const RECEIVABLE_ID = '66666666-6666-4666-8666-666666666666';
+
+const externalMovBase = {
+  id: MOV_ID,
+  accountId: CONTA_ID,
+  accountName: 'Conta Corrente',
+  type: 'IN',
+  amount: 500,
+  date: '2025-01-01',
+  description: 'Recebimento cliente',
+  originType: 'MANUAL',
+  originId: null,
+  createdAt: '2025-01-01T00:00:00.000Z',
+};
+
 describe('GET /movimentacoes', () => {
-  test('retorna 200 com lista paginada', async () => {
-    const resultado = { data: [movimentacaoBase], total: 1, page: 1, totalPages: 1, nextCursor: null };
+  // AC1: Returns only authenticated user's movimentações
+  test('AC1: retorna 200 com items do usuário autenticado', async () => {
+    const resultado = { items: [externalMovBase], page: 1, perPage: 20, total: 1, totalPages: 1 };
     mockListMovimentacoes.mockResolvedValue(resultado);
 
     const app = makeApp();
@@ -158,49 +175,147 @@ describe('GET /movimentacoes', () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(resultado);
-    expect(mockListMovimentacoes).toHaveBeenCalledWith('usuario-uuid-001', expect.objectContaining({ page: 1, limit: 20 }));
+    expect(mockListMovimentacoes).toHaveBeenCalledWith('usuario-uuid-001', expect.objectContaining({ page: 1, perPage: 20 }));
   });
 
-  test('retorna 200 passando filtro tipo', async () => {
-    const resultado = { data: [movimentacaoBase], total: 1, page: 1, totalPages: 1, nextCursor: null };
+  // AC2: Filter by accountId works; accountId from another user returns 403
+  test('AC2: filtro por accountId é passado ao serviço', async () => {
+    const resultado = { items: [externalMovBase], page: 1, perPage: 20, total: 1, totalPages: 1 };
     mockListMovimentacoes.mockResolvedValue(resultado);
 
     const app = makeApp();
-    const res = await request(app, 'GET', '/movimentacoes?tipo=entrada', null);
+    const res = await request(app, 'GET', `/movimentacoes?accountId=${CONTA_ID}`, null);
 
     expect(res.status).toBe(200);
     expect(mockListMovimentacoes).toHaveBeenCalledWith(
       'usuario-uuid-001',
-      expect.objectContaining({ tipo: 'entrada' }),
+      expect.objectContaining({ accountId: CONTA_ID }),
     );
   });
 
-  test('retorna 200 passando filtros de data', async () => {
-    const resultado = { data: [], total: 0, page: 1, totalPages: 0, nextCursor: null };
+  test('AC2: accountId de outro usuário retorna 403', async () => {
+    const { AppError } = await import('../../errors/AppError.js');
+    mockListMovimentacoes.mockRejectedValue(AppError.forbidden('Conta não pertence ao usuário'));
+
+    const app = makeApp();
+    const res = await request(app, 'GET', `/movimentacoes?accountId=${CONTA_ID}`, null);
+
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('FORBIDDEN');
+  });
+
+  // AC3: Pagination returns items, page, perPage, total, totalPages
+  test('AC3: paginação retorna envelope correto', async () => {
+    const resultado = { items: [externalMovBase], page: 2, perPage: 10, total: 58, totalPages: 6 };
     mockListMovimentacoes.mockResolvedValue(resultado);
 
     const app = makeApp();
-    const res = await request(app, 'GET', '/movimentacoes?data_de=2025-01-01&data_ate=2025-12-31', null);
+    const res = await request(app, 'GET', '/movimentacoes?page=2&perPage=10', null);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ items: expect.any(Array), page: 2, perPage: 10, total: 58, totalPages: 6 });
+    expect(mockListMovimentacoes).toHaveBeenCalledWith(
+      'usuario-uuid-001',
+      expect.objectContaining({ page: 2, perPage: 10 }),
+    );
+  });
+
+  // AC4: sortBy=amount&sortOrder=asc sorts correctly
+  test('AC4: sortBy=amount&sortOrder=asc é passado ao serviço mapeado', async () => {
+    const resultado = { items: [], page: 1, perPage: 20, total: 0, totalPages: 0 };
+    mockListMovimentacoes.mockResolvedValue(resultado);
+
+    const app = makeApp();
+    const res = await request(app, 'GET', '/movimentacoes?sortBy=amount&sortOrder=asc', null);
 
     expect(res.status).toBe(200);
     expect(mockListMovimentacoes).toHaveBeenCalledWith(
       'usuario-uuid-001',
-      expect.objectContaining({ data_de: '2025-01-01', data_ate: '2025-12-31' }),
+      expect.objectContaining({ sortBy: 'amount', sortOrder: 'asc' }),
     );
   });
 
-  test('retorna 422 com tipo inválido', async () => {
+  // AC5: Default period applied when dateFrom/dateTo omitted
+  test('AC5: período padrão aplicado quando dateFrom/dateTo omitidos', async () => {
+    const resultado = { items: [], page: 1, perPage: 20, total: 0, totalPages: 0 };
+    mockListMovimentacoes.mockResolvedValue(resultado);
+
     const app = makeApp();
-    const res = await request(app, 'GET', '/movimentacoes?tipo=invalido', null);
+    const res = await request(app, 'GET', '/movimentacoes', null);
+
+    expect(res.status).toBe(200);
+    // dateFrom and dateTo should be undefined (service applies defaults internally)
+    expect(mockListMovimentacoes).toHaveBeenCalledWith(
+      'usuario-uuid-001',
+      expect.objectContaining({ dateFrom: undefined, dateTo: undefined }),
+    );
+  });
+
+  // AC6: originType ACCOUNTS_PAYABLE / ACCOUNTS_RECEIVABLE / MANUAL correct
+  test('AC6: originType ACCOUNTS_PAYABLE retornado pelo serviço', async () => {
+    const movPayable = { ...externalMovBase, originType: 'ACCOUNTS_PAYABLE', originId: PAYABLE_ID };
+    const resultado = { items: [movPayable], page: 1, perPage: 20, total: 1, totalPages: 1 };
+    mockListMovimentacoes.mockResolvedValue(resultado);
+
+    const app = makeApp();
+    const res = await request(app, 'GET', '/movimentacoes', null);
+
+    expect(res.status).toBe(200);
+    expect(res.body.items[0].originType).toBe('ACCOUNTS_PAYABLE');
+    expect(res.body.items[0].originId).toBe(PAYABLE_ID);
+  });
+
+  test('AC6: originType ACCOUNTS_RECEIVABLE retornado pelo serviço', async () => {
+    const movReceivable = { ...externalMovBase, originType: 'ACCOUNTS_RECEIVABLE', originId: RECEIVABLE_ID };
+    const resultado = { items: [movReceivable], page: 1, perPage: 20, total: 1, totalPages: 1 };
+    mockListMovimentacoes.mockResolvedValue(resultado);
+
+    const app = makeApp();
+    const res = await request(app, 'GET', '/movimentacoes', null);
+
+    expect(res.status).toBe(200);
+    expect(res.body.items[0].originType).toBe('ACCOUNTS_RECEIVABLE');
+  });
+
+  test('AC6: originType MANUAL retornado pelo serviço', async () => {
+    const resultado = { items: [externalMovBase], page: 1, perPage: 20, total: 1, totalPages: 1 };
+    mockListMovimentacoes.mockResolvedValue(resultado);
+
+    const app = makeApp();
+    const res = await request(app, 'GET', '/movimentacoes', null);
+
+    expect(res.status).toBe(200);
+    expect(res.body.items[0].originType).toBe('MANUAL');
+  });
+
+  // AC7: Invalid dateFrom returns 422
+  test('AC7: dateFrom inválido retorna 422', async () => {
+    const app = makeApp();
+    const res = await request(app, 'GET', '/movimentacoes?dateFrom=31-01-2026', null);
 
     expect(res.status).toBe(422);
     expect(res.body.code).toBe('VALIDATION_ERROR');
   });
 
-  test('retorna 422 com busca maior que 100 chars', async () => {
+  test('AC7: dateTo inválido retorna 422', async () => {
     const app = makeApp();
-    const busca = 'a'.repeat(101);
-    const res = await request(app, 'GET', `/movimentacoes?busca=${busca}`, null);
+    const res = await request(app, 'GET', '/movimentacoes?dateTo=not-a-date', null);
+
+    expect(res.status).toBe(422);
+    expect(res.body.code).toBe('VALIDATION_ERROR');
+  });
+
+  test('accountId inválido (não uuid) retorna 422', async () => {
+    const app = makeApp();
+    const res = await request(app, 'GET', '/movimentacoes?accountId=nao-uuid', null);
+
+    expect(res.status).toBe(422);
+    expect(res.body.code).toBe('VALIDATION_ERROR');
+  });
+
+  test('sortBy inválido retorna 422', async () => {
+    const app = makeApp();
+    const res = await request(app, 'GET', '/movimentacoes?sortBy=invalido', null);
 
     expect(res.status).toBe(422);
     expect(res.body.code).toBe('VALIDATION_ERROR');
