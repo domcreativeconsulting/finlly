@@ -14,6 +14,9 @@ import {
   faArrowTrendUp,
   faArrowTrendDown,
   faMoneyBillWave,
+  faPercent,
+  faCommentDollar,
+  faFilter,
 } from '@fortawesome/free-solid-svg-icons';
 import { Button, Badge, Modal } from '../design-system/index.js';
 import { colors, typography, radius, shadows } from '../design-system/tokens.js';
@@ -31,6 +34,15 @@ function formatDate(dateStr) {
 
 function todayISO() {
   return new Date().toISOString().substring(0, 10);
+}
+
+function calcularPrazo(dataVencimento) {
+  if (!dataVencimento) return '-';
+  const hoje = new Date();
+  const venc = new Date(dataVencimento);
+  const diff = Math.ceil((venc - hoje) / (1000 * 60 * 60 * 24));
+  if (diff <= 0) return 'Vencido';
+  return diff === 1 ? '1 dia' : `${diff} dias`;
 }
 
 const TIPO_EVENTO_LABELS = {
@@ -108,6 +120,13 @@ export default function InvestimentosPage() {
   const [modalCriarEvento, setModalCriarEvento] = useState(false);
   const [formEvento, setFormEvento] = useState({ tipo: 'aporte', valor: '', data: todayISO(), descricao: '' });
   const [savingEvento, setSavingEvento] = useState(false);
+
+  // Filter states
+  const [filtroContaInstituicao, setFiltroContaInstituicao] = useState('todas');
+  const [filtroTipo, setFiltroTipo] = useState('todos');
+  const [filtroDataDe, setFiltroDataDe] = useState('');
+  const [filtroDataAte, setFiltroDataAte] = useState('');
+  const [filtrosAtivos, setFiltrosAtivos] = useState({ conta: 'todas', tipo: 'todos', dataDe: '', dataAte: '' });
 
   const carregarInvestimentos = useCallback(async () => {
     setLoading(true);
@@ -290,14 +309,47 @@ export default function InvestimentosPage() {
   }
 
   const saldoColor = (val) => {
-    if (val > 0) return colors.success?.[600] ?? '#16a34a';
-    if (val < 0) return colors.danger?.[600] ?? '#dc2626';
-    return colors.neutral?.[600] ?? '#6b7280';
+    if (val > 0) return '#16a34a';
+    if (val < 0) return '#dc2626';
+    return '#6b7280';
   };
+
+  // Filter applied investments
+  const investimentosFiltrados = investimentos.filter((inv) => {
+    if (filtrosAtivos.conta !== 'todas' && inv.contaNome !== filtrosAtivos.conta) return false;
+    if (filtrosAtivos.tipo !== 'todos' && String(inv.tipoId) !== filtrosAtivos.tipo) return false;
+    if (filtrosAtivos.dataDe && inv.dataInicio < filtrosAtivos.dataDe) return false;
+    if (filtrosAtivos.dataAte && inv.dataInicio > filtrosAtivos.dataAte) return false;
+    return true;
+  });
+
+  // Summary card calculations
+  const totalAplicado = investimentosFiltrados.reduce((acc, inv) => acc + (inv.valorInicial ?? 0), 0);
+  const saldoEstimado = investimentosFiltrados.reduce(
+    (acc, inv) => acc + (posicoes[inv.id]?.saldoAtual ?? inv.valorInicial ?? 0),
+    0
+  );
+  const ganhoEstimado = saldoEstimado - totalAplicado;
+  const rentMedia = totalAplicado > 0 ? (ganhoEstimado / totalAplicado) * 100 : 0;
+
+  // Unique conta/instituição options for filter
+  const contasUnicas = [...new Set(investimentos.map((inv) => inv.contaNome).filter(Boolean))];
+
+  function aplicarFiltros() {
+    setFiltrosAtivos({ conta: filtroContaInstituicao, tipo: filtroTipo, dataDe: filtroDataDe, dataAte: filtroDataAte });
+  }
+
+  function limparFiltros() {
+    setFiltroContaInstituicao('todas');
+    setFiltroTipo('todos');
+    setFiltroDataDe('');
+    setFiltroDataAte('');
+    setFiltrosAtivos({ conta: 'todas', tipo: 'todos', dataDe: '', dataAte: '' });
+  }
 
   return (
     <InadimplenteGuard>
-      <div style={{ display: 'flex', minHeight: '100vh', background: colors.neutral?.[50] ?? '#f9fafb' }}>
+      <div style={{ display: 'flex', minHeight: '100vh', background: '#f9fafb' }}>
         <AppSidebar
           sidebarOpen={sidebarOpen}
           currentPath="/investimentos"
@@ -315,121 +367,233 @@ export default function InvestimentosPage() {
           }}
         >
           {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <FontAwesomeIcon icon={faChartLine} style={{ fontSize: 22, color: colors.primary?.[600] ?? '#2563eb' }} />
-              <h1 style={{ margin: 0, fontSize: typography.fontSize?.['2xl'] ?? 24, fontWeight: 700 }}>
+          <div style={{ marginBottom: 28 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
+              <FontAwesomeIcon icon={faChartLine} style={{ fontSize: 24, color: '#2563eb' }} />
+              <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, color: colors.neutral800 ?? '#1e293b' }}>
                 Investimentos
               </h1>
-              <Badge variant="info">Portfólio</Badge>
             </div>
+            <p style={{ margin: '2px 0 4px 0', fontSize: 13, color: colors.neutral500 ?? '#6b7280', fontWeight: 500 }}>
+              Carteira pessoal • Organiza
+            </p>
+            <p style={{ margin: '0 0 16px 0', fontSize: 14, color: colors.neutral600 ?? '#4b5563' }}>
+              Cadastre seus investimentos, acompanhe o valor aplicado, o saldo estimado e a rentabilidade ao longo do tempo.
+            </p>
             <Button variant="primary" onClick={() => abrirModal()}>
               <FontAwesomeIcon icon={faPlus} style={{ marginRight: 6 }} />
               Novo investimento
             </Button>
           </div>
 
+          {/* Summary Cards */}
+          {!loading && !error && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>
+              {/* Card 1 – Total aplicado */}
+              <div style={cardStyle}>
+                <p style={cardLabelStyle}>Total aplicado</p>
+                <p style={cardValueStyle}>{formatBRL(totalAplicado)}</p>
+                <p style={cardSubStyle}>Somatório dos aportes filtrados.</p>
+                <FontAwesomeIcon icon={faCommentDollar} style={{ color: '#2563eb', fontSize: 18, marginTop: 8 }} />
+              </div>
+              {/* Card 2 – Saldo estimado */}
+              <div style={cardStyle}>
+                <p style={cardLabelStyle}>Saldo estimado hoje</p>
+                <p style={cardValueStyle}>{formatBRL(saldoEstimado)}</p>
+                <p style={cardSubStyle}>Aplicado + rentabilidade estimada.</p>
+                <FontAwesomeIcon icon={faChartLine} style={{ color: '#2563eb', fontSize: 18, marginTop: 8 }} />
+              </div>
+              {/* Card 3 – Ganho estimado */}
+              <div style={cardStyle}>
+                <p style={cardLabelStyle}>Ganho estimado</p>
+                <p style={{ ...cardValueStyle, color: ganhoEstimado >= 0 ? '#16a34a' : '#dc2626' }}>
+                  {formatBRL(ganhoEstimado)}
+                </p>
+                <p style={cardSubStyle}>Rent. média: {rentMedia.toFixed(2)}% (estimada)</p>
+                <FontAwesomeIcon icon={faPercent} style={{ color: '#2563eb', fontSize: 18, marginTop: 8 }} />
+              </div>
+            </div>
+          )}
+
+          {/* Filters Section */}
+          <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, boxShadow: shadows.sm, padding: '20px 24px', marginBottom: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 16 }}>
+              <span style={{ fontWeight: 600, fontSize: 15, color: colors.neutral800 ?? '#1e293b' }}>Filtros da carteira</span>
+              <span style={{ fontSize: 13, color: colors.neutral500 ?? '#6b7280' }}>Refine os dados para análises específicas</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 12, marginBottom: 14 }}>
+              <div>
+                <label style={labelStyle}>Conta / instituição</label>
+                <select
+                  style={inputStyle}
+                  value={filtroContaInstituicao}
+                  onChange={(e) => setFiltroContaInstituicao(e.target.value)}
+                >
+                  <option value="todas">Todas</option>
+                  {contasUnicas.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={labelStyle}>Tipo de investimento</label>
+                <select
+                  style={inputStyle}
+                  value={filtroTipo}
+                  onChange={(e) => setFiltroTipo(e.target.value)}
+                >
+                  <option value="todos">Todos</option>
+                  {tipos.map((t) => (
+                    <option key={t.id} value={String(t.id)}>{t.nome}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={labelStyle}>Aplicação de</label>
+                <input
+                  style={inputStyle}
+                  type="date"
+                  value={filtroDataDe}
+                  onChange={(e) => setFiltroDataDe(e.target.value)}
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>até</label>
+                <input
+                  style={inputStyle}
+                  type="date"
+                  value={filtroDataAte}
+                  onChange={(e) => setFiltroDataAte(e.target.value)}
+                />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              <Button variant="primary" onClick={aplicarFiltros}>
+                <FontAwesomeIcon icon={faFilter} style={{ marginRight: 6 }} />
+                Filtrar
+              </Button>
+              <button
+                onClick={limparFiltros}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: '#2563eb', padding: '6px 4px' }}
+              >
+                Limpar
+              </button>
+            </div>
+          </div>
+
           {/* Loading / Error / Empty */}
           {loading && (
-            <div style={{ textAlign: 'center', padding: 48, color: colors.neutral?.[500] ?? '#6b7280' }}>
+            <div style={{ textAlign: 'center', padding: 48, color: colors.neutral500 ?? '#6b7280' }}>
               Carregando...
             </div>
           )}
 
           {!loading && error && (
-            <div style={{ textAlign: 'center', padding: 48, color: colors.danger?.[600] ?? '#dc2626' }}>
+            <div style={{ textAlign: 'center', padding: 48, color: '#dc2626' }}>
               {error}
             </div>
           )}
 
-          {!loading && !error && investimentos.length === 0 && (
-            <div style={{ textAlign: 'center', padding: 64, color: colors.neutral?.[400] ?? '#9ca3af' }}>
+          {!loading && !error && investimentosFiltrados.length === 0 && (
+            <div style={{ textAlign: 'center', padding: 64, color: colors.neutral400 ?? '#9ca3af' }}>
               <FontAwesomeIcon icon={faInbox} style={{ fontSize: 48, marginBottom: 16, display: 'block' }} />
-              <p style={{ margin: 0 }}>Nenhum investimento encontrado. Crie o primeiro!</p>
+              <p style={{ margin: 0 }}>
+                {investimentos.length === 0
+                  ? 'Nenhum investimento encontrado. Crie o primeiro!'
+                  : 'Nenhum investimento corresponde aos filtros aplicados.'}
+              </p>
             </div>
           )}
 
-          {/* Table */}
-          {!loading && !error && investimentos.length > 0 && (
-            <div
-              style={{
-                background: '#fff',
-                borderRadius: radius.lg ?? 12,
-                boxShadow: shadows.sm,
-                overflow: 'hidden',
-              }}
-            >
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
-                <thead>
-                  <tr style={{ background: colors.neutral?.[100] ?? '#f3f4f6' }}>
-                    {['Nome', 'Tipo', 'Status', 'Valor Inicial', 'Data Início', 'Saldo Atual', 'Ações'].map((col) => (
-                      <th
-                        key={col}
-                        style={{
-                          padding: '10px 14px',
-                          textAlign: 'left',
-                          fontWeight: 600,
-                          color: colors.neutral?.[700] ?? '#374151',
-                          borderBottom: `1px solid ${colors.neutral?.[200] ?? '#e5e7eb'}`,
-                        }}
-                      >
-                        {col}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {investimentos.map((inv, idx) => (
-                    <tr
-                      key={inv.id}
-                      style={{
-                        background: idx % 2 === 0 ? '#fff' : colors.neutral?.[50] ?? '#f9fafb',
-                        borderBottom: `1px solid ${colors.neutral?.[100] ?? '#f3f4f6'}`,
-                      }}
-                    >
-                      <td style={{ padding: '10px 14px', fontWeight: 500 }}>{inv.nome}</td>
-                      <td style={{ padding: '10px 14px', color: colors.neutral?.[600] ?? '#4b5563' }}>
-                        {inv.tipoNome || '-'}
-                      </td>
-                      <td style={{ padding: '10px 14px' }}>
-                        <StatusBadge status={inv.status} />
-                      </td>
-                      <td style={{ padding: '10px 14px' }}>{formatBRL(inv.valorInicial)}</td>
-                      <td style={{ padding: '10px 14px' }}>{formatDate(inv.dataInicio)}</td>
-                      <td style={{ padding: '10px 14px', fontWeight: 600 }}>
-                        {posicoes[inv.id] !== undefined
-                          ? <span style={{ color: saldoColor(posicoes[inv.id].saldoAtual) }}>{formatBRL(posicoes[inv.id].saldoAtual)}</span>
-                          : '-'}
-                      </td>
-                      <td style={{ padding: '10px 14px' }}>
-                        <div style={{ display: 'flex', gap: 8 }}>
-                          <button
-                            title="Ver eventos / posição"
-                            onClick={() => abrirEventos(inv)}
-                            style={iconBtn}
-                          >
-                            <FontAwesomeIcon icon={faBars} />
-                          </button>
-                          <button
-                            title="Editar"
-                            onClick={() => abrirModal(inv)}
-                            style={iconBtn}
-                          >
-                            <FontAwesomeIcon icon={faPenToSquare} />
-                          </button>
-                          <button
-                            title="Excluir"
-                            onClick={() => handleExcluir(inv.id)}
-                            style={{ ...iconBtn, color: colors.danger?.[600] ?? '#dc2626' }}
-                          >
-                            <FontAwesomeIcon icon={faTrash} />
-                          </button>
-                        </div>
-                      </td>
+          {/* Investment Table */}
+          {!loading && !error && investimentosFiltrados.length > 0 && (
+            <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, boxShadow: shadows.sm, overflow: 'hidden' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '16px 20px', borderBottom: '1px solid #e5e7eb' }}>
+                <span style={{ fontWeight: 600, fontSize: 15, color: colors.neutral800 ?? '#1e293b' }}>Carteira de investimentos</span>
+                <span style={{ fontSize: 13, color: colors.neutral500 ?? '#6b7280' }}>Controle por aplicação</span>
+              </div>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ background: colors.neutral100 ?? '#f3f4f6' }}>
+                      {['Data aplicação', 'Conta / Banco', 'Tipo', 'Produto', 'Aplicado (R$)', 'Atual (R$)', 'Ganho (R$)', 'Rent. (%)', 'Prazo', 'Ações'].map((col) => (
+                        <th
+                          key={col}
+                          style={{
+                            padding: '10px 14px',
+                            textAlign: 'left',
+                            fontWeight: 600,
+                            color: colors.neutral700 ?? '#374151',
+                            borderBottom: '1px solid #e5e7eb',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {col}
+                        </th>
+                      ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {investimentosFiltrados.map((inv, idx) => {
+                      const pos = posicoes[inv.id];
+                      const saldoAtual = pos?.saldoAtual ?? inv.valorInicial ?? 0;
+                      const ganho = saldoAtual - (inv.valorInicial ?? 0);
+                      const rentPct = (inv.valorInicial ?? 0) > 0 ? (ganho / inv.valorInicial) * 100 : 0;
+                      const ganhoColor = ganho > 0 ? '#16a34a' : ganho < 0 ? '#dc2626' : colors.neutral600 ?? '#4b5563';
+
+                      return (
+                        <tr
+                          key={inv.id}
+                          style={{
+                            background: idx % 2 === 0 ? '#fff' : colors.neutral50 ?? '#f9fafb',
+                            borderBottom: '1px solid #f3f4f6',
+                          }}
+                        >
+                          <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>{formatDate(inv.dataInicio)}</td>
+                          <td style={{ padding: '10px 14px' }}>
+                            <div style={{ fontWeight: 600, fontSize: 13 }}>{inv.contaNome || '-'}</div>
+                            {inv.contaBanco && (
+                              <div style={{ fontSize: 12, color: colors.neutral500 ?? '#6b7280' }}>{inv.contaBanco}</div>
+                            )}
+                          </td>
+                          <td style={{ padding: '10px 14px', color: colors.neutral600 ?? '#4b5563' }}>{inv.tipoNome || '-'}</td>
+                          <td style={{ padding: '10px 14px', fontWeight: 500 }}>{inv.nome}</td>
+                          <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>{formatBRL(inv.valorInicial)}</td>
+                          <td style={{ padding: '10px 14px', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                            {pos !== undefined ? formatBRL(saldoAtual) : <span style={{ color: colors.neutral400 ?? '#9ca3af' }}>—</span>}
+                          </td>
+                          <td style={{ padding: '10px 14px', fontWeight: 600, color: ganhoColor, whiteSpace: 'nowrap' }}>
+                            {pos !== undefined ? formatBRL(ganho) : <span style={{ color: colors.neutral400 ?? '#9ca3af' }}>—</span>}
+                          </td>
+                          <td style={{ padding: '10px 14px', fontWeight: 600, color: ganhoColor, whiteSpace: 'nowrap' }}>
+                            {pos !== undefined ? `${rentPct.toFixed(2)}%` : <span style={{ color: colors.neutral400 ?? '#9ca3af' }}>—</span>}
+                          </td>
+                          <td style={{ padding: '10px 14px', whiteSpace: 'nowrap', color: colors.neutral600 ?? '#4b5563' }}>
+                            {calcularPrazo(inv.dataVencimento)}
+                          </td>
+                          <td style={{ padding: '10px 14px' }}>
+                            <div style={{ display: 'flex', gap: 6 }}>
+                              <button title="Ver eventos / posição" onClick={() => abrirEventos(inv)} style={iconBtn}>
+                                <FontAwesomeIcon icon={faBars} />
+                              </button>
+                              <button title="Editar" onClick={() => abrirModal(inv)} style={iconBtn}>
+                                <FontAwesomeIcon icon={faPenToSquare} />
+                              </button>
+                              <button
+                                title="Excluir"
+                                onClick={() => handleExcluir(inv.id)}
+                                style={{ ...iconBtn, color: '#dc2626' }}
+                              >
+                                <FontAwesomeIcon icon={faTrash} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
@@ -443,7 +607,7 @@ export default function InvestimentosPage() {
               >
                 Anterior
               </Button>
-              <span style={{ alignSelf: 'center', fontSize: 14, color: colors.neutral?.[600] ?? '#4b5563' }}>
+              <span style={{ alignSelf: 'center', fontSize: 14, color: '#4b5563' }}>
                 Página {page} de {totalPages} ({total} itens)
               </span>
               <Button
@@ -561,8 +725,8 @@ export default function InvestimentosPage() {
           {posicao && (
             <div
               style={{
-                background: colors.neutral?.[50] ?? '#f9fafb',
-                borderRadius: radius.md ?? 8,
+                background: '#f9fafb',
+                borderRadius: 8,
                 padding: '16px 20px',
                 display: 'grid',
                 gridTemplateColumns: 'repeat(3, 1fr)',
@@ -581,7 +745,7 @@ export default function InvestimentosPage() {
                   justifyContent: 'space-between',
                   alignItems: 'center',
                   padding: '10px 0 0',
-                  borderTop: `1px solid ${colors.neutral?.[200] ?? '#e5e7eb'}`,
+                  borderTop: '1px solid #e5e7eb',
                   marginTop: 4,
                 }}
               >
@@ -606,8 +770,8 @@ export default function InvestimentosPage() {
           {modalCriarEvento && (
             <div
               style={{
-                background: colors.neutral?.[100] ?? '#f3f4f6',
-                borderRadius: radius.md ?? 8,
+                background: '#f3f4f6',
+                borderRadius: 8,
                 padding: 16,
               }}
             >
@@ -673,12 +837,12 @@ export default function InvestimentosPage() {
 
           {/* Tabela eventos */}
           {loadingEventos && (
-            <div style={{ textAlign: 'center', padding: 24, color: colors.neutral?.[500] ?? '#6b7280' }}>
+            <div style={{ textAlign: 'center', padding: 24, color: '#6b7280' }}>
               Carregando eventos...
             </div>
           )}
           {!loadingEventos && eventos.length === 0 && (
-            <div style={{ textAlign: 'center', padding: 24, color: colors.neutral?.[400] ?? '#9ca3af' }}>
+            <div style={{ textAlign: 'center', padding: 24, color: '#9ca3af' }}>
               <FontAwesomeIcon icon={faInbox} style={{ marginRight: 8 }} />
               Nenhum evento registrado.
             </div>
@@ -686,7 +850,7 @@ export default function InvestimentosPage() {
           {!loadingEventos && eventos.length > 0 && (
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
-                <tr style={{ background: colors.neutral?.[100] ?? '#f3f4f6' }}>
+                <tr style={{ background: '#f3f4f6' }}>
                   {['Data', 'Tipo', 'Valor', 'Descrição', ''].map((col) => (
                     <th
                       key={col}
@@ -694,8 +858,8 @@ export default function InvestimentosPage() {
                         padding: '8px 12px',
                         textAlign: 'left',
                         fontWeight: 600,
-                        color: colors.neutral?.[700] ?? '#374151',
-                        borderBottom: `1px solid ${colors.neutral?.[200] ?? '#e5e7eb'}`,
+                        color: '#374151',
+                        borderBottom: '1px solid #e5e7eb',
                       }}
                     >
                       {col}
@@ -707,21 +871,21 @@ export default function InvestimentosPage() {
                 {eventos.map((ev) => (
                   <tr
                     key={ev.id}
-                    style={{ borderBottom: `1px solid ${colors.neutral?.[100] ?? '#f3f4f6'}` }}
+                    style={{ borderBottom: '1px solid #f3f4f6' }}
                   >
                     <td style={{ padding: '8px 12px' }}>{formatDate(ev.data)}</td>
                     <td style={{ padding: '8px 12px' }}>
                       <TipoEventoBadge tipo={ev.tipo} />
                     </td>
                     <td style={{ padding: '8px 12px', fontWeight: 500 }}>{formatBRL(ev.valor)}</td>
-                    <td style={{ padding: '8px 12px', color: colors.neutral?.[600] ?? '#4b5563' }}>
+                    <td style={{ padding: '8px 12px', color: '#4b5563' }}>
                       {ev.descricao || '-'}
                     </td>
                     <td style={{ padding: '8px 12px' }}>
                       <button
                         title="Excluir evento"
                         onClick={() => handleExcluirEvento(ev.id)}
-                        style={{ ...iconBtn, color: colors.danger?.[600] ?? '#dc2626' }}
+                        style={{ ...iconBtn, color: '#dc2626' }}
                       >
                         <FontAwesomeIcon icon={faTrash} />
                       </button>
@@ -738,18 +902,19 @@ export default function InvestimentosPage() {
         </div>
       </Modal>
     </InadimplenteGuard>
+  );
 }
 
 function PosicaoItem({ label, valor, icon, positive, negative }) {
   const color = positive
-    ? colors.success?.[600] ?? '#16a34a'
+    ? '#16a34a'
     : negative
-    ? colors.danger?.[600] ?? '#dc2626'
-    : colors.neutral?.[700] ?? '#374151';
+    ? '#dc2626'
+    : '#374151';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <span style={{ fontSize: 11, color: colors.neutral?.[500] ?? '#6b7280', fontWeight: 500 }}>
+      <span style={{ fontSize: 11, color: '#6b7280', fontWeight: 500 }}>
         <FontAwesomeIcon icon={icon} style={{ marginRight: 4 }} />
         {label}
       </span>
@@ -764,8 +929,38 @@ const iconBtn = {
   cursor: 'pointer',
   padding: '4px 6px',
   borderRadius: 4,
-  color: colors.neutral?.[600] ?? '#4b5563',
+  color: colors.neutral600 ?? '#4b5563',
   fontSize: 14,
+};
+
+const cardStyle = {
+  background: '#fff',
+  border: '1px solid #e5e7eb',
+  borderRadius: 12,
+  boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+  padding: '20px 24px',
+};
+
+const cardLabelStyle = {
+  margin: '0 0 6px 0',
+  fontSize: 12,
+  fontWeight: 600,
+  color: colors.neutral500 ?? '#6b7280',
+  textTransform: 'uppercase',
+  letterSpacing: '0.05em',
+};
+
+const cardValueStyle = {
+  margin: '0 0 4px 0',
+  fontSize: 22,
+  fontWeight: 700,
+  color: colors.neutral800 ?? '#1e293b',
+};
+
+const cardSubStyle = {
+  margin: 0,
+  fontSize: 12,
+  color: colors.neutral500 ?? '#6b7280',
 };
 
 const labelStyle = {
@@ -773,14 +968,14 @@ const labelStyle = {
   marginBottom: 4,
   fontSize: 13,
   fontWeight: 500,
-  color: colors.neutral?.[700] ?? '#374151',
+  color: colors.neutral700 ?? '#374151',
 };
 
 const inputStyle = {
   width: '100%',
   padding: '8px 10px',
   borderRadius: 6,
-  border: `1px solid ${colors.neutral?.[300] ?? '#d1d5db'}`,
+  border: `1px solid ${colors.neutral300 ?? '#d1d5db'}`,
   fontSize: 14,
   boxSizing: 'border-box',
 };
