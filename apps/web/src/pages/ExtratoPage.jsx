@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { toast } from 'react-toastify';
 import AppSidebar from '../components/AppSidebar.jsx';
 import { InadimplenteGuard } from '../components/InadimplenteGuard.jsx';
 import { extratoService } from '../services/extrato.service.js';
 import { contasService } from '../services/contas.service.js';
+import { cashMovementsService } from '../services/cashMovements.service.js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faBars,
@@ -82,6 +84,10 @@ export default function ExtratoPage() {
     accountId: '',
   });
 
+  const [showModalManual, setShowModalManual] = useState(false);
+  const [formManual, setFormManual] = useState({ type: 'IN', accountId: '', amount: '', date: todayISO(), description: '', notes: '' });
+  const [savingManual, setSavingManual] = useState(false);
+
   useEffect(() => {
     contasService
       .listar()
@@ -120,6 +126,29 @@ export default function ExtratoPage() {
   useEffect(() => {
     carregarExtrato();
   }, [carregarExtrato]);
+
+  async function handleSubmitManual(e) {
+    e.preventDefault();
+    setSavingManual(true);
+    try {
+      await cashMovementsService.criarManual({
+        accountId: formManual.accountId,
+        type: formManual.type,
+        amount: parseFloat(formManual.amount),
+        date: formManual.date,
+        description: formManual.description,
+        ...(formManual.notes ? { notes: formManual.notes } : {}),
+      });
+      setShowModalManual(false);
+      setFormManual({ type: 'IN', accountId: '', amount: '', date: todayISO(), description: '', notes: '' });
+      toast.success('Lançamento registrado com sucesso!');
+      carregarExtrato();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Erro ao criar lançamento.');
+    } finally {
+      setSavingManual(false);
+    }
+  }
 
   function handleFiltrar() {
     setPage(1);
@@ -186,7 +215,100 @@ export default function ExtratoPage() {
               </div>
               <span style={s.badge}>Movimentações do período</span>
             </div>
+            <Button onClick={() => setShowModalManual(true)} style={{ marginLeft: 'auto' }}>
+              + Novo lançamento
+            </Button>
           </div>
+
+          {/* Modal lançamento manual */}
+          {showModalManual && (
+            <div style={s.modalOverlay}>
+              <div style={s.modalCard}>
+                <h2 style={s.modalTitle}>Novo lançamento manual</h2>
+                <form onSubmit={handleSubmitManual}>
+                  <div style={s.modalField}>
+                    <label style={s.modalLabel}>Tipo *</label>
+                    <select
+                      style={s.filterInputPlain}
+                      value={formManual.type}
+                      onChange={(e) => setFormManual((f) => ({ ...f, type: e.target.value }))}
+                      required
+                    >
+                      <option value="IN">Entrada</option>
+                      <option value="OUT">Saída</option>
+                    </select>
+                  </div>
+                  <div style={s.modalField}>
+                    <label style={s.modalLabel}>Conta *</label>
+                    <select
+                      style={s.filterInputPlain}
+                      value={formManual.accountId}
+                      onChange={(e) => setFormManual((f) => ({ ...f, accountId: e.target.value }))}
+                      required
+                    >
+                      <option value="">Selecione uma conta</option>
+                      {contas.map((c) => (
+                        <option key={c.id} value={c.id}>{c.nome}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div style={s.modalField}>
+                    <label style={s.modalLabel}>Valor *</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      style={s.filterInputPlain}
+                      value={formManual.amount}
+                      onChange={(e) => setFormManual((f) => ({ ...f, amount: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  <div style={s.modalField}>
+                    <label style={s.modalLabel}>Data *</label>
+                    <input
+                      type="date"
+                      style={s.filterInputPlain}
+                      value={formManual.date}
+                      onChange={(e) => setFormManual((f) => ({ ...f, date: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  <div style={s.modalField}>
+                    <label style={s.modalLabel}>Descrição *</label>
+                    <input
+                      type="text"
+                      style={s.filterInputPlain}
+                      value={formManual.description}
+                      onChange={(e) => setFormManual((f) => ({ ...f, description: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  <div style={s.modalField}>
+                    <label style={s.modalLabel}>Observações</label>
+                    <textarea
+                      style={{ ...s.filterInputPlain, resize: 'vertical', minHeight: '64px' }}
+                      value={formManual.notes}
+                      onChange={(e) => setFormManual((f) => ({ ...f, notes: e.target.value }))}
+                    />
+                  </div>
+                  <div style={s.modalActions}>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => setShowModalManual(false)}
+                      disabled={savingManual}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button type="submit" disabled={savingManual}>
+                      {savingManual ? 'Salvando...' : 'Confirmar'}
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
 
           {/* Content */}
           <InadimplenteGuard>
@@ -579,5 +701,48 @@ const s = {
     padding: '14px',
     fontSize: typography.sizes.base,
     letterSpacing: '0.01em',
+  },
+  modalOverlay: {
+    position: 'fixed',
+    inset: 0,
+    background: 'rgba(0,0,0,0.45)',
+    zIndex: 1000,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCard: {
+    background: colors.white,
+    borderRadius: radius.lg,
+    boxShadow: shadows.md,
+    padding: '28px 32px',
+    width: '100%',
+    maxWidth: '440px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px',
+  },
+  modalTitle: {
+    margin: '0 0 16px',
+    fontSize: typography.sizes['2xl'],
+    fontWeight: typography.weights.bold,
+    color: colors.neutral900,
+  },
+  modalField: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px',
+    marginBottom: '12px',
+  },
+  modalLabel: {
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.medium,
+    color: colors.neutral500,
+  },
+  modalActions: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    gap: '10px',
+    marginTop: '8px',
   },
 };
