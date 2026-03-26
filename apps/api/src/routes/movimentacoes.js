@@ -38,20 +38,22 @@ const writeLimiter = rateLimit({
 
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const TIPO_ENUM = ['entrada', 'saida', 'transferencia'];
-const SORTABLE_FIELDS = ['data', 'valor', 'descricao', 'created_at', 'tipo'];
+
+const SORT_FIELD_MAP = {
+  date: 'data',
+  createdAt: 'created_at',
+  amount: 'valor',
+  description: 'descricao',
+};
 
 const ListQuerySchema = z.object({
-  tipo: z.enum(TIPO_ENUM).optional(),
-  conta_id: z.string().uuid().optional(),
-  categoria_id: z.string().uuid().optional(),
-  data_de: z.string().regex(ISO_DATE_REGEX).optional(),
-  data_ate: z.string().regex(ISO_DATE_REGEX).optional(),
-  busca: z.string().max(100).optional(),
+  dateFrom: z.string().regex(ISO_DATE_REGEX).optional(),
+  dateTo: z.string().regex(ISO_DATE_REGEX).optional(),
+  accountId: z.string().uuid().optional(),
   page: z.coerce.number().int().positive().default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
-  cursor: z.string().uuid().optional(),
-  order_by: z.enum(SORTABLE_FIELDS).default('data'),
-  order_dir: z.enum(['asc', 'desc']).default('desc'),
+  perPage: z.coerce.number().int().min(1).max(100).default(20),
+  sortBy: z.enum(['date', 'createdAt', 'amount', 'description']).default('date'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
 });
 
 const CreateMovimentacaoSchema = z
@@ -102,9 +104,20 @@ async function handleList(req, res, next) {
   const parsed = ListQuerySchema.safeParse(req.query);
   if (!parsed.success) return next(toValidationError(parsed.error));
 
+  const { dateFrom, dateTo, accountId, page, perPage, sortBy, sortOrder } = parsed.data;
+  const userId = req.user.sub;
+
   try {
-    const result = await listMovimentacoes(req.user.sub, parsed.data);
-    logger.info({ msg: 'Movimentações listadas', userId: req.user.sub });
+    const result = await listMovimentacoes(userId, {
+      dateFrom,
+      dateTo,
+      accountId,
+      page,
+      perPage,
+      sortBy,
+      sortOrder,
+    });
+    logger.info({ msg: 'GET /movimentacoes', userId, page, perPage });
     return res.status(200).json(result);
   } catch (err) {
     return next(err);
