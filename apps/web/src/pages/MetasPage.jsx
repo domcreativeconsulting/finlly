@@ -12,12 +12,11 @@ import {
   faPlus,
   faPenToSquare,
   faTrash,
-  faInbox,
   faFilter,
   faCircleUser,
   faDoorOpen,
 } from '@fortawesome/free-solid-svg-icons';
-import { Button, Badge, Modal } from '../design-system/index.js';
+import { Button, Modal } from '../design-system/index.js';
 import { colors, typography, radius } from '../design-system/tokens.js';
 
 const STATUS_META_LABELS = { ativa: 'Ativa', concluida: 'Concluída', cancelada: 'Cancelada' };
@@ -543,7 +542,7 @@ export default function MetasPage() {
                 <div style={{ textAlign: 'center', padding: '60px 20px', color: '#6b7280' }}>
                   <FontAwesomeIcon icon={faBullseye} style={{ fontSize: 48, marginBottom: 16, color: '#d1d5db' }} />
                   <p style={{ fontSize: 16, fontWeight: 500 }}>Nenhuma meta encontrada.</p>
-                  <p style={{ fontSize: 14 }}>Clique em "Nova Meta" para começar.</p>
+                  <p style={{ fontSize: 14 }}>Clique em &quot;Nova Meta&quot; para começar.</p>
                 </div>
               )}
 
