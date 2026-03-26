@@ -7,6 +7,7 @@ import { AppError } from '../errors/AppError.js';
 import { toValidationError } from '../errors/toValidationError.js';
 import logger from '../logger.js';
 import prisma from '../utils/database.js';
+import { calcularPosicao } from '../services/investimentoService.js';
 
 const router = Router();
 
@@ -29,38 +30,6 @@ const writeLimiter = rateLimit({
 });
 
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
-
-function round2(n) {
-  return Math.round(n * 100) / 100;
-}
-
-function calcularPosicao(eventos) {
-  let totalAportado = 0;
-  let totalResgatado = 0;
-  let totalRendimentos = 0;
-  let totalTaxas = 0;
-  let totalDividendos = 0;
-
-  for (const ev of eventos) {
-    const v = Number(ev.valor);
-    if (ev.tipo === 'aporte') totalAportado += v;
-    else if (ev.tipo === 'resgate') totalResgatado += v;
-    else if (ev.tipo === 'rendimento') totalRendimentos += v;
-    else if (ev.tipo === 'taxa') totalTaxas += v;
-    else if (ev.tipo === 'dividendo') totalDividendos += v;
-  }
-
-  const saldoAtual = totalAportado - totalResgatado + totalRendimentos - totalTaxas + totalDividendos;
-
-  return {
-    totalAportado: round2(totalAportado),
-    totalResgatado: round2(totalResgatado),
-    totalRendimentos: round2(totalRendimentos),
-    totalTaxas: round2(totalTaxas),
-    totalDividendos: round2(totalDividendos),
-    saldoAtual: round2(saldoAtual),
-  };
-}
 
 function formatEvento(ev) {
   return {
