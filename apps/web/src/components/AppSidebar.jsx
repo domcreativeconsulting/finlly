@@ -5,7 +5,6 @@ import {
   faTableColumns,
   faCircleUp,
   faCircleDown,
-  faListUl,
   faChartLine,
   faBullseye,
   faPaperclip,
@@ -29,11 +28,6 @@ const NAV_ITEMS = [
     icon: <FontAwesomeIcon icon={faCircleDown} style={{ fontSize: '20px' }} />,
     label: 'Contas a receber',
     path: '/contas-receber',
-  },
-  {
-    icon: <FontAwesomeIcon icon={faListUl} style={{ fontSize: '20px' }} />,
-    label: 'Extrato',
-    path: '/extrato',
   },
   {
     icon: <FontAwesomeIcon icon={faChartLine} style={{ fontSize: '20px' }} />,

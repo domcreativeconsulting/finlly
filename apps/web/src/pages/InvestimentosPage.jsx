@@ -393,9 +393,12 @@ export default function InvestimentosPage() {
             flex: 1,
             marginLeft: !sidebarOpen ? '0px' : sidebarExpanded ? '236px' : '108px',
             transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            padding: '32px 24px',
+            padding: '32px 24px 0',
             fontFamily: typography.fontFamily,
             overflowY: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: '100vh',
           }}
         >
           {/* Header */}
@@ -548,7 +551,7 @@ export default function InvestimentosPage() {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr style={{ background: colors.neutral100 ?? '#f3f4f6' }}>
-                      {['Data aplicação', 'Conta / Banco', 'Tipo', 'Produto', 'Aplicado (R$)', 'Atual (R$)', 'Ganho (R$)', 'Rent. (%)', 'Prazo', 'Ações'].map((col) => (
+                      {['Data aplicação', 'Conta / Banco', 'Tipo', 'Produto', 'Aplicado (R$)', 'Atual (R$)', 'Ganho (R$)', 'Rent. (%)', 'Prazo'].map((col) => (
                         <th
                           key={col}
                           style={{
@@ -603,23 +606,6 @@ export default function InvestimentosPage() {
                           <td style={{ padding: '10px 14px', whiteSpace: 'nowrap', color: colors.neutral600 ?? '#4b5563' }}>
                             {calcularPrazo(inv.dataVencimento)}
                           </td>
-                          <td style={{ padding: '10px 14px' }}>
-                            <div style={{ display: 'flex', gap: 6 }}>
-                              <button title="Ver eventos / posição" onClick={() => abrirEventos(inv)} style={iconBtn}>
-                                <FontAwesomeIcon icon={faBars} />
-                              </button>
-                              <button title="Editar" onClick={() => abrirModal(inv)} style={iconBtn}>
-                                <FontAwesomeIcon icon={faPenToSquare} />
-                              </button>
-                              <button
-                                title="Excluir"
-                                onClick={() => handleExcluir(inv.id)}
-                                style={{ ...iconBtn, color: '#dc2626' }}
-                              >
-                                <FontAwesomeIcon icon={faTrash} />
-                              </button>
-                            </div>
-                          </td>
                         </tr>
                       );
                     })}
@@ -651,10 +637,24 @@ export default function InvestimentosPage() {
               </Button>
             </div>
           )}
+
+          {/* Footer */}
+          <div
+            style={{
+              background: '#1e3a5f',
+              color: '#ffffff',
+              textAlign: 'center',
+              padding: '14px 24px',
+              fontSize: '13px',
+              fontWeight: 500,
+              width: '100%',
+              marginTop: 'auto',
+            }}
+          >
+            Finlly • painel financeiro pessoal — 2026
+          </div>
         </main>
       </div>
-
-      {/* Modal criar/editar investimento */}
       <Modal open={modalAberto} onClose={fecharModal} title={investimentoEmEdicao ? 'Editar Investimento' : 'Novo investimento'}>
         <form onSubmit={handleSalvar} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* Linha 1: Conta / Instituição + Tipo de investimento */}
