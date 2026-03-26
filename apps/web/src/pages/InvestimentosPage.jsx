@@ -82,7 +82,7 @@ function TipoEventoBadge({ tipo }) {
 }
 
 export default function InvestimentosPage() {
-  const [sidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
 
   const [investimentos, setInvestimentos] = useState([]);
@@ -299,13 +299,16 @@ export default function InvestimentosPage() {
     <InadimplenteGuard>
       <div style={{ display: 'flex', minHeight: '100vh', background: colors.neutral?.[50] ?? '#f9fafb' }}>
         <AppSidebar
-          open={sidebarOpen}
-          expanded={sidebarExpanded}
-          onToggleExpand={() => setSidebarExpanded((v) => !v)}
+          sidebarOpen={sidebarOpen}
+          currentPath="/investimentos"
+          isExpanded={sidebarExpanded}
+          onHoverChange={setSidebarExpanded}
         />
         <main
           style={{
             flex: 1,
+            marginLeft: !sidebarOpen ? '0px' : sidebarExpanded ? '236px' : '108px',
+            transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             padding: '32px 24px',
             fontFamily: typography.fontFamily,
             overflowY: 'auto',
@@ -540,7 +543,7 @@ export default function InvestimentosPage() {
             <Button type="button" variant="secondary" onClick={fecharModal} disabled={saving}>
               Cancelar
             </Button>
-            <Button type="submit" variant="primary" disabled={saving}>
+            <Button type="submit" variant="primary" disabled={saving}> 
               {saving ? 'Salvando...' : 'Confirmar'}
             </Button>
           </div>
@@ -735,7 +738,6 @@ export default function InvestimentosPage() {
         </div>
       </Modal>
     </InadimplenteGuard>
-  );
 }
 
 function PosicaoItem({ label, valor, icon, positive, negative }) {
