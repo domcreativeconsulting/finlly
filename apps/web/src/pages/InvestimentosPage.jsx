@@ -415,7 +415,7 @@ export default function InvestimentosPage() {
   }
 
   return (
-    <InadimplenteGuard>
+    <>
       <div style={{ display: 'flex', minHeight: '100vh', background: '#f9fafb' }}>
         <AppSidebar
           sidebarOpen={sidebarOpen}
@@ -423,42 +423,48 @@ export default function InvestimentosPage() {
           isExpanded={sidebarExpanded}
           onHoverChange={setSidebarExpanded}
         />
-        <main
+        <div
           style={{
-            flex: 1,
+            ...s.mainArea,
             marginLeft: !sidebarOpen ? '0px' : sidebarExpanded ? '236px' : '108px',
             transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            padding: '32px 24px 0',
-            fontFamily: typography.fontFamily,
-            overflowY: 'auto',
-            display: 'flex',
-            flexDirection: 'column',
-            minHeight: '100vh',
           }}
         >
-          {/* Header */}
-          <div style={{ marginBottom: 28, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
-                <FontAwesomeIcon icon={faChartLine} style={{ fontSize: 24, color: '#2563eb' }} />
-                <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, color: colors.neutral800 ?? '#1e293b' }}>
-                  Investimentos
-                </h1>
+          {/* Top Bar */}
+          <div style={s.topBar}>
+            <div style={s.topBarLeft}>
+              <button
+                style={s.hamburger}
+                aria-label="Menu"
+                onClick={() => {
+                  if (!sidebarOpen) {
+                    setSidebarOpen(true);
+                    setSidebarExpanded(true);
+                  } else {
+                    setSidebarExpanded(!sidebarExpanded);
+                  }
+                }}
+              >
+                <FontAwesomeIcon icon={faBars} />
+              </button>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
+                  <FontAwesomeIcon icon={faChartLine} style={{ fontSize: 24, color: '#2563eb' }} />
+                  <h1 style={s.pageTitle}>Investimentos</h1>
+                  <span style={s.badge}>Carteira pessoal • Organiza</span>
+                </div>
+                <p style={{ margin: '0 0 16px 0', fontSize: 14, color: colors.neutral600 ?? '#4b5563' }}>
+                  Cadastre seus investimentos, acompanhe o valor aplicado, o saldo estimado e a rentabilidade ao longo do tempo.
+                </p>
+                <Button variant="primary" onClick={() => abrirModal()}>
+                  <FontAwesomeIcon icon={faPlus} style={{ marginRight: 6 }} />
+                  Novo investimento
+                </Button>
               </div>
-              <p style={{ margin: '2px 0 4px 0', fontSize: 13, color: colors.neutral500 ?? '#6b7280', fontWeight: 500 }}>
-                Carteira pessoal • Organiza
-              </p>
-              <p style={{ margin: '0 0 16px 0', fontSize: 14, color: colors.neutral600 ?? '#4b5563' }}>
-                Cadastre seus investimentos, acompanhe o valor aplicado, o saldo estimado e a rentabilidade ao longo do tempo.
-              </p>
-              <Button variant="primary" onClick={() => abrirModal()}>
-                <FontAwesomeIcon icon={faPlus} style={{ marginRight: 6 }} />
-                Novo investimento
-              </Button>
             </div>
 
             {/* Avatar / Dropdown */}
-            <div ref={dropdownRef} style={{ position: 'relative' }}>
+            <div ref={dropdownRef} style={{ position: 'relative', flexShrink: 0 }}>
               <button
                 onClick={() => setDropdownOpen((v) => !v)}
                 style={{
@@ -547,6 +553,10 @@ export default function InvestimentosPage() {
               )}
             </div>
           </div>
+
+          {/* Main Content */}
+          <InadimplenteGuard>
+            <div style={s.content}>
 
           {/* Summary Cards */}
           {!loading && !error && (
@@ -678,7 +688,7 @@ export default function InvestimentosPage() {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr style={{ background: colors.neutral100 ?? '#f3f4f6' }}>
-                      {['Data aplicação', 'Conta / Banco', 'Tipo', 'Produto', 'Aplicado (R$)', 'Atual (R$)', 'Ganho (R$)', 'Rent. (%)', 'Prazo'].map((col) => (
+                      {['Data aplicação', 'Conta / Banco', 'Tipo', 'Produto', 'Aplicado (R$)', 'Atual (R$)', 'Ganho (R$)', 'Rent. (%)', 'Prazo', 'Ações'].map((col) => (
                         <th
                           key={col}
                           style={{
@@ -733,6 +743,19 @@ export default function InvestimentosPage() {
                           <td style={{ padding: '10px 14px', whiteSpace: 'nowrap', color: colors.neutral600 ?? '#4b5563' }}>
                             {calcularPrazo(inv.dataVencimento)}
                           </td>
+                          <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
+                            <div style={{ display: 'flex', gap: 4 }}>
+                              <button title="Editar" onClick={() => abrirModal(inv)} style={iconBtn}>
+                                <FontAwesomeIcon icon={faPenToSquare} />
+                              </button>
+                              <button title="Eventos" onClick={() => abrirEventos(inv)} style={iconBtn}>
+                                <FontAwesomeIcon icon={faChartLine} />
+                              </button>
+                              <button title="Excluir" onClick={() => handleExcluir(inv.id)} style={{ ...iconBtn, color: '#dc2626' }}>
+                                <FontAwesomeIcon icon={faTrash} />
+                              </button>
+                            </div>
+                          </td>
                         </tr>
                       );
                     })}
@@ -765,28 +788,14 @@ export default function InvestimentosPage() {
             </div>
           )}
 
+          </div>
+          </InadimplenteGuard>
+
           {/* Footer */}
-          <div
-            style={{
-              backgroundColor: '#33528a',
-              color: '#FFFFFF',
-              textAlign: 'center',
-              paddingTop: '18px',
-              paddingBottom: '18px',
-              paddingLeft: '32px',
-              paddingRight: '32px',
-              fontSize: '14px',
-              fontWeight: '500',
-              letterSpacing: '0.01em',
-              borderRadius: '12px',
-              width: '100%',
-              marginTop: 'auto',
-              boxSizing: 'border-box',
-            }}
-          >
+          <div style={s.footer}>
             Finlly • painel financeiro pessoal — {new Date().getFullYear()}
           </div>
-        </main>
+        </div>
       </div>
       <Modal open={modalAberto} onClose={fecharModal} title={investimentoEmEdicao ? 'Editar Investimento' : 'Novo investimento'}>
         <form onSubmit={handleSalvar} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -1129,7 +1138,7 @@ export default function InvestimentosPage() {
           </div>
         </div>
       </Modal>
-    </InadimplenteGuard>
+    </>
   );
 }
 
@@ -1206,4 +1215,76 @@ const inputStyle = {
   border: `1px solid ${colors.neutral300 ?? '#d1d5db'}`,
   fontSize: 14,
   boxSizing: 'border-box',
+};
+
+const s = {
+  mainArea: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    minHeight: '100vh',
+    fontFamily: typography.fontFamily,
+  },
+  topBar: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    padding: '16px 28px',
+    background: colors.white,
+    borderBottom: `1px solid ${colors.border ?? '#e5e7eb'}`,
+    gap: '16px',
+  },
+  topBarLeft: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: '12px',
+  },
+  topBarRight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    flexShrink: 0,
+  },
+  hamburger: {
+    background: 'none',
+    border: 'none',
+    fontSize: '22px',
+    cursor: 'pointer',
+    color: colors.neutral600 ?? '#4b5563',
+    padding: '4px 8px',
+    borderRadius: radius.sm ?? '6px',
+    marginTop: '2px',
+  },
+  pageTitle: {
+    margin: 0,
+    fontSize: '28px',
+    fontWeight: 700,
+    color: colors.neutral900 ?? '#111827',
+  },
+  badge: {
+    fontSize: '12px',
+    fontWeight: 600,
+    color: '#2563eb',
+    background: '#eff6ff',
+    borderRadius: '99px',
+    padding: '2px 10px',
+  },
+  content: {
+    padding: '20px 28px',
+    flex: 1,
+  },
+  footer: {
+    backgroundColor: '#33528a',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    paddingTop: '18px',
+    paddingBottom: '18px',
+    paddingLeft: '32px',
+    paddingRight: '32px',
+    fontSize: '14px',
+    fontWeight: '500',
+    letterSpacing: '0.01em',
+    borderRadius: radius.lg ?? '12px',
+    margin: '24px 28px 28px',
+  },
 };
