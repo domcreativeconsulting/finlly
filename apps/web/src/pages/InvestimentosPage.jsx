@@ -3,6 +3,7 @@ import { toast } from 'react-toastify';
 import AppSidebar from '../components/AppSidebar.jsx';
 import { InadimplenteGuard } from '../components/InadimplenteGuard.jsx';
 import { investimentosService } from '../services/investimentos.service.js';
+import { contasService } from '../services/contas.service.js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faChartLine,
@@ -59,12 +60,23 @@ const STATUS_LABELS = {
   arquivada: 'Arquivada',
 };
 
+const TIPOS_INVESTIMENTO = [
+  'CDB', 'LCI/LCA', 'Tesouro Direto', 'Fundo', 'Ações', 'FII', 'Cripto', 'Poupança', 'Outro',
+];
+
+const MODELOS_RENTABILIDADE = [
+  'Pré-fixado', 'Pós CDI', 'IPCA +', 'Renda variável', 'Outro',
+];
+
 const EMPTY_FORM = {
-  nome: '',
-  tipoId: '',
-  valorInicial: '0',
-  dataInicio: todayISO(),
+  contaId: '',
+  tipoInvestimento: '',
+  produto: '',
+  dataAplicacao: todayISO(),
   dataVencimento: '',
+  valorAplicado: '',
+  taxaAnual: '',
+  modeloRentabilidade: '',
   observacoes: '',
   status: 'ativa',
 };
@@ -99,6 +111,7 @@ export default function InvestimentosPage() {
 
   const [investimentos, setInvestimentos] = useState([]);
   const [tipos, setTipos] = useState([]);
+  const [contas, setContas] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
@@ -162,6 +175,15 @@ export default function InvestimentosPage() {
     }
   }, []);
 
+  const carregarContas = useCallback(async () => {
+    try {
+      const result = await contasService.listar();
+      setContas(Array.isArray(result) ? result : []);
+    } catch {
+      // silently fail; contas are optional
+    }
+  }, []);
+
   useEffect(() => {
     carregarInvestimentos();
   }, [carregarInvestimentos]);
@@ -170,15 +192,22 @@ export default function InvestimentosPage() {
     carregarTipos();
   }, [carregarTipos]);
 
+  useEffect(() => {
+    carregarContas();
+  }, [carregarContas]);
+
   function abrirModal(investimento = null) {
     setInvestimentoEmEdicao(investimento);
     if (investimento) {
       setForm({
-        nome: investimento.nome || '',
-        tipoId: investimento.tipoId || '',
-        valorInicial: String(investimento.valorInicial ?? 0),
-        dataInicio: investimento.dataInicio || todayISO(),
+        contaId: investimento.contaId || '',
+        tipoInvestimento: investimento.tipoNome || investimento.tipoInvestimento || '',
+        produto: investimento.nome || '',
+        dataAplicacao: investimento.dataInicio || todayISO(),
         dataVencimento: investimento.dataVencimento || '',
+        valorAplicado: String(investimento.valorInicial ?? ''),
+        taxaAnual: String(investimento.taxaAnual ?? ''),
+        modeloRentabilidade: investimento.modeloRentabilidade || '',
         observacoes: investimento.observacoes || '',
         status: investimento.status || 'ativa',
       });
@@ -199,11 +228,14 @@ export default function InvestimentosPage() {
     setSaving(true);
     try {
       const payload = {
-        nome: form.nome,
-        tipoId: form.tipoId,
-        valorInicial: parseFloat(form.valorInicial) || 0,
-        dataInicio: form.dataInicio,
+        nome: form.produto || form.tipoInvestimento,
+        tipoNome: form.tipoInvestimento,
+        contaId: form.contaId || undefined,
+        valorInicial: parseFloat(form.valorAplicado) || 0,
+        dataInicio: form.dataAplicacao,
         dataVencimento: form.dataVencimento || undefined,
+        taxaAnual: parseFloat(form.taxaAnual) || undefined,
+        modeloRentabilidade: form.modeloRentabilidade || undefined,
         observacoes: form.observacoes || undefined,
       };
 
@@ -623,72 +655,135 @@ export default function InvestimentosPage() {
       </div>
 
       {/* Modal criar/editar investimento */}
-      <Modal open={modalAberto} onClose={fecharModal} title={investimentoEmEdicao ? 'Editar Investimento' : 'Novo Investimento'}>
+      <Modal open={modalAberto} onClose={fecharModal} title={investimentoEmEdicao ? 'Editar Investimento' : 'Novo investimento'}>
         <form onSubmit={handleSalvar} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div>
-            <label style={labelStyle}>Nome *</label>
-            <input
-              style={inputStyle}
-              type="text"
-              required
-              maxLength={255}
-              value={form.nome}
-              onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))}
-            />
+          {/* Linha 1: Conta / Instituição + Tipo de investimento */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div>
+              <label style={labelStyle}>Conta / Instituição <span style={{ color: '#ef4444' }}>*</span></label>
+              <select
+                style={inputStyle}
+                required
+                value={form.contaId}
+                onChange={(e) => setForm((f) => ({ ...f, contaId: e.target.value }))}
+              >
+                <option value="">Selecione...</option>
+                {contas.map((c) => (
+                  <option key={c.id} value={c.id}>{c.nome}</option>
+                ))}
+              </select>
+              <p style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>Use as contas cadastradas no módulo de contas.</p>
+            </div>
+            <div>
+              <label style={labelStyle}>Tipo de investimento <span style={{ color: '#ef4444' }}>*</span></label>
+              <select
+                style={inputStyle}
+                required
+                value={form.tipoInvestimento}
+                onChange={(e) => setForm((f) => ({ ...f, tipoInvestimento: e.target.value }))}
+              >
+                <option value="">Selecione...</option>
+                {TIPOS_INVESTIMENTO.map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            </div>
           </div>
-          <div>
-            <label style={labelStyle}>Tipo *</label>
-            <select
-              style={inputStyle}
-              required
-              value={form.tipoId}
-              onChange={(e) => setForm((f) => ({ ...f, tipoId: e.target.value }))}
-            >
-              <option value="">Selecione um tipo...</option>
-              {tipos.map((t) => (
-                <option key={t.id} value={t.id}>{t.nome}</option>
-              ))}
-            </select>
+
+          {/* Linha 2: Produto / Descrição + Data de aplicação */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div>
+              <label style={labelStyle}>Produto / Descrição</label>
+              <input
+                style={inputStyle}
+                type="text"
+                maxLength={255}
+                placeholder="Ex.: CDB 120% CDI, Fundo XYZ"
+                value={form.produto}
+                onChange={(e) => setForm((f) => ({ ...f, produto: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Data de aplicação <span style={{ color: '#ef4444' }}>*</span></label>
+              <input
+                style={inputStyle}
+                type="date"
+                required
+                value={form.dataAplicacao}
+                onChange={(e) => setForm((f) => ({ ...f, dataAplicacao: e.target.value }))}
+              />
+            </div>
           </div>
-          <div>
-            <label style={labelStyle}>Valor Inicial</label>
-            <input
-              style={inputStyle}
-              type="number"
-              min="0"
-              step="0.01"
-              value={form.valorInicial}
-              onChange={(e) => setForm((f) => ({ ...f, valorInicial: e.target.value }))}
-            />
+
+          {/* Linha 3: Data de vencimento + Valor aplicado + Taxa anual */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+            <div>
+              <label style={labelStyle}>Data de vencimento</label>
+              <input
+                style={inputStyle}
+                type="date"
+                value={form.dataVencimento}
+                onChange={(e) => setForm((f) => ({ ...f, dataVencimento: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Valor aplicado (R$) <span style={{ color: '#ef4444' }}>*</span></label>
+              <input
+                style={inputStyle}
+                type="number"
+                min="0"
+                step="0.01"
+                required
+                placeholder="0.00"
+                value={form.valorAplicado}
+                onChange={(e) => setForm((f) => ({ ...f, valorAplicado: e.target.value }))}
+              />
+              <p style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>Formato: 1234.56</p>
+            </div>
+            <div>
+              <label style={labelStyle}>Taxa anual (% a.a.)</label>
+              <input
+                style={inputStyle}
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="Ex.: 12,5"
+                value={form.taxaAnual}
+                onChange={(e) => setForm((f) => ({ ...f, taxaAnual: e.target.value }))}
+              />
+              <p style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>Usada para estimar o valor diário.</p>
+            </div>
           </div>
-          <div>
-            <label style={labelStyle}>Data de Início *</label>
-            <input
-              style={inputStyle}
-              type="date"
-              required
-              value={form.dataInicio}
-              onChange={(e) => setForm((f) => ({ ...f, dataInicio: e.target.value }))}
-            />
+
+          {/* Linha 4: Modelo de rentabilidade */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div>
+              <label style={labelStyle}>Modelo de rentabilidade</label>
+              <select
+                style={inputStyle}
+                value={form.modeloRentabilidade}
+                onChange={(e) => setForm((f) => ({ ...f, modeloRentabilidade: e.target.value }))}
+              >
+                <option value="">Selecione...</option>
+                {MODELOS_RENTABILIDADE.map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </div>
           </div>
-          <div>
-            <label style={labelStyle}>Data de Vencimento</label>
-            <input
-              style={inputStyle}
-              type="date"
-              value={form.dataVencimento}
-              onChange={(e) => setForm((f) => ({ ...f, dataVencimento: e.target.value }))}
-            />
-          </div>
+
+          {/* Linha 5: Observações */}
           <div>
             <label style={labelStyle}>Observações</label>
             <textarea
               style={{ ...inputStyle, resize: 'vertical', minHeight: 72 }}
               maxLength={1000}
+              placeholder="Detalhes adicionais, estratégias, metas para esse investimento..."
               value={form.observacoes}
               onChange={(e) => setForm((f) => ({ ...f, observacoes: e.target.value }))}
             />
           </div>
+
           {investimentoEmEdicao && (
             <div>
               <label style={labelStyle}>Status</label>
@@ -707,8 +802,8 @@ export default function InvestimentosPage() {
             <Button type="button" variant="secondary" onClick={fecharModal} disabled={saving}>
               Cancelar
             </Button>
-            <Button type="submit" variant="primary" disabled={saving}> 
-              {saving ? 'Salvando...' : 'Confirmar'}
+            <Button type="submit" variant="primary" disabled={saving}>
+              {saving ? 'Salvando...' : 'Salvar investimento'}
             </Button>
           </div>
         </form>
