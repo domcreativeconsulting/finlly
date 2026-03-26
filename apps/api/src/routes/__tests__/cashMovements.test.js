@@ -3,6 +3,8 @@ import { Buffer } from 'buffer';
 
 // Mock service functions
 const mockGetExtrato = jest.fn();
+const mockPrismaContaFindFirst = jest.fn();
+const mockPrismaMovimentacaoCaixaCreate = jest.fn();
 
 // express-rate-limit → passthrough em testes
 jest.unstable_mockModule('express-rate-limit', () => ({
@@ -34,6 +36,14 @@ jest.unstable_mockModule('../../middleware/requireAtivo.js', () => ({
   requireAtivo: (_req, _res, next) => next(),
 }));
 
+// prisma mock
+jest.unstable_mockModule('../../utils/database.js', () => ({
+  default: {
+    conta: { findFirst: mockPrismaContaFindFirst },
+    movimentacaoCaixa: { create: mockPrismaMovimentacaoCaixaCreate },
+  },
+}));
+
 let cashMovementsRouter;
 let express;
 
@@ -46,6 +56,8 @@ beforeAll(async () => {
 
 beforeEach(() => {
   mockGetExtrato.mockReset();
+  mockPrismaContaFindFirst.mockReset();
+  mockPrismaMovimentacaoCaixaCreate.mockReset();
 });
 
 function makeApp() {
@@ -310,6 +322,166 @@ describe('GET /cash-movements', () => {
 
     const app = makeApp();
     const res = await request(app, 'GET', '/cash-movements', null);
+
+    expect(res.status).toBe(500);
+  });
+});
+
+// ============================================================
+// POST /cash-movements/manual
+// ============================================================
+
+const validManualBody = {
+  accountId: CONTA_ID,
+  type: 'OUT',
+  amount: 180.0,
+  date: '2026-04-20',
+  description: 'Ajuste manual de despesa',
+};
+
+const mockContaRow = { id: CONTA_ID, usuario_id: USER_ID, nome: 'Conta Corrente', deleted_at: null };
+
+const mockMovRow = {
+  id: MOV_ID,
+  conta_id: CONTA_ID,
+  usuario_id: USER_ID,
+  tipo: 'saida',
+  valor: 180.0,
+  descricao: 'Ajuste manual de despesa',
+  data: new Date('2026-04-20T00:00:00.000Z'),
+  observacoes: null,
+  conta_pagar_id: null,
+  conta_receber_id: null,
+  created_at: new Date('2026-04-20T14:00:00.000Z'),
+};
+
+describe('POST /cash-movements/manual', () => {
+  test('cria lançamento manual com type=OUT e retorna 201', async () => {
+    mockPrismaContaFindFirst.mockResolvedValue(mockContaRow);
+    mockPrismaMovimentacaoCaixaCreate.mockResolvedValue(mockMovRow);
+
+    const app = makeApp();
+    const res = await request(app, 'POST', '/cash-movements/manual', validManualBody);
+
+    expect(res.status).toBe(201);
+    expect(res.body.item).toMatchObject({
+      id: MOV_ID,
+      accountId: CONTA_ID,
+      type: 'OUT',
+      amount: 180.0,
+      date: '2026-04-20',
+      description: 'Ajuste manual de despesa',
+      originType: 'MANUAL',
+    });
+    expect(res.body.item.createdAt).toBeDefined();
+  });
+
+  test('cria lançamento manual com type=IN e retorna 201', async () => {
+    const movIN = { ...mockMovRow, tipo: 'entrada' };
+    mockPrismaContaFindFirst.mockResolvedValue(mockContaRow);
+    mockPrismaMovimentacaoCaixaCreate.mockResolvedValue(movIN);
+
+    const app = makeApp();
+    const res = await request(app, 'POST', '/cash-movements/manual', { ...validManualBody, type: 'IN' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.item.type).toBe('IN');
+    expect(res.body.item.originType).toBe('MANUAL');
+  });
+
+  test('cria lançamento com notes opcional', async () => {
+    const movWithNotes = { ...mockMovRow, observacoes: 'Obs teste' };
+    mockPrismaContaFindFirst.mockResolvedValue(mockContaRow);
+    mockPrismaMovimentacaoCaixaCreate.mockResolvedValue(movWithNotes);
+
+    const app = makeApp();
+    const res = await request(app, 'POST', '/cash-movements/manual', { ...validManualBody, notes: 'Obs teste' });
+
+    expect(res.status).toBe(201);
+    expect(mockPrismaMovimentacaoCaixaCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ observacoes: 'Obs teste' }) }),
+    );
+  });
+
+  test('retorna 403 quando conta não pertence ao usuário', async () => {
+    mockPrismaContaFindFirst.mockResolvedValue(null);
+
+    const app = makeApp();
+    const res = await request(app, 'POST', '/cash-movements/manual', validManualBody);
+
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('FORBIDDEN');
+  });
+
+  test('retorna 422 quando accountId não é UUID', async () => {
+    const app = makeApp();
+    const res = await request(app, 'POST', '/cash-movements/manual', { ...validManualBody, accountId: 'nao-uuid' });
+
+    expect(res.status).toBe(422);
+    expect(res.body.code).toBe('VALIDATION_ERROR');
+  });
+
+  test('retorna 422 quando type é inválido', async () => {
+    const app = makeApp();
+    const res = await request(app, 'POST', '/cash-movements/manual', { ...validManualBody, type: 'TRANSFER' });
+
+    expect(res.status).toBe(422);
+    expect(res.body.code).toBe('VALIDATION_ERROR');
+  });
+
+  test('retorna 422 quando amount é zero ou negativo', async () => {
+    const app = makeApp();
+    const res = await request(app, 'POST', '/cash-movements/manual', { ...validManualBody, amount: 0 });
+
+    expect(res.status).toBe(422);
+    expect(res.body.code).toBe('VALIDATION_ERROR');
+  });
+
+  test('retorna 422 quando date tem formato inválido', async () => {
+    const app = makeApp();
+    const res = await request(app, 'POST', '/cash-movements/manual', { ...validManualBody, date: '20/04/2026' });
+
+    expect(res.status).toBe(422);
+    expect(res.body.code).toBe('VALIDATION_ERROR');
+  });
+
+  test('retorna 422 quando description está vazia', async () => {
+    const app = makeApp();
+    const res = await request(app, 'POST', '/cash-movements/manual', { ...validManualBody, description: '' });
+
+    expect(res.status).toBe(422);
+    expect(res.body.code).toBe('VALIDATION_ERROR');
+  });
+
+  test('retorna 422 quando campos obrigatórios estão ausentes', async () => {
+    const app = makeApp();
+    const res = await request(app, 'POST', '/cash-movements/manual', {});
+
+    expect(res.status).toBe(422);
+    expect(res.body.code).toBe('VALIDATION_ERROR');
+  });
+
+  test('passa userId de req.user.sub, nunca do body', async () => {
+    mockPrismaContaFindFirst.mockResolvedValue(mockContaRow);
+    mockPrismaMovimentacaoCaixaCreate.mockResolvedValue(mockMovRow);
+
+    const app = makeApp();
+    await request(app, 'POST', '/cash-movements/manual', { ...validManualBody, userId: 'outro-usuario' });
+
+    expect(mockPrismaContaFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ usuario_id: USER_ID }) }),
+    );
+    expect(mockPrismaMovimentacaoCaixaCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ usuario_id: USER_ID }) }),
+    );
+  });
+
+  test('retorna 500 em erro interno inesperado', async () => {
+    mockPrismaContaFindFirst.mockResolvedValue(mockContaRow);
+    mockPrismaMovimentacaoCaixaCreate.mockRejectedValue(new Error('DB error'));
+
+    const app = makeApp();
+    const res = await request(app, 'POST', '/cash-movements/manual', validManualBody);
 
     expect(res.status).toBe(500);
   });
