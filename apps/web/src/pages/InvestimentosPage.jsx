@@ -1,9 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import AppSidebar from '../components/AppSidebar.jsx';
 import { InadimplenteGuard } from '../components/InadimplenteGuard.jsx';
 import { investimentosService } from '../services/investimentos.service.js';
 import { contasService } from '../services/contas.service.js';
+import { useAuth } from '../hooks/useAuth.js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faChartLine,
@@ -18,9 +20,19 @@ import {
   faPercent,
   faCommentDollar,
   faFilter,
+  faCreditCard,
+  faCircleUser,
+  faDoorOpen,
 } from '@fortawesome/free-solid-svg-icons';
 import { Button, Badge, Modal } from '../design-system/index.js';
 import { colors, typography, radius, shadows } from '../design-system/tokens.js';
+
+function getInitials(name) {
+  if (!name) return '?';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
 
 function formatBRL(valor) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor ?? 0);
@@ -106,8 +118,12 @@ function TipoEventoBadge({ tipo }) {
 }
 
 export default function InvestimentosPage() {
+  const { usuario, logout } = useAuth();
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
   const [investimentos, setInvestimentos] = useState([]);
   const [tipos, setTipos] = useState([]);
@@ -195,6 +211,25 @@ export default function InvestimentosPage() {
   useEffect(() => {
     carregarContas();
   }, [carregarContas]);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    }
+    if (dropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [dropdownOpen]);
+
+  function handleMenuNavigate(path) {
+    setDropdownOpen(false);
+    navigate(path);
+  }
+
+  const initials = getInitials(usuario?.nome);
 
   function abrirModal(investimento = null) {
     setInvestimentoEmEdicao(investimento);
@@ -402,23 +437,115 @@ export default function InvestimentosPage() {
           }}
         >
           {/* Header */}
-          <div style={{ marginBottom: 28 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
-              <FontAwesomeIcon icon={faChartLine} style={{ fontSize: 24, color: '#2563eb' }} />
-              <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, color: colors.neutral800 ?? '#1e293b' }}>
-                Investimentos
-              </h1>
+          <div style={{ marginBottom: 28, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
+                <FontAwesomeIcon icon={faChartLine} style={{ fontSize: 24, color: '#2563eb' }} />
+                <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, color: colors.neutral800 ?? '#1e293b' }}>
+                  Investimentos
+                </h1>
+              </div>
+              <p style={{ margin: '2px 0 4px 0', fontSize: 13, color: colors.neutral500 ?? '#6b7280', fontWeight: 500 }}>
+                Carteira pessoal • Organiza
+              </p>
+              <p style={{ margin: '0 0 16px 0', fontSize: 14, color: colors.neutral600 ?? '#4b5563' }}>
+                Cadastre seus investimentos, acompanhe o valor aplicado, o saldo estimado e a rentabilidade ao longo do tempo.
+              </p>
+              <Button variant="primary" onClick={() => abrirModal()}>
+                <FontAwesomeIcon icon={faPlus} style={{ marginRight: 6 }} />
+                Novo investimento
+              </Button>
             </div>
-            <p style={{ margin: '2px 0 4px 0', fontSize: 13, color: colors.neutral500 ?? '#6b7280', fontWeight: 500 }}>
-              Carteira pessoal • Organiza
-            </p>
-            <p style={{ margin: '0 0 16px 0', fontSize: 14, color: colors.neutral600 ?? '#4b5563' }}>
-              Cadastre seus investimentos, acompanhe o valor aplicado, o saldo estimado e a rentabilidade ao longo do tempo.
-            </p>
-            <Button variant="primary" onClick={() => abrirModal()}>
-              <FontAwesomeIcon icon={faPlus} style={{ marginRight: 6 }} />
-              Novo investimento
-            </Button>
+
+            {/* Avatar / Dropdown */}
+            <div ref={dropdownRef} style={{ position: 'relative' }}>
+              <button
+                onClick={() => setDropdownOpen((v) => !v)}
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '50%',
+                  backgroundColor: '#2563eb',
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '14px',
+                  fontWeight: '700',
+                  flexShrink: 0,
+                  cursor: 'pointer',
+                  border: 'none',
+                  outline: 'none',
+                  userSelect: 'none',
+                  boxShadow: dropdownOpen ? '0 0 0 3px rgba(37,99,235,0.25)' : 'none',
+                }}
+                title={usuario?.nome || ''}
+                aria-label={`Menu do usuário ${usuario?.nome || ''}`}
+                aria-expanded={dropdownOpen}
+                aria-haspopup="true"
+              >
+                {initials}
+              </button>
+
+              {dropdownOpen && (
+                <div style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 8px)',
+                  right: 0,
+                  width: '230px',
+                  backgroundColor: '#ffffff',
+                  borderRadius: '12px',
+                  boxShadow: '0 8px 30px rgba(0,0,0,0.13)',
+                  border: '1px solid #e5e7eb',
+                  zIndex: 1050,
+                  overflow: 'hidden',
+                  padding: '4px 0',
+                }}>
+                  <div style={{ padding: '14px 16px 12px' }}>
+                    <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827', marginBottom: '2px' }}>
+                      {usuario?.nome || 'Usuário'}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                      {usuario?.email || ''}
+                    </div>
+                  </div>
+
+                  <hr style={{ margin: '4px 0', border: 'none', borderTop: '1px solid #f3f4f6' }} />
+
+                  <button
+                    style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 16px', fontSize: '14px', fontWeight: '500', color: '#374151', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                    onClick={() => handleMenuNavigate('/assinatura')}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f3f4f6')}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                  >
+                    <FontAwesomeIcon icon={faCreditCard} style={{ fontSize: '18px', marginRight: '5px' }} />
+                    Assinatura
+                  </button>
+
+                  <button
+                    style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 16px', fontSize: '14px', fontWeight: '500', color: '#374151', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                    onClick={() => handleMenuNavigate('/perfil')}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f3f4f6')}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                  >
+                    <FontAwesomeIcon icon={faCircleUser} style={{ fontSize: '18px', color: '#4b5563', marginRight: '5px' }} />
+                    Perfil
+                  </button>
+
+                  <hr style={{ margin: '4px 0', border: 'none', borderTop: '1px solid #f3f4f6' }} />
+
+                  <button
+                    style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 16px', fontSize: '14px', fontWeight: '500', color: '#dc2626', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                    onClick={() => { setDropdownOpen(false); logout(); }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#fef2f2')}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                  >
+                    <FontAwesomeIcon icon={faDoorOpen} style={{ fontSize: '18px', marginRight: '5px' }} />
+                    Sair
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Summary Cards */}
