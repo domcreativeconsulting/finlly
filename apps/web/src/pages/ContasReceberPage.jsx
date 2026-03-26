@@ -1096,7 +1096,7 @@ export default function ContasReceberPage() {
 
           {/* Footer */}
           <div style={s.footer}>
-            Finlly • painel financeiro pessoal — 2026
+            Finlly • painel financeiro pessoal — {new Date().getFullYear()}
           </div>
         </div>
       </div>
@@ -1769,11 +1769,16 @@ const s = {
     marginTop: '24px',
   },
   footer: {
-    background: colors.neutral800,
-    color: colors.neutral400,
+    backgroundColor: '#33528a',
+    color: '#FFFFFF',
     textAlign: 'center',
-    padding: '14px',
-    fontSize: typography.sizes.base,
+    paddingTop: '18px',
+    paddingBottom: '18px',
+    paddingLeft: '32px',
+    paddingRight: '32px',
+    fontSize: '14px',
+    fontWeight: '500',
     letterSpacing: '0.01em',
+    borderRadius: radius.lg,
   },
 };

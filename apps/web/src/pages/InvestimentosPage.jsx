@@ -641,17 +641,23 @@ export default function InvestimentosPage() {
           {/* Footer */}
           <div
             style={{
-              background: '#1e3a5f',
-              color: '#ffffff',
+              backgroundColor: '#33528a',
+              color: '#FFFFFF',
               textAlign: 'center',
-              padding: '14px 24px',
-              fontSize: '13px',
-              fontWeight: 500,
+              paddingTop: '18px',
+              paddingBottom: '18px',
+              paddingLeft: '32px',
+              paddingRight: '32px',
+              fontSize: '14px',
+              fontWeight: '500',
+              letterSpacing: '0.01em',
+              borderRadius: '12px',
               width: '100%',
               marginTop: 'auto',
+              boxSizing: 'border-box',
             }}
           >
-            Finlly • painel financeiro pessoal — 2026
+            Finlly • painel financeiro pessoal — {new Date().getFullYear()}
           </div>
         </main>
       </div>
