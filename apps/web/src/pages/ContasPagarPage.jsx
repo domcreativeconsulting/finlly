@@ -12,6 +12,7 @@ import AppSidebar from '../components/AppSidebar.jsx';
 import { InadimplenteGuard } from '../components/InadimplenteGuard.jsx';
 import { contasPagarService } from '../services/contasPagar.service.js';
 import { categoriasService } from '../services/categorias.service.js';
+import { contasService } from '../services/contas.service.js';
 import api from '../services/api.js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -194,6 +195,17 @@ export default function ContasPagarPage() {
   const [salvandoCat, setSalvandoCat] = useState(false);
   const [catEmEdicao, setCatEmEdicao] = useState(null);
   const [excluindoCatId, setExcluindoCatId] = useState(null);
+
+  // Modal Nova conta financeira
+  const [modalContaFinanceiraAberto, setModalContaFinanceiraAberto] = useState(false);
+  const [formContaFinanceira, setFormContaFinanceira] = useState({
+    nome: '',
+    tipo: 'corrente',
+    banco: '',
+    codigo_banco: '',
+    saldo_inicial: '',
+  });
+  const [salvandoContaFinanceira, setSalvandoContaFinanceira] = useState(false);
 
   const carregarLista = useCallback(async () => {
     setLoading(true);
@@ -618,6 +630,42 @@ export default function ContasPagarPage() {
     carregarSelects();
   }
 
+  function abrirModalContaFinanceira() {
+    setFormContaFinanceira({ nome: '', tipo: 'corrente', banco: '', codigo_banco: '', saldo_inicial: '' });
+    setModalContaFinanceiraAberto(true);
+  }
+
+  function fecharModalContaFinanceira() {
+    setModalContaFinanceiraAberto(false);
+  }
+
+  function handleContaFinanceiraChange(e) {
+    const { name, value } = e.target;
+    setFormContaFinanceira((prev) => ({ ...prev, [name]: value }));
+  }
+
+  async function handleSalvarContaFinanceira(e) {
+    e.preventDefault();
+    setSalvandoContaFinanceira(true);
+    try {
+      await contasService.criar({
+        nome: formContaFinanceira.nome.trim(),
+        tipo: formContaFinanceira.tipo,
+        banco: formContaFinanceira.banco.trim() || null,
+        codigo_banco: formContaFinanceira.codigo_banco.trim() || null,
+        saldo_inicial: formContaFinanceira.saldo_inicial ? parseFloat(formContaFinanceira.saldo_inicial) : 0,
+      });
+      toast.success('Conta financeira criada com sucesso!');
+      fecharModalContaFinanceira();
+      carregarSelects();
+    } catch (err) {
+      const msg = err?.response?.data?.message || 'Erro ao criar conta financeira.';
+      toast.error(msg);
+    } finally {
+      setSalvandoContaFinanceira(false);
+    }
+  }
+
   async function handleSalvarCategoria(e) {
     e.preventDefault();
     if (!formCat.nome || !formCat.nome.trim()) {
@@ -712,7 +760,7 @@ export default function ContasPagarPage() {
             </div>
             <div style={s.topBarRight}>
               <Button onClick={abrirModalNovo}>+ Nova conta</Button>
-              <Button variant="outline">
+              <Button variant="outline" onClick={abrirModalContaFinanceira}>
                 <FontAwesomeIcon icon={faBuilding} /> Nova conta financeira
               </Button>
               <Button variant="outline" onClick={abrirModalCategorias}>
@@ -2594,6 +2642,84 @@ export default function ContasPagarPage() {
             Fechar
           </Button>
         </div>
+      </Modal>
+
+      {/* Modal Nova conta financeira */}
+      <Modal
+        open={modalContaFinanceiraAberto}
+        onClose={fecharModalContaFinanceira}
+        title="Nova conta financeira"
+        maxWidth="520px"
+      >
+        <form onSubmit={handleSalvarContaFinanceira}>
+          <div style={s.formGroup}>
+            <label style={s.label}>Nome da conta *</label>
+            <input
+              name="nome"
+              value={formContaFinanceira.nome}
+              onChange={handleContaFinanceiraChange}
+              style={s.input}
+              required
+              placeholder="Ex: Nubank, Itaú, Carteira"
+            />
+          </div>
+          <div style={s.formGroup}>
+            <label style={s.label}>Tipo</label>
+            <select
+              name="tipo"
+              value={formContaFinanceira.tipo}
+              onChange={handleContaFinanceiraChange}
+              style={s.input}
+            >
+              <option value="corrente">Conta corrente</option>
+              <option value="poupanca">Poupança</option>
+              <option value="dinheiro">Carteira</option>
+              <option value="investimento">Corretora</option>
+              <option value="outro">Outro</option>
+            </select>
+          </div>
+          <div style={s.formGroup}>
+            <label style={s.label}>Banco / Instituição (opcional)</label>
+            <input
+              name="banco"
+              value={formContaFinanceira.banco}
+              onChange={handleContaFinanceiraChange}
+              style={s.input}
+              placeholder="Ex: Nubank"
+            />
+          </div>
+          <div style={s.formGroup}>
+            <label style={s.label}>Código do banco (opcional)</label>
+            <input
+              name="codigo_banco"
+              value={formContaFinanceira.codigo_banco}
+              onChange={handleContaFinanceiraChange}
+              style={s.input}
+              placeholder="Ex: 260, 341"
+            />
+          </div>
+          <div style={s.formGroup}>
+            <label style={s.label}>Saldo inicial (R$)</label>
+            <input
+              name="saldo_inicial"
+              type="number"
+              step="0.01"
+              min="0"
+              value={formContaFinanceira.saldo_inicial}
+              onChange={handleContaFinanceiraChange}
+              style={s.input}
+              placeholder="0,00"
+            />
+          </div>
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '24px' }}>
+            <Button type="button" variant="secondary" onClick={fecharModalContaFinanceira}>
+              Cancelar
+            </Button>
+            <Button type="submit" loading={salvandoContaFinanceira}>
+              {salvandoContaFinanceira ? 'Salvando...' : 'Salvar'}
+            </Button>
+          </div>
+        </form>
       </Modal>
     </div>
   );
