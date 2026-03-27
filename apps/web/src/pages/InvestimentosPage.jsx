@@ -93,15 +93,6 @@ const EMPTY_FORM = {
   status: 'ativa',
 };
 
-function StatusBadge({ status }) {
-  const variantMap = { ativa: 'success', inativa: 'neutral', arquivada: 'warning' };
-  return (
-    <Badge variant={variantMap[status] || 'neutral'}>
-      {STATUS_LABELS[status] || status}
-    </Badge>
-  );
-}
-
 function TipoEventoBadge({ tipo }) {
   const variantMap = {
     aporte: 'success',

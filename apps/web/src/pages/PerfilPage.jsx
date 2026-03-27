@@ -18,13 +18,7 @@ import {
   faTriangleExclamation,
   faCheck,
 } from '@fortawesome/free-solid-svg-icons';
-import { Button, Input, Select, Card } from '../design-system/index.js';
-import {
-  colors,
-  typography,
-  radius,
-  shadows,
-} from '../design-system/tokens.js';
+import { colors, typography, radius } from '../design-system/tokens.js';
 
 const TIMEZONES = [
   'America/Sao_Paulo',

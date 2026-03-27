@@ -39,12 +39,6 @@ const writeLimiter = rateLimit({
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const TIPO_ENUM = ['entrada', 'saida', 'transferencia'];
 
-const SORT_FIELD_MAP = {
-  date: 'data',
-  createdAt: 'created_at',
-  amount: 'valor',
-  description: 'descricao',
-};
 
 const ListQuerySchema = z.object({
   dateFrom: z.string().regex(ISO_DATE_REGEX).optional(),

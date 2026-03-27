@@ -14,7 +14,6 @@ import {
   faEye,
   faEyeSlash,
 } from '@fortawesome/free-solid-svg-icons';
-import { colors, radius } from '../../design-system/tokens.js';
 
 const LoginSchema = z.object({
   email: z.string().email('E-mail inválido'),

@@ -154,7 +154,6 @@ describe('getMeta', () => {
   test('lança AppError.notFound quando meta não existe', async () => {
     mockMetaFindFirst.mockResolvedValue(null);
 
-    const { AppError } = await import('../../errors/AppError.js');
     await expect(getMeta(USER_ID, 'nao-existe')).rejects.toMatchObject({
       code: 'NOT_FOUND',
       status: 404,

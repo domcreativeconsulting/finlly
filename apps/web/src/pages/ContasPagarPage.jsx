@@ -25,7 +25,6 @@ import {
   faChevronDown,
   faCircleCheck,
   faCheck,
-  faXmark,
   faClipboardList,
   faPenToSquare,
   faPaperclip,
@@ -34,7 +33,7 @@ import {
   faCircleUser,
   faDoorOpen,
 } from '@fortawesome/free-solid-svg-icons';
-import { Button, Input, Select, Modal, Badge } from '../design-system/index.js';
+import { Button, Modal, Badge } from '../design-system/index.js';
 import {
   colors,
   typography,
@@ -52,25 +51,6 @@ const STATUS_LABELS = {
   estornado: 'Estornado',
   falhou: 'Falhou',
 };
-
-const STATUS_COLORS = {
-  pendente: { background: '#fef9c3', color: '#854d0e' },
-  pago: { background: '#dcfce7', color: '#166534' },
-  cancelado: { background: '#f3f4f6', color: '#6b7280' },
-  estornado: { background: '#ffedd5', color: '#9a3412' },
-  falhou: { background: '#fee2e2', color: '#991b1b' },
-};
-
-const RECORRENCIA_OPCOES = [
-  { value: 'diario', label: 'Diário' },
-  { value: 'semanal', label: 'Semanal' },
-  { value: 'quinzenal', label: 'Quinzenal' },
-  { value: 'mensal', label: 'Mensal' },
-  { value: 'bimestral', label: 'Bimestral' },
-  { value: 'trimestral', label: 'Trimestral' },
-  { value: 'semestral', label: 'Semestral' },
-  { value: 'anual', label: 'Anual' },
-];
 
 function formatBRL(valor) {
   return new Intl.NumberFormat('pt-BR', {
