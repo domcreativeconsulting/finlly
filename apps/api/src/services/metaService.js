@@ -208,6 +208,41 @@ export async function deleteMovimento(userId, metaId, movimentoId) {
   return { deleted: true };
 }
 
+export async function listMovimentos(userId, metaId, filters = {}) {
+  const {
+    page = 1,
+    limit = 20,
+    order_dir = 'desc',
+  } = filters;
+
+  const orderDir = order_dir === 'asc' ? 'asc' : 'desc';
+
+  const meta = await prisma.meta.findFirst({
+    where: { id: metaId, usuario_id: userId, deleted_at: null },
+  });
+  if (!meta) throw AppError.notFound('Meta não encontrada');
+
+  const where = { meta_id: metaId, deleted_at: null };
+
+  const [rows, total] = await Promise.all([
+    prisma.metaMovimento.findMany({
+      where,
+      orderBy: [{ data: orderDir }, { id: 'asc' }],
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.metaMovimento.count({ where }),
+  ]);
+
+  return {
+    items: rows.map(formatMovimento),
+    page,
+    limit,
+    total,
+    totalPages: Math.ceil(total / limit),
+  };
+}
+
 export async function getProgresso(userId, metaId) {
   const meta = await prisma.meta.findFirst({
     where: { id: metaId, usuario_id: userId, deleted_at: null },

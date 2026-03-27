@@ -9,6 +9,7 @@ const mockDeleteMeta = jest.fn();
 const mockCreateMovimento = jest.fn();
 const mockDeleteMovimento = jest.fn();
 const mockGetProgresso = jest.fn();
+const mockListMovimentos = jest.fn();
 
 jest.unstable_mockModule('express-rate-limit', () => ({
   rateLimit: () => (_req, _res, next) => next(),
@@ -23,6 +24,7 @@ jest.unstable_mockModule('../../services/metaService.js', () => ({
   createMovimento: mockCreateMovimento,
   deleteMovimento: mockDeleteMovimento,
   getProgresso: mockGetProgresso,
+  listMovimentos: mockListMovimentos,
 }));
 
 jest.unstable_mockModule('../../logger.js', () => ({
@@ -63,6 +65,7 @@ beforeEach(() => {
   mockCreateMovimento.mockReset();
   mockDeleteMovimento.mockReset();
   mockGetProgresso.mockReset();
+  mockListMovimentos.mockReset();
 });
 
 function makeApp() {
@@ -603,6 +606,85 @@ describe('DELETE /goals/:id/movements/:movId', () => {
 
     const app = makeApp();
     const res = await request(app, 'DELETE', `/goals/${META_ID}/movements/${MOV_ID}`, null);
+
+    expect(res.status).toBe(500);
+  });
+});
+
+// ============================================================
+// GET /goals/:id/movements
+// ============================================================
+
+describe('GET /goals/:id/movements', () => {
+  const listResult = {
+    items: [movimentoBase],
+    page: 1,
+    limit: 20,
+    total: 1,
+    totalPages: 1,
+  };
+
+  test('retorna 200 com shape { items, page, limit, total, totalPages }', async () => {
+    mockListMovimentos.mockResolvedValue(listResult);
+
+    const app = makeApp();
+    const res = await request(app, 'GET', `/goals/${META_ID}/movements`, null);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      items: expect.any(Array),
+      page: 1,
+      limit: 20,
+      total: 1,
+      totalPages: 1,
+    });
+    expect(mockListMovimentos).toHaveBeenCalledWith(USER_ID, META_ID, expect.objectContaining({ page: 1, limit: 20 }));
+  });
+
+  test('passa page e limit ao serviço', async () => {
+    mockListMovimentos.mockResolvedValue({ ...listResult, page: 2, limit: 10 });
+
+    const app = makeApp();
+    const res = await request(app, 'GET', `/goals/${META_ID}/movements?page=2&limit=10`, null);
+
+    expect(res.status).toBe(200);
+    expect(mockListMovimentos).toHaveBeenCalledWith(USER_ID, META_ID, expect.objectContaining({ page: 2, limit: 10 }));
+  });
+
+  test('passa order_dir ao serviço', async () => {
+    mockListMovimentos.mockResolvedValue(listResult);
+
+    const app = makeApp();
+    const res = await request(app, 'GET', `/goals/${META_ID}/movements?order_dir=asc`, null);
+
+    expect(res.status).toBe(200);
+    expect(mockListMovimentos).toHaveBeenCalledWith(USER_ID, META_ID, expect.objectContaining({ order_dir: 'asc' }));
+  });
+
+  test('retorna 422 com order_dir inválido', async () => {
+    const app = makeApp();
+    const res = await request(app, 'GET', `/goals/${META_ID}/movements?order_dir=invalido`, null);
+
+    expect(res.status).toBe(422);
+    expect(res.body.code).toBe('VALIDATION_ERROR');
+  });
+
+  test('retorna 404 quando meta não existe', async () => {
+    const { AppError } = await import('../../errors/AppError.js');
+    mockListMovimentos.mockRejectedValue(AppError.notFound('Meta não encontrada'));
+
+    const app = makeApp();
+    const res = await request(app, 'GET', '/goals/nao-existe/movements', null);
+
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe('NOT_FOUND');
+  });
+
+  test('retorna 500 em erro inesperado', async () => {
+    mockListMovimentos.mockRejectedValue(new Error('DB error'));
+
+    const app = makeApp();
+    const res = await request(app, 'GET', `/goals/${META_ID}/movements`, null);
 
     expect(res.status).toBe(500);
   });
