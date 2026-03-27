@@ -612,6 +612,10 @@ export default function ContasReceberPage() {
 
   async function handleSalvarCategoria(e) {
     e.preventDefault();
+    if (!formCat.nome || !formCat.nome.trim()) {
+      toast.error('O nome da categoria é obrigatório.');
+      return;
+    }
     setSalvandoCat(true);
     try {
       if (catEmEdicao) {
@@ -1935,7 +1939,7 @@ export default function ContasReceberPage() {
               >
                 <option value="">Selecione...</option>
                 {categorias
-                  .filter((c) => !c.pai_id)
+                  .filter((c) => !c.pai_id && c.nome && c.nome.trim() !== '')
                   .map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.nome}
@@ -1956,8 +1960,10 @@ export default function ContasReceberPage() {
                 {categorias
                   .filter(
                     (c) =>
-                      c.pai_id === form.categoria_id ||
-                      c.pai_id === Number(form.categoria_id)
+                      (c.pai_id === form.categoria_id ||
+                        c.pai_id === Number(form.categoria_id)) &&
+                      c.nome &&
+                      c.nome.trim() !== ''
                   )
                   .map((c) => (
                     <option key={c.id} value={c.id}>
@@ -2286,7 +2292,11 @@ export default function ContasReceberPage() {
               <option value="">Nenhuma (categoria principal)</option>
               {listaCategoriasModal
                 .filter(
-                  (c) => !c.pai_id && (!catEmEdicao || c.id !== catEmEdicao.id)
+                  (c) =>
+                    !c.pai_id &&
+                    c.nome &&
+                    c.nome.trim() !== '' &&
+                    (!catEmEdicao || c.id !== catEmEdicao.id)
                 )
                 .map((c) => (
                   <option key={c.id} value={c.id}>
@@ -2394,7 +2404,7 @@ export default function ContasReceberPage() {
             </thead>
             <tbody>
               {listaCategoriasModal
-                .filter((c) => !c.pai_id)
+                .filter((c) => !c.pai_id && c.nome && c.nome.trim() !== '')
                 .map((cat) => (
                   <React.Fragment key={cat.id}>
                     <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
@@ -2469,7 +2479,9 @@ export default function ContasReceberPage() {
                         )}
                       </td>
                     </tr>
-                    {(cat.filhos ?? []).map((filho) => (
+                    {(cat.filhos ?? [])
+                      .filter((filho) => filho.nome && filho.nome.trim() !== '')
+                      .map((filho) => (
                       <tr
                         key={filho.id}
                         style={{
@@ -2552,7 +2564,7 @@ export default function ContasReceberPage() {
                     ))}
                   </React.Fragment>
                 ))}
-              {listaCategoriasModal.filter((c) => !c.pai_id).length === 0 && (
+              {listaCategoriasModal.filter((c) => !c.pai_id && c.nome && c.nome.trim() !== '').length === 0 && (
                 <tr key="empty">
                   <td
                     colSpan={3}
