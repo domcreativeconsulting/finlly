@@ -22,13 +22,13 @@ import MetasPage from './pages/MetasPage.jsx';
 
 export default function App() {
   return (
-    <>
-      <style>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-        * { box-sizing: border-box; }
-        body { margin: 0; }
+    <> 
+      <style>{` 
+        @keyframes spin { 
+          to { transform: rotate(360deg); } 
+        } 
+        * { box-sizing: border-box; } 
+        body { margin: 0; } 
       `}</style>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
@@ -50,6 +50,10 @@ export default function App() {
         />
         <Route
           path="/billing/status"
+          element={<ProtectedRoute element={<BillingStatusPage />} />}
+        />
+        <Route
+          path="/assinatura"
           element={<ProtectedRoute element={<BillingStatusPage />} />}
         />
         <Route
