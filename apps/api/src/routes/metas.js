@@ -15,6 +15,7 @@ import {
   createMovimento,
   deleteMovimento,
   getProgresso,
+  listMovimentos,
 } from '../services/metaService.js';
 
 const router = Router();
@@ -71,6 +72,12 @@ const CreateMovimentoSchema = z.object({
   data: z.string().regex(ISO_DATE_REGEX),
   descricao: z.string().max(255).optional().nullable(),
   movimentacao_id: z.string().uuid().optional().nullable(),
+});
+
+const ListMovimentosQuerySchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  order_dir: z.enum(['asc', 'desc']).default('desc'),
 });
 
 // ─── Routes ──────────────────────────────────────────────────────────────────
@@ -132,6 +139,17 @@ router.delete('/goals/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, async
 router.get('/goals/:id/progress', readLimiter, jwtAuthMiddleware, requireAtivo, async (req, res, next) => {
   try {
     const result = await getProgresso(req.user.sub, req.params.id);
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.get('/goals/:id/movements', readLimiter, jwtAuthMiddleware, requireAtivo, async (req, res, next) => {
+  try {
+    const parsed = ListMovimentosQuerySchema.safeParse(req.query);
+    if (!parsed.success) return next(toValidationError(parsed.error));
+    const result = await listMovimentos(req.user.sub, req.params.id, parsed.data);
     return res.json(result);
   } catch (err) {
     return next(err);

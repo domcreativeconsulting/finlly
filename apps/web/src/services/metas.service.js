@@ -31,4 +31,8 @@ export const metasService = {
   async excluirMovimento(id, movId) {
     await api.delete(`/goals/${id}/movements/${movId}`);
   },
+  async listarMovimentos(id, params = {}) {
+    const res = await api.get(`/goals/${id}/movements`, { params });
+    return res.data;
+  },
 };
