@@ -8,7 +8,7 @@ import { useAuth } from '../hooks/useAuth.js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCreditCard, faCircleUser, faDoorOpen } from '@fortawesome/free-solid-svg-icons';
 import { Button, Input, Select, Modal, Badge, Card } from '../design-system/index.js';
-import { colors, typography, radius, shadows } from '../design-system/tokens.js';
+import { colors, typography, radius } from '../design-system/tokens.js';
 import { Table, Thead, Th, Tbody, Tr, Td } from '../design-system/components/Table.jsx';
 
 function getInitials(name) {
