@@ -15,6 +15,9 @@ import {
   faFilter,
   faCircleUser,
   faDoorOpen,
+  faChartLine,
+  faArrowUp,
+  faArrowDown,
 } from '@fortawesome/free-solid-svg-icons';
 import { Button, Modal } from '../design-system/index.js';
 import { colors, typography, radius } from '../design-system/tokens.js';
@@ -126,6 +129,20 @@ const labelStyle = {
   color: colors.neutral700 ?? '#374151',
 };
 
+const miniLabelStyle = {
+  margin: '0 0 2px',
+  fontSize: 11,
+  color: '#6b7280',
+  fontWeight: 500,
+};
+
+const miniValueStyle = {
+  margin: 0,
+  fontSize: 13,
+  fontWeight: 700,
+  color: '#111827',
+};
+
 const s = {
   mainArea: {
     flex: 1,
@@ -221,6 +238,14 @@ export default function MetasPage() {
   const [filtroStatus, setFiltroStatus] = useState('');
   const [filtroTipo, setFiltroTipo] = useState('');
   const [filtroBusca, setFiltroBusca] = useState('');
+
+  const [metaSelecionada, setMetaSelecionada] = useState(null);
+  const [detalhe, setDetalhe] = useState(null);
+  const [loadingDetalhe, setLoadingDetalhe] = useState(false);
+  const [modalMovimento, setModalMovimento] = useState(null);
+  const [formMovimento, setFormMovimento] = useState({ valor: '', data: todayISO(), descricao: '', movimentacao_id: '' });
+  const [savingMovimento, setSavingMovimento] = useState(false);
+  const [confirmDeleteMov, setConfirmDeleteMov] = useState(null);
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -339,9 +364,72 @@ export default function MetasPage() {
     try {
       await metasService.excluir(meta.id);
       toast.success('Meta excluída.');
+      if (metaSelecionada?.id === meta.id) fecharDetalhe();
       carregarMetas();
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Erro ao excluir meta.');
+    }
+  }
+
+  async function abrirDetalhe(meta) {
+    setMetaSelecionada(meta);
+    setLoadingDetalhe(true);
+    try {
+      const data = await metasService.obter(meta.id);
+      setDetalhe(data);
+    } catch {
+      toast.error('Erro ao carregar detalhes');
+    } finally {
+      setLoadingDetalhe(false);
+    }
+  }
+
+  function fecharDetalhe() {
+    setMetaSelecionada(null);
+    setDetalhe(null);
+    setConfirmDeleteMov(null);
+  }
+
+  async function salvarMovimento() {
+    const valorNum = Number(formMovimento.valor);
+    if (!valorNum || valorNum <= 0) {
+      toast.error('Informe um valor válido maior que zero');
+      return;
+    }
+    if (!formMovimento.data || !ISO_DATE_REGEX.test(formMovimento.data)) {
+      toast.error('Informe uma data válida');
+      return;
+    }
+    setSavingMovimento(true);
+    try {
+      const valorFinal = modalMovimento === 'retirada' ? -valorNum : valorNum;
+      await metasService.criarMovimento(metaSelecionada.id, {
+        valor: valorFinal,
+        data: formMovimento.data,
+        descricao: formMovimento.descricao || null,
+        movimentacao_id: formMovimento.movimentacao_id || null,
+      });
+      toast.success(modalMovimento === 'aporte' ? 'Aporte registrado!' : 'Retirada registrada!');
+      setModalMovimento(null);
+      setFormMovimento({ valor: '', data: todayISO(), descricao: '', movimentacao_id: '' });
+      await abrirDetalhe(metaSelecionada);
+      await carregarMetas();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Erro ao salvar movimento');
+    } finally {
+      setSavingMovimento(false);
+    }
+  }
+
+  async function excluirMovimento(movId) {
+    try {
+      await metasService.excluirMovimento(metaSelecionada.id, movId);
+      toast.success('Movimento excluído');
+      setConfirmDeleteMov(null);
+      await abrirDetalhe(metaSelecionada);
+      await carregarMetas();
+    } catch {
+      toast.error('Erro ao excluir movimento');
     }
   }
 
@@ -708,6 +796,26 @@ export default function MetasPage() {
                           {meta.observacoes}
                         </div>
                       )}
+
+                      {/* Ver histórico */}
+                      <button
+                        onClick={() => abrirDetalhe(meta)}
+                        style={{
+                          marginTop: 12,
+                          width: '100%',
+                          background: 'none',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: 8,
+                          padding: '7px 0',
+                          fontSize: 13,
+                          color: '#2563eb',
+                          cursor: 'pointer',
+                          fontWeight: 500,
+                        }}
+                      >
+                        <FontAwesomeIcon icon={faChartLine} style={{ marginRight: 6 }} />
+                        Ver histórico &amp; progresso
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -744,6 +852,393 @@ export default function MetasPage() {
           </div>
         </div>
       </div>
+
+      {/* Backdrop do painel de detalhe */}
+      {metaSelecionada && (
+        <div
+          role="button"
+          tabIndex={0}
+          aria-label="Fechar painel"
+          onClick={fecharDetalhe}
+          onKeyDown={(e) => e.key === 'Escape' && fecharDetalhe()}
+          style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.15)' }}
+        />
+      )}
+
+      {/* Painel lateral de detalhe */}
+      {metaSelecionada && (
+        <div
+          style={{
+            position: 'fixed',
+            right: 0,
+            top: 0,
+            bottom: 0,
+            width: 420,
+            background: '#fff',
+            boxShadow: '-4px 0 24px rgba(0,0,0,0.12)',
+            zIndex: 1000,
+            display: 'flex',
+            flexDirection: 'column',
+            overflowY: 'auto',
+          }}
+        >
+          {/* Header do painel */}
+          <div
+            style={{
+              padding: '20px 24px',
+              borderBottom: '1px solid #e5e7eb',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <div>
+              <p style={{ margin: 0, fontSize: 11, color: '#6b7280', textTransform: 'uppercase', fontWeight: 600 }}>
+                Detalhes
+              </p>
+              <h3 style={{ margin: '4px 0 0', fontSize: 17, fontWeight: 700, color: '#111827' }}>
+                {metaSelecionada.nome}
+              </h3>
+            </div>
+            <button
+              onClick={fecharDetalhe}
+              aria-label="Fechar detalhes"
+              style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#6b7280' }}
+            >
+              ×
+            </button>
+          </div>
+
+          {loadingDetalhe ? (
+            <div style={{ padding: 32, textAlign: 'center', color: '#6b7280' }}>Carregando...</div>
+          ) : detalhe ? (
+            <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+              {/* Progresso grande */}
+              {(() => {
+                const item = detalhe.item;
+                const pct = Math.min(item.percentualConcluido ?? 0, 100);
+                const barColor = item.status === 'concluida' ? '#16a34a' : '#2563eb';
+                return (
+                  <div style={{ background: '#f9fafb', borderRadius: 10, padding: '16px 20px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <span style={{ fontSize: 13, color: '#6b7280', fontWeight: 500 }}>Progresso</span>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: barColor }}>{pct.toFixed(1)}%</span>
+                    </div>
+                    <div style={{ height: 12, borderRadius: 6, background: '#e5e7eb', overflow: 'hidden', marginBottom: 16 }}>
+                      <div
+                        style={{
+                          width: `${pct}%`,
+                          height: '100%',
+                          background: barColor,
+                          borderRadius: 6,
+                          transition: 'width 0.4s ease',
+                        }}
+                      />
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                      <div>
+                        <p style={miniLabelStyle}>Alvo</p>
+                        <p style={miniValueStyle}>{formatBRL(item.valorAlvo)}</p>
+                      </div>
+                      <div>
+                        <p style={miniLabelStyle}>Atual</p>
+                        <p style={{ ...miniValueStyle, color: '#2563eb' }}>{formatBRL(item.valorAtual)}</p>
+                      </div>
+                      <div>
+                        <p style={miniLabelStyle}>Restante</p>
+                        <p style={{ ...miniValueStyle, color: '#dc2626' }}>{formatBRL(item.valorRestante)}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Badges status/tipo */}
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <StatusBadge status={detalhe.item.status} />
+                <TipoMetaBadge tipo={detalhe.item.tipo} />
+              </div>
+
+              {/* Datas */}
+              <div style={{ display: 'flex', gap: 16, fontSize: 13, color: '#4b5563' }}>
+                <span><strong>Início:</strong> {formatDate(detalhe.item.dataInicio)}</span>
+                <span><strong>Prazo:</strong> {formatDate(detalhe.item.dataFim)}</span>
+              </div>
+
+              {/* Botões Aporte e Retirada */}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  onClick={() => {
+                    setModalMovimento('aporte');
+                    setFormMovimento({ valor: '', data: todayISO(), descricao: '', movimentacao_id: '' });
+                  }}
+                  style={{
+                    flex: 1,
+                    background: '#16a34a',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 8,
+                    padding: '9px 0',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <FontAwesomeIcon icon={faArrowUp} style={{ marginRight: 6 }} />
+                  Aportar
+                </button>
+                <button
+                  onClick={() => {
+                    setModalMovimento('retirada');
+                    setFormMovimento({ valor: '', data: todayISO(), descricao: '', movimentacao_id: '' });
+                  }}
+                  style={{
+                    flex: 1,
+                    background: '#dc2626',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 8,
+                    padding: '9px 0',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <FontAwesomeIcon icon={faArrowDown} style={{ marginRight: 6 }} />
+                  Retirar
+                </button>
+              </div>
+
+              {/* Lista de movimentos */}
+              {(() => {
+                const movimentos = detalhe.item.movimentos ?? [];
+                return (
+                  <div>
+                    <p style={{ margin: '0 0 10px', fontSize: 13, fontWeight: 600, color: '#374151' }}>
+                      Histórico de movimentos ({movimentos.length})
+                    </p>
+                    {movimentos.length === 0 ? (
+                      <p style={{ color: '#9ca3af', fontSize: 13, textAlign: 'center', padding: '16px 0' }}>
+                        Nenhum movimento registrado.
+                      </p>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {[...movimentos]
+                          .sort((a, b) => new Date(b.data) - new Date(a.data))
+                          .map((mov) => {
+                            const isAporte = Number(mov.valor) >= 0;
+                            return (
+                              <div
+                                key={mov.id}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  padding: '10px 14px',
+                                  background: '#f9fafb',
+                                  borderRadius: 8,
+                                  border: '1px solid #e5e7eb',
+                                }}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                  <div
+                                    style={{
+                                      width: 28,
+                                      height: 28,
+                                      borderRadius: '50%',
+                                      background: isAporte ? '#dcfce7' : '#fee2e2',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                    }}
+                                  >
+                                    <FontAwesomeIcon
+                                      icon={isAporte ? faArrowUp : faArrowDown}
+                                      style={{ fontSize: 11, color: isAporte ? '#16a34a' : '#dc2626' }}
+                                    />
+                                  </div>
+                                  <div>
+                                    <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: isAporte ? '#16a34a' : '#dc2626' }}>
+                                      {isAporte ? '+' : ''}{formatBRL(Math.abs(Number(mov.valor)))}
+                                    </p>
+                                    <p style={{ margin: 0, fontSize: 11, color: '#6b7280' }}>
+                                      {formatDate(mov.data)}{mov.descricao ? ` · ${mov.descricao}` : ''}
+                                    </p>
+                                  </div>
+                                </div>
+                                {confirmDeleteMov === mov.id ? (
+                                  <div style={{ display: 'flex', gap: 4 }}>
+                                    <button
+                                      onClick={() => excluirMovimento(mov.id)}
+                                      style={{
+                                        background: '#dc2626',
+                                        color: '#fff',
+                                        border: 'none',
+                                        borderRadius: 5,
+                                        padding: '3px 8px',
+                                        fontSize: 11,
+                                        cursor: 'pointer',
+                                      }}
+                                    >
+                                      Confirmar
+                                    </button>
+                                    <button
+                                      onClick={() => setConfirmDeleteMov(null)}
+                                      style={{
+                                        background: '#f3f4f6',
+                                        color: '#374151',
+                                        border: 'none',
+                                        borderRadius: 5,
+                                        padding: '3px 8px',
+                                        fontSize: 11,
+                                        cursor: 'pointer',
+                                      }}
+                                    >
+                                      Cancelar
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => setConfirmDeleteMov(mov.id)}
+                                    aria-label="Excluir movimento"
+                                    style={{
+                                      background: 'none',
+                                      border: 'none',
+                                      cursor: 'pointer',
+                                      color: '#9ca3af',
+                                      fontSize: 13,
+                                      padding: 4,
+                                    }}
+                                  >
+                                    <FontAwesomeIcon icon={faTrash} />
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+          ) : null}
+        </div>
+      )}
+
+      {/* Modal de Movimento (aporte/retirada) */}
+      {modalMovimento && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 2000,
+            background: 'rgba(0,0,0,0.45)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <div
+            style={{
+              background: '#fff',
+              borderRadius: 12,
+              padding: '28px 32px',
+              width: 380,
+              boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+            }}
+          >
+            <h3 style={{ margin: '0 0 20px', fontSize: 17, fontWeight: 700, color: '#111827' }}>
+              <FontAwesomeIcon
+                icon={modalMovimento === 'aporte' ? faArrowUp : faArrowDown}
+                style={{ marginRight: 8, color: modalMovimento === 'aporte' ? '#16a34a' : '#dc2626' }}
+              />
+              {modalMovimento === 'aporte' ? 'Novo Aporte' : 'Nova Retirada'}
+            </h3>
+
+            <div style={{ marginBottom: 14 }}>
+              <label style={labelStyle}>Valor (R$) *</label>
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={formMovimento.valor}
+                onChange={(e) => setFormMovimento((f) => ({ ...f, valor: e.target.value }))}
+                style={inputStyle}
+                placeholder="0,00"
+              />
+            </div>
+
+            <div style={{ marginBottom: 14 }}>
+              <label style={labelStyle}>Data *</label>
+              <input
+                type="date"
+                value={formMovimento.data}
+                onChange={(e) => setFormMovimento((f) => ({ ...f, data: e.target.value }))}
+                style={inputStyle}
+              />
+            </div>
+
+            <div style={{ marginBottom: 14 }}>
+              <label style={labelStyle}>Descrição (opcional)</label>
+              <input
+                type="text"
+                maxLength={255}
+                value={formMovimento.descricao}
+                onChange={(e) => setFormMovimento((f) => ({ ...f, descricao: e.target.value }))}
+                style={inputStyle}
+                placeholder="Ex: Depósito mensal..."
+              />
+            </div>
+
+            <div style={{ marginBottom: 22 }}>
+              <label style={labelStyle}>ID da Movimentação (opcional)</label>
+              <input
+                type="text"
+                value={formMovimento.movimentacao_id}
+                onChange={(e) => setFormMovimento((f) => ({ ...f, movimentacao_id: e.target.value }))}
+                style={inputStyle}
+                placeholder="UUID (opcional)"
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setModalMovimento(null)}
+                disabled={savingMovimento}
+                style={{
+                  background: '#f3f4f6',
+                  color: '#374151',
+                  border: 'none',
+                  borderRadius: 8,
+                  padding: '9px 18px',
+                  fontSize: 14,
+                  cursor: 'pointer',
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={salvarMovimento}
+                disabled={savingMovimento}
+                style={{
+                  background: modalMovimento === 'aporte' ? '#16a34a' : '#dc2626',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 8,
+                  padding: '9px 22px',
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                {savingMovimento ? 'Salvando...' : modalMovimento === 'aporte' ? 'Registrar Aporte' : 'Registrar Retirada'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de Criar/Editar */}
       <Modal
