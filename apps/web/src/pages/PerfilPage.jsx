@@ -203,8 +203,6 @@ export default function PerfilPage() {
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
-  const [isHoverBtnSalvar, setIsHoverBtnSalvar] = useState(false);
-  const [isHoverBtnSenha, setIsHoverBtnSenha] = useState(false);
   const [isFocusedInput, setIsFocusedInput] = useState(false);
 
   const {
@@ -647,33 +645,14 @@ export default function PerfilPage() {
                     </div>
 
                     <div style={{ textAlign: 'right' }}>
-                      <button
+                      <Button
                         type="submit"
+                        variant="primary"
                         disabled={isSubmitting}
-                        onMouseEnter={() => setIsHoverBtnSalvar(true)}
-                        onMouseLeave={() => setIsHoverBtnSalvar(false)}
-                        style={
-                          isSubmitting
-                            ? { ...s.btnPrimary, ...s.btnPrimaryDisabled }
-                            : isHoverBtnSalvar
-                              ? { ...s.btnPrimary, backgroundColor: '#1d4ed8' } // Cor mais escura no hover
-                              : s.btnPrimary
-                        }
                       >
-                        {isSubmitting ? (
-                          <>
-                            <span style={s.spinnerInline} aria-hidden="true" />
-                            <span style={{ marginLeft: '8px' }}>
-                              Salvando...
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <FontAwesomeIcon icon={faFloppyDisk} style={{ fontSize: '18px', marginRight: '5px' }} />
-                            Salvar alterações
-                          </>
-                        )}
-                      </button>
+                        <FontAwesomeIcon icon={faFloppyDisk} style={{ fontSize: '18px' }} />
+                        {isSubmitting ? 'Salvando...' : 'Salvar alterações'}
+                      </Button>
                     </div>
                   </form>
                 </div>
@@ -781,41 +760,14 @@ export default function PerfilPage() {
                     </p>
 
                     <div style={{ textAlign: 'right' }}>
-                      <button
+                      <Button
                         type="submit"
+                        variant="primary"
                         disabled={isSavingSenha}
-                        onMouseEnter={() => setIsHoverBtnSenha(true)}
-                        onMouseLeave={() => setIsHoverBtnSenha(false)}
-                        style={
-                          isSavingSenha
-                            ? { ...s.btnSecondary, ...s.btnSecondaryDisabled }
-                            : isHoverBtnSenha
-                              ? {
-                                  ...s.btnSecondary,
-                                  backgroundColor: '#FFFFFF',
-                                } // Letra branca
-                              : s.btnSecondary
-                        }
                       >
-                        {isSavingSenha ? (
-                          <>
-                            <span
-                              style={{
-                                ...s.spinnerInline,
-                                borderColor: 'rgba(37,99,235,0.3)',
-                                borderTopColor: '#2563eb',
-                              }}
-                              aria-hidden="true"
-                            />{' '}
-                            Alterando...
-                          </>
-                        ) : (
-                          <>
-                            <FontAwesomeIcon icon={faLock} style={{ fontSize: '18px', marginRight: '5px' }} />
-                            Alterar senha
-                          </>
-                        )}
-                      </button>
+                        <FontAwesomeIcon icon={faLock} style={{ fontSize: '18px' }} />
+                        {isSavingSenha ? 'Alterando...' : 'Alterar senha'}
+                      </Button>
                     </div>
                   </form>
                 </div>
@@ -838,8 +790,6 @@ const s = {
     flexDirection: 'column',
     minHeight: '100vh',
     width: '100%',
-    fontFamily:
-      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
   },
 
   page: {
@@ -1120,51 +1070,6 @@ const s = {
   },
 
   /* Buttons */
-  btnPrimary: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '6px',
-    padding: '9px 20px',
-    fontSize: typography.sizes.md,
-    fontWeight: typography.weights.semibold,
-    color: colors.white,
-    backgroundColor: colors.primary,
-    border: 'none',
-    borderRadius: radius.md,
-    cursor: 'pointer',
-    transition: 'all 0.2s ease-in-out',
-  },
-  btnPrimaryDisabled: {
-    backgroundColor: '#93c5fd',
-    cursor: 'not-allowed',
-  },
-  btnSecondary: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '6px',
-    padding: '9px 20px',
-    fontSize: typography.sizes.md,
-    fontWeight: typography.weights.semibold,
-    color: colors.primaryLight,
-    backgroundColor: colors.primaryBg,
-    border: `1.5px solid ${colors.primaryLight}`,
-    borderRadius: radius.md,
-    cursor: 'pointer',
-    transition: 'all 0.2s ease-in-out',
-  },
-  btnSecondaryDisabled: {
-    opacity: 0.6,
-    cursor: 'not-allowed',
-  },
-  spinnerInline: {
-    display: 'inline-block',
-    width: '14px',
-    height: '14px',
-    border: '2px solid rgba(255,255,255,0.4)',
-    borderTopColor: '#fff',
-    borderRadius: '50%',
-    animation: 'spin 0.7s linear infinite',
-  },
   loadingWrapper: {
     display: 'flex',
     alignItems: 'center',

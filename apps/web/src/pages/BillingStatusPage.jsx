@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useAuth } from '../hooks/useAuth.js';
 import { billingService } from '../services/billing.service.js';
+import { Button } from '../design-system/index.js';
 
 function formatDate(dateStr) {
   if (!dateStr) return '—';
@@ -141,13 +142,13 @@ export default function BillingStatusPage() {
                 <Link to="/checkout" style={styles.actionLink}>
                   Mudar plano
                 </Link>
-                <button
-                  onClick={handleCancel}
+                <Button
+                  variant="danger"
                   disabled={cancelling}
-                  style={cancelling ? styles.btnCancelDisabled : styles.btnCancel}
+                  onClick={handleCancel}
                 >
                   {cancelling ? 'Cancelando...' : 'Cancelar assinatura'}
-                </button>
+                </Button>
               </div>
             </>
           )}
@@ -161,7 +162,6 @@ const styles = {
   page: {
     minHeight: '100vh',
     backgroundColor: '#f9fafb',
-    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
   },
   header: {
     backgroundColor: '#ffffff',
@@ -293,25 +293,5 @@ const styles = {
     fontWeight: '500',
     color: '#2563eb',
     textDecoration: 'none',
-  },
-  btnCancel: {
-    padding: '10px 20px',
-    fontSize: '14px',
-    fontWeight: '600',
-    color: '#dc2626',
-    backgroundColor: '#fff',
-    border: '1px solid #fca5a5',
-    borderRadius: '8px',
-    cursor: 'pointer',
-  },
-  btnCancelDisabled: {
-    padding: '10px 20px',
-    fontSize: '14px',
-    fontWeight: '600',
-    color: '#9ca3af',
-    backgroundColor: '#fff',
-    border: '1px solid #e5e7eb',
-    borderRadius: '8px',
-    cursor: 'not-allowed',
   },
 };
