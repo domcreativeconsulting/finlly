@@ -25,7 +25,6 @@ export default class ErrorBoundary extends Component {
           style={{
             padding: '24px',
             textAlign: 'center',
-            fontFamily: 'Arial, sans-serif',
             color: '#333',
           }}
         >
@@ -39,10 +38,10 @@ export default class ErrorBoundary extends Component {
               marginTop: '12px',
               padding: '8px 16px',
               cursor: 'pointer',
-              backgroundColor: '#0070f3',
-              color: '#fff',
+              backgroundColor: 'var(--color-primary)',
+              color: 'var(--color-text-inverse)',
               border: 'none',
-              borderRadius: '4px',
+              borderRadius: 'var(--radius-sm)',
             }}
           >
             Try again

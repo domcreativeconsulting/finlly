@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth.js';
 import { billingService } from '../services/billing.service.js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCircleCheck } from '@fortawesome/free-solid-svg-icons';
+import { Button } from '../design-system/index.js';
 
 export default function CheckoutPage() {
   useAuth();
@@ -148,13 +149,14 @@ export default function CheckoutPage() {
                 />
               </div>
 
-              <button
+              <Button
                 type="submit"
+                variant="primary"
                 disabled={loading}
-                style={loading ? styles.btnDisabled : styles.btn}
+                style={{ marginTop: '4px' }}
               >
                 {loading ? 'Processando...' : 'Assinar agora'}
-              </button>
+              </Button>
             </form>
           )}
         </div>
@@ -167,7 +169,6 @@ const styles = {
   page: {
     minHeight: '100vh',
     backgroundColor: '#f9fafb',
-    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
   },
   header: {
     backgroundColor: '#ffffff',
@@ -248,28 +249,6 @@ const styles = {
     border: '1px solid #d1d5db',
     borderRadius: '8px',
     outline: 'none',
-  },
-  btn: {
-    padding: '12px 24px',
-    fontSize: '15px',
-    fontWeight: '600',
-    color: '#ffffff',
-    backgroundColor: '#2563eb',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    marginTop: '4px',
-  },
-  btnDisabled: {
-    padding: '12px 24px',
-    fontSize: '15px',
-    fontWeight: '600',
-    color: '#ffffff',
-    backgroundColor: '#93c5fd',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'not-allowed',
-    marginTop: '4px',
   },
   errorBox: {
     padding: '12px 16px',
