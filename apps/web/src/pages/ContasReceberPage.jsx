@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth.js';
 import { toast } from 'react-toastify';
 import AppSidebar from '../components/AppSidebar.jsx';
 import { InadimplenteGuard } from '../components/InadimplenteGuard.jsx';
@@ -23,6 +24,9 @@ import {
   faPenToSquare,
   faPaperclip,
   faEllipsis,
+  faCreditCard,
+  faCircleUser,
+  faDoorOpen,
 } from '@fortawesome/free-solid-svg-icons';
 import { Button, Input, Select, Modal, Badge } from '../design-system/index.js';
 import { colors, typography, radius, shadows } from '../design-system/tokens.js';
@@ -112,6 +116,13 @@ const EMPTY_FORM = {
   observacoes: '',
 };
 
+function getInitials(name) {
+  if (!name) return '?';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
 function SortableTh({ field, label, sortField, sortDir, onSort, style }) {
   const active = sortField === field;
   return (
@@ -128,10 +139,13 @@ function SortableTh({ field, label, sortField, sortDir, onSort, style }) {
 }
 
 export default function ContasReceberPage() {
+  const { usuario, logout } = useAuth();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [menuAbertoId, setMenuAbertoId] = useState(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
   const [lista, setLista] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -215,6 +229,25 @@ export default function ContasReceberPage() {
     carregarSelects();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    }
+    if (dropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [dropdownOpen]);
+
+  function handleMenuNavigate(path) {
+    setDropdownOpen(false);
+    navigate(path);
+  }
+
+  const initials = getInitials(usuario?.nome);
 
   async function carregarSelects() {
     setLoadingSelects(true);
@@ -633,6 +666,100 @@ export default function ContasReceberPage() {
               >
                 <FontAwesomeIcon icon={faChevronDown} /> Filtros
               </Button>
+
+              {/* Avatar / Dropdown */}
+              <div ref={dropdownRef} style={{ position: 'relative' }}>
+                <button
+                  onClick={() => setDropdownOpen((v) => !v)}
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    backgroundColor: '#2563eb',
+                    color: '#ffffff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '14px',
+                    fontWeight: '700',
+                    flexShrink: 0,
+                    cursor: 'pointer',
+                    border: 'none',
+                    outline: 'none',
+                    userSelect: 'none',
+                    boxShadow: dropdownOpen ? '0 0 0 3px rgba(37,99,235,0.25)' : 'none',
+                  }}
+                  title={usuario?.nome || ''}
+                  aria-label={`Menu do usuário ${usuario?.nome || ''}`}
+                  aria-expanded={dropdownOpen}
+                  aria-haspopup="true"
+                >
+                  {initials}
+                </button>
+
+                {dropdownOpen && (
+                  <div style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 8px)',
+                    right: 0,
+                    width: '230px',
+                    backgroundColor: '#ffffff',
+                    borderRadius: '12px',
+                    boxShadow: '0 8px 30px rgba(0,0,0,0.13)',
+                    border: '1px solid #e5e7eb',
+                    zIndex: 1050,
+                    overflow: 'hidden',
+                    padding: '4px 0',
+                  }}>
+                    {/* User info */}
+                    <div style={{ padding: '14px 16px 12px' }}>
+                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827', marginBottom: '2px' }}>
+                        {usuario?.nome || 'Usuário'}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                        {usuario?.email || ''}
+                      </div>
+                    </div>
+
+                    <hr style={{ margin: '4px 0', border: 'none', borderTop: '1px solid #f3f4f6' }} />
+
+                    {/* Assinatura */}
+                    <button
+                      style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 16px', fontSize: '14px', fontWeight: '500', color: '#374151', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                      onClick={() => handleMenuNavigate('/assinatura')}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f3f4f6')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    >
+                      <FontAwesomeIcon icon={faCreditCard} style={{ fontSize: '18px', marginRight: '5px' }} />
+                      Assinatura
+                    </button>
+
+                    {/* Perfil */}
+                    <button
+                      style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 16px', fontSize: '14px', fontWeight: '500', color: '#374151', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                      onClick={() => handleMenuNavigate('/perfil')}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f3f4f6')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    >
+                      <FontAwesomeIcon icon={faCircleUser} style={{ fontSize: '18px', color: '#4b5563', marginRight: '5px' }} />
+                      Perfil
+                    </button>
+
+                    <hr style={{ margin: '4px 0', border: 'none', borderTop: '1px solid #f3f4f6' }} />
+
+                    {/* Sair */}
+                    <button
+                      style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 16px', fontSize: '14px', fontWeight: '500', color: '#dc2626', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                      onClick={() => { setDropdownOpen(false); logout(); }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#fef2f2')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    >
+                      <FontAwesomeIcon icon={faDoorOpen} style={{ fontSize: '18px', marginRight: '5px' }} />
+                      Sair
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
