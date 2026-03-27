@@ -1174,7 +1174,7 @@ const s = {
     fontWeight: typography.weights.semibold,
     color: colors.white,
     backgroundColor: colors.primary,
-    border: `1.5px solid ${colors.primaryLight}`,
+    border: 'none',
     borderRadius: radius.md,
     cursor: 'pointer',
     transition: 'all 0.2s ease-in-out',

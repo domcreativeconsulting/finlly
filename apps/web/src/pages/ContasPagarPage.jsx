@@ -2942,6 +2942,7 @@ const s = {
     marginTop: '24px',
   },
   footer: {
+    marginTop: '50px',
     backgroundColor: '#33528a',
     color: '#FFFFFF',
     textAlign: 'center',

@@ -7,6 +7,7 @@ import { metasService } from '../services/metas.service.js';
 import { useAuth } from '../hooks/useAuth.js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
+  faFlag,
   faBars,
   faPlus,
   faPenToSquare,
@@ -19,11 +20,30 @@ import {
   faMinus,
 } from '@fortawesome/free-solid-svg-icons';
 import { Badge, Modal } from '../design-system/index.js';
-import { colors, typography, radius, shadows } from '../design-system/tokens.js';
+import {
+  colors,
+  typography,
+  radius,
+  shadows,
+} from '../design-system/tokens.js';
 
-const STATUS_META_LABELS = { ativa: 'Ativa', concluida: 'Concluída', cancelada: 'Cancelada', pausada: 'Pausada' };
-const STATUS_META_CARD_LABELS = { ativa: 'ativa', concluida: 'concluída', cancelada: 'cancelada', pausada: 'pausada' };
-const TIPO_META_LABELS = { economia: 'Economia', despesa: 'Despesa', investimento: 'Investimento' };
+const STATUS_META_LABELS = {
+  ativa: 'Ativa',
+  concluida: 'Concluída',
+  cancelada: 'Cancelada',
+  pausada: 'Pausada',
+};
+const STATUS_META_CARD_LABELS = {
+  ativa: 'ativa',
+  concluida: 'concluída',
+  cancelada: 'cancelada',
+  pausada: 'pausada',
+};
+const TIPO_META_LABELS = {
+  economia: 'Economia',
+  despesa: 'Despesa',
+  investimento: 'Investimento',
+};
 const STATUS_META_ENUM = ['ativa', 'concluida', 'cancelada', 'pausada'];
 const TIPO_META_ENUM = ['economia', 'despesa', 'investimento'];
 const COR_REGEX = /^#[0-9A-Fa-f]{6}$/;
@@ -35,7 +55,10 @@ function todayISO() {
 }
 
 function formatBRL(valor) {
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor ?? 0);
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(valor ?? 0);
 }
 
 function formatDate(dateStr) {
@@ -62,7 +85,12 @@ const EMPTY_FORM = {
   observacoes: '',
 };
 
-const EMPTY_MOV_FORM = { valor: '', data: todayISO(), descricao: '', tipo: 'aporte' };
+const EMPTY_MOV_FORM = {
+  valor: '',
+  data: todayISO(),
+  descricao: '',
+  tipo: 'aporte',
+};
 
 const EMPTY_NOVA_META_FORM = {
   nome: '',
@@ -89,14 +117,38 @@ function getBarColor(pct, status) {
 
 function StatusCardBadge({ status }) {
   const styleMap = {
-    ativa: { background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe' },
-    concluida: { background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0' },
-    cancelada: { background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' },
-    pausada: { background: '#fffbeb', color: '#d97706', border: '1px solid #fde68a' },
+    ativa: {
+      background: '#eff6ff',
+      color: '#2563eb',
+      border: '1px solid #bfdbfe',
+    },
+    concluida: {
+      background: '#f0fdf4',
+      color: '#16a34a',
+      border: '1px solid #bbf7d0',
+    },
+    cancelada: {
+      background: '#fef2f2',
+      color: '#dc2626',
+      border: '1px solid #fecaca',
+    },
+    pausada: {
+      background: '#fffbeb',
+      color: '#d97706',
+      border: '1px solid #fde68a',
+    },
   };
   const st = styleMap[status] || styleMap.ativa;
   return (
-    <span style={{ ...st, borderRadius: 99, padding: '2px 8px', fontSize: 11, fontWeight: 600 }}>
+    <span
+      style={{
+        ...st,
+        borderRadius: 99,
+        padding: '2px 8px',
+        fontSize: 11,
+        fontWeight: 600,
+      }}
+    >
       {STATUS_META_CARD_LABELS[status] || status}
     </span>
   );
@@ -105,20 +157,45 @@ function StatusCardBadge({ status }) {
 function PrioridadeBadge({ prioridade }) {
   if (!prioridade) return null;
   const styleMap = {
-    alta: { background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' },
-    media: { background: '#f3f4f6', color: '#6b7280', border: '1px solid #e5e7eb' },
-    baixa: { background: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0' },
+    alta: {
+      background: '#fef3c7',
+      color: '#92400e',
+      border: '1px solid #fde68a',
+    },
+    media: {
+      background: '#f3f4f6',
+      color: '#6b7280',
+      border: '1px solid #e5e7eb',
+    },
+    baixa: {
+      background: '#ecfdf5',
+      color: '#065f46',
+      border: '1px solid #a7f3d0',
+    },
   };
   const st = styleMap[prioridade] || styleMap.media;
   return (
-    <span style={{ ...st, borderRadius: 99, padding: '2px 8px', fontSize: 11, fontWeight: 600 }}>
+    <span
+      style={{
+        ...st,
+        borderRadius: 99,
+        padding: '2px 8px',
+        fontSize: 11,
+        fontWeight: 600,
+      }}
+    >
       {prioridade}
     </span>
   );
 }
 
 function StatusBadge({ status }) {
-  const variantMap = { ativa: 'success', concluida: 'info', cancelada: 'danger', pausada: 'warning' };
+  const variantMap = {
+    ativa: 'success',
+    concluida: 'info',
+    cancelada: 'danger',
+    pausada: 'warning',
+  };
   return (
     <Badge variant={variantMap[status] || 'neutral'}>
       {STATUS_META_LABELS[status] || status}
@@ -127,7 +204,11 @@ function StatusBadge({ status }) {
 }
 
 function TipoBadge({ tipo }) {
-  const variantMap = { economia: 'success', despesa: 'danger', investimento: 'info' };
+  const variantMap = {
+    economia: 'success',
+    despesa: 'danger',
+    investimento: 'info',
+  };
   return (
     <Badge variant={variantMap[tipo] || 'neutral'}>
       {TIPO_META_LABELS[tipo] || tipo}
@@ -263,7 +344,9 @@ export default function MetasPage() {
       return false;
     }
     if (!form.data_inicio || !ISO_DATE_REGEX.test(form.data_inicio)) {
-      toast.error('A data de início é obrigatória e deve estar no formato AAAA-MM-DD.');
+      toast.error(
+        'A data de início é obrigatória e deve estar no formato AAAA-MM-DD.'
+      );
       return false;
     }
     if (form.cor && !COR_REGEX.test(form.cor)) {
@@ -319,13 +402,19 @@ export default function MetasPage() {
   async function carregarHistorico(metaId, page = 1) {
     setLoadingHistorico(true);
     try {
-      const result = await metasService.listarMovimentos(metaId, { page, limit: 10, order_dir: 'desc' });
+      const result = await metasService.listarMovimentos(metaId, {
+        page,
+        limit: 10,
+        order_dir: 'desc',
+      });
       setMovimentosHistorico(result.items ?? []);
       setMovimentosPage(result.page ?? 1);
       setMovimentosTotalPages(result.totalPages ?? 1);
       setMovimentosTotal(result.total ?? 0);
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Erro ao carregar histórico.');
+      toast.error(
+        err?.response?.data?.message || 'Erro ao carregar histórico.'
+      );
     } finally {
       setLoadingHistorico(false);
     }
@@ -345,7 +434,9 @@ export default function MetasPage() {
       ]);
       setMetaMovimentos(result.item ?? result);
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Erro ao carregar movimentos.');
+      toast.error(
+        err?.response?.data?.message || 'Erro ao carregar movimentos.'
+      );
     } finally {
       setLoadingMovimentos(false);
     }
@@ -372,7 +463,9 @@ export default function MetasPage() {
       ]);
       setMetaMovimentos(result.item ?? result);
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Erro ao atualizar movimentos.');
+      toast.error(
+        err?.response?.data?.message || 'Erro ao atualizar movimentos.'
+      );
     } finally {
       setLoadingMovimentos(false);
     }
@@ -390,19 +483,26 @@ export default function MetasPage() {
     }
     setSavingMovimento(true);
     try {
-      const valorFinal = formMovimento.tipo === 'retirada'
-        ? -Math.abs(parseFloat(formMovimento.valor))
-        : Math.abs(parseFloat(formMovimento.valor));
+      const valorFinal =
+        formMovimento.tipo === 'retirada'
+          ? -Math.abs(parseFloat(formMovimento.valor))
+          : Math.abs(parseFloat(formMovimento.valor));
       await metasService.criarMovimento(metaMovimentos.id, {
         valor: valorFinal,
         data: formMovimento.data,
         descricao: formMovimento.descricao || undefined,
       });
-      toast.success(formMovimento.tipo === 'retirada' ? 'Retirada registrada!' : 'Aporte registrado!');
+      toast.success(
+        formMovimento.tipo === 'retirada'
+          ? 'Retirada registrada!'
+          : 'Aporte registrado!'
+      );
       setFormMovimento(EMPTY_MOV_FORM);
       await recarregarMovimentos(metaMovimentos.id);
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Erro ao registrar movimento.');
+      toast.error(
+        err?.response?.data?.message || 'Erro ao registrar movimento.'
+      );
     } finally {
       setSavingMovimento(false);
     }
@@ -483,7 +583,14 @@ export default function MetasPage() {
   }
 
   function getAporteForm(metaId) {
-    return aportesForms[metaId] || { descricao: '', valor: '', data: todayISO(), obs: '' };
+    return (
+      aportesForms[metaId] || {
+        descricao: '',
+        valor: '',
+        data: todayISO(),
+        obs: '',
+      }
+    );
   }
 
   function updateAporteForm(metaId, changes) {
@@ -505,14 +612,20 @@ export default function MetasPage() {
       return;
     }
     try {
-      const descricao = [aForm.descricao, aForm.obs].filter(Boolean).join(' — ') || undefined;
+      const descricao =
+        [aForm.descricao, aForm.obs].filter(Boolean).join(' — ') || undefined;
       await metasService.criarMovimento(metaId, {
         valor: parseFloat(aForm.valor),
         data: aForm.data,
         descricao,
       });
       toast.success('Aporte registrado!');
-      updateAporteForm(metaId, { descricao: '', valor: '', data: todayISO(), obs: '' });
+      updateAporteForm(metaId, {
+        descricao: '',
+        valor: '',
+        data: todayISO(),
+        obs: '',
+      });
       carregarMetas();
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Erro ao registrar aporte.');
@@ -521,7 +634,9 @@ export default function MetasPage() {
 
   return (
     <>
-      <div style={{ display: 'flex', minHeight: '100vh', background: '#f9fafb' }}>
+      <div
+        style={{ display: 'flex', minHeight: '100vh', background: '#f9fafb' }}
+      >
         <AppSidebar
           sidebarOpen={sidebarOpen}
           currentPath="/metas"
@@ -531,7 +646,11 @@ export default function MetasPage() {
         <div
           style={{
             ...s.mainArea,
-            marginLeft: !sidebarOpen ? '0px' : sidebarExpanded ? '236px' : '108px',
+            marginLeft: !sidebarOpen
+              ? '0px'
+              : sidebarExpanded
+                ? '236px'
+                : '108px',
             transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           }}
         >
@@ -553,13 +672,27 @@ export default function MetasPage() {
                 <FontAwesomeIcon icon={faBars} />
               </button>
               <div>
-                <div style={{ fontWeight: 700, fontSize: 18, color: '#111827', lineHeight: 1.2 }}>Finlly</div>
-                <div style={{ fontSize: 12, color: '#6b7280', marginTop: 1 }}>Gestão financeira pessoal</div>
+                <div
+                  style={{
+                    fontWeight: 700,
+                    fontSize: 18,
+                    color: '#111827',
+                    lineHeight: 1.2,
+                  }}
+                >
+                  Finlly
+                </div>
+                <div style={{ fontSize: 12, color: '#6b7280', marginTop: 1 }}>
+                  Gestão financeira pessoal
+                </div>
               </div>
             </div>
 
             {/* Avatar / Dropdown */}
-            <div ref={dropdownRef} style={{ position: 'relative', flexShrink: 0 }}>
+            <div
+              ref={dropdownRef}
+              style={{ position: 'relative', flexShrink: 0 }}
+            >
               <button
                 onClick={() => setDropdownOpen((v) => !v)}
                 style={{
@@ -578,7 +711,9 @@ export default function MetasPage() {
                   border: 'none',
                   outline: 'none',
                   userSelect: 'none',
-                  boxShadow: dropdownOpen ? '0 0 0 3px rgba(37,99,235,0.25)' : 'none',
+                  boxShadow: dropdownOpen
+                    ? '0 0 0 3px rgba(37,99,235,0.25)'
+                    : 'none',
                 }}
                 title={usuario?.nome || ''}
                 aria-label={`Menu do usuário ${usuario?.nome || ''}`}
@@ -589,21 +724,30 @@ export default function MetasPage() {
               </button>
 
               {dropdownOpen && (
-                <div style={{
-                  position: 'absolute',
-                  top: 'calc(100% + 8px)',
-                  right: 0,
-                  width: '230px',
-                  backgroundColor: '#ffffff',
-                  borderRadius: '12px',
-                  boxShadow: '0 8px 30px rgba(0,0,0,0.13)',
-                  border: '1px solid #e5e7eb',
-                  zIndex: 1050,
-                  overflow: 'hidden',
-                  padding: '4px 0',
-                }}>
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 8px)',
+                    right: 0,
+                    width: '230px',
+                    backgroundColor: '#ffffff',
+                    borderRadius: '12px',
+                    boxShadow: '0 8px 30px rgba(0,0,0,0.13)',
+                    border: '1px solid #e5e7eb',
+                    zIndex: 1050,
+                    overflow: 'hidden',
+                    padding: '4px 0',
+                  }}
+                >
                   <div style={{ padding: '14px 16px 12px' }}>
-                    <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827', marginBottom: '2px' }}>
+                    <div
+                      style={{
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        color: '#111827',
+                        marginBottom: '2px',
+                      }}
+                    >
                       {usuario?.nome || 'Usuário'}
                     </div>
                     <div style={{ fontSize: '12px', color: '#6b7280' }}>
@@ -611,37 +755,116 @@ export default function MetasPage() {
                     </div>
                   </div>
 
-                  <hr style={{ margin: '4px 0', border: 'none', borderTop: '1px solid #f3f4f6' }} />
+                  <hr
+                    style={{
+                      margin: '4px 0',
+                      border: 'none',
+                      borderTop: '1px solid #f3f4f6',
+                    }}
+                  />
 
                   <button
-                    style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 16px', fontSize: '14px', fontWeight: '500', color: '#374151', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      width: '100%',
+                      padding: '10px 16px',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      color: '#374151',
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                    }}
                     onClick={() => handleMenuNavigate('/assinatura')}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f3f4f6')}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor = '#f3f4f6')
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = 'transparent')
+                    }
                   >
-                    <FontAwesomeIcon icon={faCreditCard} style={{ fontSize: '18px', marginRight: '5px' }} />
+                    <FontAwesomeIcon
+                      icon={faCreditCard}
+                      style={{ fontSize: '18px', marginRight: '5px' }}
+                    />
                     Assinatura
                   </button>
 
                   <button
-                    style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 16px', fontSize: '14px', fontWeight: '500', color: '#374151', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      width: '100%',
+                      padding: '10px 16px',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      color: '#374151',
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                    }}
                     onClick={() => handleMenuNavigate('/perfil')}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f3f4f6')}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor = '#f3f4f6')
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = 'transparent')
+                    }
                   >
-                    <FontAwesomeIcon icon={faCircleUser} style={{ fontSize: '18px', color: '#4b5563', marginRight: '5px' }} />
+                    <FontAwesomeIcon
+                      icon={faCircleUser}
+                      style={{
+                        fontSize: '18px',
+                        color: '#4b5563',
+                        marginRight: '5px',
+                      }}
+                    />
                     Perfil
                   </button>
 
-                  <hr style={{ margin: '4px 0', border: 'none', borderTop: '1px solid #f3f4f6' }} />
+                  <hr
+                    style={{
+                      margin: '4px 0',
+                      border: 'none',
+                      borderTop: '1px solid #f3f4f6',
+                    }}
+                  />
 
                   <button
-                    style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 16px', fontSize: '14px', fontWeight: '500', color: '#dc2626', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-                    onClick={() => { setDropdownOpen(false); logout(); }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#fef2f2')}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      width: '100%',
+                      padding: '10px 16px',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      color: '#dc2626',
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                    }}
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      logout();
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor = '#fef2f2')
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = 'transparent')
+                    }
                   >
-                    <FontAwesomeIcon icon={faDoorOpen} style={{ fontSize: '18px', marginRight: '5px' }} />
+                    <FontAwesomeIcon
+                      icon={faDoorOpen}
+                      style={{ fontSize: '18px', marginRight: '5px' }}
+                    />
                     Sair
                   </button>
                 </div>
@@ -652,27 +875,63 @@ export default function MetasPage() {
           {/* Main Content */}
           <InadimplenteGuard>
             <div style={s.content}>
-
               {/* Page heading */}
               <div style={{ marginBottom: 24 }}>
-                <h2 style={{ margin: '0 0 4px 0', fontSize: 28, fontWeight: 700, color: '#111827' }}>Metas</h2>
+                <h2
+                  style={{
+                    margin: '0 0 4px 0',
+                    fontSize: 28,
+                    fontWeight: 700,
+                    color: '#111827',
+                  }}
+                >
+                  Metas
+                </h2>
                 <p style={{ margin: 0, fontSize: 14, color: '#6b7280' }}>
-                  Defina metas, registre aportes e acompanhe progresso. Base do produto + base do agente.
+                  Defina metas, registre aportes e acompanhe progresso. Base do
+                  produto + base do agente.
                 </p>
               </div>
 
               {/* Inline Create Form */}
-              <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, boxShadow: shadows.sm, padding: 24, marginBottom: 24 }}>
-                <p style={{ margin: '0 0 16px 0', fontWeight: 600, fontSize: 15, color: '#111827' }}>Criar nova meta</p>
+              <div
+                style={{
+                  background: '#fff',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: 12,
+                  boxShadow: shadows.sm,
+                  padding: 24,
+                  marginBottom: 24,
+                }}
+              >
+                <p
+                  style={{
+                    margin: '0 0 16px 0',
+                    fontWeight: 600,
+                    fontSize: 15,
+                    color: '#111827',
+                  }}
+                >
+                  Criar nova meta
+                </p>
                 <form onSubmit={handleCriarMetaInline}>
                   {/* Row 1: Título, Valor alvo, Data alvo */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '2fr 1fr 1fr',
+                      gap: 12,
+                      marginBottom: 12,
+                    }}
+                  >
                     <input
                       style={inputStyle}
                       type="text"
                       placeholder="Ex: Reserva de emergência, Entrada do apartamento..."
                       value={novaMetaForm.nome}
-                      onChange={(e) => setNovaMetaForm((f) => ({ ...f, nome: e.target.value }))}
+                      onChange={(e) =>
+                        setNovaMetaForm((f) => ({ ...f, nome: e.target.value }))
+                      }
                       maxLength={255}
                     />
                     <input
@@ -682,13 +941,23 @@ export default function MetasPage() {
                       step="0.01"
                       placeholder="Ex: 10.000,00"
                       value={novaMetaForm.valor_alvo}
-                      onChange={(e) => setNovaMetaForm((f) => ({ ...f, valor_alvo: e.target.value }))}
+                      onChange={(e) =>
+                        setNovaMetaForm((f) => ({
+                          ...f,
+                          valor_alvo: e.target.value,
+                        }))
+                      }
                     />
                     <input
                       style={inputStyle}
                       type="date"
                       value={novaMetaForm.data_fim}
-                      onChange={(e) => setNovaMetaForm((f) => ({ ...f, data_fim: e.target.value }))}
+                      onChange={(e) =>
+                        setNovaMetaForm((f) => ({
+                          ...f,
+                          data_fim: e.target.value,
+                        }))
+                      }
                     />
                   </div>
 
@@ -699,17 +968,34 @@ export default function MetasPage() {
                       type="text"
                       placeholder="Ex: 6 meses de custo fixo, meta 2026..."
                       value={novaMetaForm.observacoes}
-                      onChange={(e) => setNovaMetaForm((f) => ({ ...f, observacoes: e.target.value }))}
+                      onChange={(e) =>
+                        setNovaMetaForm((f) => ({
+                          ...f,
+                          observacoes: e.target.value,
+                        }))
+                      }
                       maxLength={1000}
                     />
                   </div>
 
                   {/* Row 3: Prioridade, Conta, Botão */}
-                  <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: 12,
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                    }}
+                  >
                     <select
                       style={{ ...inputStyle, width: 'auto', minWidth: 130 }}
                       value={novaMetaForm.prioridade}
-                      onChange={(e) => setNovaMetaForm((f) => ({ ...f, prioridade: e.target.value }))}
+                      onChange={(e) =>
+                        setNovaMetaForm((f) => ({
+                          ...f,
+                          prioridade: e.target.value,
+                        }))
+                      }
                     >
                       <option value="alta">Alta</option>
                       <option value="media">Média</option>
@@ -718,7 +1004,12 @@ export default function MetasPage() {
                     <select
                       style={{ ...inputStyle, width: 'auto', minWidth: 200 }}
                       value={novaMetaForm.conta_vinculada}
-                      onChange={(e) => setNovaMetaForm((f) => ({ ...f, conta_vinculada: e.target.value }))}
+                      onChange={(e) =>
+                        setNovaMetaForm((f) => ({
+                          ...f,
+                          conta_vinculada: e.target.value,
+                        }))
+                      }
                     >
                       <option value="">Sem vínculo</option>
                     </select>
@@ -741,49 +1032,116 @@ export default function MetasPage() {
                         gap: 6,
                       }}
                     >
-                      🚩 {criandoMeta ? 'Criando...' : 'Criar meta'}
+                      <FontAwesomeIcon icon={faFlag} />
+                      {criandoMeta ? 'Criando...' : 'Criar meta'}
                     </button>
                   </div>
                 </form>
               </div>
 
               {/* "Suas metas" section */}
-              <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, boxShadow: shadows.sm, padding: 24 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                  <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#111827' }}>Suas metas</h3>
-                  <span style={{ fontSize: 14, color: '#6b7280' }}>{total} meta{total !== 1 ? 's' : ''}</span>
+              <div
+                style={{
+                  background: '#fff',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: 12,
+                  boxShadow: shadows.sm,
+                  padding: 24,
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: 20,
+                  }}
+                >
+                  <h3
+                    style={{
+                      margin: 0,
+                      fontSize: 18,
+                      fontWeight: 700,
+                      color: '#111827',
+                    }}
+                  >
+                    Suas metas
+                  </h3>
+                  <span style={{ fontSize: 14, color: '#6b7280' }}>
+                    {total} meta{total !== 1 ? 's' : ''}
+                  </span>
                 </div>
 
                 {/* Loading */}
                 {loading && (
-                  <div style={{ textAlign: 'center', padding: 48, color: '#6b7280' }}>
+                  <div
+                    style={{
+                      textAlign: 'center',
+                      padding: 48,
+                      color: '#6b7280',
+                    }}
+                  >
                     Carregando...
                   </div>
                 )}
 
                 {/* Error */}
                 {!loading && error && (
-                  <div style={{ textAlign: 'center', padding: 48, color: '#dc2626' }}>
+                  <div
+                    style={{
+                      textAlign: 'center',
+                      padding: 48,
+                      color: '#dc2626',
+                    }}
+                  >
                     {error}
                   </div>
                 )}
 
                 {/* Empty state */}
                 {!loading && !error && metas.length === 0 && (
-                  <div style={{ textAlign: 'center', padding: 64, color: '#9ca3af' }}>
-                    <FontAwesomeIcon icon={faInbox} style={{ fontSize: 48, display: 'block', margin: '0 auto 16px' }} />
-                    <p style={{ margin: '0 0 8px 0', fontSize: 16 }}>Nenhuma meta encontrada.</p>
-                    <p style={{ margin: 0, fontSize: 14 }}>Use o formulário acima para criar sua primeira meta.</p>
+                  <div
+                    style={{
+                      textAlign: 'center',
+                      padding: 64,
+                      color: '#9ca3af',
+                    }}
+                  >
+                    <FontAwesomeIcon
+                      icon={faInbox}
+                      style={{
+                        fontSize: 48,
+                        display: 'block',
+                        margin: '0 auto 16px',
+                      }}
+                    />
+                    <p style={{ margin: '0 0 8px 0', fontSize: 16 }}>
+                      Nenhuma meta encontrada.
+                    </p>
+                    <p style={{ margin: 0, fontSize: 14 }}>
+                      Use o formulário acima para criar sua primeira meta.
+                    </p>
                   </div>
                 )}
 
                 {/* Cards Grid — 2 columns */}
                 {!loading && !error && metas.length > 0 && (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20, marginBottom: 16 }}>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(2, 1fr)',
+                      gap: 20,
+                      marginBottom: 16,
+                    }}
+                  >
                     {metas.map((meta) => {
                       const valorAlvo = meta.valorAlvo ?? meta.valor_alvo ?? 0;
-                      const valorAtual = meta.valorAtual ?? meta.valor_atual ?? 0;
-                      const pct = valorAlvo > 0 ? Math.min(100, (valorAtual / valorAlvo) * 100) : 0;
+                      const valorAtual =
+                        meta.valorAtual ?? meta.valor_atual ?? 0;
+                      const pct =
+                        valorAlvo > 0
+                          ? Math.min(100, (valorAtual / valorAlvo) * 100)
+                          : 0;
                       const dataFim = meta.dataFim ?? meta.data_fim;
                       const prioridade = meta.prioridade || null;
                       const aForm = getAporteForm(meta.id);
@@ -801,28 +1159,89 @@ export default function MetasPage() {
                           }}
                         >
                           {/* Card Header */}
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                          <div
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'flex-start',
+                              marginBottom: 10,
+                            }}
+                          >
                             {/* Left: name + badges */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
-                              <span style={{ fontWeight: 700, fontSize: 15, color: '#111827' }}>{meta.nome}</span>
+                            <div
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                flexWrap: 'wrap',
+                                flex: 1,
+                                minWidth: 0,
+                              }}
+                            >
+                              <span
+                                style={{
+                                  fontWeight: 700,
+                                  fontSize: 15,
+                                  color: '#111827',
+                                }}
+                              >
+                                {meta.nome}
+                              </span>
                               <StatusCardBadge status={meta.status} />
-                              {prioridade && <PrioridadeBadge prioridade={prioridade} />}
+                              {prioridade && (
+                                <PrioridadeBadge prioridade={prioridade} />
+                              )}
                             </div>
                             {/* Right: progress values + date + edit */}
-                            <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 12 }}>
-                              <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 2 }}>Progresso</div>
-                              <div style={{ fontSize: 13, fontWeight: 600, color: '#111827', whiteSpace: 'nowrap' }}>
+                            <div
+                              style={{
+                                textAlign: 'right',
+                                flexShrink: 0,
+                                marginLeft: 12,
+                              }}
+                            >
+                              <div
+                                style={{
+                                  fontSize: 11,
+                                  color: '#6b7280',
+                                  marginBottom: 2,
+                                }}
+                              >
+                                Progresso
+                              </div>
+                              <div
+                                style={{
+                                  fontSize: 13,
+                                  fontWeight: 600,
+                                  color: '#111827',
+                                  whiteSpace: 'nowrap',
+                                }}
+                              >
                                 {formatBRL(valorAtual)} / {formatBRL(valorAlvo)}
                               </div>
                               {dataFim && (
-                                <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>
+                                <div
+                                  style={{
+                                    fontSize: 11,
+                                    color: '#6b7280',
+                                    marginTop: 2,
+                                  }}
+                                >
                                   Alvo: {formatDate(dataFim)}
                                 </div>
                               )}
                               <button
                                 title="Editar meta"
                                 onClick={() => abrirModal(meta)}
-                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: 13, marginTop: 4, padding: '2px 4px' }}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  color: '#6b7280',
+                                  fontSize: 13,
+                                  marginTop: 4,
+                                  padding: '2px 4px',
+                                }}
                               >
                                 <FontAwesomeIcon icon={faPenToSquare} />
                               </button>
@@ -830,26 +1249,90 @@ export default function MetasPage() {
                           </div>
 
                           {/* Progress bar */}
-                          <div style={{ height: 8, borderRadius: 4, background: '#e5e7eb', overflow: 'hidden', marginBottom: 8 }}>
-                            <div style={{ width: `${pct}%`, height: '100%', background: '#2563eb', borderRadius: 4, transition: 'width 0.4s ease' }} />
+                          <div
+                            style={{
+                              height: 8,
+                              borderRadius: 4,
+                              background: '#e5e7eb',
+                              overflow: 'hidden',
+                              marginBottom: 8,
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: `${pct}%`,
+                                height: '100%',
+                                background: '#2563eb',
+                                borderRadius: 4,
+                                transition: 'width 0.4s ease',
+                              }}
+                            />
                           </div>
 
                           {/* Percentage + actions */}
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                            <span style={{ fontWeight: 700, fontSize: 15, color: '#111827' }}>{Math.round(pct)}%</span>
-                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <div
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              marginBottom: 16,
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontWeight: 700,
+                                fontSize: 15,
+                                color: '#111827',
+                              }}
+                            >
+                              {Math.round(pct)}%
+                            </span>
+                            <div
+                              style={{
+                                display: 'flex',
+                                gap: 8,
+                                alignItems: 'center',
+                              }}
+                            >
                               {confirmCancelar === meta.id ? (
-                                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                                  <span style={{ fontSize: 12, color: '#dc2626' }}>Confirmar?</span>
+                                <div
+                                  style={{
+                                    display: 'flex',
+                                    gap: 6,
+                                    alignItems: 'center',
+                                  }}
+                                >
+                                  <span
+                                    style={{ fontSize: 12, color: '#dc2626' }}
+                                  >
+                                    Confirmar?
+                                  </span>
                                   <button
                                     onClick={() => handleCancelarMeta(meta.id)}
-                                    style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 5, padding: '4px 10px', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}
+                                    style={{
+                                      background: '#dc2626',
+                                      color: '#fff',
+                                      border: 'none',
+                                      borderRadius: 5,
+                                      padding: '4px 10px',
+                                      fontSize: 12,
+                                      cursor: 'pointer',
+                                      fontWeight: 600,
+                                    }}
                                   >
                                     Sim
                                   </button>
                                   <button
                                     onClick={() => setConfirmCancelar(null)}
-                                    style={{ background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 5, padding: '4px 10px', fontSize: 12, cursor: 'pointer' }}
+                                    style={{
+                                      background: '#f3f4f6',
+                                      color: '#374151',
+                                      border: 'none',
+                                      borderRadius: 5,
+                                      padding: '4px 10px',
+                                      fontSize: 12,
+                                      cursor: 'pointer',
+                                    }}
                                   >
                                     Não
                                   </button>
@@ -859,7 +1342,16 @@ export default function MetasPage() {
                                   {meta.status === 'ativa' && (
                                     <button
                                       onClick={() => handlePausar(meta.id)}
-                                      style={{ background: 'transparent', border: '1px solid #d97706', color: '#d97706', borderRadius: 6, padding: '5px 12px', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}
+                                      style={{
+                                        background: 'transparent',
+                                        border: '1px solid #d97706',
+                                        color: '#d97706',
+                                        borderRadius: 6,
+                                        padding: '5px 12px',
+                                        fontSize: 13,
+                                        fontWeight: 500,
+                                        cursor: 'pointer',
+                                      }}
                                     >
                                       Pausar
                                     </button>
@@ -867,23 +1359,54 @@ export default function MetasPage() {
                                   {meta.status === 'pausada' && (
                                     <button
                                       onClick={() => handleReativar(meta.id)}
-                                      style={{ background: 'transparent', border: '1px solid #2563eb', color: '#2563eb', borderRadius: 6, padding: '5px 12px', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}
+                                      style={{
+                                        background: 'transparent',
+                                        border: '1px solid #2563eb',
+                                        color: '#2563eb',
+                                        borderRadius: 6,
+                                        padding: '5px 12px',
+                                        fontSize: 13,
+                                        fontWeight: 500,
+                                        cursor: 'pointer',
+                                      }}
                                     >
                                       Reativar
                                     </button>
                                   )}
-                                  {meta.status !== 'cancelada' && meta.status !== 'concluida' && (
-                                    <button
-                                      onClick={() => setConfirmCancelar(meta.id)}
-                                      style={{ background: 'transparent', border: 'none', color: '#6b7280', borderRadius: 6, padding: '5px 8px', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}
-                                    >
-                                      Cancelar
-                                    </button>
-                                  )}
-                                  {(meta.status === 'cancelada' || meta.status === 'concluida') && (
+                                  {meta.status !== 'cancelada' &&
+                                    meta.status !== 'concluida' && (
+                                      <button
+                                        onClick={() =>
+                                          setConfirmCancelar(meta.id)
+                                        }
+                                        style={{
+                                          background: 'transparent',
+                                          border: 'none',
+                                          color: '#6b7280',
+                                          borderRadius: 6,
+                                          padding: '5px 8px',
+                                          fontSize: 13,
+                                          fontWeight: 500,
+                                          cursor: 'pointer',
+                                        }}
+                                      >
+                                        Cancelar
+                                      </button>
+                                    )}
+                                  {(meta.status === 'cancelada' ||
+                                    meta.status === 'concluida') && (
                                     <button
                                       onClick={() => setConfirmDelete(meta.id)}
-                                      style={{ background: 'transparent', border: 'none', color: '#dc2626', borderRadius: 6, padding: '5px 8px', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}
+                                      style={{
+                                        background: 'transparent',
+                                        border: 'none',
+                                        color: '#dc2626',
+                                        borderRadius: 6,
+                                        padding: '5px 8px',
+                                        fontSize: 13,
+                                        fontWeight: 500,
+                                        cursor: 'pointer',
+                                      }}
                                     >
                                       Excluir
                                     </button>
@@ -895,18 +1418,49 @@ export default function MetasPage() {
 
                           {/* Inline confirm delete */}
                           {confirmDelete === meta.id && (
-                            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 12 }}>
-                              <span style={{ fontSize: 13, color: '#991b1b' }}>Confirmar exclusão permanente?</span>
+                            <div
+                              style={{
+                                background: '#fef2f2',
+                                border: '1px solid #fecaca',
+                                borderRadius: 8,
+                                padding: '10px 14px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                gap: 8,
+                                marginBottom: 12,
+                              }}
+                            >
+                              <span style={{ fontSize: 13, color: '#991b1b' }}>
+                                Confirmar exclusão permanente?
+                              </span>
                               <div style={{ display: 'flex', gap: 8 }}>
                                 <button
                                   onClick={() => handleExcluir(meta.id)}
-                                  style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 6, padding: '5px 12px', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}
+                                  style={{
+                                    background: '#dc2626',
+                                    color: '#fff',
+                                    border: 'none',
+                                    borderRadius: 6,
+                                    padding: '5px 12px',
+                                    fontSize: 12,
+                                    cursor: 'pointer',
+                                    fontWeight: 600,
+                                  }}
                                 >
                                   Excluir
                                 </button>
                                 <button
                                   onClick={() => setConfirmDelete(null)}
-                                  style={{ background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 6, padding: '5px 12px', fontSize: 12, cursor: 'pointer' }}
+                                  style={{
+                                    background: '#f3f4f6',
+                                    color: '#374151',
+                                    border: 'none',
+                                    borderRadius: 6,
+                                    padding: '5px 12px',
+                                    fontSize: 12,
+                                    cursor: 'pointer',
+                                  }}
                                 >
                                   Cancelar
                                 </button>
@@ -915,45 +1469,107 @@ export default function MetasPage() {
                           )}
 
                           {/* Inline Aporte Form */}
-                          <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: 12 }}>
-                            <form onSubmit={(e) => handleRegistrarAporte(e, meta.id)}>
-                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 8, marginBottom: 8 }}>
+                          <div
+                            style={{
+                              borderTop: '1px solid #f3f4f6',
+                              paddingTop: 12,
+                            }}
+                          >
+                            <form
+                              onSubmit={(e) =>
+                                handleRegistrarAporte(e, meta.id)
+                              }
+                            >
+                              <div
+                                style={{
+                                  display: 'grid',
+                                  gridTemplateColumns: '1fr 1fr 1fr auto',
+                                  gap: 8,
+                                  marginBottom: 8,
+                                }}
+                              >
                                 <input
-                                  style={{ ...inputStyle, fontSize: 13, padding: '6px 8px' }}
+                                  style={{
+                                    ...inputStyle,
+                                    fontSize: 13,
+                                    padding: '6px 8px',
+                                  }}
                                   type="text"
                                   placeholder="Aporte"
                                   value={aForm.descricao}
-                                  onChange={(e) => updateAporteForm(meta.id, { descricao: e.target.value })}
+                                  onChange={(e) =>
+                                    updateAporteForm(meta.id, {
+                                      descricao: e.target.value,
+                                    })
+                                  }
                                   maxLength={100}
                                 />
                                 <input
-                                  style={{ ...inputStyle, fontSize: 13, padding: '6px 8px' }}
+                                  style={{
+                                    ...inputStyle,
+                                    fontSize: 13,
+                                    padding: '6px 8px',
+                                  }}
                                   type="number"
                                   min="0.01"
                                   step="0.01"
                                   placeholder="Valor (R$)"
                                   value={aForm.valor}
-                                  onChange={(e) => updateAporteForm(meta.id, { valor: e.target.value })}
+                                  onChange={(e) =>
+                                    updateAporteForm(meta.id, {
+                                      valor: e.target.value,
+                                    })
+                                  }
                                 />
                                 <input
-                                  style={{ ...inputStyle, fontSize: 13, padding: '6px 8px' }}
+                                  style={{
+                                    ...inputStyle,
+                                    fontSize: 13,
+                                    padding: '6px 8px',
+                                  }}
                                   type="date"
                                   value={aForm.data}
-                                  onChange={(e) => updateAporteForm(meta.id, { data: e.target.value })}
+                                  onChange={(e) =>
+                                    updateAporteForm(meta.id, {
+                                      data: e.target.value,
+                                    })
+                                  }
                                 />
                                 <button
                                   type="submit"
-                                  style={{ background: '#fff', border: '1px solid #d1d5db', borderRadius: 6, padding: '6px 12px', fontSize: 13, fontWeight: 500, cursor: 'pointer', color: '#374151', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 4 }}
+                                  style={{
+                                    background: '#fff',
+                                    border: '1px solid #d1d5db',
+                                    borderRadius: 6,
+                                    padding: '6px 12px',
+                                    fontSize: 13,
+                                    fontWeight: 500,
+                                    cursor: 'pointer',
+                                    color: '#374151',
+                                    whiteSpace: 'nowrap',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                  }}
                                 >
                                   ⊕ Registrar
                                 </button>
                               </div>
                               <input
-                                style={{ ...inputStyle, fontSize: 12, padding: '5px 8px', color: '#6b7280' }}
+                                style={{
+                                  ...inputStyle,
+                                  fontSize: 12,
+                                  padding: '5px 8px',
+                                  color: '#6b7280',
+                                }}
                                 type="text"
                                 placeholder="Obs (opcional). Ex: aporte salário, ajuste manual..."
                                 value={aForm.obs}
-                                onChange={(e) => updateAporteForm(meta.id, { obs: e.target.value })}
+                                onChange={(e) =>
+                                  updateAporteForm(meta.id, {
+                                    obs: e.target.value,
+                                  })
+                                }
                                 maxLength={255}
                               />
                             </form>
@@ -966,28 +1582,64 @@ export default function MetasPage() {
 
                 {/* Pagination */}
                 {totalPages > 1 && (
-                  <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 8 }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      gap: 12,
+                      marginTop: 8,
+                    }}
+                  >
                     <button
                       disabled={page <= 1}
                       onClick={() => setPage((p) => Math.max(1, p - 1))}
-                      style={{ background: '#f3f4f6', border: 'none', borderRadius: 6, padding: '6px 14px', cursor: page <= 1 ? 'not-allowed' : 'pointer', color: '#374151', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}
+                      style={{
+                        background: '#f3f4f6',
+                        border: 'none',
+                        borderRadius: 6,
+                        padding: '6px 14px',
+                        cursor: page <= 1 ? 'not-allowed' : 'pointer',
+                        color: '#374151',
+                        fontSize: 14,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                      }}
                     >
                       <FontAwesomeIcon icon={faChevronLeft} /> Anterior
                     </button>
-                    <span style={{ alignSelf: 'center', fontSize: 14, color: '#4b5563' }}>
+                    <span
+                      style={{
+                        alignSelf: 'center',
+                        fontSize: 14,
+                        color: '#4b5563',
+                      }}
+                    >
                       Página {page} de {totalPages}
                     </span>
                     <button
                       disabled={page >= totalPages}
-                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                      style={{ background: '#f3f4f6', border: 'none', borderRadius: 6, padding: '6px 14px', cursor: page >= totalPages ? 'not-allowed' : 'pointer', color: '#374151', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}
+                      onClick={() =>
+                        setPage((p) => Math.min(totalPages, p + 1))
+                      }
+                      style={{
+                        background: '#f3f4f6',
+                        border: 'none',
+                        borderRadius: 6,
+                        padding: '6px 14px',
+                        cursor: page >= totalPages ? 'not-allowed' : 'pointer',
+                        color: '#374151',
+                        fontSize: 14,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                      }}
                     >
                       Próximo <FontAwesomeIcon icon={faChevronRight} />
                     </button>
                   </div>
                 )}
               </div>
-
             </div>
           </InadimplenteGuard>
 
@@ -999,11 +1651,20 @@ export default function MetasPage() {
       </div>
 
       {/* Modal editar meta */}
-      <Modal open={modalAberto} onClose={fecharModal} title={metaEmEdicao ? 'Editar Meta' : 'Nova Meta'}>
-        <form onSubmit={handleSalvar} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <Modal
+        open={modalAberto}
+        onClose={fecharModal}
+        title={metaEmEdicao ? 'Editar Meta' : 'Nova Meta'}
+      >
+        <form
+          onSubmit={handleSalvar}
+          style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
+        >
           {/* Nome */}
           <div>
-            <label style={labelStyle}>Nome <span style={{ color: '#ef4444' }}>*</span></label>
+            <label style={labelStyle}>
+              Nome <span style={{ color: '#ef4444' }}>*</span>
+            </label>
             <input
               style={inputStyle}
               type="text"
@@ -1016,16 +1677,24 @@ export default function MetasPage() {
           </div>
 
           {/* Tipo + Status */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div
+            style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}
+          >
             <div>
-              <label style={labelStyle}>Tipo <span style={{ color: '#ef4444' }}>*</span></label>
+              <label style={labelStyle}>
+                Tipo <span style={{ color: '#ef4444' }}>*</span>
+              </label>
               <select
                 style={inputStyle}
                 value={form.tipo}
-                onChange={(e) => setForm((f) => ({ ...f, tipo: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, tipo: e.target.value }))
+                }
               >
                 {TIPO_META_ENUM.map((t) => (
-                  <option key={t} value={t}>{TIPO_META_LABELS[t]}</option>
+                  <option key={t} value={t}>
+                    {TIPO_META_LABELS[t]}
+                  </option>
                 ))}
               </select>
             </div>
@@ -1034,10 +1703,14 @@ export default function MetasPage() {
               <select
                 style={inputStyle}
                 value={form.status}
-                onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, status: e.target.value }))
+                }
               >
                 {STATUS_META_ENUM.map((s) => (
-                  <option key={s} value={s}>{STATUS_META_LABELS[s]}</option>
+                  <option key={s} value={s}>
+                    {STATUS_META_LABELS[s]}
+                  </option>
                 ))}
               </select>
             </div>
@@ -1045,7 +1718,9 @@ export default function MetasPage() {
 
           {/* Valor alvo */}
           <div>
-            <label style={labelStyle}>Valor alvo (R$) <span style={{ color: '#ef4444' }}>*</span></label>
+            <label style={labelStyle}>
+              Valor alvo (R$) <span style={{ color: '#ef4444' }}>*</span>
+            </label>
             <input
               style={inputStyle}
               type="number"
@@ -1054,20 +1729,28 @@ export default function MetasPage() {
               required
               placeholder="0.00"
               value={form.valor_alvo}
-              onChange={(e) => setForm((f) => ({ ...f, valor_alvo: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, valor_alvo: e.target.value }))
+              }
             />
           </div>
 
           {/* Datas */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div
+            style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}
+          >
             <div>
-              <label style={labelStyle}>Data de início <span style={{ color: '#ef4444' }}>*</span></label>
+              <label style={labelStyle}>
+                Data de início <span style={{ color: '#ef4444' }}>*</span>
+              </label>
               <input
                 style={inputStyle}
                 type="date"
                 required
                 value={form.data_inicio}
-                onChange={(e) => setForm((f) => ({ ...f, data_inicio: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, data_inicio: e.target.value }))
+                }
               />
             </div>
             <div>
@@ -1076,13 +1759,17 @@ export default function MetasPage() {
                 style={inputStyle}
                 type="date"
                 value={form.data_fim}
-                onChange={(e) => setForm((f) => ({ ...f, data_fim: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, data_fim: e.target.value }))
+                }
               />
             </div>
           </div>
 
           {/* Ícone + Cor */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div
+            style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}
+          >
             <div>
               <label style={labelStyle}>Ícone (emoji ou texto)</label>
               <input
@@ -1091,7 +1778,9 @@ export default function MetasPage() {
                 maxLength={50}
                 placeholder="Ex.: 🎯"
                 value={form.icone}
-                onChange={(e) => setForm((f) => ({ ...f, icone: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, icone: e.target.value }))
+                }
               />
             </div>
             <div>
@@ -1102,7 +1791,9 @@ export default function MetasPage() {
                 maxLength={7}
                 placeholder="#2563eb"
                 value={form.cor}
-                onChange={(e) => setForm((f) => ({ ...f, cor: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, cor: e.target.value }))
+                }
               />
             </div>
           </div>
@@ -1115,16 +1806,56 @@ export default function MetasPage() {
               maxLength={1000}
               placeholder="Notas ou estratégias para esta meta..."
               value={form.observacoes}
-              onChange={(e) => setForm((f) => ({ ...f, observacoes: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, observacoes: e.target.value }))
+              }
             />
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 4 }}>
-            <button type="button" onClick={fecharModal} disabled={saving} style={{ background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 6, padding: '8px 16px', fontSize: 14, cursor: saving ? 'not-allowed' : 'pointer' }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              gap: 10,
+              marginTop: 4,
+            }}
+          >
+            <button
+              type="button"
+              onClick={fecharModal}
+              disabled={saving}
+              style={{
+                background: '#f3f4f6',
+                color: '#374151',
+                border: 'none',
+                borderRadius: 6,
+                padding: '8px 16px',
+                fontSize: 14,
+                cursor: saving ? 'not-allowed' : 'pointer',
+              }}
+            >
               Cancelar
             </button>
-            <button type="submit" disabled={saving} style={{ background: '#2563eb', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 16px', fontSize: 14, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
-              {saving ? 'Salvando...' : metaEmEdicao ? 'Atualizar meta' : 'Criar meta'}
+            <button
+              type="submit"
+              disabled={saving}
+              style={{
+                background: '#2563eb',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 6,
+                padding: '8px 16px',
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: saving ? 'not-allowed' : 'pointer',
+                opacity: saving ? 0.7 : 1,
+              }}
+            >
+              {saving
+                ? 'Salvando...'
+                : metaEmEdicao
+                  ? 'Atualizar meta'
+                  : 'Criar meta'}
             </button>
           </div>
         </form>
@@ -1134,286 +1865,604 @@ export default function MetasPage() {
       <Modal
         open={modalMovimentosAberto}
         onClose={fecharModalMovimentos}
-        title={metaMovimentos ? `Movimentos — ${metaMovimentos.nome}` : 'Movimentos'}
+        title={
+          metaMovimentos ? `Movimentos — ${metaMovimentos.nome}` : 'Movimentos'
+        }
       >
         {loadingMovimentos && (
-          <div style={{ textAlign: 'center', padding: 32, color: '#6b7280' }}>Carregando...</div>
+          <div style={{ textAlign: 'center', padding: 32, color: '#6b7280' }}>
+            Carregando...
+          </div>
         )}
 
-        {!loadingMovimentos && metaMovimentos && (() => {
-          const valorAlvo = metaMovimentos.valorAlvo ?? metaMovimentos.valor_alvo ?? 0;
-          const movimentos = metaMovimentos.movimentos ?? [];
-          const valorAtual = movimentos.reduce((sum, m) => sum + Number(m.valor ?? 0), 0);
-          const valorRestante = Math.max(0, valorAlvo - valorAtual);
-          const pct = valorAlvo > 0 ? Math.min(100, (valorAtual / valorAlvo) * 100) : 0;
-          const barColor = getBarColor(pct, metaMovimentos.status);
+        {!loadingMovimentos &&
+          metaMovimentos &&
+          (() => {
+            const valorAlvo =
+              metaMovimentos.valorAlvo ?? metaMovimentos.valor_alvo ?? 0;
+            const movimentos = metaMovimentos.movimentos ?? [];
+            const valorAtual = movimentos.reduce(
+              (sum, m) => sum + Number(m.valor ?? 0),
+              0
+            );
+            const valorRestante = Math.max(0, valorAlvo - valorAtual);
+            const pct =
+              valorAlvo > 0 ? Math.min(100, (valorAtual / valorAlvo) * 100) : 0;
+            const barColor = getBarColor(pct, metaMovimentos.status);
 
-          return (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-
-              {/* Progresso */}
-              <div style={{ background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: 10, padding: '16px 20px', marginBottom: 4 }}>
-                <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
-                  <StatusBadge status={metaMovimentos.status} />
-                  <TipoBadge tipo={metaMovimentos.tipo} />
-                </div>
-
-                {/* Percentual em destaque */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
-                  <span style={{ fontSize: 13, color: '#6b7280' }}>Progresso</span>
-                  <span style={{ fontSize: 22, fontWeight: 800, color: barColor }}>{pct.toFixed(1)}%</span>
-                </div>
-
-                {/* Barra com milestones */}
-                <div style={{ position: 'relative', height: 14, borderRadius: 7, background: '#e5e7eb', overflow: 'hidden', marginBottom: 8 }}>
-                  <div style={{ width: `${pct}%`, height: '100%', background: barColor, borderRadius: 7, transition: 'width 0.5s ease' }} />
-                  {[25, 50, 75].map(m => (
-                    <div key={m} style={{ position: 'absolute', top: 0, left: `${m}%`, width: 2, height: '100%', background: 'rgba(255,255,255,0.5)', transform: 'translateX(-50%)' }} />
-                  ))}
-                </div>
-
-                {/* Labels de milestone */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#9ca3af', marginBottom: 12, paddingLeft: '23%', paddingRight: '23%' }}>
-                  <span>25%</span><span>50%</span><span>75%</span>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-                  <div>
-                    <p style={miniLabelStyle}>Alvo</p>
-                    <p style={miniValueStyle}>{formatBRL(valorAlvo)}</p>
+            return (
+              <div
+                style={{ display: 'flex', flexDirection: 'column', gap: 20 }}
+              >
+                {/* Progresso */}
+                <div
+                  style={{
+                    background: '#f8fafc',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: 10,
+                    padding: '16px 20px',
+                    marginBottom: 4,
+                  }}
+                >
+                  <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+                    <StatusBadge status={metaMovimentos.status} />
+                    <TipoBadge tipo={metaMovimentos.tipo} />
                   </div>
-                  <div>
-                    <p style={miniLabelStyle}>Atual</p>
-                    <p style={{ ...miniValueStyle, color: '#2563eb' }}>{formatBRL(valorAtual)}</p>
-                  </div>
-                  <div>
-                    <p style={miniLabelStyle}>Restante</p>
-                    <p style={{ ...miniValueStyle, color: valorRestante > 0 ? '#f59e0b' : '#16a34a' }}>{formatBRL(valorRestante)}</p>
-                  </div>
-                </div>
-              </div>
 
-              {/* Formulário novo movimento */}
-              <form onSubmit={handleCriarMovimento} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <p style={{ margin: 0, fontWeight: 600, fontSize: 14, color: '#111827' }}>Novo movimento</p>
-
-                {/* Tipo: Aporte / Retirada */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                  <button
-                    type="button"
-                    onClick={() => setFormMovimento((f) => ({ ...f, tipo: 'aporte' }))}
+                  {/* Percentual em destaque */}
+                  <div
                     style={{
-                      padding: '8px 12px',
-                      borderRadius: 6,
-                      border: `2px solid ${formMovimento.tipo === 'aporte' ? '#16a34a' : '#e5e7eb'}`,
-                      background: formMovimento.tipo === 'aporte' ? '#f0fdf4' : '#fff',
-                      color: formMovimento.tipo === 'aporte' ? '#16a34a' : '#6b7280',
-                      fontWeight: 600,
-                      fontSize: 13,
-                      cursor: 'pointer',
                       display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 6,
+                      justifyContent: 'space-between',
+                      alignItems: 'baseline',
+                      marginBottom: 6,
                     }}
                   >
-                    <FontAwesomeIcon icon={faPlus} />
-                    Aporte
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFormMovimento((f) => ({ ...f, tipo: 'retirada' }))}
-                    style={{
-                      padding: '8px 12px',
-                      borderRadius: 6,
-                      border: `2px solid ${formMovimento.tipo === 'retirada' ? '#dc2626' : '#e5e7eb'}`,
-                      background: formMovimento.tipo === 'retirada' ? '#fef2f2' : '#fff',
-                      color: formMovimento.tipo === 'retirada' ? '#dc2626' : '#6b7280',
-                      fontWeight: 600,
-                      fontSize: 13,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 6,
-                    }}
-                  >
-                    <FontAwesomeIcon icon={faMinus} />
-                    Retirada
-                  </button>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                  <div>
-                    <label style={labelStyle}>Valor (R$) <span style={{ color: '#ef4444' }}>*</span></label>
-                    <input
-                      style={inputStyle}
-                      type="number"
-                      min="0.01"
-                      step="0.01"
-                      required
-                      placeholder="0.00"
-                      value={formMovimento.valor}
-                      onChange={(e) => setFormMovimento((f) => ({ ...f, valor: e.target.value }))}
-                    />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Data <span style={{ color: '#ef4444' }}>*</span></label>
-                    <input
-                      style={inputStyle}
-                      type="date"
-                      required
-                      value={formMovimento.data}
-                      onChange={(e) => setFormMovimento((f) => ({ ...f, data: e.target.value }))}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label style={labelStyle}>Descrição (opcional)</label>
-                  <input
-                    style={inputStyle}
-                    type="text"
-                    maxLength={255}
-                    placeholder="Ex.: Salário de janeiro"
-                    value={formMovimento.descricao}
-                    onChange={(e) => setFormMovimento((f) => ({ ...f, descricao: e.target.value }))}
-                  />
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <button
-                    type="submit"
-                    disabled={savingMovimento}
-                    style={{
-                      background: formMovimento.tipo === 'retirada' ? '#dc2626' : '#2563eb',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: 6,
-                      padding: '8px 18px',
-                      fontSize: 14,
-                      fontWeight: 600,
-                      cursor: savingMovimento ? 'not-allowed' : 'pointer',
-                      opacity: savingMovimento ? 0.7 : 1,
-                    }}
-                  >
-                    {savingMovimento
-                      ? 'Salvando...'
-                      : formMovimento.tipo === 'retirada'
-                        ? 'Registrar retirada'
-                        : 'Registrar aporte'}
-                  </button>
-                </div>
-              </form>
-
-              {/* Histórico — Timeline */}
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <p style={{ margin: 0, fontWeight: 600, fontSize: 14, color: '#111827' }}>
-                    Histórico ({movimentosTotal})
-                  </p>
-                </div>
-
-                {loadingHistorico && (
-                  <div style={{ textAlign: 'center', padding: 16, color: '#6b7280' }}>Carregando histórico...</div>
-                )}
-
-                {!loadingHistorico && movimentosHistorico.length === 0 && (
-                  <p style={{ margin: 0, fontSize: 13, color: '#9ca3af', textAlign: 'center', padding: '16px 0' }}>
-                    Nenhum movimento registrado.
-                  </p>
-                )}
-
-                {/* Timeline */}
-                {!loadingHistorico && movimentosHistorico.length > 0 && (
-                  <div style={{ position: 'relative', paddingLeft: 28 }}>
-                    {/* Linha vertical */}
-                    <div style={{ position: 'absolute', left: 10, top: 8, bottom: 8, width: 2, background: '#e5e7eb', borderRadius: 2 }} />
-
-                    {movimentosHistorico.map((mov, idx) => {
-                      const isPositivo = Number(mov.valor) >= 0;
-                      const dotColor = isPositivo ? '#16a34a' : '#dc2626';
-                      const valorFormatado = formatBRL(Math.abs(Number(mov.valor)));
-
-                      return (
-                        <div key={mov.id} style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 2, marginBottom: idx < movimentosHistorico.length - 1 ? 16 : 0 }}>
-                          {/* Bolinha */}
-                          <div style={{
-                            position: 'absolute',
-                            left: -22,
-                            top: 2,
-                            width: 16,
-                            height: 16,
-                            borderRadius: '50%',
-                            background: dotColor,
-                            border: '2px solid #fff',
-                            boxShadow: `0 0 0 2px ${dotColor}`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: 9,
-                            color: '#fff',
-                            fontWeight: 700,
-                          }}>
-                            {isPositivo ? '↑' : '↓'}
-                          </div>
-
-                          {/* Conteúdo */}
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                              <span style={{ fontSize: 13, fontWeight: 700, color: dotColor }}>
-                                {isPositivo ? '+' : '-'}{valorFormatado}
-                              </span>
-                              {mov.descricao && (
-                                <span style={{ fontSize: 12, color: '#4b5563' }}>{mov.descricao}</span>
-                              )}
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-                              <span style={{ fontSize: 11, color: '#9ca3af' }}>{formatMovDate(mov.data)}</span>
-                              {confirmDeleteMov === mov.id ? (
-                                <div style={{ display: 'flex', gap: 4 }}>
-                                  <button onClick={() => handleExcluirMovimento(mov.id)} style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 4, padding: '2px 8px', fontSize: 11, cursor: 'pointer' }}>Excluir</button>
-                                  <button onClick={() => setConfirmDeleteMov(null)} style={{ background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 4, padding: '2px 8px', fontSize: 11, cursor: 'pointer' }}>Cancelar</button>
-                                </div>
-                              ) : (
-                                <button onClick={() => setConfirmDeleteMov(mov.id)} style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', fontSize: 11, padding: '2px 4px' }} title="Excluir movimento">
-                                  ✕
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* Paginação do histórico */}
-                {movimentosTotalPages > 1 && (
-                  <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 12 }}>
-                    <button
-                      disabled={movimentosPage <= 1}
-                      onClick={() => carregarHistorico(metaMovimentos.id, movimentosPage - 1)}
-                      style={{ background: '#f3f4f6', border: 'none', borderRadius: 6, padding: '4px 12px', cursor: movimentosPage <= 1 ? 'not-allowed' : 'pointer', color: '#374151', fontSize: 13 }}
-                    >
-                      ← Anterior
-                    </button>
-                    <span style={{ alignSelf: 'center', fontSize: 12, color: '#6b7280' }}>
-                      {movimentosPage} / {movimentosTotalPages}
+                    <span style={{ fontSize: 13, color: '#6b7280' }}>
+                      Progresso
                     </span>
-                    <button
-                      disabled={movimentosPage >= movimentosTotalPages}
-                      onClick={() => carregarHistorico(metaMovimentos.id, movimentosPage + 1)}
-                      style={{ background: '#f3f4f6', border: 'none', borderRadius: 6, padding: '4px 12px', cursor: movimentosPage >= movimentosTotalPages ? 'not-allowed' : 'pointer', color: '#374151', fontSize: 13 }}
+                    <span
+                      style={{ fontSize: 22, fontWeight: 800, color: barColor }}
                     >
-                      Próximo →
+                      {pct.toFixed(1)}%
+                    </span>
+                  </div>
+
+                  {/* Barra com milestones */}
+                  <div
+                    style={{
+                      position: 'relative',
+                      height: 14,
+                      borderRadius: 7,
+                      background: '#e5e7eb',
+                      overflow: 'hidden',
+                      marginBottom: 8,
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${pct}%`,
+                        height: '100%',
+                        background: barColor,
+                        borderRadius: 7,
+                        transition: 'width 0.5s ease',
+                      }}
+                    />
+                    {[25, 50, 75].map((m) => (
+                      <div
+                        key={m}
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: `${m}%`,
+                          width: 2,
+                          height: '100%',
+                          background: 'rgba(255,255,255,0.5)',
+                          transform: 'translateX(-50%)',
+                        }}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Labels de milestone */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      fontSize: 10,
+                      color: '#9ca3af',
+                      marginBottom: 12,
+                      paddingLeft: '23%',
+                      paddingRight: '23%',
+                    }}
+                  >
+                    <span>25%</span>
+                    <span>50%</span>
+                    <span>75%</span>
+                  </div>
+
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr 1fr',
+                      gap: 8,
+                    }}
+                  >
+                    <div>
+                      <p style={miniLabelStyle}>Alvo</p>
+                      <p style={miniValueStyle}>{formatBRL(valorAlvo)}</p>
+                    </div>
+                    <div>
+                      <p style={miniLabelStyle}>Atual</p>
+                      <p style={{ ...miniValueStyle, color: '#2563eb' }}>
+                        {formatBRL(valorAtual)}
+                      </p>
+                    </div>
+                    <div>
+                      <p style={miniLabelStyle}>Restante</p>
+                      <p
+                        style={{
+                          ...miniValueStyle,
+                          color: valorRestante > 0 ? '#f59e0b' : '#16a34a',
+                        }}
+                      >
+                        {formatBRL(valorRestante)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Formulário novo movimento */}
+                <form
+                  onSubmit={handleCriarMovimento}
+                  style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
+                >
+                  <p
+                    style={{
+                      margin: 0,
+                      fontWeight: 600,
+                      fontSize: 14,
+                      color: '#111827',
+                    }}
+                  >
+                    Novo movimento
+                  </p>
+
+                  {/* Tipo: Aporte / Retirada */}
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                      gap: 8,
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormMovimento((f) => ({ ...f, tipo: 'aporte' }))
+                      }
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: 6,
+                        border: `2px solid ${formMovimento.tipo === 'aporte' ? '#16a34a' : '#e5e7eb'}`,
+                        background:
+                          formMovimento.tipo === 'aporte' ? '#f0fdf4' : '#fff',
+                        color:
+                          formMovimento.tipo === 'aporte'
+                            ? '#16a34a'
+                            : '#6b7280',
+                        fontWeight: 600,
+                        fontSize: 13,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 6,
+                      }}
+                    >
+                      <FontAwesomeIcon icon={faPlus} />
+                      Aporte
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormMovimento((f) => ({ ...f, tipo: 'retirada' }))
+                      }
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: 6,
+                        border: `2px solid ${formMovimento.tipo === 'retirada' ? '#dc2626' : '#e5e7eb'}`,
+                        background:
+                          formMovimento.tipo === 'retirada'
+                            ? '#fef2f2'
+                            : '#fff',
+                        color:
+                          formMovimento.tipo === 'retirada'
+                            ? '#dc2626'
+                            : '#6b7280',
+                        fontWeight: 600,
+                        fontSize: 13,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 6,
+                      }}
+                    >
+                      <FontAwesomeIcon icon={faMinus} />
+                      Retirada
                     </button>
                   </div>
-                )}
+
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                      gap: 10,
+                    }}
+                  >
+                    <div>
+                      <label style={labelStyle}>
+                        Valor (R$) <span style={{ color: '#ef4444' }}>*</span>
+                      </label>
+                      <input
+                        style={inputStyle}
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        required
+                        placeholder="0.00"
+                        value={formMovimento.valor}
+                        onChange={(e) =>
+                          setFormMovimento((f) => ({
+                            ...f,
+                            valor: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>
+                        Data <span style={{ color: '#ef4444' }}>*</span>
+                      </label>
+                      <input
+                        style={inputStyle}
+                        type="date"
+                        required
+                        value={formMovimento.data}
+                        onChange={(e) =>
+                          setFormMovimento((f) => ({
+                            ...f,
+                            data: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={labelStyle}>Descrição (opcional)</label>
+                    <input
+                      style={inputStyle}
+                      type="text"
+                      maxLength={255}
+                      placeholder="Ex.: Salário de janeiro"
+                      value={formMovimento.descricao}
+                      onChange={(e) =>
+                        setFormMovimento((f) => ({
+                          ...f,
+                          descricao: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <button
+                      type="submit"
+                      disabled={savingMovimento}
+                      style={{
+                        background:
+                          formMovimento.tipo === 'retirada'
+                            ? '#dc2626'
+                            : '#2563eb',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: 6,
+                        padding: '8px 18px',
+                        fontSize: 14,
+                        fontWeight: 600,
+                        cursor: savingMovimento ? 'not-allowed' : 'pointer',
+                        opacity: savingMovimento ? 0.7 : 1,
+                      }}
+                    >
+                      {savingMovimento
+                        ? 'Salvando...'
+                        : formMovimento.tipo === 'retirada'
+                          ? 'Registrar retirada'
+                          : 'Registrar aporte'}
+                    </button>
+                  </div>
+                </form>
+
+                {/* Histórico — Timeline */}
+                <div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: 12,
+                    }}
+                  >
+                    <p
+                      style={{
+                        margin: 0,
+                        fontWeight: 600,
+                        fontSize: 14,
+                        color: '#111827',
+                      }}
+                    >
+                      Histórico ({movimentosTotal})
+                    </p>
+                  </div>
+
+                  {loadingHistorico && (
+                    <div
+                      style={{
+                        textAlign: 'center',
+                        padding: 16,
+                        color: '#6b7280',
+                      }}
+                    >
+                      Carregando histórico...
+                    </div>
+                  )}
+
+                  {!loadingHistorico && movimentosHistorico.length === 0 && (
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: 13,
+                        color: '#9ca3af',
+                        textAlign: 'center',
+                        padding: '16px 0',
+                      }}
+                    >
+                      Nenhum movimento registrado.
+                    </p>
+                  )}
+
+                  {/* Timeline */}
+                  {!loadingHistorico && movimentosHistorico.length > 0 && (
+                    <div style={{ position: 'relative', paddingLeft: 28 }}>
+                      {/* Linha vertical */}
+                      <div
+                        style={{
+                          position: 'absolute',
+                          left: 10,
+                          top: 8,
+                          bottom: 8,
+                          width: 2,
+                          background: '#e5e7eb',
+                          borderRadius: 2,
+                        }}
+                      />
+
+                      {movimentosHistorico.map((mov, idx) => {
+                        const isPositivo = Number(mov.valor) >= 0;
+                        const dotColor = isPositivo ? '#16a34a' : '#dc2626';
+                        const valorFormatado = formatBRL(
+                          Math.abs(Number(mov.valor))
+                        );
+
+                        return (
+                          <div
+                            key={mov.id}
+                            style={{
+                              position: 'relative',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: 2,
+                              marginBottom:
+                                idx < movimentosHistorico.length - 1 ? 16 : 0,
+                            }}
+                          >
+                            {/* Bolinha */}
+                            <div
+                              style={{
+                                position: 'absolute',
+                                left: -22,
+                                top: 2,
+                                width: 16,
+                                height: 16,
+                                borderRadius: '50%',
+                                background: dotColor,
+                                border: '2px solid #fff',
+                                boxShadow: `0 0 0 2px ${dotColor}`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: 9,
+                                color: '#fff',
+                                fontWeight: 700,
+                              }}
+                            >
+                              {isPositivo ? '↑' : '↓'}
+                            </div>
+
+                            {/* Conteúdo */}
+                            <div
+                              style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'flex-start',
+                              }}
+                            >
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: 2,
+                                }}
+                              >
+                                <span
+                                  style={{
+                                    fontSize: 13,
+                                    fontWeight: 700,
+                                    color: dotColor,
+                                  }}
+                                >
+                                  {isPositivo ? '+' : '-'}
+                                  {valorFormatado}
+                                </span>
+                                {mov.descricao && (
+                                  <span
+                                    style={{ fontSize: 12, color: '#4b5563' }}
+                                  >
+                                    {mov.descricao}
+                                  </span>
+                                )}
+                              </div>
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  alignItems: 'flex-end',
+                                  gap: 4,
+                                }}
+                              >
+                                <span
+                                  style={{ fontSize: 11, color: '#9ca3af' }}
+                                >
+                                  {formatMovDate(mov.data)}
+                                </span>
+                                {confirmDeleteMov === mov.id ? (
+                                  <div style={{ display: 'flex', gap: 4 }}>
+                                    <button
+                                      onClick={() =>
+                                        handleExcluirMovimento(mov.id)
+                                      }
+                                      style={{
+                                        background: '#dc2626',
+                                        color: '#fff',
+                                        border: 'none',
+                                        borderRadius: 4,
+                                        padding: '2px 8px',
+                                        fontSize: 11,
+                                        cursor: 'pointer',
+                                      }}
+                                    >
+                                      Excluir
+                                    </button>
+                                    <button
+                                      onClick={() => setConfirmDeleteMov(null)}
+                                      style={{
+                                        background: '#f3f4f6',
+                                        color: '#374151',
+                                        border: 'none',
+                                        borderRadius: 4,
+                                        padding: '2px 8px',
+                                        fontSize: 11,
+                                        cursor: 'pointer',
+                                      }}
+                                    >
+                                      Cancelar
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => setConfirmDeleteMov(mov.id)}
+                                    style={{
+                                      background: 'none',
+                                      border: 'none',
+                                      color: '#dc2626',
+                                      cursor: 'pointer',
+                                      fontSize: 11,
+                                      padding: '2px 4px',
+                                    }}
+                                    title="Excluir movimento"
+                                  >
+                                    ✕
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Paginação do histórico */}
+                  {movimentosTotalPages > 1 && (
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        gap: 8,
+                        marginTop: 12,
+                      }}
+                    >
+                      <button
+                        disabled={movimentosPage <= 1}
+                        onClick={() =>
+                          carregarHistorico(
+                            metaMovimentos.id,
+                            movimentosPage - 1
+                          )
+                        }
+                        style={{
+                          background: '#f3f4f6',
+                          border: 'none',
+                          borderRadius: 6,
+                          padding: '4px 12px',
+                          cursor:
+                            movimentosPage <= 1 ? 'not-allowed' : 'pointer',
+                          color: '#374151',
+                          fontSize: 13,
+                        }}
+                      >
+                        ← Anterior
+                      </button>
+                      <span
+                        style={{
+                          alignSelf: 'center',
+                          fontSize: 12,
+                          color: '#6b7280',
+                        }}
+                      >
+                        {movimentosPage} / {movimentosTotalPages}
+                      </span>
+                      <button
+                        disabled={movimentosPage >= movimentosTotalPages}
+                        onClick={() =>
+                          carregarHistorico(
+                            metaMovimentos.id,
+                            movimentosPage + 1
+                          )
+                        }
+                        style={{
+                          background: '#f3f4f6',
+                          border: 'none',
+                          borderRadius: 6,
+                          padding: '4px 12px',
+                          cursor:
+                            movimentosPage >= movimentosTotalPages
+                              ? 'not-allowed'
+                              : 'pointer',
+                          color: '#374151',
+                          fontSize: 13,
+                        }}
+                      >
+                        Próximo →
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          );
-        })()}
+            );
+          })()}
       </Modal>
     </>
   );

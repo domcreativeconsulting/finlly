@@ -25,7 +25,12 @@ import {
   faDoorOpen,
 } from '@fortawesome/free-solid-svg-icons';
 import { Button, Badge, Modal } from '../design-system/index.js';
-import { colors, typography, radius, shadows } from '../design-system/tokens.js';
+import {
+  colors,
+  typography,
+  radius,
+  shadows,
+} from '../design-system/tokens.js';
 
 function getInitials(name) {
   if (!name) return '?';
@@ -35,7 +40,10 @@ function getInitials(name) {
 }
 
 function formatBRL(valor) {
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor ?? 0);
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(valor ?? 0);
 }
 
 function formatDate(dateStr) {
@@ -73,11 +81,23 @@ const STATUS_LABELS = {
 };
 
 const TIPOS_INVESTIMENTO = [
-  'CDB', 'LCI/LCA', 'Tesouro Direto', 'Fundo', 'Ações', 'FII', 'Cripto', 'Poupança', 'Outro',
+  'CDB',
+  'LCI/LCA',
+  'Tesouro Direto',
+  'Fundo',
+  'Ações',
+  'FII',
+  'Cripto',
+  'Poupança',
+  'Outro',
 ];
 
 const MODELOS_RENTABILIDADE = [
-  'Pré-fixado', 'Pós CDI', 'IPCA +', 'Renda variável', 'Outro',
+  'Pré-fixado',
+  'Pós CDI',
+  'IPCA +',
+  'Renda variável',
+  'Outro',
 ];
 
 const EMPTY_FORM = {
@@ -138,7 +158,12 @@ export default function InvestimentosPage() {
   const [posicoes, setPosicoes] = useState({});
 
   const [modalCriarEvento, setModalCriarEvento] = useState(false);
-  const [formEvento, setFormEvento] = useState({ tipo: 'aporte', valor: '', data: todayISO(), descricao: '' });
+  const [formEvento, setFormEvento] = useState({
+    tipo: 'aporte',
+    valor: '',
+    data: todayISO(),
+    descricao: '',
+  });
   const [savingEvento, setSavingEvento] = useState(false);
 
   // Filter states
@@ -146,7 +171,12 @@ export default function InvestimentosPage() {
   const [filtroTipo, setFiltroTipo] = useState('todos');
   const [filtroDataDe, setFiltroDataDe] = useState('');
   const [filtroDataAte, setFiltroDataAte] = useState('');
-  const [filtrosAtivos, setFiltrosAtivos] = useState({ conta: 'todas', tipo: 'todos', dataDe: '', dataAte: '' });
+  const [filtrosAtivos, setFiltrosAtivos] = useState({
+    conta: 'todas',
+    tipo: 'todos',
+    dataDe: '',
+    dataAte: '',
+  });
 
   const carregarInvestimentos = useCallback(async () => {
     setLoading(true);
@@ -167,7 +197,9 @@ export default function InvestimentosPage() {
           .catch(() => {});
       });
     } catch (err) {
-      setError(err?.response?.data?.message || 'Erro ao carregar investimentos.');
+      setError(
+        err?.response?.data?.message || 'Erro ao carregar investimentos.'
+      );
     } finally {
       setLoading(false);
     }
@@ -227,7 +259,8 @@ export default function InvestimentosPage() {
     if (investimento) {
       setForm({
         contaId: investimento.contaId || '',
-        tipoInvestimento: investimento.tipoNome || investimento.tipoInvestimento || '',
+        tipoInvestimento:
+          investimento.tipoNome || investimento.tipoInvestimento || '',
         produto: investimento.nome || '',
         dataAplicacao: investimento.dataInicio || todayISO(),
         dataVencimento: investimento.dataVencimento || '',
@@ -276,20 +309,29 @@ export default function InvestimentosPage() {
       fecharModal();
       carregarInvestimentos();
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Erro ao salvar investimento.');
+      toast.error(
+        err?.response?.data?.message || 'Erro ao salvar investimento.'
+      );
     } finally {
       setSaving(false);
     }
   }
 
   async function handleExcluir(id) {
-    if (!window.confirm('Deseja excluir este investimento? Esta ação não pode ser desfeita.')) return;
+    if (
+      !window.confirm(
+        'Deseja excluir este investimento? Esta ação não pode ser desfeita.'
+      )
+    )
+      return;
     try {
       await investimentosService.excluir(id);
       toast.success('Investimento excluído.');
       carregarInvestimentos();
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Erro ao excluir investimento.');
+      toast.error(
+        err?.response?.data?.message || 'Erro ao excluir investimento.'
+      );
     }
   }
 
@@ -325,7 +367,12 @@ export default function InvestimentosPage() {
     setEventos([]);
     setPosicao(null);
     setModalCriarEvento(false);
-    setFormEvento({ tipo: 'aporte', valor: '', data: todayISO(), descricao: '' });
+    setFormEvento({
+      tipo: 'aporte',
+      valor: '',
+      data: todayISO(),
+      descricao: '',
+    });
   }
 
   async function handleCriarEvento(e) {
@@ -340,9 +387,16 @@ export default function InvestimentosPage() {
       });
       toast.success('Evento registrado com sucesso!');
       setModalCriarEvento(false);
-      setFormEvento({ tipo: 'aporte', valor: '', data: todayISO(), descricao: '' });
+      setFormEvento({
+        tipo: 'aporte',
+        valor: '',
+        data: todayISO(),
+        descricao: '',
+      });
       await carregarEventos(investimentoSelecionado.id);
-      const result = await investimentosService.getPosicao(investimentoSelecionado.id);
+      const result = await investimentosService.getPosicao(
+        investimentoSelecionado.id
+      );
       setPosicao(result.posicao);
       carregarInvestimentos();
     } catch (err) {
@@ -355,10 +409,15 @@ export default function InvestimentosPage() {
   async function handleExcluirEvento(eventoId) {
     if (!window.confirm('Deseja excluir este evento?')) return;
     try {
-      await investimentosService.excluirEvento(investimentoSelecionado.id, eventoId);
+      await investimentosService.excluirEvento(
+        investimentoSelecionado.id,
+        eventoId
+      );
       toast.success('Evento excluído.');
       await carregarEventos(investimentoSelecionado.id);
-      const result = await investimentosService.getPosicao(investimentoSelecionado.id);
+      const result = await investimentosService.getPosicao(
+        investimentoSelecionado.id
+      );
       setPosicao(result.posicao);
       carregarInvestimentos();
     } catch (err) {
@@ -374,27 +433,48 @@ export default function InvestimentosPage() {
 
   // Filter applied investments
   const investimentosFiltrados = investimentos.filter((inv) => {
-    if (filtrosAtivos.conta !== 'todas' && inv.contaNome !== filtrosAtivos.conta) return false;
-    if (filtrosAtivos.tipo !== 'todos' && String(inv.tipoId) !== filtrosAtivos.tipo) return false;
-    if (filtrosAtivos.dataDe && inv.dataInicio < filtrosAtivos.dataDe) return false;
-    if (filtrosAtivos.dataAte && inv.dataInicio > filtrosAtivos.dataAte) return false;
+    if (
+      filtrosAtivos.conta !== 'todas' &&
+      inv.contaNome !== filtrosAtivos.conta
+    )
+      return false;
+    if (
+      filtrosAtivos.tipo !== 'todos' &&
+      String(inv.tipoId) !== filtrosAtivos.tipo
+    )
+      return false;
+    if (filtrosAtivos.dataDe && inv.dataInicio < filtrosAtivos.dataDe)
+      return false;
+    if (filtrosAtivos.dataAte && inv.dataInicio > filtrosAtivos.dataAte)
+      return false;
     return true;
   });
 
   // Summary card calculations
-  const totalAplicado = investimentosFiltrados.reduce((acc, inv) => acc + (inv.valorInicial ?? 0), 0);
+  const totalAplicado = investimentosFiltrados.reduce(
+    (acc, inv) => acc + (inv.valorInicial ?? 0),
+    0
+  );
   const saldoEstimado = investimentosFiltrados.reduce(
     (acc, inv) => acc + (posicoes[inv.id]?.saldoAtual ?? inv.valorInicial ?? 0),
     0
   );
   const ganhoEstimado = saldoEstimado - totalAplicado;
-  const rentMedia = totalAplicado > 0 ? (ganhoEstimado / totalAplicado) * 100 : 0;
+  const rentMedia =
+    totalAplicado > 0 ? (ganhoEstimado / totalAplicado) * 100 : 0;
 
   // Unique conta/instituição options for filter
-  const contasUnicas = [...new Set(investimentos.map((inv) => inv.contaNome).filter(Boolean))];
+  const contasUnicas = [
+    ...new Set(investimentos.map((inv) => inv.contaNome).filter(Boolean)),
+  ];
 
   function aplicarFiltros() {
-    setFiltrosAtivos({ conta: filtroContaInstituicao, tipo: filtroTipo, dataDe: filtroDataDe, dataAte: filtroDataAte });
+    setFiltrosAtivos({
+      conta: filtroContaInstituicao,
+      tipo: filtroTipo,
+      dataDe: filtroDataDe,
+      dataAte: filtroDataAte,
+    });
   }
 
   function limparFiltros() {
@@ -402,12 +482,19 @@ export default function InvestimentosPage() {
     setFiltroTipo('todos');
     setFiltroDataDe('');
     setFiltroDataAte('');
-    setFiltrosAtivos({ conta: 'todas', tipo: 'todos', dataDe: '', dataAte: '' });
+    setFiltrosAtivos({
+      conta: 'todas',
+      tipo: 'todos',
+      dataDe: '',
+      dataAte: '',
+    });
   }
 
   return (
     <>
-      <div style={{ display: 'flex', minHeight: '100vh', background: '#f9fafb' }}>
+      <div
+        style={{ display: 'flex', minHeight: '100vh', background: '#f9fafb' }}
+      >
         <AppSidebar
           sidebarOpen={sidebarOpen}
           currentPath="/investimentos"
@@ -417,7 +504,11 @@ export default function InvestimentosPage() {
         <div
           style={{
             ...s.mainArea,
-            marginLeft: !sidebarOpen ? '0px' : sidebarExpanded ? '236px' : '108px',
+            marginLeft: !sidebarOpen
+              ? '0px'
+              : sidebarExpanded
+                ? '236px'
+                : '108px',
             transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           }}
         >
@@ -439,13 +530,30 @@ export default function InvestimentosPage() {
                 <FontAwesomeIcon icon={faBars} />
               </button>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
-                  <FontAwesomeIcon icon={faChartLine} style={{ fontSize: 24, color: '#2563eb' }} />
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    marginBottom: 4,
+                  }}
+                >
+                  <FontAwesomeIcon
+                    icon={faChartLine}
+                    style={{ fontSize: 24, color: '#2563eb' }}
+                  />
                   <h1 style={s.pageTitle}>Investimentos</h1>
                   <span style={s.badge}>Carteira pessoal • Organiza</span>
                 </div>
-                <p style={{ margin: '0 0 16px 0', fontSize: 14, color: colors.neutral600 ?? '#4b5563' }}>
-                  Cadastre seus investimentos, acompanhe o valor aplicado, o saldo estimado e a rentabilidade ao longo do tempo.
+                <p
+                  style={{
+                    margin: '0 0 16px 0',
+                    fontSize: 14,
+                    color: colors.neutral600 ?? '#4b5563',
+                  }}
+                >
+                  Cadastre seus investimentos, acompanhe o valor aplicado, o
+                  saldo estimado e a rentabilidade ao longo do tempo.
                 </p>
                 <Button variant="primary" onClick={() => abrirModal()}>
                   <FontAwesomeIcon icon={faPlus} style={{ marginRight: 6 }} />
@@ -455,7 +563,10 @@ export default function InvestimentosPage() {
             </div>
 
             {/* Avatar / Dropdown */}
-            <div ref={dropdownRef} style={{ position: 'relative', flexShrink: 0 }}>
+            <div
+              ref={dropdownRef}
+              style={{ position: 'relative', flexShrink: 0 }}
+            >
               <button
                 onClick={() => setDropdownOpen((v) => !v)}
                 style={{
@@ -474,7 +585,9 @@ export default function InvestimentosPage() {
                   border: 'none',
                   outline: 'none',
                   userSelect: 'none',
-                  boxShadow: dropdownOpen ? '0 0 0 3px rgba(37,99,235,0.25)' : 'none',
+                  boxShadow: dropdownOpen
+                    ? '0 0 0 3px rgba(37,99,235,0.25)'
+                    : 'none',
                 }}
                 title={usuario?.nome || ''}
                 aria-label={`Menu do usuário ${usuario?.nome || ''}`}
@@ -485,21 +598,30 @@ export default function InvestimentosPage() {
               </button>
 
               {dropdownOpen && (
-                <div style={{
-                  position: 'absolute',
-                  top: 'calc(100% + 8px)',
-                  right: 0,
-                  width: '230px',
-                  backgroundColor: '#ffffff',
-                  borderRadius: '12px',
-                  boxShadow: '0 8px 30px rgba(0,0,0,0.13)',
-                  border: '1px solid #e5e7eb',
-                  zIndex: 1050,
-                  overflow: 'hidden',
-                  padding: '4px 0',
-                }}>
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 8px)',
+                    right: 0,
+                    width: '230px',
+                    backgroundColor: '#ffffff',
+                    borderRadius: '12px',
+                    boxShadow: '0 8px 30px rgba(0,0,0,0.13)',
+                    border: '1px solid #e5e7eb',
+                    zIndex: 1050,
+                    overflow: 'hidden',
+                    padding: '4px 0',
+                  }}
+                >
                   <div style={{ padding: '14px 16px 12px' }}>
-                    <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827', marginBottom: '2px' }}>
+                    <div
+                      style={{
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        color: '#111827',
+                        marginBottom: '2px',
+                      }}
+                    >
                       {usuario?.nome || 'Usuário'}
                     </div>
                     <div style={{ fontSize: '12px', color: '#6b7280' }}>
@@ -507,37 +629,116 @@ export default function InvestimentosPage() {
                     </div>
                   </div>
 
-                  <hr style={{ margin: '4px 0', border: 'none', borderTop: '1px solid #f3f4f6' }} />
+                  <hr
+                    style={{
+                      margin: '4px 0',
+                      border: 'none',
+                      borderTop: '1px solid #f3f4f6',
+                    }}
+                  />
 
                   <button
-                    style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 16px', fontSize: '14px', fontWeight: '500', color: '#374151', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      width: '100%',
+                      padding: '10px 16px',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      color: '#374151',
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                    }}
                     onClick={() => handleMenuNavigate('/assinatura')}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f3f4f6')}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor = '#f3f4f6')
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = 'transparent')
+                    }
                   >
-                    <FontAwesomeIcon icon={faCreditCard} style={{ fontSize: '18px', marginRight: '5px' }} />
+                    <FontAwesomeIcon
+                      icon={faCreditCard}
+                      style={{ fontSize: '18px', marginRight: '5px' }}
+                    />
                     Assinatura
                   </button>
 
                   <button
-                    style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 16px', fontSize: '14px', fontWeight: '500', color: '#374151', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      width: '100%',
+                      padding: '10px 16px',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      color: '#374151',
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                    }}
                     onClick={() => handleMenuNavigate('/perfil')}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f3f4f6')}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor = '#f3f4f6')
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = 'transparent')
+                    }
                   >
-                    <FontAwesomeIcon icon={faCircleUser} style={{ fontSize: '18px', color: '#4b5563', marginRight: '5px' }} />
+                    <FontAwesomeIcon
+                      icon={faCircleUser}
+                      style={{
+                        fontSize: '18px',
+                        color: '#4b5563',
+                        marginRight: '5px',
+                      }}
+                    />
                     Perfil
                   </button>
 
-                  <hr style={{ margin: '4px 0', border: 'none', borderTop: '1px solid #f3f4f6' }} />
+                  <hr
+                    style={{
+                      margin: '4px 0',
+                      border: 'none',
+                      borderTop: '1px solid #f3f4f6',
+                    }}
+                  />
 
                   <button
-                    style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 16px', fontSize: '14px', fontWeight: '500', color: '#dc2626', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-                    onClick={() => { setDropdownOpen(false); logout(); }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#fef2f2')}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      width: '100%',
+                      padding: '10px 16px',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      color: '#dc2626',
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                    }}
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      logout();
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor = '#fef2f2')
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = 'transparent')
+                    }
                   >
-                    <FontAwesomeIcon icon={faDoorOpen} style={{ fontSize: '18px', marginRight: '5px' }} />
+                    <FontAwesomeIcon
+                      icon={faDoorOpen}
+                      style={{ fontSize: '18px', marginRight: '5px' }}
+                    />
                     Sair
                   </button>
                 </div>
@@ -548,238 +749,523 @@ export default function InvestimentosPage() {
           {/* Main Content */}
           <InadimplenteGuard>
             <div style={s.content}>
-
-          {/* Summary Cards */}
-          {!loading && !error && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>
-              {/* Card 1 – Total aplicado */}
-              <div style={cardStyle}>
-                <p style={cardLabelStyle}>Total aplicado</p>
-                <p style={cardValueStyle}>{formatBRL(totalAplicado)}</p>
-                <p style={cardSubStyle}>Somatório dos aportes filtrados.</p>
-                <FontAwesomeIcon icon={faCommentDollar} style={{ color: '#2563eb', fontSize: 18, marginTop: 8 }} />
-              </div>
-              {/* Card 2 – Saldo estimado */}
-              <div style={cardStyle}>
-                <p style={cardLabelStyle}>Saldo estimado hoje</p>
-                <p style={cardValueStyle}>{formatBRL(saldoEstimado)}</p>
-                <p style={cardSubStyle}>Aplicado + rentabilidade estimada.</p>
-                <FontAwesomeIcon icon={faChartLine} style={{ color: '#2563eb', fontSize: 18, marginTop: 8 }} />
-              </div>
-              {/* Card 3 – Ganho estimado */}
-              <div style={cardStyle}>
-                <p style={cardLabelStyle}>Ganho estimado</p>
-                <p style={{ ...cardValueStyle, color: ganhoEstimado >= 0 ? '#16a34a' : '#dc2626' }}>
-                  {formatBRL(ganhoEstimado)}
-                </p>
-                <p style={cardSubStyle}>Rent. média: {rentMedia.toFixed(2)}% (estimada)</p>
-                <FontAwesomeIcon icon={faPercent} style={{ color: '#2563eb', fontSize: 18, marginTop: 8 }} />
-              </div>
-            </div>
-          )}
-
-          {/* Filters Section */}
-          <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, boxShadow: shadows.sm, padding: '20px 24px', marginBottom: 24 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 16 }}>
-              <span style={{ fontWeight: 600, fontSize: 15, color: colors.neutral800 ?? '#1e293b' }}>Filtros da carteira</span>
-              <span style={{ fontSize: 13, color: colors.neutral500 ?? '#6b7280' }}>Refine os dados para análises específicas</span>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 12, marginBottom: 14 }}>
-              <div>
-                <label style={labelStyle}>Conta / instituição</label>
-                <select
-                  style={inputStyle}
-                  value={filtroContaInstituicao}
-                  onChange={(e) => setFiltroContaInstituicao(e.target.value)}
+              {/* Summary Cards */}
+              {!loading && !error && (
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(3, 1fr)',
+                    gap: 16,
+                    marginBottom: 24,
+                  }}
                 >
-                  <option value="todas">Todas</option>
-                  {contasUnicas.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label style={labelStyle}>Tipo de investimento</label>
-                <select
-                  style={inputStyle}
-                  value={filtroTipo}
-                  onChange={(e) => setFiltroTipo(e.target.value)}
-                >
-                  <option value="todos">Todos</option>
-                  {tipos.map((t) => (
-                    <option key={t.id} value={String(t.id)}>{t.nome}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label style={labelStyle}>Aplicação de</label>
-                <input
-                  style={inputStyle}
-                  type="date"
-                  value={filtroDataDe}
-                  onChange={(e) => setFiltroDataDe(e.target.value)}
-                />
-              </div>
-              <div>
-                <label style={labelStyle}>até</label>
-                <input
-                  style={inputStyle}
-                  type="date"
-                  value={filtroDataAte}
-                  onChange={(e) => setFiltroDataAte(e.target.value)}
-                />
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-              <Button variant="primary" onClick={aplicarFiltros}>
-                <FontAwesomeIcon icon={faFilter} style={{ marginRight: 6 }} />
-                Filtrar
-              </Button>
-              <button
-                onClick={limparFiltros}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: '#2563eb', padding: '6px 4px' }}
+                  {/* Card 1 – Total aplicado */}
+                  <div style={cardStyle}>
+                    <p style={cardLabelStyle}>Total aplicado</p>
+                    <p style={cardValueStyle}>{formatBRL(totalAplicado)}</p>
+                    <p style={cardSubStyle}>Somatório dos aportes filtrados.</p>
+                    <FontAwesomeIcon
+                      icon={faCommentDollar}
+                      style={{ color: '#2563eb', fontSize: 18, marginTop: 8 }}
+                    />
+                  </div>
+                  {/* Card 2 – Saldo estimado */}
+                  <div style={cardStyle}>
+                    <p style={cardLabelStyle}>Saldo estimado hoje</p>
+                    <p style={cardValueStyle}>{formatBRL(saldoEstimado)}</p>
+                    <p style={cardSubStyle}>
+                      Aplicado + rentabilidade estimada.
+                    </p>
+                    <FontAwesomeIcon
+                      icon={faChartLine}
+                      style={{ color: '#2563eb', fontSize: 18, marginTop: 8 }}
+                    />
+                  </div>
+                  {/* Card 3 – Ganho estimado */}
+                  <div style={cardStyle}>
+                    <p style={cardLabelStyle}>Ganho estimado</p>
+                    <p
+                      style={{
+                        ...cardValueStyle,
+                        color: ganhoEstimado >= 0 ? '#16a34a' : '#dc2626',
+                      }}
+                    >
+                      {formatBRL(ganhoEstimado)}
+                    </p>
+                    <p style={cardSubStyle}>
+                      Rent. média: {rentMedia.toFixed(2)}% (estimada)
+                    </p>
+                    <FontAwesomeIcon
+                      icon={faPercent}
+                      style={{ color: '#2563eb', fontSize: 18, marginTop: 8 }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Filters Section */}
+              <div
+                style={{
+                  background: '#fff',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: 12,
+                  boxShadow: shadows.sm,
+                  padding: '20px 24px',
+                  marginBottom: 24,
+                }}
               >
-                Limpar
-              </button>
-            </div>
-          </div>
-
-          {/* Loading / Error / Empty */}
-          {loading && (
-            <div style={{ textAlign: 'center', padding: 48, color: colors.neutral500 ?? '#6b7280' }}>
-              Carregando...
-            </div>
-          )}
-
-          {!loading && error && (
-            <div style={{ textAlign: 'center', padding: 48, color: '#dc2626' }}>
-              {error}
-            </div>
-          )}
-
-          {!loading && !error && investimentosFiltrados.length === 0 && (
-            <div style={{ textAlign: 'center', padding: 64, color: colors.neutral400 ?? '#9ca3af' }}>
-              <FontAwesomeIcon icon={faInbox} style={{ fontSize: 48, marginBottom: 16, display: 'block' }} />
-              <p style={{ margin: 0 }}>
-                {investimentos.length === 0
-                  ? 'Nenhum investimento encontrado. Crie o primeiro!'
-                  : 'Nenhum investimento corresponde aos filtros aplicados.'}
-              </p>
-            </div>
-          )}
-
-          {/* Investment Table */}
-          {!loading && !error && investimentosFiltrados.length > 0 && (
-            <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, boxShadow: shadows.sm, overflow: 'hidden' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '16px 20px', borderBottom: '1px solid #e5e7eb' }}>
-                <span style={{ fontWeight: 600, fontSize: 15, color: colors.neutral800 ?? '#1e293b' }}>Carteira de investimentos</span>
-                <span style={{ fontSize: 13, color: colors.neutral500 ?? '#6b7280' }}>Controle por aplicação</span>
-              </div>
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                  <thead>
-                    <tr style={{ background: colors.neutral100 ?? '#f3f4f6' }}>
-                      {['Data aplicação', 'Conta / Banco', 'Tipo', 'Produto', 'Aplicado (R$)', 'Atual (R$)', 'Ganho (R$)', 'Rent. (%)', 'Prazo', 'Ações'].map((col) => (
-                        <th
-                          key={col}
-                          style={{
-                            padding: '10px 14px',
-                            textAlign: 'left',
-                            fontWeight: 600,
-                            color: colors.neutral700 ?? '#374151',
-                            borderBottom: '1px solid #e5e7eb',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {col}
-                        </th>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'baseline',
+                    marginBottom: 16,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontWeight: 600,
+                      fontSize: 15,
+                      color: colors.neutral800 ?? '#1e293b',
+                    }}
+                  >
+                    Filtros da carteira
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 13,
+                      color: colors.neutral500 ?? '#6b7280',
+                    }}
+                  >
+                    Refine os dados para análises específicas
+                  </span>
+                </div>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr 1fr 1fr',
+                    gap: 12,
+                    marginBottom: 14,
+                  }}
+                >
+                  <div>
+                    <label style={labelStyle}>Conta / instituição</label>
+                    <select
+                      style={inputStyle}
+                      value={filtroContaInstituicao}
+                      onChange={(e) =>
+                        setFiltroContaInstituicao(e.target.value)
+                      }
+                    >
+                      <option value="todas">Todas</option>
+                      {contasUnicas.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
                       ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {investimentosFiltrados.map((inv, idx) => {
-                      const pos = posicoes[inv.id];
-                      const saldoAtual = pos?.saldoAtual ?? inv.valorInicial ?? 0;
-                      const ganho = saldoAtual - (inv.valorInicial ?? 0);
-                      const rentPct = (inv.valorInicial ?? 0) > 0 ? (ganho / inv.valorInicial) * 100 : 0;
-                      const ganhoColor = ganho > 0 ? '#16a34a' : ganho < 0 ? '#dc2626' : colors.neutral600 ?? '#4b5563';
-
-                      return (
-                        <tr
-                          key={inv.id}
-                          style={{
-                            background: idx % 2 === 0 ? '#fff' : colors.neutral50 ?? '#f9fafb',
-                            borderBottom: '1px solid #f3f4f6',
-                          }}
-                        >
-                          <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>{formatDate(inv.dataInicio)}</td>
-                          <td style={{ padding: '10px 14px' }}>
-                            <div style={{ fontWeight: 600, fontSize: 13 }}>{inv.contaNome || '-'}</div>
-                            {inv.contaBanco && (
-                              <div style={{ fontSize: 12, color: colors.neutral500 ?? '#6b7280' }}>{inv.contaBanco}</div>
-                            )}
-                          </td>
-                          <td style={{ padding: '10px 14px', color: colors.neutral600 ?? '#4b5563' }}>{inv.tipoNome || '-'}</td>
-                          <td style={{ padding: '10px 14px', fontWeight: 500 }}>{inv.nome}</td>
-                          <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>{formatBRL(inv.valorInicial)}</td>
-                          <td style={{ padding: '10px 14px', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                            {pos !== undefined ? formatBRL(saldoAtual) : <span style={{ color: colors.neutral400 ?? '#9ca3af' }}>—</span>}
-                          </td>
-                          <td style={{ padding: '10px 14px', fontWeight: 600, color: ganhoColor, whiteSpace: 'nowrap' }}>
-                            {pos !== undefined ? formatBRL(ganho) : <span style={{ color: colors.neutral400 ?? '#9ca3af' }}>—</span>}
-                          </td>
-                          <td style={{ padding: '10px 14px', fontWeight: 600, color: ganhoColor, whiteSpace: 'nowrap' }}>
-                            {pos !== undefined ? `${rentPct.toFixed(2)}%` : <span style={{ color: colors.neutral400 ?? '#9ca3af' }}>—</span>}
-                          </td>
-                          <td style={{ padding: '10px 14px', whiteSpace: 'nowrap', color: colors.neutral600 ?? '#4b5563' }}>
-                            {calcularPrazo(inv.dataVencimento)}
-                          </td>
-                          <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
-                            <div style={{ display: 'flex', gap: 4 }}>
-                              <button title="Editar" onClick={() => abrirModal(inv)} style={iconBtn}>
-                                <FontAwesomeIcon icon={faPenToSquare} />
-                              </button>
-                              <button title="Eventos" onClick={() => abrirEventos(inv)} style={iconBtn}>
-                                <FontAwesomeIcon icon={faChartLine} />
-                              </button>
-                              <button title="Excluir" onClick={() => handleExcluir(inv.id)} style={{ ...iconBtn, color: '#dc2626' }}>
-                                <FontAwesomeIcon icon={faTrash} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Tipo de investimento</label>
+                    <select
+                      style={inputStyle}
+                      value={filtroTipo}
+                      onChange={(e) => setFiltroTipo(e.target.value)}
+                    >
+                      <option value="todos">Todos</option>
+                      {tipos.map((t) => (
+                        <option key={t.id} value={String(t.id)}>
+                          {t.nome}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Aplicação de</label>
+                    <input
+                      style={inputStyle}
+                      type="date"
+                      value={filtroDataDe}
+                      onChange={(e) => setFiltroDataDe(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>até</label>
+                    <input
+                      style={inputStyle}
+                      type="date"
+                      value={filtroDataAte}
+                      onChange={(e) => setFiltroDataAte(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                  <Button variant="primary" onClick={aplicarFiltros}>
+                    <FontAwesomeIcon
+                      icon={faFilter}
+                      style={{ marginRight: 6 }}
+                    />
+                    Filtrar
+                  </Button>
+                  <button
+                    onClick={limparFiltros}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: 14,
+                      color: '#2563eb',
+                      padding: '6px 4px',
+                    }}
+                  >
+                    Limpar
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 24 }}>
-              <Button
-                variant="secondary"
-                disabled={page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-              >
-                Anterior
-              </Button>
-              <span style={{ alignSelf: 'center', fontSize: 14, color: '#4b5563' }}>
-                Página {page} de {totalPages} ({total} itens)
-              </span>
-              <Button
-                variant="secondary"
-                disabled={page >= totalPages}
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              >
-                Próximo
-              </Button>
-            </div>
-          )}
+              {/* Loading / Error / Empty */}
+              {loading && (
+                <div
+                  style={{
+                    textAlign: 'center',
+                    padding: 48,
+                    color: colors.neutral500 ?? '#6b7280',
+                  }}
+                >
+                  Carregando...
+                </div>
+              )}
 
-          </div>
+              {!loading && error && (
+                <div
+                  style={{ textAlign: 'center', padding: 48, color: '#dc2626' }}
+                >
+                  {error}
+                </div>
+              )}
+
+              {!loading && !error && investimentosFiltrados.length === 0 && (
+                <div
+                  style={{
+                    textAlign: 'center',
+                    padding: 64,
+                    color: colors.neutral400 ?? '#9ca3af',
+                  }}
+                >
+                  <FontAwesomeIcon
+                    icon={faInbox}
+                    style={{
+                      fontSize: 48,
+                      marginBottom: 16,
+                      display: 'block',
+                      marginLeft: 'auto',
+                      marginRight: 'auto',
+                    }}
+                  />
+                  <p style={{ margin: 0 }}>
+                    {investimentos.length === 0
+                      ? 'Nenhum investimento encontrado. Crie o primeiro!'
+                      : 'Nenhum investimento corresponde aos filtros aplicados.'}
+                  </p>
+                </div>
+              )}
+
+              {/* Investment Table */}
+              {!loading && !error && investimentosFiltrados.length > 0 && (
+                <div
+                  style={{
+                    background: '#fff',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: 12,
+                    boxShadow: shadows.sm,
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'baseline',
+                      padding: '16px 20px',
+                      borderBottom: '1px solid #e5e7eb',
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontWeight: 600,
+                        fontSize: 15,
+                        color: colors.neutral800 ?? '#1e293b',
+                      }}
+                    >
+                      Carteira de investimentos
+                    </span>
+                    <span
+                      style={{
+                        fontSize: 13,
+                        color: colors.neutral500 ?? '#6b7280',
+                      }}
+                    >
+                      Controle por aplicação
+                    </span>
+                  </div>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table
+                      style={{
+                        width: '100%',
+                        borderCollapse: 'collapse',
+                        fontSize: 13,
+                      }}
+                    >
+                      <thead>
+                        <tr
+                          style={{ background: colors.neutral100 ?? '#f3f4f6' }}
+                        >
+                          {[
+                            'Data aplicação',
+                            'Conta / Banco',
+                            'Tipo',
+                            'Produto',
+                            'Aplicado (R$)',
+                            'Atual (R$)',
+                            'Ganho (R$)',
+                            'Rent. (%)',
+                            'Prazo',
+                            'Ações',
+                          ].map((col) => (
+                            <th
+                              key={col}
+                              style={{
+                                padding: '10px 14px',
+                                textAlign: 'left',
+                                fontWeight: 600,
+                                color: colors.neutral700 ?? '#374151',
+                                borderBottom: '1px solid #e5e7eb',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {col}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {investimentosFiltrados.map((inv, idx) => {
+                          const pos = posicoes[inv.id];
+                          const saldoAtual =
+                            pos?.saldoAtual ?? inv.valorInicial ?? 0;
+                          const ganho = saldoAtual - (inv.valorInicial ?? 0);
+                          const rentPct =
+                            (inv.valorInicial ?? 0) > 0
+                              ? (ganho / inv.valorInicial) * 100
+                              : 0;
+                          const ganhoColor =
+                            ganho > 0
+                              ? '#16a34a'
+                              : ganho < 0
+                                ? '#dc2626'
+                                : (colors.neutral600 ?? '#4b5563');
+
+                          return (
+                            <tr
+                              key={inv.id}
+                              style={{
+                                background:
+                                  idx % 2 === 0
+                                    ? '#fff'
+                                    : (colors.neutral50 ?? '#f9fafb'),
+                                borderBottom: '1px solid #f3f4f6',
+                              }}
+                            >
+                              <td
+                                style={{
+                                  padding: '10px 14px',
+                                  whiteSpace: 'nowrap',
+                                }}
+                              >
+                                {formatDate(inv.dataInicio)}
+                              </td>
+                              <td style={{ padding: '10px 14px' }}>
+                                <div style={{ fontWeight: 600, fontSize: 13 }}>
+                                  {inv.contaNome || '-'}
+                                </div>
+                                {inv.contaBanco && (
+                                  <div
+                                    style={{
+                                      fontSize: 12,
+                                      color: colors.neutral500 ?? '#6b7280',
+                                    }}
+                                  >
+                                    {inv.contaBanco}
+                                  </div>
+                                )}
+                              </td>
+                              <td
+                                style={{
+                                  padding: '10px 14px',
+                                  color: colors.neutral600 ?? '#4b5563',
+                                }}
+                              >
+                                {inv.tipoNome || '-'}
+                              </td>
+                              <td
+                                style={{
+                                  padding: '10px 14px',
+                                  fontWeight: 500,
+                                }}
+                              >
+                                {inv.nome}
+                              </td>
+                              <td
+                                style={{
+                                  padding: '10px 14px',
+                                  whiteSpace: 'nowrap',
+                                }}
+                              >
+                                {formatBRL(inv.valorInicial)}
+                              </td>
+                              <td
+                                style={{
+                                  padding: '10px 14px',
+                                  fontWeight: 600,
+                                  whiteSpace: 'nowrap',
+                                }}
+                              >
+                                {pos !== undefined ? (
+                                  formatBRL(saldoAtual)
+                                ) : (
+                                  <span
+                                    style={{
+                                      color: colors.neutral400 ?? '#9ca3af',
+                                    }}
+                                  >
+                                    —
+                                  </span>
+                                )}
+                              </td>
+                              <td
+                                style={{
+                                  padding: '10px 14px',
+                                  fontWeight: 600,
+                                  color: ganhoColor,
+                                  whiteSpace: 'nowrap',
+                                }}
+                              >
+                                {pos !== undefined ? (
+                                  formatBRL(ganho)
+                                ) : (
+                                  <span
+                                    style={{
+                                      color: colors.neutral400 ?? '#9ca3af',
+                                    }}
+                                  >
+                                    —
+                                  </span>
+                                )}
+                              </td>
+                              <td
+                                style={{
+                                  padding: '10px 14px',
+                                  fontWeight: 600,
+                                  color: ganhoColor,
+                                  whiteSpace: 'nowrap',
+                                }}
+                              >
+                                {pos !== undefined ? (
+                                  `${rentPct.toFixed(2)}%`
+                                ) : (
+                                  <span
+                                    style={{
+                                      color: colors.neutral400 ?? '#9ca3af',
+                                    }}
+                                  >
+                                    —
+                                  </span>
+                                )}
+                              </td>
+                              <td
+                                style={{
+                                  padding: '10px 14px',
+                                  whiteSpace: 'nowrap',
+                                  color: colors.neutral600 ?? '#4b5563',
+                                }}
+                              >
+                                {calcularPrazo(inv.dataVencimento)}
+                              </td>
+                              <td
+                                style={{
+                                  padding: '10px 14px',
+                                  whiteSpace: 'nowrap',
+                                }}
+                              >
+                                <div style={{ display: 'flex', gap: 4 }}>
+                                  <button
+                                    title="Editar"
+                                    onClick={() => abrirModal(inv)}
+                                    style={iconBtn}
+                                  >
+                                    <FontAwesomeIcon icon={faPenToSquare} />
+                                  </button>
+                                  <button
+                                    title="Eventos"
+                                    onClick={() => abrirEventos(inv)}
+                                    style={iconBtn}
+                                  >
+                                    <FontAwesomeIcon icon={faChartLine} />
+                                  </button>
+                                  <button
+                                    title="Excluir"
+                                    onClick={() => handleExcluir(inv.id)}
+                                    style={{ ...iconBtn, color: '#dc2626' }}
+                                  >
+                                    <FontAwesomeIcon icon={faTrash} />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    gap: 12,
+                    marginTop: 24,
+                  }}
+                >
+                  <Button
+                    variant="secondary"
+                    disabled={page <= 1}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  >
+                    Anterior
+                  </Button>
+                  <span
+                    style={{
+                      alignSelf: 'center',
+                      fontSize: 14,
+                      color: '#4b5563',
+                    }}
+                  >
+                    Página {page} de {totalPages} ({total} itens)
+                  </span>
+                  <Button
+                    variant="secondary"
+                    disabled={page >= totalPages}
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  >
+                    Próximo
+                  </Button>
+                </div>
+              )}
+            </div>
           </InadimplenteGuard>
 
           {/* Footer */}
@@ -788,43 +1274,70 @@ export default function InvestimentosPage() {
           </div>
         </div>
       </div>
-      <Modal open={modalAberto} onClose={fecharModal} title={investimentoEmEdicao ? 'Editar Investimento' : 'Novo investimento'}>
-        <form onSubmit={handleSalvar} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <Modal
+        open={modalAberto}
+        onClose={fecharModal}
+        title={
+          investimentoEmEdicao ? 'Editar Investimento' : 'Novo investimento'
+        }
+      >
+        <form
+          onSubmit={handleSalvar}
+          style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
+        >
           {/* Linha 1: Conta / Instituição + Tipo de investimento */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div
+            style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}
+          >
             <div>
-              <label style={labelStyle}>Conta / Instituição <span style={{ color: '#ef4444' }}>*</span></label>
+              <label style={labelStyle}>
+                Conta / Instituição <span style={{ color: '#ef4444' }}>*</span>
+              </label>
               <select
                 style={inputStyle}
                 required
                 value={form.contaId}
-                onChange={(e) => setForm((f) => ({ ...f, contaId: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, contaId: e.target.value }))
+                }
               >
                 <option value="">Selecione...</option>
                 {contas.map((c) => (
-                  <option key={c.id} value={c.id}>{c.nome}</option>
+                  <option key={c.id} value={c.id}>
+                    {c.nome}
+                  </option>
                 ))}
               </select>
-              <p style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>Use as contas cadastradas no módulo de contas.</p>
+              <p style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>
+                Use as contas cadastradas no módulo de contas.
+              </p>
             </div>
             <div>
-              <label style={labelStyle}>Tipo de investimento <span style={{ color: '#ef4444' }}>*</span></label>
+              <label style={labelStyle}>
+                Tipo de investimento <span style={{ color: '#ef4444' }}>*</span>
+              </label>
               <select
                 style={inputStyle}
                 required
                 value={form.tipoInvestimento}
-                onChange={(e) => setForm((f) => ({ ...f, tipoInvestimento: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, tipoInvestimento: e.target.value }))
+                }
               >
                 <option value="">Selecione...</option>
                 {TIPOS_INVESTIMENTO.map((t) => (
-                  <option key={t} value={t}>{t}</option>
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
                 ))}
               </select>
             </div>
           </div>
 
           {/* Linha 2: Produto / Descrição + Data de aplicação */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div
+            style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}
+          >
             <div>
               <label style={labelStyle}>Produto / Descrição</label>
               <input
@@ -833,34 +1346,50 @@ export default function InvestimentosPage() {
                 maxLength={255}
                 placeholder="Ex.: CDB 120% CDI, Fundo XYZ"
                 value={form.produto}
-                onChange={(e) => setForm((f) => ({ ...f, produto: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, produto: e.target.value }))
+                }
               />
             </div>
             <div>
-              <label style={labelStyle}>Data de aplicação <span style={{ color: '#ef4444' }}>*</span></label>
+              <label style={labelStyle}>
+                Data de aplicação <span style={{ color: '#ef4444' }}>*</span>
+              </label>
               <input
                 style={inputStyle}
                 type="date"
                 required
                 value={form.dataAplicacao}
-                onChange={(e) => setForm((f) => ({ ...f, dataAplicacao: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, dataAplicacao: e.target.value }))
+                }
               />
             </div>
           </div>
 
           {/* Linha 3: Data de vencimento + Valor aplicado + Taxa anual */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr 1fr',
+              gap: 12,
+            }}
+          >
             <div>
               <label style={labelStyle}>Data de vencimento</label>
               <input
                 style={inputStyle}
                 type="date"
                 value={form.dataVencimento}
-                onChange={(e) => setForm((f) => ({ ...f, dataVencimento: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, dataVencimento: e.target.value }))
+                }
               />
             </div>
             <div>
-              <label style={labelStyle}>Valor aplicado (R$) <span style={{ color: '#ef4444' }}>*</span></label>
+              <label style={labelStyle}>
+                Valor aplicado (R$) <span style={{ color: '#ef4444' }}>*</span>
+              </label>
               <input
                 style={inputStyle}
                 type="number"
@@ -869,9 +1398,13 @@ export default function InvestimentosPage() {
                 required
                 placeholder="0.00"
                 value={form.valorAplicado}
-                onChange={(e) => setForm((f) => ({ ...f, valorAplicado: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, valorAplicado: e.target.value }))
+                }
               />
-              <p style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>Formato: 1234.56</p>
+              <p style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>
+                Formato: 1234.56
+              </p>
             </div>
             <div>
               <label style={labelStyle}>Taxa anual (% a.a.)</label>
@@ -882,24 +1415,37 @@ export default function InvestimentosPage() {
                 step="0.01"
                 placeholder="Ex.: 12,5"
                 value={form.taxaAnual}
-                onChange={(e) => setForm((f) => ({ ...f, taxaAnual: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, taxaAnual: e.target.value }))
+                }
               />
-              <p style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>Usada para estimar o valor diário.</p>
+              <p style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>
+                Usada para estimar o valor diário.
+              </p>
             </div>
           </div>
 
           {/* Linha 4: Modelo de rentabilidade */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div
+            style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}
+          >
             <div>
               <label style={labelStyle}>Modelo de rentabilidade</label>
               <select
                 style={inputStyle}
                 value={form.modeloRentabilidade}
-                onChange={(e) => setForm((f) => ({ ...f, modeloRentabilidade: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    modeloRentabilidade: e.target.value,
+                  }))
+                }
               >
                 <option value="">Selecione...</option>
                 {MODELOS_RENTABILIDADE.map((m) => (
-                  <option key={m} value={m}>{m}</option>
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
                 ))}
               </select>
             </div>
@@ -913,7 +1459,9 @@ export default function InvestimentosPage() {
               maxLength={1000}
               placeholder="Detalhes adicionais, estratégias, metas para esse investimento..."
               value={form.observacoes}
-              onChange={(e) => setForm((f) => ({ ...f, observacoes: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, observacoes: e.target.value }))
+              }
             />
           </div>
 
@@ -923,7 +1471,9 @@ export default function InvestimentosPage() {
               <select
                 style={inputStyle}
                 value={form.status}
-                onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, status: e.target.value }))
+                }
               >
                 <option value="ativa">Ativa</option>
                 <option value="inativa">Inativa</option>
@@ -931,8 +1481,20 @@ export default function InvestimentosPage() {
               </select>
             </div>
           )}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 4 }}>
-            <Button type="button" variant="secondary" onClick={fecharModal} disabled={saving}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              gap: 10,
+              marginTop: 4,
+            }}
+          >
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={fecharModal}
+              disabled={saving}
+            >
               Cancelar
             </Button>
             <Button type="submit" variant="primary" disabled={saving}>
@@ -961,11 +1523,36 @@ export default function InvestimentosPage() {
                 gap: '12px 16px',
               }}
             >
-              <PosicaoItem label="Total Aportado" valor={posicao.totalAportado} icon={faArrowTrendUp} positive />
-              <PosicaoItem label="Total Resgatado" valor={posicao.totalResgatado} icon={faArrowTrendDown} negative />
-              <PosicaoItem label="Total Rendimentos" valor={posicao.totalRendimentos} icon={faArrowTrendUp} positive />
-              <PosicaoItem label="Total Taxas" valor={posicao.totalTaxas} icon={faArrowTrendDown} negative />
-              <PosicaoItem label="Total Dividendos" valor={posicao.totalDividendos} icon={faMoneyBillWave} positive />
+              <PosicaoItem
+                label="Total Aportado"
+                valor={posicao.totalAportado}
+                icon={faArrowTrendUp}
+                positive
+              />
+              <PosicaoItem
+                label="Total Resgatado"
+                valor={posicao.totalResgatado}
+                icon={faArrowTrendDown}
+                negative
+              />
+              <PosicaoItem
+                label="Total Rendimentos"
+                valor={posicao.totalRendimentos}
+                icon={faArrowTrendUp}
+                positive
+              />
+              <PosicaoItem
+                label="Total Taxas"
+                valor={posicao.totalTaxas}
+                icon={faArrowTrendDown}
+                negative
+              />
+              <PosicaoItem
+                label="Total Dividendos"
+                valor={posicao.totalDividendos}
+                icon={faMoneyBillWave}
+                positive
+              />
               <div
                 style={{
                   gridColumn: '1 / -1',
@@ -977,8 +1564,16 @@ export default function InvestimentosPage() {
                   marginTop: 4,
                 }}
               >
-                <span style={{ fontWeight: 700, fontSize: 15 }}>Saldo Atual</span>
-                <span style={{ fontWeight: 700, fontSize: 16, color: saldoColor(posicao.saldoAtual) }}>
+                <span style={{ fontWeight: 700, fontSize: 15 }}>
+                  Saldo Atual
+                </span>
+                <span
+                  style={{
+                    fontWeight: 700,
+                    fontSize: 16,
+                    color: saldoColor(posicao.saldoAtual),
+                  }}
+                >
                   {formatBRL(posicao.saldoAtual)}
                 </span>
               </div>
@@ -986,7 +1581,13 @@ export default function InvestimentosPage() {
           )}
 
           {/* Header eventos */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
             <span style={{ fontWeight: 600, fontSize: 14 }}>Eventos</span>
             <Button variant="primary" onClick={() => setModalCriarEvento(true)}>
               <FontAwesomeIcon icon={faPlus} style={{ marginRight: 6 }} />
@@ -1003,18 +1604,31 @@ export default function InvestimentosPage() {
                 padding: 16,
               }}
             >
-              <form onSubmit={handleCriarEvento} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <form
+                onSubmit={handleCriarEvento}
+                style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
+              >
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: 12,
+                  }}
+                >
                   <div>
                     <label style={labelStyle}>Tipo *</label>
                     <select
                       style={inputStyle}
                       required
                       value={formEvento.tipo}
-                      onChange={(e) => setFormEvento((f) => ({ ...f, tipo: e.target.value }))}
+                      onChange={(e) =>
+                        setFormEvento((f) => ({ ...f, tipo: e.target.value }))
+                      }
                     >
                       {Object.entries(TIPO_EVENTO_LABELS).map(([v, l]) => (
-                        <option key={v} value={v}>{l}</option>
+                        <option key={v} value={v}>
+                          {l}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -1027,7 +1641,9 @@ export default function InvestimentosPage() {
                       step="0.01"
                       required
                       value={formEvento.valor}
-                      onChange={(e) => setFormEvento((f) => ({ ...f, valor: e.target.value }))}
+                      onChange={(e) =>
+                        setFormEvento((f) => ({ ...f, valor: e.target.value }))
+                      }
                     />
                   </div>
                   <div>
@@ -1037,7 +1653,9 @@ export default function InvestimentosPage() {
                       type="date"
                       required
                       value={formEvento.data}
-                      onChange={(e) => setFormEvento((f) => ({ ...f, data: e.target.value }))}
+                      onChange={(e) =>
+                        setFormEvento((f) => ({ ...f, data: e.target.value }))
+                      }
                     />
                   </div>
                   <div>
@@ -1047,15 +1665,35 @@ export default function InvestimentosPage() {
                       type="text"
                       maxLength={500}
                       value={formEvento.descricao}
-                      onChange={(e) => setFormEvento((f) => ({ ...f, descricao: e.target.value }))}
+                      onChange={(e) =>
+                        setFormEvento((f) => ({
+                          ...f,
+                          descricao: e.target.value,
+                        }))
+                      }
                     />
                   </div>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-                  <Button type="button" variant="secondary" onClick={() => setModalCriarEvento(false)} disabled={savingEvento}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    gap: 8,
+                  }}
+                >
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setModalCriarEvento(false)}
+                    disabled={savingEvento}
+                  >
                     Cancelar
                   </Button>
-                  <Button type="submit" variant="primary" disabled={savingEvento}>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    disabled={savingEvento}
+                  >
                     {savingEvento ? 'Salvando...' : 'Registrar'}
                   </Button>
                 </div>
@@ -1076,7 +1714,13 @@ export default function InvestimentosPage() {
             </div>
           )}
           {!loadingEventos && eventos.length > 0 && (
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <table
+              style={{
+                width: '100%',
+                borderCollapse: 'collapse',
+                fontSize: 13,
+              }}
+            >
               <thead>
                 <tr style={{ background: '#f3f4f6' }}>
                   {['Data', 'Tipo', 'Valor', 'Descrição', ''].map((col) => (
@@ -1097,15 +1741,16 @@ export default function InvestimentosPage() {
               </thead>
               <tbody>
                 {eventos.map((ev) => (
-                  <tr
-                    key={ev.id}
-                    style={{ borderBottom: '1px solid #f3f4f6' }}
-                  >
-                    <td style={{ padding: '8px 12px' }}>{formatDate(ev.data)}</td>
+                  <tr key={ev.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                    <td style={{ padding: '8px 12px' }}>
+                      {formatDate(ev.data)}
+                    </td>
                     <td style={{ padding: '8px 12px' }}>
                       <TipoEventoBadge tipo={ev.tipo} />
                     </td>
-                    <td style={{ padding: '8px 12px', fontWeight: 500 }}>{formatBRL(ev.valor)}</td>
+                    <td style={{ padding: '8px 12px', fontWeight: 500 }}>
+                      {formatBRL(ev.valor)}
+                    </td>
                     <td style={{ padding: '8px 12px', color: '#4b5563' }}>
                       {ev.descricao || '-'}
                     </td>
@@ -1125,7 +1770,9 @@ export default function InvestimentosPage() {
           )}
 
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <Button variant="secondary" onClick={fecharEventos}>Fechar</Button>
+            <Button variant="secondary" onClick={fecharEventos}>
+              Fechar
+            </Button>
           </div>
         </div>
       </Modal>
@@ -1134,11 +1781,7 @@ export default function InvestimentosPage() {
 }
 
 function PosicaoItem({ label, valor, icon, positive, negative }) {
-  const color = positive
-    ? '#16a34a'
-    : negative
-    ? '#dc2626'
-    : '#374151';
+  const color = positive ? '#16a34a' : negative ? '#dc2626' : '#374151';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -1146,7 +1789,9 @@ function PosicaoItem({ label, valor, icon, positive, negative }) {
         <FontAwesomeIcon icon={icon} style={{ marginRight: 4 }} />
         {label}
       </span>
-      <span style={{ fontSize: 14, fontWeight: 600, color }}>{formatBRL(valor)}</span>
+      <span style={{ fontSize: 14, fontWeight: 600, color }}>
+        {formatBRL(valor)}
+      </span>
     </div>
   );
 }
