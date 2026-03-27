@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
 import { toast } from 'react-toastify';
@@ -29,7 +35,12 @@ import {
   faDoorOpen,
 } from '@fortawesome/free-solid-svg-icons';
 import { Button, Input, Select, Modal, Badge } from '../design-system/index.js';
-import { colors, typography, radius, shadows } from '../design-system/tokens.js';
+import {
+  colors,
+  typography,
+  radius,
+  shadows,
+} from '../design-system/tokens.js';
 
 const TIPO_MODAL_CAT = 'saida';
 const DEFAULT_FORM_CAT = { nome: '', icone: '', cor: '#33528a', pai_id: '' };
@@ -62,7 +73,10 @@ const RECORRENCIA_OPCOES = [
 ];
 
 function formatBRL(valor) {
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor);
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(valor);
 }
 
 function formatDate(data_vencimento) {
@@ -205,16 +219,24 @@ export default function ContasPagarPage() {
     setLoading(true);
     setError(null);
     try {
-      const params = { page, limit: 20, order_by: sortField, order_dir: sortDir, ...filtrosAtivos };
+      const params = {
+        page,
+        limit: 20,
+        order_by: sortField,
+        order_dir: sortDir,
+        ...filtrosAtivos,
+      };
       Object.keys(params).forEach((k) => {
-        if (params[k] === '' || params[k] === null || params[k] === undefined) delete params[k];
+        if (params[k] === '' || params[k] === null || params[k] === undefined)
+          delete params[k];
       });
       const result = await contasPagarService.listar(params);
       setLista(result.data);
       setTotalPages(result.totalPages);
       setTotal(result.total ?? 0);
     } catch (err) {
-      const msg = err?.response?.data?.message || 'Erro ao carregar contas a pagar.';
+      const msg =
+        err?.response?.data?.message || 'Erro ao carregar contas a pagar.';
       setError(msg);
     } finally {
       setLoading(false);
@@ -227,7 +249,6 @@ export default function ContasPagarPage() {
 
   useEffect(() => {
     carregarSelects();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -277,7 +298,15 @@ export default function ContasPagarPage() {
   }
 
   function handleLimpar() {
-    setFiltros({ status: '', data_vencimento_de: '', data_vencimento_ate: '', busca: '', categoria_id: '', valor_min: '', valor_max: '' });
+    setFiltros({
+      status: '',
+      data_vencimento_de: '',
+      data_vencimento_ate: '',
+      busca: '',
+      categoria_id: '',
+      valor_min: '',
+      valor_max: '',
+    });
     setFiltrosAtivos({});
     setPage(1);
   }
@@ -313,13 +342,24 @@ export default function ContasPagarPage() {
       conta_id: conta.conta_id || '',
       categoria_id: conta.categoria_id || '',
       subcategoria_id: conta.subcategoria_id || '',
-      multa_percentual: conta.multa_percentual !== undefined && conta.multa_percentual !== null ? String(conta.multa_percentual) : '',
-      juros_mensal: conta.juros_mensal !== undefined && conta.juros_mensal !== null ? String(conta.juros_mensal) : '',
-      multa_fixa: conta.multa_fixa !== undefined && conta.multa_fixa !== null ? String(conta.multa_fixa) : '',
+      multa_percentual:
+        conta.multa_percentual !== undefined && conta.multa_percentual !== null
+          ? String(conta.multa_percentual)
+          : '',
+      juros_mensal:
+        conta.juros_mensal !== undefined && conta.juros_mensal !== null
+          ? String(conta.juros_mensal)
+          : '',
+      multa_fixa:
+        conta.multa_fixa !== undefined && conta.multa_fixa !== null
+          ? String(conta.multa_fixa)
+          : '',
       provisionado: conta.provisionado || false,
       debito_automatico: conta.debito_automatico || false,
       recorrencia: conta.recorrencia || 'nenhuma',
-      recorrencia_quantidade: conta.recorrencia_quantidade ? String(conta.recorrencia_quantidade) : '1',
+      recorrencia_quantidade: conta.recorrencia_quantidade
+        ? String(conta.recorrencia_quantidade)
+        : '1',
       observacoes: conta.observacoes || '',
     });
     setModalAberto(true);
@@ -334,7 +374,10 @@ export default function ContasPagarPage() {
 
   function handleFormChange(e) {
     const { name, value, type, checked } = e.target;
-    setForm((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+    setForm((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
   }
 
   async function handleSalvar(e) {
@@ -356,14 +399,21 @@ export default function ContasPagarPage() {
         categoria_id: form.categoria_id || null,
         subcategoria_id: form.subcategoria_id || null,
         conta_id: form.conta_id || null,
-        multa_percentual: form.multa_percentual !== '' ? parseFloat(form.multa_percentual) : null,
-        juros_mensal: form.juros_mensal !== '' ? parseFloat(form.juros_mensal) : null,
+        multa_percentual:
+          form.multa_percentual !== ''
+            ? parseFloat(form.multa_percentual)
+            : null,
+        juros_mensal:
+          form.juros_mensal !== '' ? parseFloat(form.juros_mensal) : null,
         multa_fixa: form.multa_fixa !== '' ? parseFloat(form.multa_fixa) : null,
         provisionado: form.provisionado,
         debito_automatico: form.debito_automatico,
         recorrente: form.recorrencia !== 'nenhuma',
         recorrencia: form.recorrencia !== 'nenhuma' ? form.recorrencia : null,
-        recorrencia_quantidade: form.recorrencia !== 'nenhuma' && form.recorrencia_quantidade ? parseInt(form.recorrencia_quantidade, 10) : null,
+        recorrencia_quantidade:
+          form.recorrencia !== 'nenhuma' && form.recorrencia_quantidade
+            ? parseInt(form.recorrencia_quantidade, 10)
+            : null,
         observacoes: form.observacoes || null,
       };
 
@@ -374,7 +424,9 @@ export default function ContasPagarPage() {
         const res = await contasPagarService.criar(payload);
         toast.success('Conta criada com sucesso!');
         if (res?.grupo_recorrencia_id) {
-          setGruposExpandidos((prev) => new Set([...prev, res.grupo_recorrencia_id]));
+          setGruposExpandidos(
+            (prev) => new Set([...prev, res.grupo_recorrencia_id])
+          );
         }
       }
 
@@ -431,14 +483,17 @@ export default function ContasPagarPage() {
       await contasPagarService.pagar(contaParaPagar.id, payload);
 
       if (comprovante) {
-        toast.success(`Conta marcada como paga! Comprovante "${comprovante.name}" salvo localmente.`);
+        toast.success(
+          `Conta marcada como paga! Comprovante "${comprovante.name}" salvo localmente.`
+        );
       } else {
         toast.success('Conta marcada como paga!');
       }
       fecharModalPagar();
       carregarLista();
     } catch (err) {
-      const msg = err?.response?.data?.message || 'Erro ao registrar pagamento.';
+      const msg =
+        err?.response?.data?.message || 'Erro ao registrar pagamento.';
       toast.error(msg);
     } finally {
       setPagando(false);
@@ -502,7 +557,11 @@ export default function ContasPagarPage() {
 
       if (c.status === 'pago') {
         const dataPag = c.data_pagamento ? new Date(c.data_pagamento) : null;
-        if (dataPag && dataPag.getMonth() === mesAtual && dataPag.getFullYear() === anoAtual) {
+        if (
+          dataPag &&
+          dataPag.getMonth() === mesAtual &&
+          dataPag.getFullYear() === anoAtual
+        ) {
           pagasNoMes.count++;
           pagasNoMes.valor += valor;
         }
@@ -523,11 +582,24 @@ export default function ContasPagarPage() {
       }
     });
 
-    return { pendentes, provisionadas, agendadas, atrasadas, pagasNoMes, total: { count: total, valor: lista.reduce((s, c) => s + Number(c.valor || 0), 0) } };
+    return {
+      pendentes,
+      provisionadas,
+      agendadas,
+      atrasadas,
+      pagasNoMes,
+      total: {
+        count: total,
+        valor: lista.reduce((s, c) => s + Number(c.valor || 0), 0),
+      },
+    };
   }, [lista, hoje, total]);
 
   async function handleCancelarGrupo(grupoId, descricao) {
-    if (!window.confirm(`Cancelar todas as parcelas pendentes de "${descricao}"?`)) return;
+    if (
+      !window.confirm(`Cancelar todas as parcelas pendentes de "${descricao}"?`)
+    )
+      return;
     try {
       const result = await contasPagarService.cancelarGrupo(grupoId);
       toast.success(`${result.canceladas} parcela(s) cancelada(s)!`);
@@ -541,7 +613,9 @@ export default function ContasPagarPage() {
   async function carregarCategoriasModal() {
     setLoadingCategoriasModal(true);
     try {
-      const res = await api.get('/categorias', { params: { tipo: TIPO_MODAL_CAT, limit: 500 } });
+      const res = await api.get('/categorias', {
+        params: { tipo: TIPO_MODAL_CAT, limit: 500 },
+      });
       setListaCategoriasModal(res.data?.data ?? res.data ?? []);
     } catch {
       toast.error('Erro ao carregar categorias.');
@@ -687,7 +761,9 @@ export default function ContasPagarPage() {
                     border: 'none',
                     outline: 'none',
                     userSelect: 'none',
-                    boxShadow: dropdownOpen ? '0 0 0 3px rgba(37,99,235,0.25)' : 'none',
+                    boxShadow: dropdownOpen
+                      ? '0 0 0 3px rgba(37,99,235,0.25)'
+                      : 'none',
                   }}
                   title={usuario?.nome || ''}
                   aria-label={`Menu do usuário ${usuario?.nome || ''}`}
@@ -698,22 +774,31 @@ export default function ContasPagarPage() {
                 </button>
 
                 {dropdownOpen && (
-                  <div style={{
-                    position: 'absolute',
-                    top: 'calc(100% + 8px)',
-                    right: 0,
-                    width: '230px',
-                    backgroundColor: '#ffffff',
-                    borderRadius: '12px',
-                    boxShadow: '0 8px 30px rgba(0,0,0,0.13)',
-                    border: '1px solid #e5e7eb',
-                    zIndex: 1050,
-                    overflow: 'hidden',
-                    padding: '4px 0',
-                  }}>
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 8px)',
+                      right: 0,
+                      width: '230px',
+                      backgroundColor: '#ffffff',
+                      borderRadius: '12px',
+                      boxShadow: '0 8px 30px rgba(0,0,0,0.13)',
+                      border: '1px solid #e5e7eb',
+                      zIndex: 1050,
+                      overflow: 'hidden',
+                      padding: '4px 0',
+                    }}
+                  >
                     {/* User info */}
                     <div style={{ padding: '14px 16px 12px' }}>
-                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827', marginBottom: '2px' }}>
+                      <div
+                        style={{
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          color: '#111827',
+                          marginBottom: '2px',
+                        }}
+                      >
                         {usuario?.nome || 'Usuário'}
                       </div>
                       <div style={{ fontSize: '12px', color: '#6b7280' }}>
@@ -721,40 +806,119 @@ export default function ContasPagarPage() {
                       </div>
                     </div>
 
-                    <hr style={{ margin: '4px 0', border: 'none', borderTop: '1px solid #f3f4f6' }} />
+                    <hr
+                      style={{
+                        margin: '4px 0',
+                        border: 'none',
+                        borderTop: '1px solid #f3f4f6',
+                      }}
+                    />
 
                     {/* Assinatura */}
                     <button
-                      style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 16px', fontSize: '14px', fontWeight: '500', color: '#374151', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        width: '100%',
+                        padding: '10px 16px',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        color: '#374151',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                      }}
                       onClick={() => handleMenuNavigate('/assinatura')}
-                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f3f4f6')}
-                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.backgroundColor = '#f3f4f6')
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.backgroundColor = 'transparent')
+                      }
                     >
-                      <FontAwesomeIcon icon={faCreditCard} style={{ fontSize: '18px', marginRight: '5px' }} />
+                      <FontAwesomeIcon
+                        icon={faCreditCard}
+                        style={{ fontSize: '18px', marginRight: '5px' }}
+                      />
                       Assinatura
                     </button>
 
                     {/* Perfil */}
                     <button
-                      style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 16px', fontSize: '14px', fontWeight: '500', color: '#374151', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        width: '100%',
+                        padding: '10px 16px',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        color: '#374151',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                      }}
                       onClick={() => handleMenuNavigate('/perfil')}
-                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f3f4f6')}
-                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.backgroundColor = '#f3f4f6')
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.backgroundColor = 'transparent')
+                      }
                     >
-                      <FontAwesomeIcon icon={faCircleUser} style={{ fontSize: '18px', color: '#4b5563', marginRight: '5px' }} />
+                      <FontAwesomeIcon
+                        icon={faCircleUser}
+                        style={{
+                          fontSize: '18px',
+                          color: '#4b5563',
+                          marginRight: '5px',
+                        }}
+                      />
                       Perfil
                     </button>
 
-                    <hr style={{ margin: '4px 0', border: 'none', borderTop: '1px solid #f3f4f6' }} />
+                    <hr
+                      style={{
+                        margin: '4px 0',
+                        border: 'none',
+                        borderTop: '1px solid #f3f4f6',
+                      }}
+                    />
 
                     {/* Sair */}
                     <button
-                      style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 16px', fontSize: '14px', fontWeight: '500', color: '#dc2626', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-                      onClick={() => { setDropdownOpen(false); logout(); }}
-                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#fef2f2')}
-                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        width: '100%',
+                        padding: '10px 16px',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        color: '#dc2626',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                      }}
+                      onClick={() => {
+                        setDropdownOpen(false);
+                        logout();
+                      }}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.backgroundColor = '#fef2f2')
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.backgroundColor = 'transparent')
+                      }
                     >
-                      <FontAwesomeIcon icon={faDoorOpen} style={{ fontSize: '18px', marginRight: '5px' }} />
+                      <FontAwesomeIcon
+                        icon={faDoorOpen}
+                        style={{ fontSize: '18px', marginRight: '5px' }}
+                      />
                       Sair
                     </button>
                   </div>
@@ -766,55 +930,96 @@ export default function ContasPagarPage() {
           {/* Content */}
           <InadimplenteGuard>
             <div style={s.content}>
-
               {/* Summary Cards */}
               <div style={s.summaryRow}>
                 <div style={s.summaryCard}>
-                  <div style={s.summaryIcon}><FontAwesomeIcon icon={faHourglassHalf} /></div>
+                  <div style={s.summaryIcon}>
+                    <FontAwesomeIcon icon={faHourglassHalf} />
+                  </div>
                   <div style={s.summaryInfo}>
                     <div style={s.summaryLabel}>Pendentes</div>
-                    <div style={s.summaryValue}>{formatBRL(resumo.pendentes.valor)}</div>
-                    <div style={s.summaryCount}>{resumo.pendentes.count} conta{resumo.pendentes.count !== 1 ? 's' : ''}</div>
+                    <div style={s.summaryValue}>
+                      {formatBRL(resumo.pendentes.valor)}
+                    </div>
+                    <div style={s.summaryCount}>
+                      {resumo.pendentes.count} conta
+                      {resumo.pendentes.count !== 1 ? 's' : ''}
+                    </div>
                   </div>
                 </div>
                 <div style={s.summaryCard}>
-                  <div style={s.summaryIcon}><FontAwesomeIcon icon={faShieldHalved} /></div>
+                  <div style={s.summaryIcon}>
+                    <FontAwesomeIcon icon={faShieldHalved} />
+                  </div>
                   <div style={s.summaryInfo}>
                     <div style={s.summaryLabel}>Provisionadas</div>
-                    <div style={s.summaryValue}>{formatBRL(resumo.provisionadas.valor)}</div>
-                    <div style={s.summaryCount}>{resumo.provisionadas.count} conta{resumo.provisionadas.count !== 1 ? 's' : ''}</div>
+                    <div style={s.summaryValue}>
+                      {formatBRL(resumo.provisionadas.valor)}
+                    </div>
+                    <div style={s.summaryCount}>
+                      {resumo.provisionadas.count} conta
+                      {resumo.provisionadas.count !== 1 ? 's' : ''}
+                    </div>
                   </div>
                 </div>
                 <div style={s.summaryCard}>
-                  <div style={s.summaryIcon}><FontAwesomeIcon icon={faCalendarDays} /></div>
+                  <div style={s.summaryIcon}>
+                    <FontAwesomeIcon icon={faCalendarDays} />
+                  </div>
                   <div style={s.summaryInfo}>
                     <div style={s.summaryLabel}>Agendadas</div>
-                    <div style={s.summaryValue}>{formatBRL(resumo.agendadas.valor)}</div>
-                    <div style={s.summaryCount}>{resumo.agendadas.count} conta{resumo.agendadas.count !== 1 ? 's' : ''}</div>
+                    <div style={s.summaryValue}>
+                      {formatBRL(resumo.agendadas.valor)}
+                    </div>
+                    <div style={s.summaryCount}>
+                      {resumo.agendadas.count} conta
+                      {resumo.agendadas.count !== 1 ? 's' : ''}
+                    </div>
                   </div>
                 </div>
                 <div style={s.summaryCard}>
-                  <div style={s.summaryIcon}><FontAwesomeIcon icon={faTriangleExclamation} /></div>
+                  <div style={s.summaryIcon}>
+                    <FontAwesomeIcon icon={faTriangleExclamation} />
+                  </div>
                   <div style={s.summaryInfo}>
                     <div style={s.summaryLabel}>Atrasadas</div>
-                    <div style={{ ...s.summaryValue, color: '#dc2626' }}>{formatBRL(resumo.atrasadas.valor)}</div>
-                    <div style={s.summaryCount}>{resumo.atrasadas.count} conta{resumo.atrasadas.count !== 1 ? 's' : ''}</div>
+                    <div style={{ ...s.summaryValue, color: '#dc2626' }}>
+                      {formatBRL(resumo.atrasadas.valor)}
+                    </div>
+                    <div style={s.summaryCount}>
+                      {resumo.atrasadas.count} conta
+                      {resumo.atrasadas.count !== 1 ? 's' : ''}
+                    </div>
                   </div>
                 </div>
                 <div style={s.summaryCard}>
-                  <div style={s.summaryIcon}><FontAwesomeIcon icon={faCircleCheck} /></div>
+                  <div style={s.summaryIcon}>
+                    <FontAwesomeIcon icon={faCircleCheck} />
+                  </div>
                   <div style={s.summaryInfo}>
                     <div style={s.summaryLabel}>Pagas no mês</div>
-                    <div style={s.summaryValue}>{formatBRL(resumo.pagasNoMes.valor)}</div>
-                    <div style={s.summaryCount}>{resumo.pagasNoMes.count} conta{resumo.pagasNoMes.count !== 1 ? 's' : ''}</div>
+                    <div style={s.summaryValue}>
+                      {formatBRL(resumo.pagasNoMes.valor)}
+                    </div>
+                    <div style={s.summaryCount}>
+                      {resumo.pagasNoMes.count} conta
+                      {resumo.pagasNoMes.count !== 1 ? 's' : ''}
+                    </div>
                   </div>
                 </div>
                 <div style={s.summaryCard}>
-                  <div style={s.summaryIcon}><FontAwesomeIcon icon={faClipboardList} /></div>
+                  <div style={s.summaryIcon}>
+                    <FontAwesomeIcon icon={faClipboardList} />
+                  </div>
                   <div style={s.summaryInfo}>
                     <div style={s.summaryLabel}>Total</div>
-                    <div style={s.summaryValue}>{formatBRL(resumo.total.valor)}</div>
-                    <div style={s.summaryCount}>{resumo.total.count} registro{resumo.total.count !== 1 ? 's' : ''}</div>
+                    <div style={s.summaryValue}>
+                      {formatBRL(resumo.total.valor)}
+                    </div>
+                    <div style={s.summaryCount}>
+                      {resumo.total.count} registro
+                      {resumo.total.count !== 1 ? 's' : ''}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -824,7 +1029,9 @@ export default function ContasPagarPage() {
                 <div style={s.filterCard}>
                   <div style={s.filterCardHeader}>
                     <span style={s.filterCardTitle}>Filtros</span>
-                    <span style={s.filterCardHint}>Dica: use busca + período</span>
+                    <span style={s.filterCardHint}>
+                      Dica: use busca + período
+                    </span>
                   </div>
                   <form onSubmit={handleFiltrar}>
                     <div style={s.filterRow}>
@@ -872,7 +1079,9 @@ export default function ContasPagarPage() {
                         >
                           <option value="">Todas</option>
                           {categorias.map((c) => (
-                            <option key={c.id} value={c.id}>{c.nome}</option>
+                            <option key={c.id} value={c.id}>
+                              {c.nome}
+                            </option>
                           ))}
                         </select>
                       </div>
@@ -924,7 +1133,11 @@ export default function ContasPagarPage() {
                       <Button type="submit">
                         <FontAwesomeIcon icon={faCheck} /> Aplicar
                       </Button>
-                      <Button type="button" variant="outline" onClick={handleLimpar}>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleLimpar}
+                      >
                         Limpar
                       </Button>
                     </div>
@@ -936,7 +1149,9 @@ export default function ContasPagarPage() {
               <div style={s.tableCard}>
                 <div style={s.tableCardHeader}>
                   <span style={s.tableCardTitle}>Lista de contas</span>
-                  <span style={s.tableCardCount}>{total} item(ns) (máx. 500)</span>
+                  <span style={s.tableCardCount}>
+                    {total} item(ns) (máx. 500)
+                  </span>
                 </div>
 
                 {loading ? (
@@ -950,14 +1165,46 @@ export default function ContasPagarPage() {
                     <table style={s.table}>
                       <thead>
                         <tr>
-                          <SortableTh field="data_vencimento" label="Vencimento" sortField={sortField} sortDir={sortDir} onSort={handleSort} style={s.th} />
-                          <SortableTh field="descricao" label="Descrição" sortField={sortField} sortDir={sortDir} onSort={handleSort} style={s.th} />
-                          <SortableTh field="valor" label="Valor" sortField={sortField} sortDir={sortDir} onSort={handleSort} style={{ ...s.th, textAlign: 'right' }} />
-                          <th style={{ ...s.th, textAlign: 'right' }}>A pagar</th>
+                          <SortableTh
+                            field="data_vencimento"
+                            label="Vencimento"
+                            sortField={sortField}
+                            sortDir={sortDir}
+                            onSort={handleSort}
+                            style={s.th}
+                          />
+                          <SortableTh
+                            field="descricao"
+                            label="Descrição"
+                            sortField={sortField}
+                            sortDir={sortDir}
+                            onSort={handleSort}
+                            style={s.th}
+                          />
+                          <SortableTh
+                            field="valor"
+                            label="Valor"
+                            sortField={sortField}
+                            sortDir={sortDir}
+                            onSort={handleSort}
+                            style={{ ...s.th, textAlign: 'right' }}
+                          />
+                          <th style={{ ...s.th, textAlign: 'right' }}>
+                            A pagar
+                          </th>
                           <th style={s.th}>Conta</th>
                           <th style={s.th}>Categoria</th>
-                          <SortableTh field="status" label="Status" sortField={sortField} sortDir={sortDir} onSort={handleSort} style={s.th} />
-                          <th style={{ ...s.th, textAlign: 'center' }}>Ações</th>
+                          <SortableTh
+                            field="status"
+                            label="Status"
+                            sortField={sortField}
+                            sortDir={sortDir}
+                            onSort={handleSort}
+                            style={s.th}
+                          />
+                          <th style={{ ...s.th, textAlign: 'center' }}>
+                            Ações
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -966,51 +1213,148 @@ export default function ContasPagarPage() {
                           if (!isGrupo) {
                             const conta = contas[0];
                             const venc = parseVencDate(conta.data_vencimento);
-                            const isAtrasada = conta.status === 'pendente' && venc && venc < hoje;
-                            const diasAtraso = isAtrasada ? Math.floor((hoje - venc) / (1000 * 60 * 60 * 24)) : 0;
+                            const isAtrasada =
+                              conta.status === 'pendente' &&
+                              venc &&
+                              venc < hoje;
+                            const diasAtraso = isAtrasada
+                              ? Math.floor(
+                                  (hoje - venc) / (1000 * 60 * 60 * 24)
+                                )
+                              : 0;
                             const rowBg = isAtrasada ? '#fff5f5' : undefined;
                             return (
-                              <tr key={conta.id} style={{ ...s.tr, backgroundColor: rowBg }}>
+                              <tr
+                                key={conta.id}
+                                style={{ ...s.tr, backgroundColor: rowBg }}
+                              >
                                 <td style={s.td}>
                                   <div>{formatDate(conta.data_vencimento)}</div>
-                                  {isAtrasada && <div style={{ fontSize: '11px', color: '#dc2626', fontWeight: 600 }}>vencida</div>}
+                                  {isAtrasada && (
+                                    <div
+                                      style={{
+                                        fontSize: '11px',
+                                        color: '#dc2626',
+                                        fontWeight: 600,
+                                      }}
+                                    >
+                                      vencida
+                                    </div>
+                                  )}
                                 </td>
                                 <td style={s.td}>
-                                  <div style={{ fontWeight: 600 }}>{conta.descricao}</div>
-                                  {conta.recorrencia && <div style={{ fontSize: '11px', color: '#6b7280' }}>{conta.recorrencia === 'mensal' ? 'Fixa' : 'Variável'}</div>}
+                                  <div style={{ fontWeight: 600 }}>
+                                    {conta.descricao}
+                                  </div>
+                                  {conta.recorrencia && (
+                                    <div
+                                      style={{
+                                        fontSize: '11px',
+                                        color: '#6b7280',
+                                      }}
+                                    >
+                                      {conta.recorrencia === 'mensal'
+                                        ? 'Fixa'
+                                        : 'Variável'}
+                                    </div>
+                                  )}
                                 </td>
-                                <td style={{ ...s.td, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                                <td
+                                  style={{
+                                    ...s.td,
+                                    textAlign: 'right',
+                                    fontVariantNumeric: 'tabular-nums',
+                                  }}
+                                >
                                   {formatBRL(conta.valor)}
                                 </td>
-                                <td style={{ ...s.td, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                                  {formatBRL(conta.valor_a_pagar ?? conta.valor)}
+                                <td
+                                  style={{
+                                    ...s.td,
+                                    textAlign: 'right',
+                                    fontVariantNumeric: 'tabular-nums',
+                                  }}
+                                >
+                                  {formatBRL(
+                                    conta.valor_a_pagar ?? conta.valor
+                                  )}
                                 </td>
                                 <td style={s.td}>{conta.conta?.nome || '-'}</td>
                                 <td style={s.td}>
-                                  {conta.categoria?.nome
-                                    ? <strong>{conta.categoria.nome}</strong>
-                                    : '-'}
+                                  {conta.categoria?.nome ? (
+                                    <strong>{conta.categoria.nome}</strong>
+                                  ) : (
+                                    '-'
+                                  )}
                                 </td>
                                 <td style={s.td}>
                                   {isAtrasada ? (
                                     <div>
-                                      <span style={{ ...s.badgeAtrasado }}><FontAwesomeIcon icon={faTriangleExclamation} /> Atrasado</span>
-                                      <div style={{ fontSize: '11px', color: '#dc2626', fontWeight: 600, marginTop: '2px' }}>{diasAtraso}d</div>
+                                      <span style={{ ...s.badgeAtrasado }}>
+                                        <FontAwesomeIcon
+                                          icon={faTriangleExclamation}
+                                        />{' '}
+                                        Atrasado
+                                      </span>
+                                      <div
+                                        style={{
+                                          fontSize: '11px',
+                                          color: '#dc2626',
+                                          fontWeight: 600,
+                                          marginTop: '2px',
+                                        }}
+                                      >
+                                        {diasAtraso}d
+                                      </div>
                                     </div>
                                   ) : (
                                     <StatusBadge status={conta.status} />
                                   )}
                                 </td>
-                                <td style={{ ...s.td, textAlign: 'center', whiteSpace: 'nowrap' }}>
+                                <td
+                                  style={{
+                                    ...s.td,
+                                    textAlign: 'center',
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                >
                                   {conta.status === 'pago' ? (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}>
-                                      <span title="Comprovante" style={{ cursor: 'pointer', fontSize: '16px' }}><FontAwesomeIcon icon={faPaperclip} /></span>
-                                      <span style={{ fontSize: '12px', color: '#6b7280' }}>
-                                        Pago em {formatDate(conta.data_pagamento)}
+                                    <div
+                                      style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px',
+                                        justifyContent: 'center',
+                                      }}
+                                    >
+                                      <span
+                                        title="Comprovante"
+                                        style={{
+                                          cursor: 'pointer',
+                                          fontSize: '16px',
+                                        }}
+                                      >
+                                        <FontAwesomeIcon icon={faPaperclip} />
+                                      </span>
+                                      <span
+                                        style={{
+                                          fontSize: '12px',
+                                          color: '#6b7280',
+                                        }}
+                                      >
+                                        Pago em{' '}
+                                        {formatDate(conta.data_pagamento)}
                                       </span>
                                     </div>
                                   ) : (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}>
+                                    <div
+                                      style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px',
+                                        justifyContent: 'center',
+                                      }}
+                                    >
                                       <button
                                         style={s.iconBtn}
                                         onClick={() => abrirModalEdicao(conta)}
@@ -1018,30 +1362,58 @@ export default function ContasPagarPage() {
                                       >
                                         <FontAwesomeIcon icon={faPenToSquare} />
                                       </button>
-                                      <span title="Comprovante" style={{ cursor: 'pointer', fontSize: '16px' }}><FontAwesomeIcon icon={faPaperclip} /></span>
-                                      {(conta.status === 'pendente') && (
+                                      <span
+                                        title="Comprovante"
+                                        style={{
+                                          cursor: 'pointer',
+                                          fontSize: '16px',
+                                        }}
+                                      >
+                                        <FontAwesomeIcon icon={faPaperclip} />
+                                      </span>
+                                      {conta.status === 'pendente' && (
                                         <button
                                           style={s.btnPagar}
                                           onClick={() => abrirModalPagar(conta)}
                                           title="Registrar pagamento"
                                         >
-                                          <FontAwesomeIcon icon={faCheck} /> Pagar
+                                          <FontAwesomeIcon icon={faCheck} />{' '}
+                                          Pagar
                                         </button>
                                       )}
                                       <div style={{ position: 'relative' }}>
                                         <button
                                           style={s.iconBtn}
                                           title="Mais opções"
-                                          onClick={() => setMenuAbertoId((id) => id === conta.id ? null : conta.id)}
+                                          onClick={() =>
+                                            setMenuAbertoId((id) =>
+                                              id === conta.id ? null : conta.id
+                                            )
+                                          }
                                         >
                                           <FontAwesomeIcon icon={faEllipsis} />
                                         </button>
                                         {menuAbertoId === conta.id && (
                                           <div style={s.dropdownMenu}>
-                                            <button style={s.dropdownItem} onClick={() => { setMenuAbertoId(null); handleCancelar(conta); }}>
+                                            <button
+                                              style={s.dropdownItem}
+                                              onClick={() => {
+                                                setMenuAbertoId(null);
+                                                handleCancelar(conta);
+                                              }}
+                                            >
                                               Cancelar conta
                                             </button>
-                                            <button style={{ ...s.dropdownItem, color: '#dc2626' }} onClick={() => { setMenuAbertoId(null); handleExcluir(conta); }}>
+                                            <button
+                                              style={{
+                                                ...s.dropdownItem,
+                                                color: '#dc2626',
+                                              }}
+                                              onClick={() => {
+                                                setMenuAbertoId(null);
+                                                handleExcluir(conta);
+                                              }}
+                                            >
                                               Excluir
                                             </button>
                                           </div>
@@ -1056,50 +1428,124 @@ export default function ContasPagarPage() {
 
                           // Grupo parcelado
                           const expanded = gruposExpandidos.has(grupoId);
-                          const totalValor = contas.reduce((sum, c) => sum + c.valor, 0);
-                          const proxPendente = contas.find((c) => c.status === 'pendente');
-                          const pagas = contas.filter((c) => c.status === 'pago').length;
-                          const pendentes = contas.filter((c) => c.status === 'pendente').length;
+                          const totalValor = contas.reduce(
+                            (sum, c) => sum + c.valor,
+                            0
+                          );
+                          const proxPendente = contas.find(
+                            (c) => c.status === 'pendente'
+                          );
+                          const pagas = contas.filter(
+                            (c) => c.status === 'pago'
+                          ).length;
+                          const pendentes = contas.filter(
+                            (c) => c.status === 'pendente'
+                          ).length;
                           const temPendentes = pendentes > 0;
                           const descricaoGrupo = contas[0].descricao;
-                          const totalParcelas = contas[0].total_parcelas || contas.length;
+                          const totalParcelas =
+                            contas[0].total_parcelas || contas.length;
 
                           return [
                             <tr
                               key={grupoId}
-                              style={{ ...s.tr, backgroundColor: '#f0f9ff', cursor: 'pointer' }}
+                              style={{
+                                ...s.tr,
+                                backgroundColor: '#f0f9ff',
+                                cursor: 'pointer',
+                              }}
                               role="button"
                               aria-expanded={expanded}
                               tabIndex={0}
                               onClick={() => toggleGrupo(grupoId)}
-                              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleGrupo(grupoId); } }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault();
+                                  toggleGrupo(grupoId);
+                                }
+                              }}
                             >
-                              <td style={s.td}>{proxPendente ? formatDate(proxPendente.data_vencimento) : '-'}</td>
                               <td style={s.td}>
-                                <span style={{ marginRight: '6px', fontSize: '11px' }}>{expanded ? '▼' : '▶'}</span>
+                                {proxPendente
+                                  ? formatDate(proxPendente.data_vencimento)
+                                  : '-'}
+                              </td>
+                              <td style={s.td}>
+                                <span
+                                  style={{
+                                    marginRight: '6px',
+                                    fontSize: '11px',
+                                  }}
+                                >
+                                  {expanded ? '▼' : '▶'}
+                                </span>
                                 <strong>{descricaoGrupo}</strong>
-                                <span style={{ fontSize: '11px', color: '#6b7280', marginLeft: '6px' }}>
+                                <span
+                                  style={{
+                                    fontSize: '11px',
+                                    color: '#6b7280',
+                                    marginLeft: '6px',
+                                  }}
+                                >
                                   {contas.length}/{totalParcelas} parcelas
                                 </span>
                               </td>
-                              <td style={{ ...s.td, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                              <td
+                                style={{
+                                  ...s.td,
+                                  textAlign: 'right',
+                                  fontVariantNumeric: 'tabular-nums',
+                                }}
+                              >
                                 {formatBRL(totalValor)}
                               </td>
                               <td style={{ ...s.td, textAlign: 'right' }}>-</td>
-                              <td style={s.td}>{contas[0].conta?.nome || '-'}</td>
-                              <td style={s.td}>{contas[0].categoria?.nome ? <strong>{contas[0].categoria.nome}</strong> : '-'}</td>
                               <td style={s.td}>
-                                <span style={{ fontSize: '12px', color: '#374151' }}>
-                                  {pagas > 0 && <span style={{ color: '#166534' }}>{pagas} paga{pagas !== 1 ? 's' : ''}</span>}
+                                {contas[0].conta?.nome || '-'}
+                              </td>
+                              <td style={s.td}>
+                                {contas[0].categoria?.nome ? (
+                                  <strong>{contas[0].categoria.nome}</strong>
+                                ) : (
+                                  '-'
+                                )}
+                              </td>
+                              <td style={s.td}>
+                                <span
+                                  style={{ fontSize: '12px', color: '#374151' }}
+                                >
+                                  {pagas > 0 && (
+                                    <span style={{ color: '#166534' }}>
+                                      {pagas} paga{pagas !== 1 ? 's' : ''}
+                                    </span>
+                                  )}
                                   {pagas > 0 && pendentes > 0 && ' • '}
-                                  {pendentes > 0 && <span style={{ color: '#854d0e' }}>{pendentes} pendente{pendentes !== 1 ? 's' : ''}</span>}
+                                  {pendentes > 0 && (
+                                    <span style={{ color: '#854d0e' }}>
+                                      {pendentes} pendente
+                                      {pendentes !== 1 ? 's' : ''}
+                                    </span>
+                                  )}
                                 </span>
                               </td>
-                              <td style={{ ...s.td, textAlign: 'center', whiteSpace: 'nowrap' }} onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                              <td
+                                style={{
+                                  ...s.td,
+                                  textAlign: 'center',
+                                  whiteSpace: 'nowrap',
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                onKeyDown={(e) => e.stopPropagation()}
+                              >
                                 {temPendentes && (
                                   <button
                                     style={{ ...s.btnLink, color: '#d97706' }}
-                                    onClick={() => handleCancelarGrupo(grupoId, descricaoGrupo)}
+                                    onClick={() =>
+                                      handleCancelarGrupo(
+                                        grupoId,
+                                        descricaoGrupo
+                                      )
+                                    }
                                     title="Cancelar parcelas pendentes do grupo"
                                   >
                                     Cancelar grupo
@@ -1107,87 +1553,255 @@ export default function ContasPagarPage() {
                                 )}
                               </td>
                             </tr>,
-                            ...(expanded ? contas.map((conta) => {
-                              const venc = parseVencDate(conta.data_vencimento);
-                              const isAtrasada = conta.status === 'pendente' && venc && venc < hoje;
-                              const diasAtraso = isAtrasada ? Math.floor((hoje - venc) / (1000 * 60 * 60 * 24)) : 0;
-                              const rowBg = isAtrasada ? '#fff5f5' : '#f8fafc';
-                              return (
-                                <tr key={conta.id} style={{ ...s.tr, backgroundColor: rowBg }}>
-                                  <td style={{ ...s.td, paddingLeft: '32px' }}>
-                                    <div>{formatDate(conta.data_vencimento)}</div>
-                                    {isAtrasada && <div style={{ fontSize: '11px', color: '#dc2626', fontWeight: 600 }}>vencida</div>}
-                                  </td>
-                                  <td style={{ ...s.td, paddingLeft: '32px' }}>
-                                    <div style={{ fontWeight: 600 }}>
-                                      {conta.descricao}
-                                      <span style={{ fontSize: '11px', color: '#6b7280', marginLeft: '6px' }}>
-                                        {conta.parcela_atual}/{conta.total_parcelas}
-                                      </span>
-                                    </div>
-                                  </td>
-                                  <td style={{ ...s.td, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                                    {formatBRL(conta.valor)}
-                                  </td>
-                                  <td style={{ ...s.td, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                                    {formatBRL(conta.valor_a_pagar ?? conta.valor)}
-                                  </td>
-                                  <td style={s.td}>{conta.conta?.nome || '-'}</td>
-                                  <td style={s.td}>
-                                    {conta.categoria?.nome ? <strong>{conta.categoria.nome}</strong> : '-'}
-                                  </td>
-                                  <td style={s.td}>
-                                    {isAtrasada ? (
-                                      <div>
-                                        <span style={s.badgeAtrasado}><FontAwesomeIcon icon={faTriangleExclamation} /> Atrasado</span>
-                                        <div style={{ fontSize: '11px', color: '#dc2626', fontWeight: 600, marginTop: '2px' }}>{diasAtraso}d</div>
-                                      </div>
-                                    ) : (
-                                      <StatusBadge status={conta.status} />
-                                    )}
-                                  </td>
-                                  <td style={{ ...s.td, textAlign: 'center', whiteSpace: 'nowrap' }}>
-                                    {conta.status === 'pago' ? (
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}>
-                                        <span title="Comprovante" style={{ cursor: 'pointer', fontSize: '16px' }}><FontAwesomeIcon icon={faPaperclip} /></span>
-                                        <span style={{ fontSize: '12px', color: '#6b7280' }}>
-                                          Pago em {formatDate(conta.data_pagamento)}
-                                        </span>
-                                      </div>
-                                    ) : (
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}>
-                                        <button style={s.iconBtn} onClick={() => abrirModalEdicao(conta)} title="Editar"><FontAwesomeIcon icon={faPenToSquare} /></button>
-                                        <span title="Comprovante" style={{ cursor: 'pointer', fontSize: '16px' }}><FontAwesomeIcon icon={faPaperclip} /></span>
-                                        {conta.status === 'pendente' && (
-                                          <button style={s.btnPagar} onClick={() => abrirModalPagar(conta)} title="Registrar pagamento">
-                                            <FontAwesomeIcon icon={faCheck} /> Pagar
-                                          </button>
-                                        )}
-                                        <div style={{ position: 'relative' }}>
-                                          <button
-                                            style={s.iconBtn}
-                                            title="Mais opções"
-                                            onClick={() => setMenuAbertoId((id) => id === conta.id ? null : conta.id)}
-                                          >
-                                            <FontAwesomeIcon icon={faEllipsis} />
-                                          </button>
-                                          {menuAbertoId === conta.id && (
-                                            <div style={s.dropdownMenu}>
-                                              <button style={s.dropdownItem} onClick={() => { setMenuAbertoId(null); handleCancelar(conta); }}>
-                                                Cancelar conta
-                                              </button>
-                                              <button style={{ ...s.dropdownItem, color: '#dc2626' }} onClick={() => { setMenuAbertoId(null); handleExcluir(conta); }}>
-                                                Excluir
-                                              </button>
-                                            </div>
-                                          )}
+                            ...(expanded
+                              ? contas.map((conta) => {
+                                  const venc = parseVencDate(
+                                    conta.data_vencimento
+                                  );
+                                  const isAtrasada =
+                                    conta.status === 'pendente' &&
+                                    venc &&
+                                    venc < hoje;
+                                  const diasAtraso = isAtrasada
+                                    ? Math.floor(
+                                        (hoje - venc) / (1000 * 60 * 60 * 24)
+                                      )
+                                    : 0;
+                                  const rowBg = isAtrasada
+                                    ? '#fff5f5'
+                                    : '#f8fafc';
+                                  return (
+                                    <tr
+                                      key={conta.id}
+                                      style={{
+                                        ...s.tr,
+                                        backgroundColor: rowBg,
+                                      }}
+                                    >
+                                      <td
+                                        style={{ ...s.td, paddingLeft: '32px' }}
+                                      >
+                                        <div>
+                                          {formatDate(conta.data_vencimento)}
                                         </div>
-                                      </div>
-                                    )}
-                                  </td>
-                                </tr>
-                              );
-                            }) : []),
+                                        {isAtrasada && (
+                                          <div
+                                            style={{
+                                              fontSize: '11px',
+                                              color: '#dc2626',
+                                              fontWeight: 600,
+                                            }}
+                                          >
+                                            vencida
+                                          </div>
+                                        )}
+                                      </td>
+                                      <td
+                                        style={{ ...s.td, paddingLeft: '32px' }}
+                                      >
+                                        <div style={{ fontWeight: 600 }}>
+                                          {conta.descricao}
+                                          <span
+                                            style={{
+                                              fontSize: '11px',
+                                              color: '#6b7280',
+                                              marginLeft: '6px',
+                                            }}
+                                          >
+                                            {conta.parcela_atual}/
+                                            {conta.total_parcelas}
+                                          </span>
+                                        </div>
+                                      </td>
+                                      <td
+                                        style={{
+                                          ...s.td,
+                                          textAlign: 'right',
+                                          fontVariantNumeric: 'tabular-nums',
+                                        }}
+                                      >
+                                        {formatBRL(conta.valor)}
+                                      </td>
+                                      <td
+                                        style={{
+                                          ...s.td,
+                                          textAlign: 'right',
+                                          fontVariantNumeric: 'tabular-nums',
+                                        }}
+                                      >
+                                        {formatBRL(
+                                          conta.valor_a_pagar ?? conta.valor
+                                        )}
+                                      </td>
+                                      <td style={s.td}>
+                                        {conta.conta?.nome || '-'}
+                                      </td>
+                                      <td style={s.td}>
+                                        {conta.categoria?.nome ? (
+                                          <strong>
+                                            {conta.categoria.nome}
+                                          </strong>
+                                        ) : (
+                                          '-'
+                                        )}
+                                      </td>
+                                      <td style={s.td}>
+                                        {isAtrasada ? (
+                                          <div>
+                                            <span style={s.badgeAtrasado}>
+                                              <FontAwesomeIcon
+                                                icon={faTriangleExclamation}
+                                              />{' '}
+                                              Atrasado
+                                            </span>
+                                            <div
+                                              style={{
+                                                fontSize: '11px',
+                                                color: '#dc2626',
+                                                fontWeight: 600,
+                                                marginTop: '2px',
+                                              }}
+                                            >
+                                              {diasAtraso}d
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <StatusBadge status={conta.status} />
+                                        )}
+                                      </td>
+                                      <td
+                                        style={{
+                                          ...s.td,
+                                          textAlign: 'center',
+                                          whiteSpace: 'nowrap',
+                                        }}
+                                      >
+                                        {conta.status === 'pago' ? (
+                                          <div
+                                            style={{
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              gap: '6px',
+                                              justifyContent: 'center',
+                                            }}
+                                          >
+                                            <span
+                                              title="Comprovante"
+                                              style={{
+                                                cursor: 'pointer',
+                                                fontSize: '16px',
+                                              }}
+                                            >
+                                              <FontAwesomeIcon
+                                                icon={faPaperclip}
+                                              />
+                                            </span>
+                                            <span
+                                              style={{
+                                                fontSize: '12px',
+                                                color: '#6b7280',
+                                              }}
+                                            >
+                                              Pago em{' '}
+                                              {formatDate(conta.data_pagamento)}
+                                            </span>
+                                          </div>
+                                        ) : (
+                                          <div
+                                            style={{
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              gap: '6px',
+                                              justifyContent: 'center',
+                                            }}
+                                          >
+                                            <button
+                                              style={s.iconBtn}
+                                              onClick={() =>
+                                                abrirModalEdicao(conta)
+                                              }
+                                              title="Editar"
+                                            >
+                                              <FontAwesomeIcon
+                                                icon={faPenToSquare}
+                                              />
+                                            </button>
+                                            <span
+                                              title="Comprovante"
+                                              style={{
+                                                cursor: 'pointer',
+                                                fontSize: '16px',
+                                              }}
+                                            >
+                                              <FontAwesomeIcon
+                                                icon={faPaperclip}
+                                              />
+                                            </span>
+                                            {conta.status === 'pendente' && (
+                                              <button
+                                                style={s.btnPagar}
+                                                onClick={() =>
+                                                  abrirModalPagar(conta)
+                                                }
+                                                title="Registrar pagamento"
+                                              >
+                                                <FontAwesomeIcon
+                                                  icon={faCheck}
+                                                />{' '}
+                                                Pagar
+                                              </button>
+                                            )}
+                                            <div
+                                              style={{ position: 'relative' }}
+                                            >
+                                              <button
+                                                style={s.iconBtn}
+                                                title="Mais opções"
+                                                onClick={() =>
+                                                  setMenuAbertoId((id) =>
+                                                    id === conta.id
+                                                      ? null
+                                                      : conta.id
+                                                  )
+                                                }
+                                              >
+                                                <FontAwesomeIcon
+                                                  icon={faEllipsis}
+                                                />
+                                              </button>
+                                              {menuAbertoId === conta.id && (
+                                                <div style={s.dropdownMenu}>
+                                                  <button
+                                                    style={s.dropdownItem}
+                                                    onClick={() => {
+                                                      setMenuAbertoId(null);
+                                                      handleCancelar(conta);
+                                                    }}
+                                                  >
+                                                    Cancelar conta
+                                                  </button>
+                                                  <button
+                                                    style={{
+                                                      ...s.dropdownItem,
+                                                      color: '#dc2626',
+                                                    }}
+                                                    onClick={() => {
+                                                      setMenuAbertoId(null);
+                                                      handleExcluir(conta);
+                                                    }}
+                                                  >
+                                                    Excluir
+                                                  </button>
+                                                </div>
+                                              )}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  );
+                                })
+                              : []),
                           ];
                         })}
                       </tbody>
@@ -1206,11 +1820,14 @@ export default function ContasPagarPage() {
                       Anterior
                     </Button>
                     <span style={s.pageInfo}>
-                      Página {page} de {totalPages} · {total} registro{total !== 1 ? 's' : ''}
+                      Página {page} de {totalPages} · {total} registro
+                      {total !== 1 ? 's' : ''}
                     </span>
                     <Button
                       variant="secondary"
-                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      onClick={() =>
+                        setPage((p) => Math.min(totalPages, p + 1))
+                      }
                       disabled={page >= totalPages}
                     >
                       Próximo
@@ -1236,132 +1853,297 @@ export default function ContasPagarPage() {
         maxWidth="520px"
         style={{ maxHeight: '90vh', overflowY: 'auto' }}
       >
-            <form onSubmit={handleSalvar}>
-              {/* 1. Descrição */}
-              <div style={s.formGroup}>
-                <label style={s.label}>Descrição *</label>
-                <input name="descricao" value={form.descricao} onChange={handleFormChange} style={s.input} required placeholder="Descrição" maxLength={255} />
-              </div>
+        <form onSubmit={handleSalvar}>
+          {/* 1. Descrição */}
+          <div style={s.formGroup}>
+            <label style={s.label}>Descrição *</label>
+            <input
+              name="descricao"
+              value={form.descricao}
+              onChange={handleFormChange}
+              style={s.input}
+              required
+              placeholder="Descrição"
+              maxLength={255}
+            />
+          </div>
 
-              {/* 2. Valor + Vencimento */}
-              <div style={s.formRow}>
-                <div style={{ ...s.formGroup, flex: 1 }}>
-                  <label style={s.label}>Valor (R$) *</label>
-                  <input name="valor" type="number" step="0.01" min="0.01" value={form.valor} onChange={handleFormChange} style={s.input} required placeholder="0,00" />
-                </div>
-                <div style={{ ...s.formGroup, flex: 1 }}>
-                  <label style={s.label}>Vencimento *</label>
-                  <input name="data_vencimento" type="date" value={form.data_vencimento} onChange={handleFormChange} style={s.input} required />
-                </div>
-              </div>
+          {/* 2. Valor + Vencimento */}
+          <div style={s.formRow}>
+            <div style={{ ...s.formGroup, flex: 1 }}>
+              <label style={s.label}>Valor (R$) *</label>
+              <input
+                name="valor"
+                type="number"
+                step="0.01"
+                min="0.01"
+                value={form.valor}
+                onChange={handleFormChange}
+                style={s.input}
+                required
+                placeholder="0,00"
+              />
+            </div>
+            <div style={{ ...s.formGroup, flex: 1 }}>
+              <label style={s.label}>Vencimento *</label>
+              <input
+                name="data_vencimento"
+                type="date"
+                value={form.data_vencimento}
+                onChange={handleFormChange}
+                style={s.input}
+                required
+              />
+            </div>
+          </div>
 
-              {/* 3. Tipo + Parcelas */}
-              <div style={s.formRow}>
-                <div style={{ ...s.formGroup, flex: 1 }}>
-                  <label style={s.label}>Tipo</label>
-                  <select name="tipo" value={form.tipo} onChange={handleFormChange} style={s.input}>
-                    <option value="variavel">Variável</option>
-                    <option value="fixo">Fixo</option>
-                  </select>
-                </div>
-                <div style={{ ...s.formGroup, flex: 1 }}>
-                  <label style={s.label}>Parcelas</label>
-                  <input name="parcelas" type="number" min="1" value={form.parcelas} onChange={handleFormChange} style={s.input} />
-                </div>
-              </div>
+          {/* 3. Tipo + Parcelas */}
+          <div style={s.formRow}>
+            <div style={{ ...s.formGroup, flex: 1 }}>
+              <label style={s.label}>Tipo</label>
+              <select
+                name="tipo"
+                value={form.tipo}
+                onChange={handleFormChange}
+                style={s.input}
+              >
+                <option value="variavel">Variável</option>
+                <option value="fixo">Fixo</option>
+              </select>
+            </div>
+            <div style={{ ...s.formGroup, flex: 1 }}>
+              <label style={s.label}>Parcelas</label>
+              <input
+                name="parcelas"
+                type="number"
+                min="1"
+                value={form.parcelas}
+                onChange={handleFormChange}
+                style={s.input}
+              />
+            </div>
+          </div>
 
-              {/* 4. Conta de pagamento */}
-              <div style={s.formGroup}>
-                <label style={s.label}>Conta de pagamento</label>
-                <select name="conta_id" value={form.conta_id} onChange={handleFormChange} style={s.input} disabled={loadingSelects}>
-                  <option value="">Selecione...</option>
-                  {contas.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
-                </select>
-              </div>
+          {/* 4. Conta de pagamento */}
+          <div style={s.formGroup}>
+            <label style={s.label}>Conta de pagamento</label>
+            <select
+              name="conta_id"
+              value={form.conta_id}
+              onChange={handleFormChange}
+              style={s.input}
+              disabled={loadingSelects}
+            >
+              <option value="">Selecione...</option>
+              {contas.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nome}
+                </option>
+              ))}
+            </select>
+          </div>
 
-              {/* 5. Categoria + Subcategoria */}
-              <div style={s.formRow}>
-                <div style={{ ...s.formGroup, flex: 1 }}>
-                  <label style={s.label}>Categoria</label>
-                  <select name="categoria_id" value={form.categoria_id} onChange={handleFormChange} style={s.input} disabled={loadingSelects}>
-                    <option value="">Selecione...</option>
-                    {categorias.filter(c => !c.pai_id).map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
-                  </select>
-                </div>
-                <div style={{ ...s.formGroup, flex: 1 }}>
-                  <label style={s.label}>Subcategoria</label>
-                  <select name="subcategoria_id" value={form.subcategoria_id} onChange={handleFormChange} style={s.input} disabled={loadingSelects || !form.categoria_id}>
-                    <option value="">Selecione...</option>
-                    {categorias.filter(c => c.pai_id === form.categoria_id || c.pai_id === Number(form.categoria_id)).map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
-                  </select>
-                </div>
-              </div>
+          {/* 5. Categoria + Subcategoria */}
+          <div style={s.formRow}>
+            <div style={{ ...s.formGroup, flex: 1 }}>
+              <label style={s.label}>Categoria</label>
+              <select
+                name="categoria_id"
+                value={form.categoria_id}
+                onChange={handleFormChange}
+                style={s.input}
+                disabled={loadingSelects}
+              >
+                <option value="">Selecione...</option>
+                {categorias
+                  .filter((c) => !c.pai_id)
+                  .map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.nome}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            <div style={{ ...s.formGroup, flex: 1 }}>
+              <label style={s.label}>Subcategoria</label>
+              <select
+                name="subcategoria_id"
+                value={form.subcategoria_id}
+                onChange={handleFormChange}
+                style={s.input}
+                disabled={loadingSelects || !form.categoria_id}
+              >
+                <option value="">Selecione...</option>
+                {categorias
+                  .filter(
+                    (c) =>
+                      c.pai_id === form.categoria_id ||
+                      c.pai_id === Number(form.categoria_id)
+                  )
+                  .map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.nome}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          </div>
 
-              {/* 6. Multa % + Juros %/mês + Multa fixa */}
-              <div style={s.formRow}>
-                <div style={{ ...s.formGroup, flex: 1 }}>
-                  <label style={s.label}>Multa (%)</label>
-                  <input name="multa_percentual" type="number" step="0.01" min="0" value={form.multa_percentual} onChange={handleFormChange} style={s.input} placeholder="0,00" />
-                </div>
-                <div style={{ ...s.formGroup, flex: 1 }}>
-                  <label style={s.label}>Juros (%/mês)</label>
-                  <input name="juros_mensal" type="number" step="0.01" min="0" value={form.juros_mensal} onChange={handleFormChange} style={s.input} placeholder="0,00" />
-                </div>
-                <div style={{ ...s.formGroup, flex: 1 }}>
-                  <label style={s.label}>Multa (fixa)</label>
-                  <input name="multa_fixa" type="number" step="0.01" min="0" value={form.multa_fixa} onChange={handleFormChange} style={s.input} placeholder="0,00" />
-                </div>
-              </div>
-              <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '-8px', marginBottom: '16px' }}>
-                Se a conta atrasar, o sistema calcula o &apos;A pagar&apos; automaticamente.
-              </p>
+          {/* 6. Multa % + Juros %/mês + Multa fixa */}
+          <div style={s.formRow}>
+            <div style={{ ...s.formGroup, flex: 1 }}>
+              <label style={s.label}>Multa (%)</label>
+              <input
+                name="multa_percentual"
+                type="number"
+                step="0.01"
+                min="0"
+                value={form.multa_percentual}
+                onChange={handleFormChange}
+                style={s.input}
+                placeholder="0,00"
+              />
+            </div>
+            <div style={{ ...s.formGroup, flex: 1 }}>
+              <label style={s.label}>Juros (%/mês)</label>
+              <input
+                name="juros_mensal"
+                type="number"
+                step="0.01"
+                min="0"
+                value={form.juros_mensal}
+                onChange={handleFormChange}
+                style={s.input}
+                placeholder="0,00"
+              />
+            </div>
+            <div style={{ ...s.formGroup, flex: 1 }}>
+              <label style={s.label}>Multa (fixa)</label>
+              <input
+                name="multa_fixa"
+                type="number"
+                step="0.01"
+                min="0"
+                value={form.multa_fixa}
+                onChange={handleFormChange}
+                style={s.input}
+                placeholder="0,00"
+              />
+            </div>
+          </div>
+          <p
+            style={{
+              fontSize: '12px',
+              color: '#6b7280',
+              marginTop: '-8px',
+              marginBottom: '16px',
+            }}
+          >
+            Se a conta atrasar, o sistema calcula o &apos;A pagar&apos;
+            automaticamente.
+          </p>
 
-              {/* 7. Checkboxes: Provisionado + Débito automático */}
-              <div style={{ display: 'flex', gap: '24px', marginBottom: '16px' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
-                  <input type="checkbox" name="provisionado" checked={form.provisionado} onChange={handleFormChange} />
-                  Provisionado (já separei o dinheiro)
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
-                  <input type="checkbox" name="debito_automatico" checked={form.debito_automatico} onChange={handleFormChange} />
-                  Débito automático (agendar)
-                </label>
-              </div>
+          {/* 7. Checkboxes: Provisionado + Débito automático */}
+          <div style={{ display: 'flex', gap: '24px', marginBottom: '16px' }}>
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '13px',
+                cursor: 'pointer',
+              }}
+            >
+              <input
+                type="checkbox"
+                name="provisionado"
+                checked={form.provisionado}
+                onChange={handleFormChange}
+              />
+              Provisionado (já separei o dinheiro)
+            </label>
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '13px',
+                cursor: 'pointer',
+              }}
+            >
+              <input
+                type="checkbox"
+                name="debito_automatico"
+                checked={form.debito_automatico}
+                onChange={handleFormChange}
+              />
+              Débito automático (agendar)
+            </label>
+          </div>
 
-              {/* 8. Recorrência */}
-              <div style={s.formGroup}>
-                <label style={s.label}>Recorrência</label>
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <select name="recorrencia" value={form.recorrencia} onChange={handleFormChange} style={{ ...s.input, flex: 2 }}>
-                    <option value="nenhuma">Nenhuma</option>
-                    <option value="diario">Diário</option>
-                    <option value="semanal">Semanal</option>
-                    <option value="quinzenal">Quinzenal</option>
-                    <option value="mensal">Mensal</option>
-                    <option value="bimestral">Bimestral</option>
-                    <option value="trimestral">Trimestral</option>
-                    <option value="semestral">Semestral</option>
-                    <option value="anual">Anual</option>
-                  </select>
-                  <input name="recorrencia_quantidade" type="number" min="1" value={form.recorrencia_quantidade} onChange={handleFormChange} style={{ ...s.input, flex: 1 }} />
-                </div>
-                <p style={{ fontSize: '12px', color: '#6b7280', margin: '4px 0 0' }}>
-                  Ex.: a cada 2 meses, a cada 1 semana...
-                </p>
-              </div>
+          {/* 8. Recorrência */}
+          <div style={s.formGroup}>
+            <label style={s.label}>Recorrência</label>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <select
+                name="recorrencia"
+                value={form.recorrencia}
+                onChange={handleFormChange}
+                style={{ ...s.input, flex: 2 }}
+              >
+                <option value="nenhuma">Nenhuma</option>
+                <option value="diario">Diário</option>
+                <option value="semanal">Semanal</option>
+                <option value="quinzenal">Quinzenal</option>
+                <option value="mensal">Mensal</option>
+                <option value="bimestral">Bimestral</option>
+                <option value="trimestral">Trimestral</option>
+                <option value="semestral">Semestral</option>
+                <option value="anual">Anual</option>
+              </select>
+              <input
+                name="recorrencia_quantidade"
+                type="number"
+                min="1"
+                value={form.recorrencia_quantidade}
+                onChange={handleFormChange}
+                style={{ ...s.input, flex: 1 }}
+              />
+            </div>
+            <p
+              style={{ fontSize: '12px', color: '#6b7280', margin: '4px 0 0' }}
+            >
+              Ex.: a cada 2 meses, a cada 1 semana...
+            </p>
+          </div>
 
-              {/* 9. Observações */}
-              <div style={s.formGroup}>
-                <label style={s.label}>Observações</label>
-                <textarea name="observacoes" value={form.observacoes} onChange={handleFormChange} style={{ ...s.input, minHeight: '80px', resize: 'vertical' }} maxLength={1000} />
-              </div>
+          {/* 9. Observações */}
+          <div style={s.formGroup}>
+            <label style={s.label}>Observações</label>
+            <textarea
+              name="observacoes"
+              value={form.observacoes}
+              onChange={handleFormChange}
+              style={{ ...s.input, minHeight: '80px', resize: 'vertical' }}
+              maxLength={1000}
+            />
+          </div>
 
-              {/* Botões */}
-              <div style={s.modalActions}>
-                <Button type="button" variant="ghost" onClick={fecharModal} disabled={salvando}>Cancelar</Button>
-                <Button type="submit" loading={salvando}>{salvando ? 'Salvando...' : 'Salvar'}</Button>
-              </div>
-            </form>
+          {/* Botões */}
+          <div style={s.modalActions}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={fecharModal}
+              disabled={salvando}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" loading={salvando}>
+              {salvando ? 'Salvando...' : 'Salvar'}
+            </Button>
+          </div>
+        </form>
       </Modal>
 
       <Modal
@@ -1370,71 +2152,82 @@ export default function ContasPagarPage() {
         title="Registrar Pagamento"
         maxWidth="420px"
       >
-            <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#374151' }}>
-              {contaParaPagar?.descricao}
-            </p>
-            <form onSubmit={handleConfirmarPagamento}>
-              <div style={s.formGroup}>
-                <label style={s.label}>Data do pagamento *</label>
-                <input
-                  type="date"
-                  value={dataPagamento}
-                  onChange={(e) => setDataPagamento(e.target.value)}
-                  style={s.input}
-                  required
-                />
-              </div>
-              <div style={s.formGroup}>
-                <label style={s.label}>Conta bancária de débito</label>
-                <select
-                  value={contaIdPagamento}
-                  onChange={(e) => setContaIdPagamento(e.target.value)}
-                  style={s.input}
-                  disabled={loadingSelects}
-                >
-                  <option value="">Selecione uma conta (opcional)</option>
-                  {contas.map((c) => (
-                    <option key={c.id} value={c.id}>{c.nome}</option>
-                  ))}
-                </select>
-              </div>
-              <div style={s.formGroup}>
-                <label style={s.label}>Observações do pagamento</label>
-                <textarea
-                  value={observacoesPagamento}
-                  onChange={(e) => setObservacoesPagamento(e.target.value)}
-                  style={{ ...s.input, resize: 'vertical', minHeight: '72px' }}
-                  maxLength={500}
-                  placeholder="Opcional"
-                />
-              </div>
-              <div style={s.formGroup}>
-                <label style={s.label}>Comprovante (opcional)</label>
-                <input
-                  type="file"
-                  accept="image/*,application/pdf"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file && file.size > 5 * 1024 * 1024) {
-                      toast.error('Comprovante deve ter no máximo 5MB.');
-                      e.target.value = '';
-                      setComprovante(null);
-                    } else {
-                      setComprovante(file || null);
-                    }
-                  }}
-                  style={{ fontSize: '14px' }}
-                />
-              </div>
-              <div style={s.modalActions}>
-                <Button type="button" variant="ghost" onClick={fecharModalPagar} disabled={pagando}>
-                  Cancelar
-                </Button>
-                <Button type="submit" loading={pagando} style={{ background: colors.success }}>
-                  {pagando ? 'Registrando...' : 'Confirmar Pagamento'}
-                </Button>
-              </div>
-            </form>
+        <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#374151' }}>
+          {contaParaPagar?.descricao}
+        </p>
+        <form onSubmit={handleConfirmarPagamento}>
+          <div style={s.formGroup}>
+            <label style={s.label}>Data do pagamento *</label>
+            <input
+              type="date"
+              value={dataPagamento}
+              onChange={(e) => setDataPagamento(e.target.value)}
+              style={s.input}
+              required
+            />
+          </div>
+          <div style={s.formGroup}>
+            <label style={s.label}>Conta bancária de débito</label>
+            <select
+              value={contaIdPagamento}
+              onChange={(e) => setContaIdPagamento(e.target.value)}
+              style={s.input}
+              disabled={loadingSelects}
+            >
+              <option value="">Selecione uma conta (opcional)</option>
+              {contas.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nome}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div style={s.formGroup}>
+            <label style={s.label}>Observações do pagamento</label>
+            <textarea
+              value={observacoesPagamento}
+              onChange={(e) => setObservacoesPagamento(e.target.value)}
+              style={{ ...s.input, resize: 'vertical', minHeight: '72px' }}
+              maxLength={500}
+              placeholder="Opcional"
+            />
+          </div>
+          <div style={s.formGroup}>
+            <label style={s.label}>Comprovante (opcional)</label>
+            <input
+              type="file"
+              accept="image/*,application/pdf"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file && file.size > 5 * 1024 * 1024) {
+                  toast.error('Comprovante deve ter no máximo 5MB.');
+                  e.target.value = '';
+                  setComprovante(null);
+                } else {
+                  setComprovante(file || null);
+                }
+              }}
+              style={{ fontSize: '14px' }}
+            />
+          </div>
+          <div style={s.modalActions}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={fecharModalPagar}
+              disabled={pagando}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              loading={pagando}
+              style={{ background: colors.success }}
+            >
+              {pagando ? 'Registrando...' : 'Confirmar Pagamento'}
+            </Button>
+          </div>
+        </form>
       </Modal>
 
       {/* Modal de Categorias inline */}
@@ -1445,99 +2238,370 @@ export default function ContasPagarPage() {
         maxWidth="600px"
         style={{ maxHeight: '80vh', overflowY: 'auto' }}
       >
-            <form onSubmit={handleSalvarCategoria} style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', marginBottom: '20px', flexWrap: 'wrap' }}>
-              <div style={{ flex: 2, minWidth: '140px' }}>
-                <label style={{ fontSize: '12px', color: '#64748b', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Nome *</label>
-                <input
-                  type="text"
-                  value={formCat.nome}
-                  onChange={e => setFormCat(prev => ({ ...prev, nome: e.target.value }))}
-                  required
-                  placeholder="Ex: Alimentação"
-                  style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', width: '100%', boxSizing: 'border-box' }}
-                />
-              </div>
-              <div style={{ flex: 1, minWidth: '120px' }}>
-                <label style={{ fontSize: '12px', color: '#64748b', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Categoria pai</label>
-                <select
-                  value={formCat.pai_id}
-                  onChange={e => setFormCat(prev => ({ ...prev, pai_id: e.target.value }))}
-                  style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', width: '100%', boxSizing: 'border-box' }}
-                >
-                  <option value="">Nenhuma (categoria principal)</option>
-                  {listaCategoriasModal.filter(c => !c.pai_id && (!catEmEdicao || c.id !== catEmEdicao.id)).map(c => (
-                    <option key={c.id} value={c.id}>{c.nome}</option>
-                  ))}
-                </select>
-              </div>
-              <button type="submit" disabled={salvandoCat} style={{ background: '#33528a', color: '#fff', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                {salvandoCat ? 'Salvando...' : catEmEdicao ? 'Salvar' : '+ Adicionar'}
-              </button>
-              {catEmEdicao && (
-                <button type="button" onClick={() => { setCatEmEdicao(null); setFormCat(DEFAULT_FORM_CAT); }} style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '8px 14px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
-                  Cancelar
-                </button>
-              )}
-            </form>
+        <form
+          onSubmit={handleSalvarCategoria}
+          style={{
+            display: 'flex',
+            gap: '8px',
+            alignItems: 'flex-end',
+            marginBottom: '20px',
+            flexWrap: 'wrap',
+          }}
+        >
+          <div style={{ flex: 2, minWidth: '140px' }}>
+            <label
+              style={{
+                fontSize: '12px',
+                color: '#64748b',
+                fontWeight: 500,
+                display: 'block',
+                marginBottom: '4px',
+              }}
+            >
+              Nome *
+            </label>
+            <input
+              type="text"
+              value={formCat.nome}
+              onChange={(e) =>
+                setFormCat((prev) => ({ ...prev, nome: e.target.value }))
+              }
+              required
+              placeholder="Ex: Alimentação"
+              style={{
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                padding: '8px 12px',
+                fontSize: '14px',
+                width: '100%',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+          <div style={{ flex: 1, minWidth: '120px' }}>
+            <label
+              style={{
+                fontSize: '12px',
+                color: '#64748b',
+                fontWeight: 500,
+                display: 'block',
+                marginBottom: '4px',
+              }}
+            >
+              Categoria pai
+            </label>
+            <select
+              value={formCat.pai_id}
+              onChange={(e) =>
+                setFormCat((prev) => ({ ...prev, pai_id: e.target.value }))
+              }
+              style={{
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                padding: '8px 12px',
+                fontSize: '14px',
+                width: '100%',
+                boxSizing: 'border-box',
+              }}
+            >
+              <option value="">Nenhuma (categoria principal)</option>
+              {listaCategoriasModal
+                .filter(
+                  (c) => !c.pai_id && (!catEmEdicao || c.id !== catEmEdicao.id)
+                )
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nome}
+                  </option>
+                ))}
+            </select>
+          </div>
+          <button
+            type="submit"
+            disabled={salvandoCat}
+            style={{
+              background: '#33528a',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '8px 16px',
+              fontSize: '14px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {salvandoCat
+              ? 'Salvando...'
+              : catEmEdicao
+                ? 'Salvar'
+                : '+ Adicionar'}
+          </button>
+          {catEmEdicao && (
+            <button
+              type="button"
+              onClick={() => {
+                setCatEmEdicao(null);
+                setFormCat(DEFAULT_FORM_CAT);
+              }}
+              style={{
+                background: '#f1f5f9',
+                color: '#475569',
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                padding: '8px 14px',
+                fontSize: '14px',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Cancelar
+            </button>
+          )}
+        </form>
 
-            {loadingCategoriasModal ? (
-              <div style={{ textAlign: 'center', color: '#64748b', padding: '20px' }}>Carregando...</div>
-            ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                    <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>Categoria</th>
-                    <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>Tipo</th>
-                    <th style={{ padding: '10px 12px', textAlign: 'right', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {listaCategoriasModal.filter(c => !c.pai_id).map(cat => (
-                    <React.Fragment key={cat.id}>
-                      <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                        <td style={{ padding: '10px 12px', fontWeight: 600, color: '#1e293b' }}>{cat.nome}</td>
-                        <td style={{ padding: '10px 12px' }}>
-                          <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '999px', fontSize: '11px', fontWeight: 600, background: '#fee2e2', color: '#991b1b' }}>Principal</span>
+        {loadingCategoriasModal ? (
+          <div
+            style={{ textAlign: 'center', color: '#64748b', padding: '20px' }}
+          >
+            Carregando...
+          </div>
+        ) : (
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr
+                style={{
+                  background: '#f8fafc',
+                  borderBottom: '1px solid #e2e8f0',
+                }}
+              >
+                <th
+                  style={{
+                    padding: '10px 12px',
+                    textAlign: 'left',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    color: '#64748b',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Categoria
+                </th>
+                <th
+                  style={{
+                    padding: '10px 12px',
+                    textAlign: 'left',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    color: '#64748b',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Tipo
+                </th>
+                <th
+                  style={{
+                    padding: '10px 12px',
+                    textAlign: 'right',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    color: '#64748b',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Ações
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {listaCategoriasModal
+                .filter((c) => !c.pai_id)
+                .map((cat) => (
+                  <React.Fragment key={cat.id}>
+                    <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td
+                        style={{
+                          padding: '10px 12px',
+                          fontWeight: 600,
+                          color: '#1e293b',
+                        }}
+                      >
+                        {cat.nome}
+                      </td>
+                      <td style={{ padding: '10px 12px' }}>
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            padding: '2px 8px',
+                            borderRadius: '999px',
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            background: '#fee2e2',
+                            color: '#991b1b',
+                          }}
+                        >
+                          Principal
+                        </span>
+                      </td>
+                      <td style={{ padding: '10px 12px', textAlign: 'right' }}>
+                        {!cat.is_sistema && (
+                          <>
+                            <button
+                              onClick={() => {
+                                setCatEmEdicao(cat);
+                                setFormCat({
+                                  nome: cat.nome,
+                                  icone: cat.icone || '',
+                                  cor: cat.cor || '#33528a',
+                                  pai_id: cat.pai_id || '',
+                                });
+                              }}
+                              style={{
+                                background: '#e0f2fe',
+                                color: '#0369a1',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '4px 10px',
+                                fontSize: '12px',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                marginRight: '6px',
+                              }}
+                            >
+                              <FontAwesomeIcon icon={faPenToSquare} />
+                            </button>
+                            <button
+                              onClick={() => handleExcluirCategoria(cat)}
+                              disabled={excluindoCatId === cat.id}
+                              style={{
+                                background: '#fee2e2',
+                                color: '#991b1b',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '4px 10px',
+                                fontSize: '12px',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              🗑️
+                            </button>
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                    {(cat.filhos ?? []).map((filho) => (
+                      <tr
+                        key={filho.id}
+                        style={{
+                          borderBottom: '1px solid #f1f5f9',
+                          background: '#fafbfc',
+                        }}
+                      >
+                        <td
+                          style={{
+                            padding: '10px 12px 10px 28px',
+                            color: '#334155',
+                          }}
+                        >
+                          ↳ {filho.nome}
                         </td>
-                        <td style={{ padding: '10px 12px', textAlign: 'right' }}>
-                          {!cat.is_sistema && (
+                        <td style={{ padding: '10px 12px' }}>
+                          <span
+                            style={{
+                              display: 'inline-block',
+                              padding: '2px 8px',
+                              borderRadius: '999px',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              background: '#e2e8f0',
+                              color: '#64748b',
+                            }}
+                          >
+                            Subcategoria
+                          </span>
+                        </td>
+                        <td
+                          style={{ padding: '10px 12px', textAlign: 'right' }}
+                        >
+                          {!filho.is_sistema && (
                             <>
-                              <button onClick={() => { setCatEmEdicao(cat); setFormCat({ nome: cat.nome, icone: cat.icone || '', cor: cat.cor || '#33528a', pai_id: cat.pai_id || '' }); }} style={{ background: '#e0f2fe', color: '#0369a1', border: 'none', borderRadius: '6px', padding: '4px 10px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', marginRight: '6px' }}><FontAwesomeIcon icon={faPenToSquare} /></button>
-                              <button onClick={() => handleExcluirCategoria(cat)} disabled={excluindoCatId === cat.id} style={{ background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: '6px', padding: '4px 10px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>🗑️</button>
+                              <button
+                                onClick={() => {
+                                  setCatEmEdicao(filho);
+                                  setFormCat({
+                                    nome: filho.nome,
+                                    icone: filho.icone || '',
+                                    cor: filho.cor || '#33528a',
+                                    pai_id: filho.pai_id || '',
+                                  });
+                                }}
+                                style={{
+                                  background: '#e0f2fe',
+                                  color: '#0369a1',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  padding: '4px 10px',
+                                  fontSize: '12px',
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                  marginRight: '6px',
+                                }}
+                              >
+                                <FontAwesomeIcon icon={faPenToSquare} />
+                              </button>
+                              <button
+                                onClick={() => handleExcluirCategoria(filho)}
+                                disabled={excluindoCatId === filho.id}
+                                style={{
+                                  background: '#fee2e2',
+                                  color: '#991b1b',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  padding: '4px 10px',
+                                  fontSize: '12px',
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                🗑️
+                              </button>
                             </>
                           )}
                         </td>
                       </tr>
-                      {(cat.filhos ?? []).map(filho => (
-                        <tr key={filho.id} style={{ borderBottom: '1px solid #f1f5f9', background: '#fafbfc' }}>
-                          <td style={{ padding: '10px 12px 10px 28px', color: '#334155' }}>↳ {filho.nome}</td>
-                          <td style={{ padding: '10px 12px' }}>
-                            <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '999px', fontSize: '11px', fontWeight: 600, background: '#e2e8f0', color: '#64748b' }}>Subcategoria</span>
-                          </td>
-                          <td style={{ padding: '10px 12px', textAlign: 'right' }}>
-                            {!filho.is_sistema && (
-                              <>
-                                <button onClick={() => { setCatEmEdicao(filho); setFormCat({ nome: filho.nome, icone: filho.icone || '', cor: filho.cor || '#33528a', pai_id: filho.pai_id || '' }); }} style={{ background: '#e0f2fe', color: '#0369a1', border: 'none', borderRadius: '6px', padding: '4px 10px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', marginRight: '6px' }}><FontAwesomeIcon icon={faPenToSquare} /></button>
-                                <button onClick={() => handleExcluirCategoria(filho)} disabled={excluindoCatId === filho.id} style={{ background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: '6px', padding: '4px 10px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>🗑️</button>
-                              </>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </React.Fragment>
-                  ))}
-                  {listaCategoriasModal.filter(c => !c.pai_id).length === 0 && (
-                    <tr key="empty"><td colSpan={3} style={{ padding: '20px', textAlign: 'center', color: '#94a3b8' }}>Nenhuma categoria cadastrada.</td></tr>
-                  )}
-                </tbody>
-              </table>
-            )}
+                    ))}
+                  </React.Fragment>
+                ))}
+              {listaCategoriasModal.filter((c) => !c.pai_id).length === 0 && (
+                <tr key="empty">
+                  <td
+                    colSpan={3}
+                    style={{
+                      padding: '20px',
+                      textAlign: 'center',
+                      color: '#94a3b8',
+                    }}
+                  >
+                    Nenhuma categoria cadastrada.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        )}
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
-              <Button variant="secondary" onClick={fecharModalCategorias}>
-                Fechar
-              </Button>
-            </div>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            marginTop: '20px',
+          }}
+        >
+          <Button variant="secondary" onClick={fecharModalCategorias}>
+            Fechar
+          </Button>
+        </div>
       </Modal>
     </div>
   );

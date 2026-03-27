@@ -19,7 +19,12 @@ import {
   faCheck,
 } from '@fortawesome/free-solid-svg-icons';
 import { Button, Input, Select, Card } from '../design-system/index.js';
-import { colors, typography, radius, shadows } from '../design-system/tokens.js';
+import {
+  colors,
+  typography,
+  radius,
+  shadows,
+} from '../design-system/tokens.js';
 
 const TIMEZONES = [
   'America/Sao_Paulo',
@@ -356,7 +361,10 @@ export default function PerfilPage() {
                 <FontAwesomeIcon icon={faBars} />
               </button>
               <div style={s.pageTitleIcon} aria-hidden="true">
-                <FontAwesomeIcon icon={faCircleUser} style={{ fontSize: '32px', color: '#4b5563' }} />
+                <FontAwesomeIcon
+                  icon={faCircleUser}
+                  style={{ fontSize: '32px', color: '#4b5563' }}
+                />
               </div>
               <div>
                 <div style={s.pageTitleRow}>
@@ -416,7 +424,10 @@ export default function PerfilPage() {
                       (e.currentTarget.style.backgroundColor = 'transparent')
                     }
                   >
-                    <FontAwesomeIcon icon={faCreditCard} style={{ fontSize: '18px', marginRight: '5px' }} />
+                    <FontAwesomeIcon
+                      icon={faCreditCard}
+                      style={{ fontSize: '18px', marginRight: '5px' }}
+                    />
                     Assinatura
                   </button>
 
@@ -431,7 +442,14 @@ export default function PerfilPage() {
                       (e.currentTarget.style.backgroundColor = 'transparent')
                     }
                   >
-                    <FontAwesomeIcon icon={faCircleUser} style={{ fontSize: '18px', color: '#4b5563', marginRight: '5px' }} />
+                    <FontAwesomeIcon
+                      icon={faCircleUser}
+                      style={{
+                        fontSize: '18px',
+                        color: '#4b5563',
+                        marginRight: '5px',
+                      }}
+                    />
                     Perfil
                   </button>
 
@@ -451,7 +469,10 @@ export default function PerfilPage() {
                       (e.currentTarget.style.backgroundColor = 'transparent')
                     }
                   >
-                    <FontAwesomeIcon icon={faDoorOpen} style={{ fontSize: '18px', marginRight: '5px' }} />
+                    <FontAwesomeIcon
+                      icon={faDoorOpen}
+                      style={{ fontSize: '18px', marginRight: '5px' }}
+                    />
                     Sair
                   </button>
                 </div>
@@ -463,7 +484,9 @@ export default function PerfilPage() {
           {/* Inline alerts */}
           {successMsg && (
             <div style={s.alertSuccess} role="alert">
-              <span><FontAwesomeIcon icon={faCheck} /> {successMsg}</span>
+              <span>
+                <FontAwesomeIcon icon={faCheck} /> {successMsg}
+              </span>
               <button
                 style={s.alertClose}
                 onClick={() => setSuccessMsg(null)}
@@ -475,7 +498,9 @@ export default function PerfilPage() {
           )}
           {errorMsg && (
             <div style={s.alertDanger} role="alert">
-              <span><FontAwesomeIcon icon={faTriangleExclamation} /> {errorMsg}</span>
+              <span>
+                <FontAwesomeIcon icon={faTriangleExclamation} /> {errorMsg}
+              </span>
               <button
                 style={s.alertClose}
                 onClick={() => setErrorMsg(null)}
@@ -669,7 +694,10 @@ export default function PerfilPage() {
                           </>
                         ) : (
                           <>
-                            <FontAwesomeIcon icon={faFloppyDisk} style={{ fontSize: '18px', marginRight: '5px' }} />
+                            <FontAwesomeIcon
+                              icon={faFloppyDisk}
+                              style={{ fontSize: '18px', marginRight: '5px' }}
+                            />
                             Salvar alterações
                           </>
                         )}
@@ -687,7 +715,9 @@ export default function PerfilPage() {
                   <form onSubmit={handleSubmitSenha(handleSenha)} noValidate>
                     {senhaErrors.root && (
                       <div style={s.errorBox} role="alert">
-                        <span aria-hidden="true"><FontAwesomeIcon icon={faTriangleExclamation} /></span>{' '}
+                        <span aria-hidden="true">
+                          <FontAwesomeIcon icon={faTriangleExclamation} />
+                        </span>{' '}
                         {senhaErrors.root.message}
                       </div>
                     )}
@@ -792,7 +822,7 @@ export default function PerfilPage() {
                             : isHoverBtnSenha
                               ? {
                                   ...s.btnSecondary,
-                                  backgroundColor: '#FFFFFF',
+                                  backgroundColor: '#1d4ed8',
                                 } // Letra branca
                               : s.btnSecondary
                         }
@@ -811,7 +841,10 @@ export default function PerfilPage() {
                           </>
                         ) : (
                           <>
-                            <FontAwesomeIcon icon={faLock} style={{ fontSize: '18px', marginRight: '5px' }} />
+                            <FontAwesomeIcon
+                              icon={faLock}
+                              style={{ fontSize: '18px', marginRight: '5px' }}
+                            />
                             Alterar senha
                           </>
                         )}
@@ -1145,15 +1178,15 @@ const s = {
     padding: '9px 20px',
     fontSize: typography.sizes.md,
     fontWeight: typography.weights.semibold,
-    color: colors.primaryLight,
-    backgroundColor: colors.primaryBg,
+    color: colors.white,
+    backgroundColor: colors.primary,
     border: `1.5px solid ${colors.primaryLight}`,
     borderRadius: radius.md,
     cursor: 'pointer',
     transition: 'all 0.2s ease-in-out',
   },
   btnSecondaryDisabled: {
-    opacity: 0.6,
+    backgroundColor: '#93c5fd',
     cursor: 'not-allowed',
   },
   spinnerInline: {
