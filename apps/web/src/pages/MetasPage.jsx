@@ -73,6 +73,14 @@ function formatMovDate(dateStr) {
   return d.toLocaleDateString('pt-BR');
 }
 
+function getBarColor(pct, status) {
+  if (status === 'concluida') return '#16a34a';
+  if (pct >= 100) return '#16a34a';
+  if (pct >= 66) return '#10b981';
+  if (pct >= 33) return '#2563eb';
+  return '#f59e0b';
+}
+
 function StatusBadge({ status }) {
   const variantMap = { ativa: 'success', concluida: 'info', cancelada: 'danger' };
   return (
@@ -124,6 +132,12 @@ export default function MetasPage() {
   const [savingMovimento, setSavingMovimento] = useState(false);
   const [confirmDeleteMov, setConfirmDeleteMov] = useState(null);
   const [formMovimento, setFormMovimento] = useState(EMPTY_MOV_FORM);
+
+  const [movimentosHistorico, setMovimentosHistorico] = useState([]);
+  const [movimentosPage, setMovimentosPage] = useState(1);
+  const [movimentosTotalPages, setMovimentosTotalPages] = useState(1);
+  const [movimentosTotal, setMovimentosTotal] = useState(0);
+  const [loadingHistorico, setLoadingHistorico] = useState(false);
 
   const carregarMetas = useCallback(async () => {
     setLoading(true);
@@ -269,14 +283,33 @@ export default function MetasPage() {
     carregarMetas();
   }
 
+  async function carregarHistorico(metaId, page = 1) {
+    setLoadingHistorico(true);
+    try {
+      const result = await metasService.listarMovimentos(metaId, { page, limit: 10, order_dir: 'desc' });
+      setMovimentosHistorico(result.items ?? []);
+      setMovimentosPage(result.page ?? 1);
+      setMovimentosTotalPages(result.totalPages ?? 1);
+      setMovimentosTotal(result.total ?? 0);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Erro ao carregar histórico.');
+    } finally {
+      setLoadingHistorico(false);
+    }
+  }
+
   async function abrirModalMovimentos(meta) {
     setModalMovimentosAberto(true);
     setMetaMovimentos(meta);
     setFormMovimento(EMPTY_MOV_FORM);
     setConfirmDeleteMov(null);
+    setMovimentosPage(1);
     setLoadingMovimentos(true);
     try {
-      const result = await metasService.obter(meta.id);
+      const [result] = await Promise.all([
+        metasService.obter(meta.id),
+        carregarHistorico(meta.id, 1),
+      ]);
       setMetaMovimentos(result.item ?? result);
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Erro ao carregar movimentos.');
@@ -290,13 +323,20 @@ export default function MetasPage() {
     setMetaMovimentos(null);
     setFormMovimento(EMPTY_MOV_FORM);
     setConfirmDeleteMov(null);
+    setMovimentosHistorico([]);
+    setMovimentosPage(1);
+    setMovimentosTotalPages(1);
+    setMovimentosTotal(0);
     carregarMetas();
   }
 
   async function recarregarMovimentos(id) {
     setLoadingMovimentos(true);
     try {
-      const result = await metasService.obter(id);
+      const [result] = await Promise.all([
+        metasService.obter(id),
+        carregarHistorico(id, movimentosPage),
+      ]);
       setMetaMovimentos(result.item ?? result);
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Erro ao atualizar movimentos.');
@@ -890,24 +930,37 @@ export default function MetasPage() {
           const valorAtual = movimentos.reduce((sum, m) => sum + Number(m.valor ?? 0), 0);
           const valorRestante = Math.max(0, valorAlvo - valorAtual);
           const pct = valorAlvo > 0 ? Math.min(100, (valorAtual / valorAlvo) * 100) : 0;
-          const barColor = metaMovimentos.status === 'concluida' ? '#16a34a' : '#2563eb';
+          const barColor = getBarColor(pct, metaMovimentos.status);
 
           return (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
               {/* Progresso */}
-              <div style={{ background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: 10, padding: '16px 20px' }}>
-                <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+              <div style={{ background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: 10, padding: '16px 20px', marginBottom: 4 }}>
+                <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
                   <StatusBadge status={metaMovimentos.status} />
                   <TipoBadge tipo={metaMovimentos.tipo} />
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontSize: 12, color: '#6b7280' }}>
-                  <span>Progresso</span>
-                  <span style={{ fontWeight: 600, color: barColor }}>{pct.toFixed(1)}%</span>
+
+                {/* Percentual em destaque */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+                  <span style={{ fontSize: 13, color: '#6b7280' }}>Progresso</span>
+                  <span style={{ fontSize: 22, fontWeight: 800, color: barColor }}>{pct.toFixed(1)}%</span>
                 </div>
-                <div style={{ height: 8, borderRadius: 4, background: '#e5e7eb', overflow: 'hidden', marginBottom: 12 }}>
-                  <div style={{ width: `${pct}%`, height: '100%', background: barColor, borderRadius: 4, transition: 'width 0.4s ease' }} />
+
+                {/* Barra com milestones */}
+                <div style={{ position: 'relative', height: 14, borderRadius: 7, background: '#e5e7eb', overflow: 'hidden', marginBottom: 8 }}>
+                  <div style={{ width: `${pct}%`, height: '100%', background: barColor, borderRadius: 7, transition: 'width 0.5s ease' }} />
+                  {[25, 50, 75].map(m => (
+                    <div key={m} style={{ position: 'absolute', top: 0, left: `${m}%`, width: 2, height: '100%', background: 'rgba(255,255,255,0.5)', transform: 'translateX(-50%)' }} />
+                  ))}
                 </div>
+
+                {/* Labels de milestone */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#9ca3af', marginBottom: 12, paddingLeft: '23%', paddingRight: '23%' }}>
+                  <span>25%</span><span>50%</span><span>75%</span>
+                </div>
+
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
                   <div>
                     <p style={miniLabelStyle}>Alvo</p>
@@ -1028,73 +1081,110 @@ export default function MetasPage() {
                 </div>
               </form>
 
-              {/* Histórico */}
+              {/* Histórico — Timeline */}
               <div>
-                <p style={{ margin: '0 0 10px 0', fontWeight: 600, fontSize: 14, color: '#111827' }}>
-                  Histórico ({movimentos.length})
-                </p>
-                {movimentos.length === 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <p style={{ margin: 0, fontWeight: 600, fontSize: 14, color: '#111827' }}>
+                    Histórico ({movimentosTotal})
+                  </p>
+                </div>
+
+                {loadingHistorico && (
+                  <div style={{ textAlign: 'center', padding: 16, color: '#6b7280' }}>Carregando histórico...</div>
+                )}
+
+                {!loadingHistorico && movimentosHistorico.length === 0 && (
                   <p style={{ margin: 0, fontSize: 13, color: '#9ca3af', textAlign: 'center', padding: '16px 0' }}>
                     Nenhum movimento registrado.
                   </p>
                 )}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {[...movimentos].reverse().map((mov) => {
-                    const isPositivo = Number(mov.valor) >= 0;
-                    const dataFormatada = formatMovDate(mov.data);
-                    return (
-                      <div
-                        key={mov.id}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          padding: '10px 14px',
-                          borderRadius: 8,
-                          background: isPositivo ? '#f0fdf4' : '#fef2f2',
-                          border: `1px solid ${isPositivo ? '#bbf7d0' : '#fecaca'}`,
-                          gap: 8,
-                        }}
-                      >
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: isPositivo ? '#16a34a' : '#dc2626' }}>
-                            {isPositivo ? '+' : ''}{formatBRL(Number(mov.valor))}
-                          </span>
-                          <span style={{ fontSize: 11, color: '#6b7280' }}>{dataFormatada}</span>
-                          {mov.descricao && (
-                            <span style={{ fontSize: 12, color: '#374151' }}>{mov.descricao}</span>
-                          )}
-                        </div>
 
-                        {confirmDeleteMov === mov.id ? (
-                          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                            <span style={{ fontSize: 11, color: '#991b1b' }}>Excluir?</span>
-                            <button
-                              onClick={() => handleExcluirMovimento(mov.id)}
-                              style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 4, padding: '4px 10px', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}
-                            >
-                              Sim
-                            </button>
-                            <button
-                              onClick={() => setConfirmDeleteMov(null)}
-                              style={{ background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 4, padding: '4px 10px', fontSize: 12, cursor: 'pointer' }}
-                            >
-                              Não
-                            </button>
+                {/* Timeline */}
+                {!loadingHistorico && movimentosHistorico.length > 0 && (
+                  <div style={{ position: 'relative', paddingLeft: 28 }}>
+                    {/* Linha vertical */}
+                    <div style={{ position: 'absolute', left: 10, top: 8, bottom: 8, width: 2, background: '#e5e7eb', borderRadius: 2 }} />
+
+                    {movimentosHistorico.map((mov, idx) => {
+                      const isPositivo = Number(mov.valor) >= 0;
+                      const dotColor = isPositivo ? '#16a34a' : '#dc2626';
+                      const valorFormatado = formatBRL(Math.abs(Number(mov.valor)));
+
+                      return (
+                        <div key={mov.id} style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 2, marginBottom: idx < movimentosHistorico.length - 1 ? 16 : 0 }}>
+                          {/* Bolinha */}
+                          <div style={{
+                            position: 'absolute',
+                            left: -22,
+                            top: 2,
+                            width: 16,
+                            height: 16,
+                            borderRadius: '50%',
+                            background: dotColor,
+                            border: '2px solid #fff',
+                            boxShadow: `0 0 0 2px ${dotColor}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: 9,
+                            color: '#fff',
+                            fontWeight: 700,
+                          }}>
+                            {isPositivo ? '↑' : '↓'}
                           </div>
-                        ) : (
-                          <button
-                            title="Excluir movimento"
-                            onClick={() => setConfirmDeleteMov(mov.id)}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: 13, padding: '4px 6px', borderRadius: 4 }}
-                          >
-                            <FontAwesomeIcon icon={faTrash} />
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+
+                          {/* Conteúdo */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: dotColor }}>
+                                {isPositivo ? '+' : '-'}{valorFormatado}
+                              </span>
+                              {mov.descricao && (
+                                <span style={{ fontSize: 12, color: '#4b5563' }}>{mov.descricao}</span>
+                              )}
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                              <span style={{ fontSize: 11, color: '#9ca3af' }}>{formatMovDate(mov.data)}</span>
+                              {confirmDeleteMov === mov.id ? (
+                                <div style={{ display: 'flex', gap: 4 }}>
+                                  <button onClick={() => handleExcluirMovimento(mov.id)} style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 4, padding: '2px 8px', fontSize: 11, cursor: 'pointer' }}>Excluir</button>
+                                  <button onClick={() => setConfirmDeleteMov(null)} style={{ background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 4, padding: '2px 8px', fontSize: 11, cursor: 'pointer' }}>Cancelar</button>
+                                </div>
+                              ) : (
+                                <button onClick={() => setConfirmDeleteMov(mov.id)} style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', fontSize: 11, padding: '2px 4px' }} title="Excluir movimento">
+                                  ✕
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Paginação do histórico */}
+                {movimentosTotalPages > 1 && (
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 12 }}>
+                    <button
+                      disabled={movimentosPage <= 1}
+                      onClick={() => carregarHistorico(metaMovimentos.id, movimentosPage - 1)}
+                      style={{ background: '#f3f4f6', border: 'none', borderRadius: 6, padding: '4px 12px', cursor: movimentosPage <= 1 ? 'not-allowed' : 'pointer', color: '#374151', fontSize: 13 }}
+                    >
+                      ← Anterior
+                    </button>
+                    <span style={{ alignSelf: 'center', fontSize: 12, color: '#6b7280' }}>
+                      {movimentosPage} / {movimentosTotalPages}
+                    </span>
+                    <button
+                      disabled={movimentosPage >= movimentosTotalPages}
+                      onClick={() => carregarHistorico(metaMovimentos.id, movimentosPage + 1)}
+                      style={{ background: '#f3f4f6', border: 'none', borderRadius: 6, padding: '4px 12px', cursor: movimentosPage >= movimentosTotalPages ? 'not-allowed' : 'pointer', color: '#374151', fontSize: 13 }}
+                    >
+                      Próximo →
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           );
