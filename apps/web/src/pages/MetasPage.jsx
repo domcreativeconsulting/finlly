@@ -1298,5 +1298,7 @@ const s = {
     fontSize: '14px',
     fontWeight: '500',
     letterSpacing: '0.01em',
+    borderRadius: radius.lg ?? '12px',
+    margin: '24px 28px 28px',
   },
 };

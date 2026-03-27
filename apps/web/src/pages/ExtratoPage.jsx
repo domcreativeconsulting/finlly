@@ -598,7 +598,7 @@ export default function ExtratoPage() {
 
           {/* Footer */}
           <div style={s.footer}>
-            Finlly • painel financeiro pessoal — {new Date().getFullYear()}
+            Finlly • painel financeiro pessoal — 2026
           </div>
         </div>
       </div>
@@ -820,15 +820,11 @@ const s = {
     border: `1px solid ${colors.errorBorder}`,
   },
   footer: {
-    backgroundColor: '#33528a',
-    color: '#FFFFFF',
+    background: colors.neutral800,
+    color: colors.neutral400,
     textAlign: 'center',
-    paddingTop: '18px',
-    paddingBottom: '18px',
-    paddingLeft: '32px',
-    paddingRight: '32px',
-    fontSize: '14px',
-    fontWeight: '500',
+    padding: '14px',
+    fontSize: typography.sizes.base,
     letterSpacing: '0.01em',
   },
   modalOverlay: {

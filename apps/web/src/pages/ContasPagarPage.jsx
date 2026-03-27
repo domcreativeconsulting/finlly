@@ -2952,5 +2952,6 @@ const s = {
     fontSize: '14px',
     fontWeight: '500',
     letterSpacing: '0.01em',
+    borderRadius: radius.lg,
   },
 };
