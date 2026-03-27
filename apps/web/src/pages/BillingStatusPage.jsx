@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useAuth } from '../hooks/useAuth.js';
 import { billingService } from '../services/billing.service.js';
+import AppSidebar from '../components/AppSidebar.jsx';
+import { InadimplenteGuard } from '../components/InadimplenteGuard.jsx';
+import { Button, Badge } from '../design-system/index.js';
+import { colors, typography, tokens, radius, shadows } from '../design-system/tokens.js';
 
 function formatDate(dateStr) {
   if (!dateStr) return '—';
@@ -13,6 +17,9 @@ function formatDate(dateStr) {
 export default function BillingStatusPage() {
   useAuth();
   const navigate = useNavigate();
+
+  const [sidebarOpen] = useState(true);
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
 
   const [assinante, setAssinante] = useState(undefined);
   const [loading, setLoading] = useState(true);
@@ -57,261 +64,320 @@ export default function BillingStatusPage() {
     }
   }
 
+  const contentMarginLeft = sidebarExpanded ? '236px' : '108px';
+
   return (
-    <div style={styles.page}>
-      <header style={styles.header}>
-        <h1 style={styles.logo}>Finlly</h1>
-        <Link to="/dashboard" style={styles.backLink}>
-          ← Voltar ao painel
-        </Link>
-      </header>
+    <InadimplenteGuard>
+      <div
+        style={{
+          display: 'flex',
+          minHeight: '100vh',
+          backgroundColor: colors.bg,
+          fontFamily: tokens.fontFamily,
+        }}
+      >
+        <AppSidebar
+          sidebarOpen={sidebarOpen}
+          currentPath="/assinatura"
+          isExpanded={sidebarExpanded}
+          onHoverChange={setSidebarExpanded}
+        />
 
-      <main style={styles.main}>
-        <div style={styles.card}>
-          <h2 style={styles.title}>Status da assinatura</h2>
+        <main
+          style={{
+            flex: 1,
+            marginLeft: contentMarginLeft,
+            transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            padding: '32px 32px 32px 24px',
+            minHeight: '100vh',
+          }}
+        >
+          {/* Page header */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '24px',
+            }}
+          >
+            <div>
+              <h1
+                style={{
+                  margin: 0,
+                  fontSize: typography.sizes['5xl'],
+                  fontWeight: typography.weights.bold,
+                  color: colors.neutral800,
+                }}
+              >
+                Assinatura
+              </h1>
+              <p
+                style={{
+                  margin: '4px 0 0',
+                  color: colors.neutral500,
+                  fontSize: typography.sizes.md,
+                }}
+              >
+                Gerencie sua assinatura do Finlly
+              </p>
+            </div>
+          </div>
 
+          {/* Loading state */}
           {loading && (
-            <div style={styles.loadingBox}>
-              <span style={styles.spinner} />
-              <span style={{ color: '#6b7280', marginLeft: '12px' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                padding: '16px 0',
+              }}
+            >
+              <span
+                style={{
+                  display: 'inline-block',
+                  width: '22px',
+                  height: '22px',
+                  border: `3px solid ${colors.neutral200}`,
+                  borderTopColor: colors.primaryLight,
+                  borderRadius: radius.full,
+                  animation: 'spin 0.7s linear infinite',
+                  flexShrink: 0,
+                }}
+              />
+              <span
+                style={{
+                  color: colors.neutral500,
+                  marginLeft: '12px',
+                  fontSize: typography.sizes.md,
+                }}
+              >
                 Carregando...
               </span>
             </div>
           )}
 
+          {/* Error state */}
           {!loading && error && (
-            <div style={styles.errorBox}>{error}</div>
-          )}
-
-          {!loading && !error && !assinante && (
-            <div style={styles.emptyBox}>
-              <p style={styles.emptyText}>
-                Você não possui uma assinatura ativa.
-              </p>
-              <Link to="/checkout" style={styles.actionLink}>
-                Assinar um plano →
-              </Link>
+            <div
+              style={{
+                padding: '12px 16px',
+                backgroundColor: colors.errorBg,
+                border: `1px solid ${colors.errorBorder}`,
+                borderRadius: radius.md,
+                color: colors.error,
+                fontSize: typography.sizes.md,
+              }}
+            >
+              {error}
             </div>
           )}
 
+          {/* No subscription state */}
+          {!loading && !error && !assinante && (
+            <div
+              style={{
+                backgroundColor: colors.surface,
+                borderRadius: radius.lg,
+                padding: '32px',
+                boxShadow: shadows.sm,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                gap: '16px',
+                maxWidth: '480px',
+              }}
+            >
+              <h2
+                style={{
+                  margin: 0,
+                  fontSize: typography.sizes['4xl'],
+                  fontWeight: typography.weights.semibold,
+                  color: colors.neutral800,
+                }}
+              >
+                Assinatura
+              </h2>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: typography.sizes.md,
+                  color: colors.neutral500,
+                }}
+              >
+                Você não possui uma assinatura ativa.
+              </p>
+              <Button onClick={() => navigate('/checkout')}>
+                Assinar um plano →
+              </Button>
+            </div>
+          )}
+
+          {/* Subscription active: 2-column layout */}
           {!loading && !error && assinante && (
-            <>
-              <dl style={styles.dl}>
-                <div style={styles.dlRow}>
-                  <dt style={styles.dt}>Plano</dt>
-                  <dd style={styles.dd}>{assinante.plano ?? '—'}</dd>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '24px',
+                alignItems: 'start',
+              }}
+            >
+              {/* Left card — Subscription status */}
+              <div
+                style={{
+                  backgroundColor: colors.surface,
+                  borderRadius: radius.lg,
+                  padding: '28px',
+                  boxShadow: shadows.sm,
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: '4px',
+                  }}
+                >
+                  <h2
+                    style={{
+                      margin: 0,
+                      fontSize: typography.sizes['4xl'],
+                      fontWeight: typography.weights.semibold,
+                      color: colors.neutral800,
+                    }}
+                  >
+                    Assinatura
+                  </h2>
+                  <Badge variant={assinante.status === 'ativo' ? 'success' : 'neutral'}>
+                    {assinante.status ?? '—'}
+                  </Badge>
                 </div>
-                <div style={styles.dlRow}>
-                  <dt style={styles.dt}>Status</dt>
-                  <dd style={styles.dd}>
-                    <span
-                      style={
-                        assinante.status === 'ativo'
-                          ? styles.badgeAtivo
-                          : styles.badgeOther
-                      }
-                    >
-                      {assinante.status ?? '—'}
-                    </span>
-                  </dd>
-                </div>
-                <div style={styles.dlRow}>
-                  <dt style={styles.dt}>Ciclo</dt>
-                  <dd style={styles.dd}>{assinante.ciclo ?? '—'}</dd>
-                </div>
-                <div style={styles.dlRow}>
-                  <dt style={styles.dt}>Forma de pagamento</dt>
-                  <dd style={styles.dd}>{assinante.formaPagamento ?? '—'}</dd>
-                </div>
-                <div style={styles.dlRow}>
-                  <dt style={styles.dt}>Próximo vencimento</dt>
-                  <dd style={styles.dd}>
-                    {formatDate(assinante.dataProximoVencimento)}
-                  </dd>
-                </div>
-                {assinante.asaasStatus && (
-                  <div style={styles.dlRow}>
-                    <dt style={styles.dt}>Status Asaas</dt>
-                    <dd style={styles.dd}>{assinante.asaasStatus}</dd>
+
+                <p
+                  style={{
+                    margin: '0 0 20px',
+                    fontSize: typography.sizes.base,
+                    color: colors.neutral500,
+                  }}
+                >
+                  Seu acesso ao sistema depende de pagamento recorrente confirmado no Asaas.
+                </p>
+
+                {assinante.status === 'ativo' && (
+                  <div
+                    style={{
+                      padding: '10px 14px',
+                      backgroundColor: colors.successBg,
+                      border: `1px solid ${tokens.color.successBorder}`,
+                      borderRadius: radius.md,
+                      color: colors.successText,
+                      fontSize: typography.sizes.base,
+                      fontWeight: typography.weights.medium,
+                      marginBottom: '20px',
+                    }}
+                  >
+                    ✓ Ativo. Seu acesso está liberado.
                   </div>
                 )}
-              </dl>
 
-              <div style={styles.actions}>
-                <Link to="/checkout" style={styles.actionLink}>
-                  Mudar plano
-                </Link>
-                <button
-                  onClick={handleCancel}
-                  disabled={cancelling}
-                  style={cancelling ? styles.btnCancelDisabled : styles.btnCancel}
-                >
-                  {cancelling ? 'Cancelando...' : 'Cancelar assinatura'}
-                </button>
+                <dl style={{ margin: 0, padding: 0, listStyle: 'none' }}>
+                  {[
+                    { label: 'Plano', value: assinante.plano ?? '—' },
+                    { label: 'Ciclo', value: assinante.ciclo ?? '—' },
+                    { label: 'Forma de pagamento', value: assinante.formaPagamento ?? '—' },
+                    {
+                      label: 'Próximo vencimento',
+                      value: formatDate(assinante.dataProximoVencimento),
+                    },
+                    ...(assinante.asaasStatus
+                      ? [{ label: 'Status Asaas', value: assinante.asaasStatus }]
+                      : []),
+                  ].map(({ label, value }) => (
+                    <div
+                      key={label}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '12px 0',
+                        borderBottom: `1px solid ${colors.neutral100}`,
+                      }}
+                    >
+                      <dt
+                        style={{
+                          fontSize: typography.sizes.md,
+                          color: colors.neutral500,
+                          fontWeight: typography.weights.medium,
+                          margin: 0,
+                        }}
+                      >
+                        {label}
+                      </dt>
+                      <dd
+                        style={{
+                          fontSize: typography.sizes.md,
+                          fontWeight: typography.weights.semibold,
+                          color: colors.neutral800,
+                          margin: 0,
+                          textAlign: 'right',
+                        }}
+                      >
+                        {value}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+
+                <div style={{ marginTop: '20px' }}>
+                  <Button
+                    variant="danger"
+                    onClick={handleCancel}
+                    disabled={cancelling}
+                    loading={cancelling}
+                  >
+                    {cancelling ? 'Cancelando...' : 'Cancelar assinatura'}
+                  </Button>
+                </div>
               </div>
-            </>
+
+              {/* Right card — Create / renew subscription */}
+              <div
+                style={{
+                  backgroundColor: colors.surface,
+                  borderRadius: radius.lg,
+                  padding: '28px',
+                  boxShadow: shadows.sm,
+                }}
+              >
+                <h2
+                  style={{
+                    margin: '0 0 8px',
+                    fontSize: typography.sizes['4xl'],
+                    fontWeight: typography.weights.semibold,
+                    color: colors.neutral800,
+                  }}
+                >
+                  Criar / renovar assinatura
+                </h2>
+                <p
+                  style={{
+                    margin: '0 0 24px',
+                    fontSize: typography.sizes.base,
+                    color: colors.neutral500,
+                  }}
+                >
+                  Acesse o checkout para criar uma nova assinatura ou renovar o seu plano atual.
+                </p>
+                <Button onClick={() => navigate('/checkout')}>
+                  Ir para o checkout →
+                </Button>
+              </div>
+            </div>
           )}
-        </div>
-      </main>
-    </div>
+        </main>
+      </div>
+    </InadimplenteGuard>
   );
 }
-
-const styles = {
-  page: {
-    minHeight: '100vh',
-    backgroundColor: '#f9fafb',
-    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-  },
-  header: {
-    backgroundColor: '#ffffff',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-    padding: '12px 24px',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  logo: {
-    fontSize: '22px',
-    fontWeight: '700',
-    color: '#2563eb',
-    margin: 0,
-  },
-  backLink: {
-    fontSize: '14px',
-    fontWeight: '500',
-    color: '#2563eb',
-    textDecoration: 'none',
-  },
-  main: {
-    maxWidth: '520px',
-    margin: '0 auto',
-    padding: '40px 24px',
-  },
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 32,
-    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-  },
-  title: {
-    fontSize: '22px',
-    fontWeight: '700',
-    color: '#111827',
-    margin: '0 0 24px',
-  },
-  loadingBox: {
-    display: 'flex',
-    alignItems: 'center',
-    padding: '16px 0',
-  },
-  spinner: {
-    display: 'inline-block',
-    width: '22px',
-    height: '22px',
-    border: '3px solid #e5e7eb',
-    borderTopColor: '#2563eb',
-    borderRadius: '50%',
-    animation: 'spin 0.7s linear infinite',
-    flexShrink: 0,
-  },
-  errorBox: {
-    padding: '12px 16px',
-    backgroundColor: '#fef2f2',
-    border: '1px solid #fecaca',
-    borderRadius: '8px',
-    color: '#dc2626',
-    fontSize: '14px',
-  },
-  emptyBox: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-    gap: '12px',
-  },
-  emptyText: {
-    fontSize: '15px',
-    color: '#6b7280',
-    margin: 0,
-  },
-  dl: {
-    margin: 0,
-    padding: 0,
-    listStyle: 'none',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0',
-  },
-  dlRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '12px 0',
-    borderBottom: '1px solid #f3f4f6',
-  },
-  dt: {
-    fontSize: '14px',
-    color: '#6b7280',
-    fontWeight: '500',
-    margin: 0,
-  },
-  dd: {
-    fontSize: '14px',
-    fontWeight: '600',
-    color: '#111827',
-    margin: 0,
-    textAlign: 'right',
-  },
-  badgeAtivo: {
-    display: 'inline-block',
-    padding: '2px 10px',
-    backgroundColor: '#dcfce7',
-    color: '#16a34a',
-    borderRadius: '999px',
-    fontSize: '13px',
-    fontWeight: '600',
-  },
-  badgeOther: {
-    display: 'inline-block',
-    padding: '2px 10px',
-    backgroundColor: '#f3f4f6',
-    color: '#6b7280',
-    borderRadius: '999px',
-    fontSize: '13px',
-    fontWeight: '600',
-  },
-  actions: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: '24px',
-    flexWrap: 'wrap',
-    gap: '12px',
-  },
-  actionLink: {
-    fontSize: '14px',
-    fontWeight: '500',
-    color: '#2563eb',
-    textDecoration: 'none',
-  },
-  btnCancel: {
-    padding: '10px 20px',
-    fontSize: '14px',
-    fontWeight: '600',
-    color: '#dc2626',
-    backgroundColor: '#fff',
-    border: '1px solid #fca5a5',
-    borderRadius: '8px',
-    cursor: 'pointer',
-  },
-  btnCancelDisabled: {
-    padding: '10px 20px',
-    fontSize: '14px',
-    fontWeight: '600',
-    color: '#9ca3af',
-    backgroundColor: '#fff',
-    border: '1px solid #e5e7eb',
-    borderRadius: '8px',
-    cursor: 'not-allowed',
-  },
-};
