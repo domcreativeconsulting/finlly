@@ -227,10 +227,12 @@ export default function ContasPage() {
             flex: 1,
             marginLeft: contentMarginLeft,
             transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            padding: '32px 32px 32px 24px',
             minHeight: '100vh',
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
+          <div style={{ flex: 1, padding: '32px 32px 32px 24px' }}>
           {/* Header */}
           <div
             style={{
@@ -526,6 +528,12 @@ export default function ContasPage() {
               ))}
             </div>
           )}
+          </div>
+
+          {/* Footer */}
+          <div style={footerStyle}>
+            Finlly • painel financeiro pessoal — {new Date().getFullYear()}
+          </div>
         </main>
 
         {/* Modal criar/editar */}
@@ -645,3 +653,4 @@ export default function ContasPage() {
 
 const formGroup = { display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '16px' };
 const labelStyle = { fontSize: typography.sizes.base, fontWeight: typography.weights.semibold, color: colors.secondaryText };
+const footerStyle = { backgroundColor: '#33528a', color: '#FFFFFF', textAlign: 'center', paddingTop: '18px', paddingBottom: '18px', paddingLeft: '32px', paddingRight: '32px', fontSize: '14px', fontWeight: '500', letterSpacing: '0.01em' };

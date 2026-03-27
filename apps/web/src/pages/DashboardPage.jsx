@@ -8,7 +8,7 @@ export default function DashboardPage() {
   const { usuario, logout } = useAuth();
 
   return (
-    <div style={{ height: '100vh', overflow: 'hidden', backgroundColor: colors.bg }}>
+    <div style={{ minHeight: '100vh', backgroundColor: colors.bg, display: 'flex', flexDirection: 'column' }}>
       <header
         style={{
           backgroundColor: colors.white,
@@ -40,7 +40,7 @@ export default function DashboardPage() {
       </header>
 
       <InadimplenteGuard>
-        <main style={{ maxWidth: '900px', margin: '0 auto', padding: '40px 24px' }}>
+        <main style={{ flex: 1, maxWidth: '900px', margin: '0 auto', padding: '40px 24px', width: '100%' }}>
           <h2
             style={{
               fontSize: typography.sizes['6xl'],
@@ -62,6 +62,13 @@ export default function DashboardPage() {
           </Card>
         </main>
       </InadimplenteGuard>
+
+      {/* Footer */}
+      <div style={footerStyle}>
+        Finlly • painel financeiro pessoal — {new Date().getFullYear()}
+      </div>
     </div>
   );
 }
+
+const footerStyle = { backgroundColor: '#33528a', color: '#FFFFFF', textAlign: 'center', paddingTop: '18px', paddingBottom: '18px', paddingLeft: '32px', paddingRight: '32px', fontSize: '14px', fontWeight: '500', letterSpacing: '0.01em' };
