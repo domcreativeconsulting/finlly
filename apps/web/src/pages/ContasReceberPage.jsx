@@ -1091,13 +1091,13 @@ export default function ContasReceberPage() {
                   </div>
                 )}
               </div>
+
+              {/* Footer */}
+              <div style={s.footer}>
+                Finlly • painel financeiro pessoal — {new Date().getFullYear()}
+              </div>
             </div>
           </InadimplenteGuard>
-
-          {/* Footer */}
-          <div style={s.footer}>
-            Finlly • painel financeiro pessoal — {new Date().getFullYear()}
-          </div>
         </div>
       </div>
 
