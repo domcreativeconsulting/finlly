@@ -490,6 +490,14 @@ export default function InvestimentosPage() {
     });
   }
 
+  function handleInputFocus(e) {
+    e.currentTarget.style.outline = '2px solid rgb(37 99 235 / 45%)';
+    e.currentTarget.style.outlineOffset = '0px';
+  }
+  function handleInputBlur(e) {
+    e.currentTarget.style.outline = 'none';
+  }
+
   return (
     <>
       <div
@@ -856,6 +864,8 @@ export default function InvestimentosPage() {
                       onChange={(e) =>
                         setFiltroContaInstituicao(e.target.value)
                       }
+                      onFocus={handleInputFocus}
+                      onBlur={handleInputBlur}
                     >
                       <option value="todas">Todas</option>
                       {contasUnicas.map((c) => (
@@ -871,6 +881,8 @@ export default function InvestimentosPage() {
                       style={inputStyle}
                       value={filtroTipo}
                       onChange={(e) => setFiltroTipo(e.target.value)}
+                      onFocus={handleInputFocus}
+                      onBlur={handleInputBlur}
                     >
                       <option value="todos">Todos</option>
                       {tipos.map((t) => (
@@ -887,6 +899,8 @@ export default function InvestimentosPage() {
                       type="date"
                       value={filtroDataDe}
                       onChange={(e) => setFiltroDataDe(e.target.value)}
+                      onFocus={handleInputFocus}
+                      onBlur={handleInputBlur}
                     />
                   </div>
                   <div>
@@ -896,6 +910,8 @@ export default function InvestimentosPage() {
                       type="date"
                       value={filtroDataAte}
                       onChange={(e) => setFiltroDataAte(e.target.value)}
+                      onFocus={handleInputFocus}
+                      onBlur={handleInputBlur}
                     />
                   </div>
                 </div>
@@ -1300,6 +1316,8 @@ export default function InvestimentosPage() {
                 onChange={(e) =>
                   setForm((f) => ({ ...f, contaId: e.target.value }))
                 }
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
               >
                 <option value="">Selecione...</option>
                 {contas.map((c) => (
@@ -1323,6 +1341,8 @@ export default function InvestimentosPage() {
                 onChange={(e) =>
                   setForm((f) => ({ ...f, tipoInvestimento: e.target.value }))
                 }
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
               >
                 <option value="">Selecione...</option>
                 {TIPOS_INVESTIMENTO.map((t) => (
@@ -1349,6 +1369,8 @@ export default function InvestimentosPage() {
                 onChange={(e) =>
                   setForm((f) => ({ ...f, produto: e.target.value }))
                 }
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
               />
             </div>
             <div>
@@ -1363,6 +1385,8 @@ export default function InvestimentosPage() {
                 onChange={(e) =>
                   setForm((f) => ({ ...f, dataAplicacao: e.target.value }))
                 }
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
               />
             </div>
           </div>
@@ -1384,6 +1408,8 @@ export default function InvestimentosPage() {
                 onChange={(e) =>
                   setForm((f) => ({ ...f, dataVencimento: e.target.value }))
                 }
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
               />
             </div>
             <div>
@@ -1401,6 +1427,8 @@ export default function InvestimentosPage() {
                 onChange={(e) =>
                   setForm((f) => ({ ...f, valorAplicado: e.target.value }))
                 }
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
               />
               <p style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>
                 Formato: 1234.56
@@ -1418,6 +1446,8 @@ export default function InvestimentosPage() {
                 onChange={(e) =>
                   setForm((f) => ({ ...f, taxaAnual: e.target.value }))
                 }
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
               />
               <p style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>
                 Usada para estimar o valor diário.
@@ -1440,6 +1470,8 @@ export default function InvestimentosPage() {
                     modeloRentabilidade: e.target.value,
                   }))
                 }
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
               >
                 <option value="">Selecione...</option>
                 {MODELOS_RENTABILIDADE.map((m) => (
@@ -1474,6 +1506,8 @@ export default function InvestimentosPage() {
                 onChange={(e) =>
                   setForm((f) => ({ ...f, status: e.target.value }))
                 }
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
               >
                 <option value="ativa">Ativa</option>
                 <option value="inativa">Inativa</option>
@@ -1624,6 +1658,8 @@ export default function InvestimentosPage() {
                       onChange={(e) =>
                         setFormEvento((f) => ({ ...f, tipo: e.target.value }))
                       }
+                      onFocus={handleInputFocus}
+                      onBlur={handleInputBlur}
                     >
                       {Object.entries(TIPO_EVENTO_LABELS).map(([v, l]) => (
                         <option key={v} value={v}>
@@ -1644,6 +1680,8 @@ export default function InvestimentosPage() {
                       onChange={(e) =>
                         setFormEvento((f) => ({ ...f, valor: e.target.value }))
                       }
+                      onFocus={handleInputFocus}
+                      onBlur={handleInputBlur}
                     />
                   </div>
                   <div>
@@ -1656,6 +1694,8 @@ export default function InvestimentosPage() {
                       onChange={(e) =>
                         setFormEvento((f) => ({ ...f, data: e.target.value }))
                       }
+                      onFocus={handleInputFocus}
+                      onBlur={handleInputBlur}
                     />
                   </div>
                   <div>
@@ -1671,6 +1711,8 @@ export default function InvestimentosPage() {
                           descricao: e.target.value,
                         }))
                       }
+                      onFocus={handleInputFocus}
+                      onBlur={handleInputBlur}
                     />
                   </div>
                 </div>
