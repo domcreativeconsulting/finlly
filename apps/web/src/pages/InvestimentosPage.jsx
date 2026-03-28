@@ -74,12 +74,6 @@ const TIPO_EVENTO_LABELS = {
   dividendo: 'Dividendo',
 };
 
-const STATUS_LABELS = {
-  ativa: 'Ativa',
-  inativa: 'Inativa',
-  arquivada: 'Arquivada',
-};
-
 const TIPOS_INVESTIMENTO = [
   'CDB',
   'LCI/LCA',

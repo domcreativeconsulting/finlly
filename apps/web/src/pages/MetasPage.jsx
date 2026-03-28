@@ -428,6 +428,7 @@ export default function MetasPage() {
     }
   }
 
+  // eslint-disable-next-line no-unused-vars
   async function abrirModalMovimentos(meta) {
     setModalMovimentosAberto(true);
     setMetaMovimentos(meta);
