@@ -708,6 +708,14 @@ export default function ContasReceberPage() {
     }
   }
 
+  function handleInputFocus(e) {
+    e.currentTarget.style.outline = '2px solid rgb(37 99 235 / 45%)';
+    e.currentTarget.style.outlineOffset = '0px';
+  }
+  function handleInputBlur(e) {
+    e.currentTarget.style.outline = 'none';
+  }
+
   return (
     <div style={s.pageWrapper}>
       <div style={s.page}>
@@ -1070,6 +1078,8 @@ export default function ContasReceberPage() {
                             onChange={handleFiltroChange}
                             style={s.filterInput}
                             placeholder="Descrição ou observação"
+                            onFocus={handleInputFocus}
+                            onBlur={handleInputBlur}
                           />
                         </div>
                       </div>
@@ -1081,6 +1091,8 @@ export default function ContasReceberPage() {
                           value={filtros.data_vencimento_de}
                           onChange={handleFiltroChange}
                           style={s.filterInputPlain}
+                          onFocus={handleInputFocus}
+                          onBlur={handleInputBlur}
                         />
                       </div>
                       <div style={{ ...s.filterField, maxWidth: '140px' }}>
@@ -1091,6 +1103,8 @@ export default function ContasReceberPage() {
                           value={filtros.data_vencimento_ate}
                           onChange={handleFiltroChange}
                           style={s.filterInputPlain}
+                          onFocus={handleInputFocus}
+                          onBlur={handleInputBlur}
                         />
                       </div>
                       <div style={s.filterField}>
@@ -1100,6 +1114,8 @@ export default function ContasReceberPage() {
                           value={filtros.categoria_id}
                           onChange={handleFiltroChange}
                           style={s.filterInputPlain}
+                          onFocus={handleInputFocus}
+                          onBlur={handleInputBlur}
                         >
                           <option value="">Todas</option>
                           {categorias.map((c) => (
@@ -1116,6 +1132,8 @@ export default function ContasReceberPage() {
                           value={filtros.status}
                           onChange={handleFiltroChange}
                           style={s.filterInputPlain}
+                          onFocus={handleInputFocus}
+                          onBlur={handleInputBlur}
                         >
                           <option value="">Todos</option>
                           <option value="pendente">Pendente</option>
@@ -1138,6 +1156,8 @@ export default function ContasReceberPage() {
                           placeholder="0,00"
                           min="0"
                           step="0.01"
+                          onFocus={handleInputFocus}
+                          onBlur={handleInputBlur}
                         />
                       </div>
                       <div style={{ ...s.filterField, maxWidth: '140px' }}>
@@ -1151,6 +1171,8 @@ export default function ContasReceberPage() {
                           placeholder="0,00"
                           min="0"
                           step="0.01"
+                          onFocus={handleInputFocus}
+                          onBlur={handleInputBlur}
                         />
                       </div>
                       <div style={{ flex: 1 }} />
@@ -1896,6 +1918,8 @@ export default function ContasReceberPage() {
               required
               placeholder="Descrição"
               maxLength={255}
+              onFocus={handleInputFocus}
+              onBlur={handleInputBlur}
             />
           </div>
 
@@ -1913,6 +1937,8 @@ export default function ContasReceberPage() {
                 style={s.input}
                 required
                 placeholder="0,00"
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
               />
             </div>
             <div style={{ ...s.formGroup, flex: 1 }}>
@@ -1924,6 +1950,8 @@ export default function ContasReceberPage() {
                 onChange={handleFormChange}
                 style={s.input}
                 required
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
               />
             </div>
           </div>
@@ -1937,6 +1965,8 @@ export default function ContasReceberPage() {
                 value={form.tipo}
                 onChange={handleFormChange}
                 style={s.input}
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
               >
                 <option value="variavel">Variável</option>
                 <option value="fixo">Fixo</option>
@@ -1951,6 +1981,8 @@ export default function ContasReceberPage() {
                 value={form.parcelas}
                 onChange={handleFormChange}
                 style={s.input}
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
               />
             </div>
           </div>
@@ -1964,6 +1996,8 @@ export default function ContasReceberPage() {
               onChange={handleFormChange}
               style={s.input}
               disabled={loadingSelects}
+              onFocus={handleInputFocus}
+              onBlur={handleInputBlur}
             >
               <option value="">Selecione...</option>
               {contas.map((c) => (
@@ -1984,6 +2018,8 @@ export default function ContasReceberPage() {
                 onChange={handleFormChange}
                 style={s.input}
                 disabled={loadingSelects}
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
               >
                 <option value="">Selecione...</option>
                 {categorias
@@ -2003,6 +2039,8 @@ export default function ContasReceberPage() {
                 onChange={handleFormChange}
                 style={s.input}
                 disabled={loadingSelects || !form.categoria_id}
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
               >
                 <option value="">Selecione...</option>
                 {categorias
@@ -2035,6 +2073,8 @@ export default function ContasReceberPage() {
                 onChange={handleFormChange}
                 style={s.input}
                 placeholder="0,00"
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
               />
             </div>
             <div style={{ ...s.formGroup, flex: 1 }}>
@@ -2048,6 +2088,8 @@ export default function ContasReceberPage() {
                 onChange={handleFormChange}
                 style={s.input}
                 placeholder="0,00"
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
               />
             </div>
             <div style={{ ...s.formGroup, flex: 1 }}>
@@ -2061,6 +2103,8 @@ export default function ContasReceberPage() {
                 onChange={handleFormChange}
                 style={s.input}
                 placeholder="0,00"
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
               />
             </div>
           </div>
@@ -2123,6 +2167,8 @@ export default function ContasReceberPage() {
                 value={form.recorrencia}
                 onChange={handleFormChange}
                 style={{ ...s.input, flex: 2 }}
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
               >
                 <option value="nenhuma">Nenhuma</option>
                 <option value="diario">Diário</option>
@@ -2141,6 +2187,8 @@ export default function ContasReceberPage() {
                 value={form.recorrencia_quantidade}
                 onChange={handleFormChange}
                 style={{ ...s.input, flex: 1 }}
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
               />
             </div>
             <p
@@ -2197,6 +2245,8 @@ export default function ContasReceberPage() {
               onChange={(e) => setDataRecebimento(e.target.value)}
               style={s.input}
               required
+              onFocus={handleInputFocus}
+              onBlur={handleInputBlur}
             />
           </div>
           <div style={s.formGroup}>
@@ -2206,6 +2256,8 @@ export default function ContasReceberPage() {
               onChange={(e) => setContaIdRecebimento(e.target.value)}
               style={s.input}
               disabled={loadingSelects}
+              onFocus={handleInputFocus}
+              onBlur={handleInputBlur}
             >
               <option value="">Selecione uma conta (opcional)</option>
               {contas.map((c) => (
@@ -2241,6 +2293,8 @@ export default function ContasReceberPage() {
                 }
               }}
               style={{ fontSize: '14px' }}
+              onFocus={handleInputFocus}
+              onBlur={handleInputBlur}
             />
           </div>
           <div style={s.modalActions}>
@@ -2309,6 +2363,8 @@ export default function ContasReceberPage() {
                 width: '100%',
                 boxSizing: 'border-box',
               }}
+              onFocus={handleInputFocus}
+              onBlur={handleInputBlur}
             />
           </div>
           <div style={{ flex: 1, minWidth: '120px' }}>
@@ -2336,6 +2392,8 @@ export default function ContasReceberPage() {
                 width: '100%',
                 boxSizing: 'border-box',
               }}
+              onFocus={handleInputFocus}
+              onBlur={handleInputBlur}
             >
               <option value="">Nenhuma (categoria principal)</option>
               {listaCategoriasModal
@@ -2660,6 +2718,8 @@ export default function ContasReceberPage() {
               style={s.input}
               required
               placeholder="Ex: Nubank, Itaú, Carteira"
+              onFocus={handleInputFocus}
+              onBlur={handleInputBlur}
             />
           </div>
           <div style={s.formGroup}>
@@ -2669,6 +2729,8 @@ export default function ContasReceberPage() {
               value={formContaFinanceira.tipo}
               onChange={handleContaFinanceiraChange}
               style={s.input}
+              onFocus={handleInputFocus}
+              onBlur={handleInputBlur}
             >
               <option value="corrente">Conta corrente</option>
               <option value="poupanca">Poupança</option>
@@ -2685,6 +2747,8 @@ export default function ContasReceberPage() {
               onChange={handleContaFinanceiraChange}
               style={s.input}
               placeholder="Ex: Nubank"
+              onFocus={handleInputFocus}
+              onBlur={handleInputBlur}
             />
           </div>
           <div style={s.formGroup}>
@@ -2695,6 +2759,8 @@ export default function ContasReceberPage() {
               onChange={handleContaFinanceiraChange}
               style={s.input}
               placeholder="Ex: 260, 341"
+              onFocus={handleInputFocus}
+              onBlur={handleInputBlur}
             />
           </div>
           <div style={s.formGroup}>
@@ -2708,6 +2774,8 @@ export default function ContasReceberPage() {
               onChange={handleContaFinanceiraChange}
               style={s.input}
               placeholder="0,00"
+              onFocus={handleInputFocus}
+              onBlur={handleInputBlur}
             />
           </div>
           <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '24px' }}>
