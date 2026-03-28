@@ -266,6 +266,14 @@ export default function MetasPage() {
   // Confirm cancel per card
   const [confirmCancelar, setConfirmCancelar] = useState(null);
 
+  function handleInputFocus(e) {
+    e.currentTarget.style.outline = '2px solid rgb(37 99 235 / 45%)';
+    e.currentTarget.style.outlineOffset = '0px';
+  }
+  function handleInputBlur(e) {
+    e.currentTarget.style.outline = 'none';
+  }
+
   const carregarMetas = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -933,6 +941,8 @@ export default function MetasPage() {
                         setNovaMetaForm((f) => ({ ...f, nome: e.target.value }))
                       }
                       maxLength={255}
+                      onFocus={handleInputFocus}
+                      onBlur={handleInputBlur}
                     />
                     <input
                       style={inputStyle}
@@ -947,6 +957,8 @@ export default function MetasPage() {
                           valor_alvo: e.target.value,
                         }))
                       }
+                      onFocus={handleInputFocus}
+                      onBlur={handleInputBlur}
                     />
                     <input
                       style={inputStyle}
@@ -958,6 +970,8 @@ export default function MetasPage() {
                           data_fim: e.target.value,
                         }))
                       }
+                      onFocus={handleInputFocus}
+                      onBlur={handleInputBlur}
                     />
                   </div>
 
@@ -975,6 +989,8 @@ export default function MetasPage() {
                         }))
                       }
                       maxLength={1000}
+                      onFocus={handleInputFocus}
+                      onBlur={handleInputBlur}
                     />
                   </div>
 
@@ -996,6 +1012,8 @@ export default function MetasPage() {
                           prioridade: e.target.value,
                         }))
                       }
+                      onFocus={handleInputFocus}
+                      onBlur={handleInputBlur}
                     >
                       <option value="alta">Alta</option>
                       <option value="media">Média</option>
@@ -1010,6 +1028,8 @@ export default function MetasPage() {
                           conta_vinculada: e.target.value,
                         }))
                       }
+                      onFocus={handleInputFocus}
+                      onBlur={handleInputBlur}
                     >
                       <option value="">Sem vínculo</option>
                     </select>
@@ -1503,6 +1523,8 @@ export default function MetasPage() {
                                     })
                                   }
                                   maxLength={100}
+                                  onFocus={handleInputFocus}
+                                  onBlur={handleInputBlur}
                                 />
                                 <input
                                   style={{
@@ -1520,6 +1542,8 @@ export default function MetasPage() {
                                       valor: e.target.value,
                                     })
                                   }
+                                  onFocus={handleInputFocus}
+                                  onBlur={handleInputBlur}
                                 />
                                 <input
                                   style={{
@@ -1534,6 +1558,8 @@ export default function MetasPage() {
                                       data: e.target.value,
                                     })
                                   }
+                                  onFocus={handleInputFocus}
+                                  onBlur={handleInputBlur}
                                 />
                                 <button
                                   type="submit"
@@ -1571,6 +1597,8 @@ export default function MetasPage() {
                                   })
                                 }
                                 maxLength={255}
+                                onFocus={handleInputFocus}
+                                onBlur={handleInputBlur}
                               />
                             </form>
                           </div>
@@ -1673,6 +1701,8 @@ export default function MetasPage() {
               placeholder="Ex.: Reserva de emergência"
               value={form.nome}
               onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))}
+              onFocus={handleInputFocus}
+              onBlur={handleInputBlur}
             />
           </div>
 
@@ -1690,6 +1720,8 @@ export default function MetasPage() {
                 onChange={(e) =>
                   setForm((f) => ({ ...f, tipo: e.target.value }))
                 }
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
               >
                 {TIPO_META_ENUM.map((t) => (
                   <option key={t} value={t}>
@@ -1706,6 +1738,8 @@ export default function MetasPage() {
                 onChange={(e) =>
                   setForm((f) => ({ ...f, status: e.target.value }))
                 }
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
               >
                 {STATUS_META_ENUM.map((s) => (
                   <option key={s} value={s}>
@@ -1732,6 +1766,8 @@ export default function MetasPage() {
               onChange={(e) =>
                 setForm((f) => ({ ...f, valor_alvo: e.target.value }))
               }
+              onFocus={handleInputFocus}
+              onBlur={handleInputBlur}
             />
           </div>
 
@@ -1751,6 +1787,8 @@ export default function MetasPage() {
                 onChange={(e) =>
                   setForm((f) => ({ ...f, data_inicio: e.target.value }))
                 }
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
               />
             </div>
             <div>
@@ -1762,6 +1800,8 @@ export default function MetasPage() {
                 onChange={(e) =>
                   setForm((f) => ({ ...f, data_fim: e.target.value }))
                 }
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
               />
             </div>
           </div>
@@ -1781,6 +1821,8 @@ export default function MetasPage() {
                 onChange={(e) =>
                   setForm((f) => ({ ...f, icone: e.target.value }))
                 }
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
               />
             </div>
             <div>
@@ -1794,6 +1836,8 @@ export default function MetasPage() {
                 onChange={(e) =>
                   setForm((f) => ({ ...f, cor: e.target.value }))
                 }
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
               />
             </div>
           </div>
@@ -2119,6 +2163,8 @@ export default function MetasPage() {
                             valor: e.target.value,
                           }))
                         }
+                        onFocus={handleInputFocus}
+                        onBlur={handleInputBlur}
                       />
                     </div>
                     <div>
@@ -2136,6 +2182,8 @@ export default function MetasPage() {
                             data: e.target.value,
                           }))
                         }
+                        onFocus={handleInputFocus}
+                        onBlur={handleInputBlur}
                       />
                     </div>
                   </div>
@@ -2154,6 +2202,8 @@ export default function MetasPage() {
                           descricao: e.target.value,
                         }))
                       }
+                      onFocus={handleInputFocus}
+                      onBlur={handleInputBlur}
                     />
                   </div>
 
