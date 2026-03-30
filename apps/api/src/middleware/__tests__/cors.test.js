@@ -3,14 +3,23 @@ import { jest } from '@jest/globals';
 jest.unstable_mockModule('../../config/env.js', () => ({
   config: {
     APP_URL: 'http://localhost:5173',
+    CORS_ORIGINS: undefined,
   },
 }));
 
 let corsMiddleware;
+let configMock;
 
 beforeAll(async () => {
+  const envMod = await import('../../config/env.js');
+  configMock = envMod.config;
   const mod = await import('../cors.js');
   corsMiddleware = mod.corsMiddleware;
+});
+
+beforeEach(() => {
+  configMock.APP_URL = 'http://localhost:5173';
+  configMock.CORS_ORIGINS = undefined;
 });
 
 function makeReq(overrides = {}) {
@@ -127,5 +136,92 @@ describe('corsMiddleware', () => {
 
     expect(next).toHaveBeenCalledTimes(1);
     expect(res._headers['access-control-allow-origin']).toBe('http://localhost:5173');
+  });
+
+  describe('CORS_ORIGINS support', () => {
+    test('allows first origin in CORS_ORIGINS list', () => {
+      configMock.CORS_ORIGINS = 'https://app.finlly.com.br,https://finlly.com.br';
+      const req = makeReq({ headers: { origin: 'https://app.finlly.com.br' } });
+      const res = makeRes();
+      const next = jest.fn();
+
+      corsMiddleware(req, res, next);
+
+      expect(next).toHaveBeenCalledTimes(1);
+      expect(res._headers['access-control-allow-origin']).toBe('https://app.finlly.com.br');
+    });
+
+    test('allows second origin in CORS_ORIGINS list', () => {
+      configMock.CORS_ORIGINS = 'https://app.finlly.com.br,https://finlly.com.br';
+      const req = makeReq({ headers: { origin: 'https://finlly.com.br' } });
+      const res = makeRes();
+      const next = jest.fn();
+
+      corsMiddleware(req, res, next);
+
+      expect(next).toHaveBeenCalledTimes(1);
+      expect(res._headers['access-control-allow-origin']).toBe('https://finlly.com.br');
+    });
+
+    test('rejects origin not in CORS_ORIGINS list', () => {
+      configMock.CORS_ORIGINS = 'https://app.finlly.com.br,https://finlly.com.br';
+      const req = makeReq({ headers: { origin: 'https://evil.com' } });
+      const res = makeRes();
+      const next = jest.fn();
+
+      corsMiddleware(req, res, next);
+
+      expect(res._status).toBe(403);
+      expect(res._body.code).toBe('FORBIDDEN');
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    test('handles CORS_ORIGINS with extra spaces around commas', () => {
+      configMock.CORS_ORIGINS = 'https://app.finlly.com.br , https://finlly.com.br';
+      const req = makeReq({ headers: { origin: 'https://finlly.com.br' } });
+      const res = makeRes();
+      const next = jest.fn();
+
+      corsMiddleware(req, res, next);
+
+      expect(next).toHaveBeenCalledTimes(1);
+      expect(res._headers['access-control-allow-origin']).toBe('https://finlly.com.br');
+    });
+
+    test('strips trailing slash from entries in CORS_ORIGINS', () => {
+      configMock.CORS_ORIGINS = 'https://app.finlly.com.br/,https://finlly.com.br/';
+      const req = makeReq({ headers: { origin: 'https://app.finlly.com.br' } });
+      const res = makeRes();
+      const next = jest.fn();
+
+      corsMiddleware(req, res, next);
+
+      expect(next).toHaveBeenCalledTimes(1);
+      expect(res._headers['access-control-allow-origin']).toBe('https://app.finlly.com.br');
+    });
+
+    test('falls back to APP_URL when CORS_ORIGINS is undefined', () => {
+      configMock.CORS_ORIGINS = undefined;
+      const req = makeReq({ headers: { origin: 'http://localhost:5173' } });
+      const res = makeRes();
+      const next = jest.fn();
+
+      corsMiddleware(req, res, next);
+
+      expect(next).toHaveBeenCalledTimes(1);
+      expect(res._headers['access-control-allow-origin']).toBe('http://localhost:5173');
+    });
+
+    test('handles preflight OPTIONS with CORS_ORIGINS', () => {
+      configMock.CORS_ORIGINS = 'https://app.finlly.com.br,https://finlly.com.br';
+      const req = makeReq({ headers: { origin: 'https://app.finlly.com.br' }, method: 'OPTIONS' });
+      const res = makeRes();
+      const next = jest.fn();
+
+      corsMiddleware(req, res, next);
+
+      expect(res._status).toBe(204);
+      expect(next).not.toHaveBeenCalled();
+    });
   });
 });

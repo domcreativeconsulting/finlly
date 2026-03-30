@@ -1,24 +1,30 @@
 import { config } from '../config/env.js';
 
 /**
- * CORS middleware with exact origin whitelist.
- * Compares the Origin header exactly against APP_URL to prevent subdomain bypass attacks.
+ * CORS middleware with exact origin whitelist supporting multiple origins.
+ * Compares the Origin header against the list of allowed origins to prevent subdomain bypass attacks.
+ *
+ * Allowed origins are configured via CORS_ORIGINS (comma-separated) or fall back to APP_URL.
  *
  * Behaviour:
  *   - No Origin header → pass through (server-to-server or same-origin requests)
- *   - Origin matches APP_URL exactly → add CORS headers; respond 204 to preflight OPTIONS
- *   - Origin present but doesn't match → respond 403 Forbidden
+ *   - Origin is in the allowed list → add CORS headers; respond 204 to preflight OPTIONS
+ *   - Origin present but not in the list → respond 403 Forbidden
  *
  * @type {import('express').RequestHandler}
  */
 export function corsMiddleware(req, res, next) {
   const origin = req.headers['origin'];
-  const allowedOrigin = config.APP_URL.replace(/\/$/, '');
+
+  // Build set of allowed origins from CORS_ORIGINS or fall back to APP_URL
+  const allowedOrigins = config.CORS_ORIGINS
+    ? new Set(config.CORS_ORIGINS.split(',').map((o) => o.trim().replace(/\/$/, '')))
+    : new Set([config.APP_URL.replace(/\/$/, '')]);
 
   // Not a cross-origin request — pass through
   if (!origin) return next();
 
-  if (origin === allowedOrigin) {
+  if (allowedOrigins.has(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
