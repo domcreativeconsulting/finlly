@@ -82,6 +82,7 @@ let deletarAnexo;
 let vincularAnexo;
 let desvincularAnexo;
 let buscarOcrResultado;
+let obterDownloadReference;
 
 beforeAll(async () => {
   const mod = await import('../anexoService.js');
@@ -92,6 +93,7 @@ beforeAll(async () => {
   vincularAnexo = mod.vincularAnexo;
   desvincularAnexo = mod.desvincularAnexo;
   buscarOcrResultado = mod.buscarOcrResultado;
+  obterDownloadReference = mod.obterDownloadReference;
 });
 
 beforeEach(() => {
@@ -410,5 +412,32 @@ describe('buscarOcrResultado', () => {
       code: 'NOT_FOUND',
       status: 404,
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// obterDownloadReference
+// ---------------------------------------------------------------------------
+describe('obterDownloadReference', () => {
+  test('retorna url e fileName para anexo do usuário', async () => {
+    mockAnexoFindFirst.mockResolvedValue(MOCK_ANEXO);
+    mockStorageGetDownloadReference.mockResolvedValue('https://presigned.url/file.pdf');
+
+    const result = await obterDownloadReference({ usuarioId: USER_ID, anexoId: ANEXO_ID });
+
+    expect(mockStorageGetDownloadReference).toHaveBeenCalledWith(
+      expect.objectContaining({ storagePath: MOCK_ANEXO.storage_path }),
+    );
+    expect(result).toEqual({ url: 'https://presigned.url/file.pdf', fileName: MOCK_ANEXO.nome_original });
+  });
+
+  test('lança NOT_FOUND quando anexo não pertence ao usuário', async () => {
+    mockAnexoFindFirst.mockResolvedValue(null);
+
+    await expect(obterDownloadReference({ usuarioId: 'outro-user', anexoId: ANEXO_ID })).rejects.toMatchObject({
+      code: 'NOT_FOUND',
+      status: 404,
+    });
+    expect(mockStorageGetDownloadReference).not.toHaveBeenCalled();
   });
 });

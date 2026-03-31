@@ -27,6 +27,7 @@ const mockDeletarAnexo = jest.fn();
 const mockVincularAnexo = jest.fn();
 const mockDesvincularAnexo = jest.fn();
 const mockBuscarOcrResultado = jest.fn();
+const mockObterDownloadReference = jest.fn();
 
 jest.unstable_mockModule('../../services/anexoService.js', () => ({
   uploadAnexo: mockUploadAnexo,
@@ -36,6 +37,7 @@ jest.unstable_mockModule('../../services/anexoService.js', () => ({
   vincularAnexo: mockVincularAnexo,
   desvincularAnexo: mockDesvincularAnexo,
   buscarOcrResultado: mockBuscarOcrResultado,
+  obterDownloadReference: mockObterDownloadReference,
 }));
 
 jest.unstable_mockModule('../../logger.js', () => ({
@@ -489,5 +491,41 @@ describe('POST /anexos/:id/ocr/confirmar', () => {
     });
 
     expect(res.status).toBe(422);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// GET /anexos/:id/download
+// ---------------------------------------------------------------------------
+
+describe('GET /anexos/:id/download', () => {
+  test('200 — retorna url e fileName', async () => {
+    mockObterDownloadReference.mockResolvedValue({
+      url: 'https://presigned.url/file.pdf',
+      fileName: 'boleto.pdf',
+    });
+
+    const app = makeApp();
+    const res = await request(app, 'GET', `/anexos/${ANEXO_ID}/download`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.url).toBe('https://presigned.url/file.pdf');
+    expect(res.body.fileName).toBe('boleto.pdf');
+    expect(mockObterDownloadReference).toHaveBeenCalledWith(
+      expect.objectContaining({ usuarioId: USER_ID, anexoId: ANEXO_ID }),
+    );
+  });
+
+  test('404 — anexo não encontrado', async () => {
+    const err = new Error('Anexo não encontrado.');
+    err.status = 404;
+    err.code = 'NOT_FOUND';
+    mockObterDownloadReference.mockRejectedValue(err);
+
+    const app = makeApp();
+    const res = await request(app, 'GET', `/anexos/${ANEXO_ID}/download`);
+
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe('NOT_FOUND');
   });
 });

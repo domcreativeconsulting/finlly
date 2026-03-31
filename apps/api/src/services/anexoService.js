@@ -252,6 +252,19 @@ export async function desvincularAnexo({ usuarioId, anexoId, entidadeTipo, entid
 }
 
 /**
+ * Obtém referência segura de download para um anexo.
+ *
+ * @param {{ usuarioId: string, anexoId: string }} params
+ * @returns {Promise<{ url: string, fileName: string }>}
+ */
+export async function obterDownloadReference({ usuarioId, anexoId }) {
+  const anexo = await buscarAnexoPorId({ usuarioId, anexoId });
+  const storageProvider = getStorageProvider();
+  const url = await storageProvider.getDownloadReference({ storagePath: anexo.storage_path });
+  return { url, fileName: anexo.nome_original };
+}
+
+/**
  * Busca o resultado OCR de um anexo.
  *
  * @param {{ usuarioId: string, anexoId: string }} params

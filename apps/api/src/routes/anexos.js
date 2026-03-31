@@ -9,6 +9,7 @@ import {
   vincularAnexo,
   desvincularAnexo,
   buscarOcrResultado,
+  obterDownloadReference,
 } from '../services/anexoService.js';
 import { jwtAuthMiddleware } from '../middleware/jwtAuth.js';
 import { requireAtivo } from '../middleware/requireAtivo.js';
@@ -102,6 +103,19 @@ async function handleGet(req, res, next) {
   try {
     const anexo = await buscarAnexoPorId({ usuarioId: req.user.sub, anexoId: req.params.id });
     return res.status(200).json(anexo);
+  } catch (err) {
+    return next(err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// GET /anexos/:id/download — referência segura de download
+// ---------------------------------------------------------------------------
+async function handleDownload(req, res, next) {
+  try {
+    const result = await obterDownloadReference({ usuarioId: req.user.sub, anexoId: req.params.id });
+    logger.info({ anexoId: req.params.id, userId: req.user.sub }, 'Download reference gerada.');
+    return res.status(200).json(result);
   } catch (err) {
     return next(err);
   }
@@ -205,6 +219,7 @@ async function handleOcrConfirmar(req, res, next) {
 // ---------------------------------------------------------------------------
 router.post('/anexos', writeLimiter, jwtAuthMiddleware, requireAtivo, uploadMiddleware, handleUpload);
 router.get('/anexos', readLimiter, jwtAuthMiddleware, requireAtivo, handleList);
+router.get('/anexos/:id/download', readLimiter, jwtAuthMiddleware, requireAtivo, handleDownload);
 router.get('/anexos/:id', readLimiter, jwtAuthMiddleware, requireAtivo, handleGet);
 router.delete('/anexos/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, handleDelete);
 router.post('/anexos/:id/vinculos', writeLimiter, jwtAuthMiddleware, requireAtivo, handleVincular);
