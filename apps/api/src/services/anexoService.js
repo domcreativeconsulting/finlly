@@ -1,10 +1,9 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
-import path from 'node:path';
 import prisma from '../utils/database.js';
 import { AppError } from '../errors/AppError.js';
 import { config } from '../config/env.js';
 import logger from '../logger.js';
+import { getStorageProvider } from '../storage/index.js';
 
 const ALLOWED_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
 
@@ -33,14 +32,6 @@ function calcularHash(buffer) {
 }
 
 /**
- * Retorna o diretório base de uploads.
- * @returns {string}
- */
-function uploadsDir() {
-  return config.UPLOADS_DIR || './uploads';
-}
-
-/**
  * Faz upload de um arquivo, persiste no banco e enfileira job de OCR.
  *
  * @param {{ usuarioId: string, file: { buffer: Buffer, originalname: string, mimetype: string, size: number } }} params
@@ -63,45 +54,49 @@ export async function uploadAnexo({ usuarioId, file }) {
   const ext = MIME_TO_EXT[mimetype] || 'bin';
   const nomeArquivo = `${uuid}.${ext}`;
 
-  const userDir = path.join(uploadsDir(), usuarioId);
-  await mkdir(userDir, { recursive: true });
+  const storageProvider = getStorageProvider();
+  const { storagePath, url } = await storageProvider.upload({ userId: usuarioId, fileId: uuid, ext, buffer, mimetype });
 
-  const filePath = path.join(userDir, nomeArquivo);
-  await writeFile(filePath, buffer);
+  try {
+    const anexo = await prisma.anexo.create({
+      data: {
+        id: uuid,
+        usuario_id: usuarioId,
+        nome_original: originalname.slice(0, 255),
+        nome_arquivo: nomeArquivo,
+        mime_type: mimetype,
+        tamanho_bytes: BigInt(size),
+        storage_driver: config.STORAGE_DRIVER || 'local',
+        storage_path: storagePath,
+        url,
+        hash_sha256: hash,
+      },
+    });
 
-  const url = `${userDir}/${nomeArquivo}`;
+    await prisma.anexoOcrResultado.create({
+      data: {
+        anexo_id: uuid,
+        status: 'UPLOADED',
+      },
+    });
 
-  const anexo = await prisma.anexo.create({
-    data: {
-      id: uuid,
-      usuario_id: usuarioId,
-      nome_original: originalname.slice(0, 255),
-      nome_arquivo: nomeArquivo,
-      mime_type: mimetype,
-      tamanho_bytes: BigInt(size),
-      url,
-      hash_sha256: hash,
-    },
-  });
+    await prisma.job.create({
+      data: {
+        tipo: 'ocr_processar',
+        payload: { anexo_id: uuid, storage_path: storagePath, mime_type: mimetype },
+        status: 'pendente',
+        agendado_para: new Date(),
+      },
+    });
 
-  await prisma.anexoOcrResultado.create({
-    data: {
-      anexo_id: uuid,
-      status: 'UPLOADED',
-    },
-  });
-
-  await prisma.job.create({
-    data: {
-      tipo: 'ocr_processar',
-      payload: { anexo_id: uuid, file_path: filePath, mime_type: mimetype },
-      status: 'pendente',
-      agendado_para: new Date(),
-    },
-  });
-
-  logger.info({ anexoId: uuid, usuarioId }, 'Anexo enviado e job OCR enfileirado.');
-  return anexo;
+    logger.info({ anexoId: uuid, usuarioId }, 'Anexo enviado e job OCR enfileirado.');
+    return anexo;
+  } catch (err) {
+    await storageProvider.delete({ storagePath }).catch((delErr) =>
+      logger.warn({ delErr, storagePath }, 'Falha no rollback do arquivo físico.'),
+    );
+    throw err;
+  }
 }
 
 /**

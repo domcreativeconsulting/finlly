@@ -47,6 +47,7 @@ jest.unstable_mockModule('../../config/env.js', () => ({
   config: {
     UPLOADS_DIR: '/tmp/test-uploads',
     MAX_UPLOAD_SIZE_MB: 10,
+    STORAGE_DRIVER: 'local',
   },
 }));
 
@@ -54,10 +55,21 @@ jest.unstable_mockModule('../../logger.js', () => ({
   default: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
 }));
 
-// Mock node:fs/promises to avoid actual file writes
-jest.unstable_mockModule('node:fs/promises', () => ({
-  mkdir: jest.fn().mockResolvedValue(undefined),
-  writeFile: jest.fn().mockResolvedValue(undefined),
+// ---------------------------------------------------------------------------
+// Mock: storage provider
+// ---------------------------------------------------------------------------
+const mockStorageUpload = jest.fn();
+const mockStorageDelete = jest.fn();
+const mockStorageGetDownloadReference = jest.fn();
+
+const mockStorageProvider = {
+  upload: mockStorageUpload,
+  delete: mockStorageDelete,
+  getDownloadReference: mockStorageGetDownloadReference,
+};
+
+jest.unstable_mockModule('../../storage/index.js', () => ({
+  getStorageProvider: jest.fn(() => mockStorageProvider),
 }));
 
 // ---------------------------------------------------------------------------
@@ -101,6 +113,8 @@ const MOCK_FILE = {
   size: MOCK_BUFFER.length,
 };
 
+const MOCK_STORAGE_PATH = `/tmp/test-uploads/${USER_ID}/${ANEXO_ID}.pdf`;
+
 const MOCK_ANEXO = {
   id: ANEXO_ID,
   usuario_id: USER_ID,
@@ -108,7 +122,9 @@ const MOCK_ANEXO = {
   nome_arquivo: `${ANEXO_ID}.pdf`,
   mime_type: 'application/pdf',
   tamanho_bytes: BigInt(MOCK_BUFFER.length),
-  url: `/tmp/test-uploads/${USER_ID}/${ANEXO_ID}.pdf`,
+  storage_driver: 'local',
+  storage_path: MOCK_STORAGE_PATH,
+  url: MOCK_STORAGE_PATH,
   hash_sha256: 'abc123',
   deleted_at: null,
   vinculos: [],
@@ -119,6 +135,11 @@ const MOCK_ANEXO = {
 // uploadAnexo
 // ---------------------------------------------------------------------------
 describe('uploadAnexo', () => {
+  beforeEach(() => {
+    mockStorageUpload.mockResolvedValue({ storagePath: MOCK_STORAGE_PATH, url: MOCK_STORAGE_PATH });
+    mockStorageDelete.mockResolvedValue(undefined);
+  });
+
   test('cria anexo com sucesso e enfileira job OCR', async () => {
     mockAnexoCreate.mockResolvedValue(MOCK_ANEXO);
     mockOcrCreate.mockResolvedValue({});
@@ -126,12 +147,18 @@ describe('uploadAnexo', () => {
 
     const result = await uploadAnexo({ usuarioId: USER_ID, file: MOCK_FILE });
 
+    expect(mockStorageUpload).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: USER_ID, ext: 'pdf', buffer: MOCK_BUFFER, mimetype: 'application/pdf' }),
+    );
     expect(mockAnexoCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           usuario_id: USER_ID,
           nome_original: 'boleto.pdf',
           mime_type: 'application/pdf',
+          storage_driver: 'local',
+          storage_path: MOCK_STORAGE_PATH,
+          url: MOCK_STORAGE_PATH,
         }),
       }),
     );
@@ -152,6 +179,7 @@ describe('uploadAnexo', () => {
       status: 400,
     });
     expect(mockAnexoCreate).not.toHaveBeenCalled();
+    expect(mockStorageUpload).not.toHaveBeenCalled();
   });
 
   test('rejeita arquivo muito grande', async () => {
@@ -162,6 +190,26 @@ describe('uploadAnexo', () => {
       status: 400,
     });
     expect(mockAnexoCreate).not.toHaveBeenCalled();
+    expect(mockStorageUpload).not.toHaveBeenCalled();
+  });
+
+  test('remove arquivo do storage se persistência falhar (rollback)', async () => {
+    const dbError = new Error('DB constraint violation');
+    mockAnexoCreate.mockRejectedValue(dbError);
+
+    await expect(uploadAnexo({ usuarioId: USER_ID, file: MOCK_FILE })).rejects.toThrow(dbError);
+
+    expect(mockStorageUpload).toHaveBeenCalled();
+    expect(mockStorageDelete).toHaveBeenCalledWith({ storagePath: MOCK_STORAGE_PATH });
+  });
+
+  test('chama storageProvider.delete quando prisma.anexo.create lança erro', async () => {
+    const dbError = new Error('unique constraint');
+    mockAnexoCreate.mockRejectedValue(dbError);
+
+    await expect(uploadAnexo({ usuarioId: USER_ID, file: MOCK_FILE })).rejects.toThrow(dbError);
+    expect(mockStorageDelete).toHaveBeenCalledTimes(1);
+    expect(mockStorageDelete).toHaveBeenCalledWith({ storagePath: MOCK_STORAGE_PATH });
   });
 });
 

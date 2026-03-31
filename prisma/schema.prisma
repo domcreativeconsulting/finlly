@@ -636,17 +636,19 @@ enum StatusAnexo {
 
 /// Arquivos anexados. Deduplicação via hash_sha256. Soft-delete.
 model Anexo {
-  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  usuario_id    String    @db.Uuid
-  nome_original String    @db.VarChar(255)
-  nome_arquivo  String    @db.VarChar(255)
-  mime_type     String    @db.VarChar(100)
-  tamanho_bytes BigInt
-  url           String
-  hash_sha256   String?   @db.VarChar(64)
-  created_at    DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at    DateTime  @default(now()) @db.Timestamptz(6)
-  deleted_at    DateTime? @db.Timestamptz(6)
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id     String    @db.Uuid
+  nome_original  String    @db.VarChar(255)
+  nome_arquivo   String    @db.VarChar(255)
+  mime_type      String    @db.VarChar(100)
+  tamanho_bytes  BigInt
+  storage_driver String    @default("local") @db.VarChar(10)
+  storage_path   String    @db.VarChar(1024)
+  url            String
+  hash_sha256    String?   @db.VarChar(64)
+  created_at     DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime  @default(now()) @db.Timestamptz(6)
+  deleted_at     DateTime? @db.Timestamptz(6)
 
   usuario       Usuario            @relation(fields: [usuario_id], references: [id], onDelete: Cascade, map: "fk_anexos_usuario")
   vinculos      AnexoVinculo[]
