@@ -22,9 +22,7 @@ async function processarMock({ filePath, mimeType }) {
  * Google Vision provider stub — not yet implemented.
  * @param {{ filePath: string, mimeType: string }} params
  */
-async function processarGoogleVision({ filePath, mimeType }) {
-  void filePath;
-  void mimeType;
+async function processarGoogleVision({ filePath: _filePath, mimeType: _mimeType }) {
   throw new Error('Provider não configurado');
 }
 
@@ -32,9 +30,7 @@ async function processarGoogleVision({ filePath, mimeType }) {
  * AWS Textract provider stub — not yet implemented.
  * @param {{ filePath: string, mimeType: string }} params
  */
-async function processarAwsTextract({ filePath, mimeType }) {
-  void filePath;
-  void mimeType;
+async function processarAwsTextract({ filePath: _filePath, mimeType: _mimeType }) {
   throw new Error('Provider não configurado');
 }
 

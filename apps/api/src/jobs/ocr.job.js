@@ -123,6 +123,6 @@ export function stopOcrJob() {
   if (timeoutHandle !== null) {
     clearTimeout(timeoutHandle);
     timeoutHandle = null;
-    logger.info({ msg: 'Job OCR parado.' });
+    logger.info('Job OCR parado.');
   }
 }

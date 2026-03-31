@@ -184,6 +184,9 @@ async function handleOcrConfirmar(req, res, next) {
   try {
     const ocr = await buscarOcrResultado({ usuarioId: req.user.sub, anexoId: req.params.id });
 
+    // Merge user-adjusted fields with the stored OCR result and return the
+    // confirmed suggestion. This is intentionally NOT persisted as a financial
+    // record — the client must explicitly create the entity using this data.
     const confirmado = {
       ...ocr,
       ...parsed.data,
