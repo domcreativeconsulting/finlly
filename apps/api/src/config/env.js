@@ -66,6 +66,17 @@ const envSchema = z.object({
   MAX_UPLOAD_SIZE_MB: z.coerce.number().int().positive().default(10),
   OCR_PROVIDER: z.enum(['mock', 'google_vision', 'aws_textract']).default('mock'),
   OCR_JOB_INTERVAL_MS: z.coerce.number().int().positive().default(5000),
+
+  // Storage — Driver configurável
+  STORAGE_DRIVER: z.enum(['local', 's3']).default('local'),
+
+  // S3 / S3-compatible (obrigatório se STORAGE_DRIVER=s3)
+  S3_BUCKET: z.string().optional(),
+  S3_REGION: z.string().default('us-east-1'),
+  S3_ACCESS_KEY_ID: z.string().optional(),
+  S3_SECRET_ACCESS_KEY: z.string().optional(),
+  S3_ENDPOINT: z.preprocess((v) => v || undefined, z.string().min(1).optional()),
+  S3_PUBLIC_BASE_URL: z.preprocess((v) => v || undefined, z.string().url().optional()),
 });
 
 /**
