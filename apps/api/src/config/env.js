@@ -60,6 +60,12 @@ const envSchema = z.object({
 
   // Billing status cache
   BILLING_STATUS_CACHE_TTL: z.coerce.number().int().positive().default(60), // seconds
+
+  // EPIC 11 — Anexos & OCR
+  UPLOADS_DIR: z.string().default('./uploads'),
+  MAX_UPLOAD_SIZE_MB: z.coerce.number().int().positive().default(10),
+  OCR_PROVIDER: z.enum(['mock', 'google_vision', 'aws_textract']).default('mock'),
+  OCR_JOB_INTERVAL_MS: z.coerce.number().int().positive().default(5000),
 });
 
 /**

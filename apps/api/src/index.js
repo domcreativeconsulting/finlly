@@ -14,6 +14,7 @@ import authRouter from './routes/auth.js';
 import perfilRouter from './routes/perfil.js';
 import billingRouter from './routes/billing.js';
 import { startReconciliacaoJob } from './jobs/reconciliacao.job.js';
+import { startOcrJob } from './jobs/ocr.job.js';
 import contasPagarRouter from './routes/contasPagar.js';
 import contasReceberRouter from './routes/contasReceber.js';
 import categoriasRouter from './routes/categorias.js';
@@ -22,6 +23,7 @@ import movimentacoesRouter from './routes/movimentacoes.js';
 import cashMovementsRouter from './routes/cashMovements.js';
 import investimentosRouter from './routes/investimentos.js';
 import metasRouter from './routes/metas.js';
+import anexosRouter from './routes/anexos.js';
 
 const app = express();
 
@@ -50,6 +52,7 @@ app.use(movimentacoesRouter);
 app.use(cashMovementsRouter);
 app.use(investimentosRouter);
 app.use(metasRouter);
+app.use(anexosRouter);
 
 app.get('/', (req, res) => {
   res.send('Hello World!');
@@ -63,5 +66,6 @@ app.listen(config.API_PORT, () => {
   });
   if (config.NODE_ENV !== 'test') {
     startReconciliacaoJob();
+    startOcrJob();
   }
 });
