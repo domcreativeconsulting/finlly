@@ -56,8 +56,8 @@ export function uploadMiddleware(req, res, next) {
 
     if (!req.file) {
       return res.status(400).json({
-        code: 'FILE_REQUIRED',
-        message: 'Nenhum arquivo enviado. Envie um arquivo no campo "file".',
+        code: 'MISSING_FILE',
+        message: 'Nenhum arquivo enviado. Use o campo "file".',
       });
     }
 
