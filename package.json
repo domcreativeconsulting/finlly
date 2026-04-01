@@ -15,6 +15,7 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"apps/**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --check \"apps/**/*.{ts,tsx,js,jsx,json,md}\"",
+    "postinstall": "prisma generate",
     "prepare": "test -n \"$CI\" || husky",
     "db:migrate": "prisma migrate deploy && prisma generate",
     "db:seed": "prisma db seed",
