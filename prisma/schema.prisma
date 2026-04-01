@@ -671,6 +671,10 @@ model AnexoOcrResultado {
   raw_text              String?
   extracted_json        Json?       @db.JsonB
   error_message         String?     @db.VarChar(500)
+  processing_attempts   Int         @default(0)
+  processing_started_at DateTime?   @db.Timestamptz(6)
+  failed_at             DateTime?   @db.Timestamptz(6)
+  bullmq_job_id         String?     @db.VarChar(100)
   processed_at          DateTime?   @db.Timestamptz(6)
   created_at            DateTime    @default(now()) @db.Timestamptz(6)
   updated_at            DateTime    @default(now()) @db.Timestamptz(6)

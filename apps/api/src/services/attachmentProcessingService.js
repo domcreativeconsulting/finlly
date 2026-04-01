@@ -1,5 +1,5 @@
 import prisma from '../utils/database.js';
-import { AppError } from '../errors/AppError.js';
+import { PermanentError } from '../errors/PermanentError.js';
 import { processarDocumento } from './ocrService.js';
 import logger from '../logger.js';
 
@@ -18,7 +18,7 @@ export async function processAttachment({ attachmentId, storagePath, mimeType, j
   });
 
   if (!anexo) {
-    throw AppError.notFound(`Anexo não encontrado ou removido: ${attachmentId}`);
+    throw new PermanentError(`Anexo não encontrado ou removido: ${attachmentId}`);
   }
 
   const ocrResultado = anexo.ocr_resultado;
@@ -33,20 +33,12 @@ export async function processAttachment({ attachmentId, storagePath, mimeType, j
     where: { anexo_id: attachmentId },
     data: {
       status: 'PROCESSING',
+      processing_attempts: { increment: 1 },
       processing_started_at: new Date(),
+      bullmq_job_id: jobId ?? null,
       updated_at: new Date(),
     },
   });
-
-  // Incrementa tentativas se o campo existir no modelo
-  try {
-    await prisma.anexoOcrResultado.update({
-      where: { anexo_id: attachmentId },
-      data: { processing_attempts: { increment: 1 } },
-    });
-  } catch (incrementErr) {
-    logger.warn({ ...logCtx, err: incrementErr }, 'Não foi possível incrementar processing_attempts — campo pode não existir no modelo.');
-  }
 
   logger.info({ ...logCtx, statusAnterior: statusAtual }, 'Iniciando processamento do anexo.');
 
@@ -67,6 +59,7 @@ export async function processAttachment({ attachmentId, storagePath, mimeType, j
       data: {
         status: 'FAILED',
         error_message: ocrErr.message?.slice(0, 500) ?? 'Erro desconhecido no OCR',
+        failed_at: new Date(),
         updated_at: new Date(),
       },
     });
@@ -97,6 +90,7 @@ export async function processAttachment({ attachmentId, storagePath, mimeType, j
       data: {
         status: 'FAILED',
         error_message: persistErr.message?.slice(0, 500) ?? 'Erro ao persistir resultado OCR',
+        failed_at: new Date(),
         updated_at: new Date(),
       },
     });
