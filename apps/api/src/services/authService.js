@@ -130,6 +130,8 @@ async function verifyPassword(password, storedHash) {
  * @param {string} [ip]
  */
 async function checkRateLimit(email, ip = 'unknown') {
+  if (config.NODE_ENV === 'development') return; // Skip Redis rate limit in dev
+
   let redis;
   try {
     redis = await getRedisClient();
