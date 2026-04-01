@@ -14,7 +14,6 @@ const mockOcrUpdate = jest.fn();
 const mockVinculoCreate = jest.fn();
 const mockVinculoFindFirst = jest.fn();
 const mockVinculoDelete = jest.fn();
-const mockJobCreate = jest.fn();
 
 const mockPrisma = {
   anexo: {
@@ -34,9 +33,6 @@ const mockPrisma = {
     findFirst: mockVinculoFindFirst,
     delete: mockVinculoDelete,
   },
-  job: {
-    create: mockJobCreate,
-  },
 };
 
 jest.unstable_mockModule('../../utils/database.js', () => ({
@@ -48,11 +44,23 @@ jest.unstable_mockModule('../../config/env.js', () => ({
     UPLOADS_DIR: '/tmp/test-uploads',
     MAX_UPLOAD_SIZE_MB: 10,
     STORAGE_DRIVER: 'local',
+    ATTACHMENT_JOB_ATTEMPTS: 3,
+    ATTACHMENT_JOB_BACKOFF_DELAY_MS: 2000,
   },
 }));
 
 jest.unstable_mockModule('../../logger.js', () => ({
   default: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+}));
+
+// ---------------------------------------------------------------------------
+// Mock: attachment queue
+// ---------------------------------------------------------------------------
+const mockAddAttachmentJob = jest.fn();
+
+jest.unstable_mockModule('../../queues/attachment.queue.js', () => ({
+  addAttachmentJob: mockAddAttachmentJob,
+  ATTACHMENT_QUEUE_NAME: 'attachment-processing',
 }));
 
 // ---------------------------------------------------------------------------
@@ -145,7 +153,7 @@ describe('uploadAnexo', () => {
   test('cria anexo com sucesso e enfileira job OCR', async () => {
     mockAnexoCreate.mockResolvedValue(MOCK_ANEXO);
     mockOcrCreate.mockResolvedValue({});
-    mockJobCreate.mockResolvedValue({});
+    mockAddAttachmentJob.mockResolvedValue({});
 
     const result = await uploadAnexo({ usuarioId: USER_ID, file: MOCK_FILE });
 
@@ -167,8 +175,8 @@ describe('uploadAnexo', () => {
     expect(mockOcrCreate).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ status: 'UPLOADED' }) }),
     );
-    expect(mockJobCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ tipo: 'ocr_processar', status: 'pendente' }) }),
+    expect(mockAddAttachmentJob).toHaveBeenCalledWith(
+      expect.objectContaining({ storagePath: MOCK_STORAGE_PATH, mimeType: 'application/pdf', triggeredBy: 'upload' }),
     );
     expect(result).toEqual(MOCK_ANEXO);
   });

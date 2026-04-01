@@ -4,6 +4,7 @@ import { AppError } from '../errors/AppError.js';
 import { config } from '../config/env.js';
 import logger from '../logger.js';
 import { getStorageProvider } from '../storage/index.js';
+import { addAttachmentJob } from '../queues/attachment.queue.js';
 
 const ALLOWED_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
 
@@ -80,16 +81,15 @@ export async function uploadAnexo({ usuarioId, file }) {
       },
     });
 
-    await prisma.job.create({
-      data: {
-        tipo: 'ocr_processar',
-        payload: { anexo_id: uuid, storage_path: storagePath, mime_type: mimetype },
-        status: 'pendente',
-        agendado_para: new Date(),
-      },
+    await addAttachmentJob({
+      attachmentId: uuid,
+      storagePath,
+      mimeType: mimetype,
+      triggeredBy: 'upload',
+      requestedAt: new Date().toISOString(),
     });
 
-    logger.info({ anexoId: uuid, usuarioId }, 'Anexo enviado e job OCR enfileirado.');
+    logger.info({ anexoId: uuid, usuarioId }, 'Anexo enviado e job BullMQ enfileirado.');
     return anexo;
   } catch (err) {
     await storageProvider.delete({ storagePath }).catch((delErr) =>
