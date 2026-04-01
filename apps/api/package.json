@@ -8,7 +8,9 @@
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
     "build": "echo 'Building...'",
-    "test": "node --experimental-vm-modules ../../node_modules/.bin/jest"
+    "test": "node --experimental-vm-modules ../../node_modules/.bin/jest",
+    "worker": "node src/workers/attachment.worker.js",
+    "worker:dev": "nodemon src/workers/attachment.worker.js"
   },
   "jest": {
     "testEnvironment": "node",
@@ -21,6 +23,7 @@
     "@aws-sdk/client-s3": "^3.1021.0",
     "@aws-sdk/s3-request-presigner": "^3.1021.0",
     "bcryptjs": "^3.0.3",
+    "bullmq": "^5.71.1",
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.3.1",
     "express": "^4.17.1",

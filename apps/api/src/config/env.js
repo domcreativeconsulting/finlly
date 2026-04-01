@@ -67,6 +67,11 @@ const envSchema = z.object({
   OCR_PROVIDER: z.enum(['mock', 'google_vision', 'aws_textract']).default('mock'),
   OCR_JOB_INTERVAL_MS: z.coerce.number().int().positive().default(5000),
 
+  // BullMQ / Attachment Worker
+  ATTACHMENT_QUEUE_CONCURRENCY: z.coerce.number().int().positive().default(5),
+  ATTACHMENT_JOB_ATTEMPTS: z.coerce.number().int().positive().default(3),
+  ATTACHMENT_JOB_BACKOFF_DELAY_MS: z.coerce.number().int().positive().default(2000),
+
   // Storage — Driver configurável
   STORAGE_DRIVER: z.enum(['local', 's3']).default('local'),
 
