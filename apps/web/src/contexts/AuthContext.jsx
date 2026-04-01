@@ -60,8 +60,14 @@ export function AuthProvider({ children }) {
     async (email, senha) => {
       const data = await authService.login(email, senha);
       storeToken(data.accessToken);
-      const me = await authService.me();
-      setUsuario(me);
+      try {
+        const me = await authService.me();
+        setUsuario(me);
+      } catch {
+        // /auth/me failed after a successful login — use the basic user data
+        // returned by the login response as a fallback so the session still starts.
+        setUsuario(data.usuario ?? null);
+      }
     },
     [storeToken],
   );
