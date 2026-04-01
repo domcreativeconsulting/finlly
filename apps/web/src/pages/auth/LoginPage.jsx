@@ -59,8 +59,9 @@ export default function LoginPage() {
     } catch (err) {
       const status = err.response?.status;
       if (status === 429) {
+        const apiMessage = err.response?.data?.message;
         setErrorMsg(
-          'Muitas tentativas. Aguarde alguns minutos e tente novamente.'
+          apiMessage || 'Muitas tentativas. Aguarde alguns minutos e tente novamente.'
         );
       } else if (status === 423) {
         setErrorMsg(
