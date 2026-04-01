@@ -618,7 +618,7 @@ export default function AnexosPage() {
                     Nenhum anexo encontrado
                   </p>
                   <p style={{ margin: 0, fontSize: 14, color: colors.neutral500 }}>
-                    Clique em "Enviar arquivo" para adicionar seu primeiro documento.
+                    Clique em &quot;Enviar arquivo&quot; para adicionar seu primeiro documento.
                   </p>
                 </div>
               )}
