@@ -67,7 +67,7 @@ const PENDING_JOB = {
   status: 'pendente',
   tentativas: 0,
   max_tentativas: 3,
-  payload: { anexo_id: 'anexo-uuid-001', file_path: '/uploads/user/file.pdf', mime_type: 'application/pdf' },
+  payload: { anexo_id: 'anexo-uuid-001', storage_path: '/uploads/user/file.pdf', mime_type: 'application/pdf' },
 };
 
 describe('startOcrJob', () => {
@@ -187,4 +187,4 @@ describe('stopOcrJob', () => {
   test('não lança erro se chamado sem job ativo', () => {
     expect(() => stopOcrJob()).not.toThrow();
   });
-});
+});//
