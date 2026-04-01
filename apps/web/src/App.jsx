@@ -19,6 +19,7 @@ import ContasPage from './pages/ContasPage.jsx';
 import ExtratoPage from './pages/ExtratoPage.jsx';
 import InvestimentosPage from './pages/InvestimentosPage.jsx';
 import MetasPage from './pages/MetasPage.jsx';
+import AnexosPage from './pages/AnexosPage.jsx';
 
 export default function App() {
   return (
@@ -83,6 +84,10 @@ export default function App() {
         <Route
           path="/metas"
           element={<ProtectedRoute element={<MetasPage />} />}
+        />
+        <Route
+          path="/anexos"
+          element={<ProtectedRoute element={<AnexosPage />} />}
         />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/logout" element={<Navigate to="/login" replace />} />
