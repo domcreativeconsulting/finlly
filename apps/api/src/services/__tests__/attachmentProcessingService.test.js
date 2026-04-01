@@ -29,13 +29,10 @@ jest.unstable_mockModule('../../logger.js', () => ({
 // Module under test
 // ---------------------------------------------------------------------------
 let processAttachment;
-let PermanentError;
 
 beforeAll(async () => {
   const mod = await import('../attachmentProcessingService.js');
   processAttachment = mod.processAttachment;
-  const errMod = await import('../../errors/PermanentError.js');
-  PermanentError = errMod.PermanentError;
 });
 
 beforeEach(() => {
