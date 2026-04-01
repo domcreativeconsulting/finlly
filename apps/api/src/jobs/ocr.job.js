@@ -11,7 +11,7 @@ let timeoutHandle = null;
  */
 async function processarJob(job) {
   const { id, payload } = job;
-  const { anexo_id, file_path, mime_type } = payload;
+  const { anexo_id, storage_path, mime_type } = payload;
 
   await prisma.job.update({
     where: { id },
@@ -21,7 +21,7 @@ async function processarJob(job) {
   try {
     const resultado = await processarDocumento({
       anexoId: anexo_id,
-      filePath: file_path,
+      filePath: storage_path,
       mimeType: mime_type,
     });
 
