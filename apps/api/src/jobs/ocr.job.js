@@ -35,6 +35,7 @@ async function processarJob(job) {
         extracted_type: resultado.extractedType ?? null,
         confidence_score: resultado.confidenceScore ?? null,
         raw_text: resultado.rawText ?? null,
+        extracted_json: resultado.structuredJson ?? null,
         processed_at: new Date(),
         updated_at: new Date(),
       },

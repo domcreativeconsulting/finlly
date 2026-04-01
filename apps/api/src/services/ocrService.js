@@ -15,6 +15,13 @@ async function processarMock({ filePath, mimeType }) {
     extractedType: null,
     confidenceScore: 0.1,
     rawText: '[mock] Texto extraído simulado.',
+    structuredJson: {
+      amount: null,
+      date: null,
+      description: 'Documento processado (mock)',
+      documentType: null,
+      confidence: 0.1,
+    },
   };
 }
 
@@ -42,6 +49,7 @@ async function processarAwsTextract({ filePath: _filePath, mimeType: _mimeType }
  * @property {string|null} extractedType
  * @property {number|null} confidenceScore
  * @property {string|null} rawText
+ * @property {object|null} structuredJson
  */
 
 /**

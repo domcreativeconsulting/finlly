@@ -53,27 +53,55 @@ export async function processAttachment({ attachmentId, storagePath, mimeType, j
   const filePath = storagePath ?? anexo.storage_path;
   const mime = mimeType ?? anexo.mime_type;
 
-  const resultado = await processarDocumento({
-    anexoId: attachmentId,
-    filePath,
-    mimeType: mime,
-  });
+  let resultado;
+  try {
+    resultado = await processarDocumento({
+      anexoId: attachmentId,
+      filePath,
+      mimeType: mime,
+    });
+  } catch (ocrErr) {
+    logger.error({ ...logCtx, err: ocrErr }, 'Falha no processamento OCR do anexo.');
+    await prisma.anexoOcrResultado.update({
+      where: { anexo_id: attachmentId },
+      data: {
+        status: 'FAILED',
+        error_message: ocrErr.message?.slice(0, 500) ?? 'Erro desconhecido no OCR',
+        updated_at: new Date(),
+      },
+    });
+    throw ocrErr;
+  }
 
-  await prisma.anexoOcrResultado.update({
-    where: { anexo_id: attachmentId },
-    data: {
-      status: 'PROCESSED',
-      processed_at: new Date(),
-      extracted_amount: resultado.extractedAmount ?? null,
-      extracted_date: resultado.extractedDate ?? null,
-      extracted_description: resultado.extractedDescription ?? null,
-      extracted_type: resultado.extractedType ?? null,
-      confidence_score: resultado.confidenceScore ?? null,
-      raw_text: resultado.rawText ?? null,
-      error_message: null,
-      updated_at: new Date(),
-    },
-  });
+  try {
+    await prisma.anexoOcrResultado.update({
+      where: { anexo_id: attachmentId },
+      data: {
+        status: 'PROCESSED',
+        processed_at: new Date(),
+        extracted_amount: resultado.extractedAmount ?? null,
+        extracted_date: resultado.extractedDate ?? null,
+        extracted_description: resultado.extractedDescription ?? null,
+        extracted_type: resultado.extractedType ?? null,
+        confidence_score: resultado.confidenceScore ?? null,
+        raw_text: resultado.rawText ?? null,
+        extracted_json: resultado.structuredJson ?? null,
+        error_message: null,
+        updated_at: new Date(),
+      },
+    });
+  } catch (persistErr) {
+    logger.error({ ...logCtx, err: persistErr }, 'Falha ao persistir resultado do OCR no banco.');
+    await prisma.anexoOcrResultado.update({
+      where: { anexo_id: attachmentId },
+      data: {
+        status: 'FAILED',
+        error_message: persistErr.message?.slice(0, 500) ?? 'Erro ao persistir resultado OCR',
+        updated_at: new Date(),
+      },
+    });
+    throw persistErr;
+  }
 
   logger.info({ ...logCtx }, 'Anexo processado com sucesso.');
 

@@ -101,6 +101,13 @@ describe('startOcrJob', () => {
       extractedType: 'boleto',
       confidenceScore: 0.9,
       rawText: 'texto extraído',
+      structuredJson: {
+        amount: 100.5,
+        date: '2024-01-15',
+        description: 'Boleto teste',
+        documentType: 'boleto',
+        confidence: 0.9,
+      },
     });
 
     startOcrJob();
@@ -119,7 +126,19 @@ describe('startOcrJob', () => {
       mimeType: 'application/pdf',
     });
     expect(mockOcrUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { anexo_id: 'anexo-uuid-001' }, data: expect.objectContaining({ status: 'PROCESSED' }) }),
+      expect.objectContaining({
+        where: { anexo_id: 'anexo-uuid-001' },
+        data: expect.objectContaining({
+          status: 'PROCESSED',
+          extracted_json: {
+            amount: 100.5,
+            date: '2024-01-15',
+            description: 'Boleto teste',
+            documentType: 'boleto',
+            confidence: 0.9,
+          },
+        }),
+      }),
     );
   });
 
