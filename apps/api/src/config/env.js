@@ -71,6 +71,7 @@ const envSchema = z.object({
   ATTACHMENT_QUEUE_CONCURRENCY: z.coerce.number().int().positive().default(5),
   ATTACHMENT_JOB_ATTEMPTS: z.coerce.number().int().positive().default(3),
   ATTACHMENT_JOB_BACKOFF_DELAY_MS: z.coerce.number().int().positive().default(2000),
+  ATTACHMENT_DLQ_QUEUE_NAME: z.string().default('attachment-processing-dlq'),
 
   // Storage — Driver configurável
   STORAGE_DRIVER: z.enum(['local', 's3']).default('local'),
