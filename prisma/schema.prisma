@@ -669,6 +669,7 @@ model AnexoOcrResultado {
   extracted_type        String?     @db.VarChar(50)
   confidence_score      Decimal?    @db.Decimal(5, 4)
   raw_text              String?
+  extracted_json        Json?       @db.JsonB
   error_message         String?     @db.VarChar(500)
   processed_at          DateTime?   @db.Timestamptz(6)
   created_at            DateTime    @default(now()) @db.Timestamptz(6)
