@@ -37,6 +37,7 @@ const router = Router();
  * @returns {object|undefined}
  */
 function buildStore(windowMs) {
+  if (config.NODE_ENV === 'development') return undefined;
   if (config.RATE_LIMIT_STORE !== 'redis') return undefined;
 
   const windowSeconds = Math.ceil(windowMs / 1000);
@@ -84,6 +85,7 @@ const FORGOT_PASSWORD_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 const loginLimiter = rateLimit({
   windowMs: LOGIN_WINDOW_MS,
   max: 5,
+  skip: () => config.NODE_ENV === 'development',
   standardHeaders: true,
   legacyHeaders: false,
   store: buildStore(LOGIN_WINDOW_MS),
@@ -101,6 +103,7 @@ const loginLimiter = rateLimit({
 const registerLimiter = rateLimit({
   windowMs: REGISTER_WINDOW_MS,
   max: 10,
+  skip: () => config.NODE_ENV === 'development',
   standardHeaders: true,
   legacyHeaders: false,
   store: buildStore(REGISTER_WINDOW_MS),
@@ -118,6 +121,7 @@ const registerLimiter = rateLimit({
 const forgotPasswordLimiter = rateLimit({
   windowMs: FORGOT_PASSWORD_WINDOW_MS,
   max: 3,
+  skip: () => config.NODE_ENV === 'development',
   standardHeaders: true,
   legacyHeaders: false,
   store: buildStore(FORGOT_PASSWORD_WINDOW_MS),
@@ -136,6 +140,7 @@ const forgotPasswordLimiter = rateLimit({
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 30,
+  skip: () => config.NODE_ENV === 'development',
   standardHeaders: true,
   legacyHeaders: false,
   message: {
