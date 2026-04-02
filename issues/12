@@ -1,0 +1,115 @@
+**Epic:** #210 — EPIC 12 — WhatsApp Agent (Evolution) + NLP
+**Prioridade:** P1
+
+### Objetivo
+Implementar a camada de NLP básica para que o agente WhatsApp consiga identificar a intenção do usuário e extrair dados relevantes das mensagens recebidas, permitindo que as próximas stories executem ações reais no sistema Finlly.
+
+### Escopo
+
+**Inclui:**
+- Identificação de intents a partir da mensagem do usuário
+- Extração de entidades relevantes (valor, descrição, categoria, data)
+- MVP com regex + parsing simples
+- Estrutura modular preparada para evolução futura (classificador, LLM)
+- Integração com o fluxo do webhook já existente (Story 12.1)
+- Logging da intent detectada e dados extraídos
+- Resposta padrão para intent UNKNOWN
+
+**Não inclui:**
+- Execução de ações no sistema — Story 12.3
+- Controle de sessão/autenticação do usuário — Story 12.5
+- Uso de LLM ou IA avançada (fase futura)
+
+### Estrutura de intents mínima
+
+| Intent | Descrição |
+|---|---|
+| `CREATE_EXPENSE` | Registrar uma despesa |
+| `CREATE_INCOME` | Registrar uma receita |
+| `GET_BALANCE` | Consultar saldo |
+| `GET_STATEMENT` | Consultar extrato/resumo |
+| `UNKNOWN` | Mensagem não reconhecida |
+
+### Exemplos de parsing
+
+| Mensagem do usuário | Intent | Dados extraídos |
+|---|---|---|
+| "gastei 50 no almoço" | CREATE_EXPENSE | valor: 50, descrição: almoço |
+| "recebi 2000 do cliente X" | CREATE_INCOME | valor: 2000, origem: cliente X |
+| "quanto tenho em caixa?" | GET_BALANCE | — |
+| "me mostra meus gastos da semana" | GET_STATEMENT | período: semana |
+| "bom dia!" | UNKNOWN | — |
+
+### Detalhes técnicos
+
+**Novo módulo/serviço:**
+```
+services/
+  nlpService.js     ← identificarIntent(mensagem) → { intent, params }
+```
+
+**Assinatura esperada:**
+```js
+function identificarIntent(texto) {
+  // Retorna: { intent: 'CREATE_EXPENSE', params: { valor: 50, descricao: 'almoço' } }
+}
+```
+
+**Exemplos de regex (MVP):**
+```js
+if (/gastei\s+(\d+[.,]?\d*)/i.test(texto)) return 'CREATE_EXPENSE'
+if (/recebi\s+(\d+[.,]?\d*)/i.test(texto)) return 'CREATE_INCOME'
+if (/quanto.*caixa/i.test(texto)) return 'GET_BALANCE'
+if (/gastos.*(semana|mês|hoje)/i.test(texto)) return 'GET_STATEMENT'
+return 'UNKNOWN'
+```
+
+**Integração com o fluxo existente (whatsappService.js):**
+```
+mensagem recebida pelo webhook
+    ↓
+processarMensagemRecebida()
+    ↓
+nlpService.identificarIntent(texto)
+    ↓
+{ intent, params } → log + encaminhar para orquestração (Story 12.3)
+    ↓
+resposta ao usuário via enviarMensagem()
+```
+
+**Resposta para UNKNOWN:**
+- "Não entendi sua mensagem. Você pode tentar: 'gastei 50 no almoço', 'recebi 2000', 'quanto tenho em caixa?'
+
+### Critérios de aceitação
+
+- [ ] Módulo `nlpService.js` criado e isolado do restante da aplicação
+- [ ] Função `identificarIntent(texto)` implementada e retornando `{ intent, params }`
+- [ ] Intents mapeadas: `CREATE_EXPENSE`, `CREATE_INCOME`, `GET_BALANCE`, `GET_STATEMENT`, `UNKNOWN`
+- [ ] Extração de valor numérico para despesas e receitas
+- [ ] Extração de descrição/origem para despesas e receitas
+- [ ] Integrado ao `whatsappService.js` no fluxo de recebimento de mensagem
+- [ ] Intent e dados extraídos registrados em log
+- [ ] Intent `UNKNOWN` retorna mensagem de ajuda clara ao usuário
+- [ ] Estrutura modular e preparada para evolução futura
+
+### Fluxo básico
+
+```
+WhatsApp (usuário)
+    ↓ mensagem
+Evolution API → webhook
+    ↓
+WhatsAppService.processarMensagemRecebida()
+    ↓
+NLPService.identificarIntent(texto)
+    ↓
+{ intent, params }
+    ↓ log
+    ↓ resposta contextual ao usuário
+Evolution API → entrega ao usuário
+```
+
+### Dependências
+
+- STORY 12.1 — Integração WhatsApp (Evolution) ✅ Concluída (#211)
+- Próxima: STORY 12.3 — Orquestração de ações
