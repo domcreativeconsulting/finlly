@@ -2,6 +2,11 @@ import { sendText } from '../lib/evolution/evolutionClient.js';
 import logger from '../logger.js';
 import { identificarIntent, INTENT_UNKNOWN } from './nlpService.js';
 import { resolverUsuarioPorWhatsapp, executarAcao } from './whatsappAgentService.js';
+import {
+  checkRateLimitPorNumero,
+  registrarLogWhatsapp,
+  validarUsuarioAtivo,
+} from './whatsappSecurityService.js';
 
 /** Reply sent when the user's number is not linked to any Finlly account */
 const RESPOSTA_NUMERO_NAO_VINCULADO =
@@ -41,6 +46,18 @@ export async function processarMensagemRecebida(payload) {
     return { from, name, text, fromMe };
   }
 
+  // Ignore empty messages silently (no log, no response)
+  if (!text.trim()) {
+    return { from, name, text, fromMe };
+  }
+
+  // Rate limit by phone number
+  if (!checkRateLimitPorNumero(from)) {
+    logger.warn({ from }, 'Rate limit WhatsApp excedido por número');
+    await registrarLogWhatsapp({ usuario_id: null, telefone: from, direcao: 'entrada', conteudo: text, status: 'rate_limited' });
+    return { from, name, text, fromMe };
+  }
+
   const { intent, params } = identificarIntent(text);
   logger.info({ from, intent, params }, 'Intent WhatsApp detectada');
 
@@ -51,6 +68,8 @@ export async function processarMensagemRecebida(payload) {
     } catch (err) {
       logger.error({ err, from, intent }, 'Erro ao enviar resposta WhatsApp');
     }
+    await registrarLogWhatsapp({ usuario_id: null, telefone: from, direcao: 'entrada', conteudo: text });
+    await registrarLogWhatsapp({ usuario_id: null, telefone: from, direcao: 'saida', conteudo: RESPOSTA_UNKNOWN });
     return { from, name, text, fromMe };
   }
 
@@ -58,6 +77,7 @@ export async function processarMensagemRecebida(payload) {
   const usuario = await resolverUsuarioPorWhatsapp(from);
   if (!usuario) {
     logger.warn({ from }, 'Número WhatsApp não vinculado a nenhum usuário');
+    await registrarLogWhatsapp({ usuario_id: null, telefone: from, direcao: 'entrada', conteudo: text, status: 'sem_usuario' });
     try {
       await enviarMensagem(from, RESPOSTA_NUMERO_NAO_VINCULADO);
     } catch (err) {
@@ -65,6 +85,23 @@ export async function processarMensagemRecebida(payload) {
     }
     return { from, name, text, fromMe };
   }
+
+  // Validate that the user account is active
+  const { valido, mensagem: mensagemBloqueio } = validarUsuarioAtivo(usuario);
+  if (!valido) {
+    logger.warn({ from, usuarioId: usuario.id }, 'Usuário inativo tentou usar WhatsApp');
+    await registrarLogWhatsapp({ usuario_id: usuario.id, telefone: from, direcao: 'entrada', conteudo: text, status: 'usuario_inativo' });
+    try {
+      await enviarMensagem(from, mensagemBloqueio);
+    } catch (err) {
+      logger.error({ err, from }, 'Erro ao enviar resposta de usuário inativo');
+    }
+    await registrarLogWhatsapp({ usuario_id: usuario.id, telefone: from, direcao: 'saida', conteudo: mensagemBloqueio, status: 'usuario_inativo' });
+    return { from, name, text, fromMe };
+  }
+
+  // Log the incoming message
+  await registrarLogWhatsapp({ usuario_id: usuario.id, telefone: from, direcao: 'entrada', conteudo: text });
 
   // Execute the action and send the reply
   const resposta = await executarAcao(usuario, intent, params);
@@ -74,6 +111,9 @@ export async function processarMensagemRecebida(payload) {
   } catch (err) {
     logger.error({ err, from, intent }, 'Erro ao enviar resposta WhatsApp');
   }
+
+  // Log the outgoing response
+  await registrarLogWhatsapp({ usuario_id: usuario.id, telefone: from, direcao: 'saida', conteudo: resposta });
 
   return { from, name, text, fromMe };
 }
