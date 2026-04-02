@@ -9,6 +9,7 @@ import {
   isDuplicateMensagem,
 } from './whatsappSecurityService.js';
 import { normalizeEvolutionPayload } from '../lib/whatsapp/evolutionPayloadParser.js';
+import { sendTextMessage } from './whatsappSenderService.js';
 
 /** Reply sent when the user's number is not linked to any Finlly account */
 const RESPOSTA_NUMERO_NAO_VINCULADO =
@@ -91,11 +92,7 @@ export async function processarMensagemRecebida(payload) {
 
   // Unknown intent: reply with help menu, no user lookup needed
   if (intent === INTENT_UNKNOWN) {
-    try {
-      await enviarMensagem(from, RESPOSTA_UNKNOWN);
-    } catch (err) {
-      logger.error({ err, from, intent }, 'Erro ao enviar resposta WhatsApp');
-    }
+    await sendTextMessage({ telefone: from, texto: RESPOSTA_UNKNOWN, usuarioId: null });
     await registrarLogWhatsapp({
       usuario_id: null,
       telefone: from,
@@ -107,7 +104,6 @@ export async function processarMensagemRecebida(payload) {
       payload_raw,
       instance_name,
     });
-    await registrarLogWhatsapp({ usuario_id: null, telefone: from, direcao: 'saida', conteudo: RESPOSTA_UNKNOWN });
     return { from, name, text, fromMe };
   }
 
@@ -127,11 +123,7 @@ export async function processarMensagemRecebida(payload) {
       payload_raw,
       instance_name,
     });
-    try {
-      await enviarMensagem(from, RESPOSTA_NUMERO_NAO_VINCULADO);
-    } catch (err) {
-      logger.error({ err, from }, 'Erro ao enviar resposta de número não vinculado');
-    }
+    await sendTextMessage({ telefone: from, texto: RESPOSTA_NUMERO_NAO_VINCULADO, usuarioId: null });
     return { from, name, text, fromMe };
   }
 
@@ -151,12 +143,7 @@ export async function processarMensagemRecebida(payload) {
       payload_raw,
       instance_name,
     });
-    try {
-      await enviarMensagem(from, mensagemBloqueio);
-    } catch (err) {
-      logger.error({ err, from }, 'Erro ao enviar resposta de usuário inativo');
-    }
-    await registrarLogWhatsapp({ usuario_id: usuario.id, telefone: from, direcao: 'saida', conteudo: mensagemBloqueio, status: 'usuario_inativo' });
+    await sendTextMessage({ telefone: from, texto: mensagemBloqueio, usuarioId: usuario.id });
     return { from, name, text, fromMe };
   }
 
@@ -176,14 +163,7 @@ export async function processarMensagemRecebida(payload) {
   // Execute the action and send the reply
   const resposta = await executarAcao(usuario, intent, params);
 
-  try {
-    await enviarMensagem(from, resposta);
-  } catch (err) {
-    logger.error({ err, from, intent }, 'Erro ao enviar resposta WhatsApp');
-  }
-
-  // Log the outgoing response
-  await registrarLogWhatsapp({ usuario_id: usuario.id, telefone: from, direcao: 'saida', conteudo: resposta });
+  await sendTextMessage({ telefone: from, texto: resposta, usuarioId: usuario.id });
 
   return { from, name, text, fromMe };
 }
