@@ -115,9 +115,11 @@ describe('executarAcao — CREATE_EXPENSE', () => {
   const usuario = { id: 'user-1', nome: 'João' };
   const conta = { id: 'conta-1', nome: 'Conta Corrente' };
 
-  test('cria movimentação de saída e retorna resposta formatada', async () => {
+  test('cria movimentação de saída e retorna resposta formatada com nome do usuário', async () => {
     mockListContas.mockResolvedValue([conta]);
     mockCreateMovimentacao.mockResolvedValue({ id: 'mov-1', valor: 50, tipo: 'saida' });
+    mockGetSaldoConsolidado.mockResolvedValue({ saldo: 500, entradas: 3000, saidas: 2500 });
+    mockGetExtrato.mockResolvedValue({ items: [], totals: { totalIn: 0, totalOut: 320 } });
 
     const resposta = await executarAcao(usuario, INTENT_CREATE_EXPENSE, { valor: 50, descricao: 'almoço' });
 
@@ -126,10 +128,54 @@ describe('executarAcao — CREATE_EXPENSE', () => {
       'user-1',
       expect.objectContaining({ conta_id: 'conta-1', tipo: 'saida', valor: 50, descricao: 'almoço' }),
     );
-    expect(resposta).toContain('✅ Despesa registrada!');
+    expect(resposta).toContain('✅ Despesa registrada, João!');
     expect(resposta).toContain('R$ 50,00');
     expect(resposta).toContain('almoço');
     expect(resposta).toContain('Conta Corrente');
+  });
+
+  test('inclui resumo de gastos da semana na resposta', async () => {
+    mockListContas.mockResolvedValue([conta]);
+    mockCreateMovimentacao.mockResolvedValue({ id: 'mov-1', valor: 80, tipo: 'saida' });
+    mockGetSaldoConsolidado.mockResolvedValue({ saldo: 500, entradas: 3000, saidas: 2500 });
+    mockGetExtrato.mockResolvedValue({ items: [], totals: { totalIn: 0, totalOut: 320 } });
+
+    const resposta = await executarAcao(usuario, INTENT_CREATE_EXPENSE, { valor: 80, descricao: 'Farmácia' });
+
+    expect(resposta).toContain('📈 Total gasto nesta semana: R$ 320,00');
+  });
+
+  test('inclui alerta quando saldo está baixo (< R$ 100)', async () => {
+    mockListContas.mockResolvedValue([conta]);
+    mockCreateMovimentacao.mockResolvedValue({ id: 'mov-1', valor: 80, tipo: 'saida' });
+    mockGetSaldoConsolidado.mockResolvedValue({ saldo: 45, entradas: 3000, saidas: 2955 });
+    mockGetExtrato.mockResolvedValue({ items: [], totals: { totalIn: 0, totalOut: 320 } });
+
+    const resposta = await executarAcao(usuario, INTENT_CREATE_EXPENSE, { valor: 80, descricao: 'Farmácia' });
+
+    expect(resposta).toContain('⚠️ Atenção: seu saldo está baixo (R$ 45,00).');
+  });
+
+  test('inclui alerta de saldo negativo quando saldo < 0', async () => {
+    mockListContas.mockResolvedValue([conta]);
+    mockCreateMovimentacao.mockResolvedValue({ id: 'mov-1', valor: 80, tipo: 'saida' });
+    mockGetSaldoConsolidado.mockResolvedValue({ saldo: -50, entradas: 200, saidas: 250 });
+    mockGetExtrato.mockResolvedValue({ items: [], totals: { totalIn: 0, totalOut: 150 } });
+
+    const resposta = await executarAcao(usuario, INTENT_CREATE_EXPENSE, { valor: 80, descricao: 'Farmácia' });
+
+    expect(resposta).toContain('⚠️ Atenção: seu saldo está negativo (R$ -50,00).');
+  });
+
+  test('não inclui alerta quando saldo está OK (>= R$ 100)', async () => {
+    mockListContas.mockResolvedValue([conta]);
+    mockCreateMovimentacao.mockResolvedValue({ id: 'mov-1', valor: 50, tipo: 'saida' });
+    mockGetSaldoConsolidado.mockResolvedValue({ saldo: 1200, entradas: 3000, saidas: 1800 });
+    mockGetExtrato.mockResolvedValue({ items: [], totals: { totalIn: 0, totalOut: 200 } });
+
+    const resposta = await executarAcao(usuario, INTENT_CREATE_EXPENSE, { valor: 50, descricao: 'almoço' });
+
+    expect(resposta).not.toContain('⚠️');
   });
 
   test('retorna erro quando não há conta cadastrada', async () => {
@@ -144,6 +190,8 @@ describe('executarAcao — CREATE_EXPENSE', () => {
   test('usa descrição padrão quando descricao está vazia', async () => {
     mockListContas.mockResolvedValue([conta]);
     mockCreateMovimentacao.mockResolvedValue({ id: 'mov-1', valor: 30, tipo: 'saida' });
+    mockGetSaldoConsolidado.mockResolvedValue({ saldo: 500, entradas: 3000, saidas: 2500 });
+    mockGetExtrato.mockResolvedValue({ items: [], totals: { totalIn: 0, totalOut: 100 } });
 
     const resposta = await executarAcao(usuario, INTENT_CREATE_EXPENSE, { valor: 30, descricao: '' });
 
@@ -163,7 +211,7 @@ describe('executarAcao — CREATE_INCOME', () => {
   const usuario = { id: 'user-1', nome: 'João' };
   const conta = { id: 'conta-1', nome: 'Poupança' };
 
-  test('cria movimentação de entrada e retorna resposta formatada', async () => {
+  test('cria movimentação de entrada e retorna resposta formatada com nome do usuário', async () => {
     mockListContas.mockResolvedValue([conta]);
     mockCreateMovimentacao.mockResolvedValue({ id: 'mov-2', valor: 2000, tipo: 'entrada' });
 
@@ -173,7 +221,7 @@ describe('executarAcao — CREATE_INCOME', () => {
       'user-1',
       expect.objectContaining({ conta_id: 'conta-1', tipo: 'entrada', valor: 2000, descricao: 'cliente X' }),
     );
-    expect(resposta).toContain('✅ Receita registrada!');
+    expect(resposta).toContain('✅ Receita registrada, João!');
     expect(resposta).toContain('R$ 2.000,00');
     expect(resposta).toContain('cliente X');
     expect(resposta).toContain('Poupança');
@@ -185,15 +233,15 @@ describe('executarAcao — CREATE_INCOME', () => {
 // ============================================================
 
 describe('executarAcao — GET_BALANCE', () => {
-  const usuario = { id: 'user-1' };
+  const usuario = { id: 'user-1', nome: 'João' };
 
-  test('retorna saldo consolidado formatado em padrão BR', async () => {
+  test('retorna saldo consolidado formatado com nome do usuário', async () => {
     mockGetSaldoConsolidado.mockResolvedValue({ saldo: 1234.56, entradas: 5000, saidas: 3765.44 });
 
     const resposta = await executarAcao(usuario, INTENT_GET_BALANCE, {});
 
     expect(mockGetSaldoConsolidado).toHaveBeenCalledWith('user-1');
-    expect(resposta).toContain('💰 Seu saldo atual');
+    expect(resposta).toContain('💰 Saldo de João');
     expect(resposta).toContain('R$ 1.234,56');
     expect(resposta).toContain('R$ 5.000,00');
     expect(resposta).toContain('R$ 3.765,44');
@@ -205,9 +253,9 @@ describe('executarAcao — GET_BALANCE', () => {
 // ============================================================
 
 describe('executarAcao — GET_STATEMENT', () => {
-  const usuario = { id: 'user-1' };
+  const usuario = { id: 'user-1', nome: 'João' };
 
-  test('retorna extrato com itens formatados', async () => {
+  test('retorna extrato com itens formatados e nome do usuário', async () => {
     mockGetExtrato.mockResolvedValue({
       items: [
         { type: 'OUT', description: 'Almoço', amount: 50 },
@@ -222,7 +270,7 @@ describe('executarAcao — GET_STATEMENT', () => {
       'user-1',
       expect.objectContaining({ perPage: 5 }),
     );
-    expect(resposta).toContain('📊 Extrato semana');
+    expect(resposta).toContain('📊 Extrato da semana — João');
     expect(resposta).toContain('🔴 Almoço');
     expect(resposta).toContain('💚 Freela');
     expect(resposta).toContain('R$ 500,00');
@@ -248,7 +296,7 @@ describe('executarAcao — GET_STATEMENT', () => {
 
     const resposta = await executarAcao(usuario, INTENT_GET_STATEMENT, { periodo: '' });
 
-    expect(resposta).toContain('📊 Extrato mês');
+    expect(resposta).toContain('📊 Extrato da mês');
   });
 });
 

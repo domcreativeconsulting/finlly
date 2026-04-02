@@ -89,6 +89,55 @@ function diasAtras(dias) {
   return d.toISOString().slice(0, 10);
 }
 
+/** Threshold below which a low-balance warning is added to expense replies (BRL) */
+const SALDO_BAIXO_THRESHOLD = 100;
+
+// ============================================================
+// Private helpers
+// ============================================================
+
+/**
+ * Builds the reply text for a successfully registered expense.
+ *
+ * Sections (in order):
+ *  1. Confirmation line with user name
+ *  2. Transaction details (value, description, account, date)
+ *  3. Weekly spending summary (always included)
+ *  4. Low-balance / negative-balance warning (only when saldo < SALDO_BAIXO_THRESHOLD)
+ *
+ * @param {object} usuario    - Resolved usuario (must have `nome`)
+ * @param {object} mov        - Created movimentacao object (must have `valor`)
+ * @param {object} conta      - Account used (must have `nome`)
+ * @param {string} descricao  - Transaction description
+ * @param {string} dataHoje   - Date string (YYYY-MM-DD)
+ * @param {number} totalSemana - Total spent in the last 7 days (totalOut)
+ * @param {number} saldoAtual  - Current consolidated balance
+ * @returns {string}
+ */
+function construirRespostaDespesa(usuario, mov, conta, descricao, dataHoje, totalSemana, saldoAtual) {
+  const valorFormatado = formatarMoeda(mov.valor ?? 0);
+  const dataFormatada = formatarData(dataHoje);
+
+  let msg =
+    `✅ Despesa registrada, ${usuario.nome}!\n\n` +
+    `💸 Valor: R$ ${valorFormatado}\n` +
+    `📝 Descrição: ${descricao}\n` +
+    `🏦 Conta: ${conta.nome}\n` +
+    `📅 Data: ${dataFormatada}`;
+
+  msg += `\n\n📈 Total gasto nesta semana: R$ ${formatarMoeda(totalSemana)}`;
+
+  if (saldoAtual < SALDO_BAIXO_THRESHOLD) {
+    if (saldoAtual < 0) {
+      msg += `\n⚠️ Atenção: seu saldo está negativo (R$ ${formatarMoeda(saldoAtual)}).`;
+    } else {
+      msg += `\n⚠️ Atenção: seu saldo está baixo (R$ ${formatarMoeda(saldoAtual)}).`;
+    }
+  }
+
+  return msg;
+}
+
 // ============================================================
 // Public API
 // ============================================================
@@ -135,8 +184,6 @@ export async function executarAcao(usuario, intent, params) {
     // -------------------------------------------------------
     if (intent === INTENT_CREATE_EXPENSE || intent === INTENT_CREATE_INCOME) {
       const tipo = intent === INTENT_CREATE_EXPENSE ? 'saida' : 'entrada';
-      const emoji = tipo === 'saida' ? '💸' : '💰';
-      const titulo = tipo === 'saida' ? 'Despesa' : 'Receita';
 
       const contas = await listContas(userId);
       if (!contas || contas.length === 0) {
@@ -155,16 +202,29 @@ export async function executarAcao(usuario, intent, params) {
         data: dataHoje,
       });
 
-      const valorFormatado = formatarMoeda(mov.valor ?? params.valor);
-      const dataFormatada = formatarData(dataHoje);
+      // CREATE_INCOME: simple formatted reply with user name
+      if (tipo === 'entrada') {
+        const valorFormatado = formatarMoeda(mov.valor ?? params.valor);
+        const dataFormatada = formatarData(dataHoje);
+        return (
+          `✅ Receita registrada, ${usuario.nome}!\n\n` +
+          `💰 Valor: R$ ${valorFormatado}\n` +
+          `📝 Descrição: ${descricao}\n` +
+          `🏦 Conta: ${conta.nome}\n` +
+          `📅 Data: ${dataFormatada}`
+        );
+      }
 
-      return (
-        `✅ ${titulo} registrada!\n\n` +
-        `${emoji} Valor: R$ ${valorFormatado}\n` +
-        `📝 Descrição: ${descricao}\n` +
-        `🏦 Conta: ${conta.nome}\n` +
-        `📅 Data: ${dataFormatada}`
-      );
+      // CREATE_EXPENSE: enrich with weekly summary and low-balance alert
+      const [saldoResult, extratoResult] = await Promise.all([
+        getSaldoConsolidado(userId),
+        getExtrato(userId, { dateFrom: diasAtras(7), dateTo: hoje(), perPage: 100 }),
+      ]);
+
+      const totalSemana = extratoResult?.totals?.totalOut ?? 0;
+      const saldoAtual = saldoResult?.saldo ?? 0;
+
+      return construirRespostaDespesa(usuario, mov, conta, descricao, dataHoje, totalSemana, saldoAtual);
     }
 
     // -------------------------------------------------------
@@ -174,7 +234,7 @@ export async function executarAcao(usuario, intent, params) {
       const { saldo, entradas, saidas } = await getSaldoConsolidado(userId);
 
       return (
-        '💰 Seu saldo atual\n\n' +
+        `💰 Saldo de ${usuario.nome}\n\n` +
         `Saldo: R$ ${formatarMoeda(saldo)}\n` +
         `Entradas: R$ ${formatarMoeda(entradas)}\n` +
         `Saídas: R$ ${formatarMoeda(saidas)}`
@@ -204,7 +264,7 @@ export async function executarAcao(usuario, intent, params) {
       const { totalIn, totalOut } = extrato.totals;
 
       return (
-        `📊 Extrato ${labelPeriodo}\n\n` +
+        `📊 Extrato da ${labelPeriodo} — ${usuario.nome}\n\n` +
         linhas.join('\n') +
         '\n\n' +
         `Total de entradas: R$ ${formatarMoeda(totalIn)}\n` +
