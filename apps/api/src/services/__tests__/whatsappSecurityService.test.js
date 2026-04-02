@@ -5,10 +5,12 @@ import { jest } from '@jest/globals';
 // ============================================================
 
 const mockWhatsappLogCreate = jest.fn();
+const mockWhatsappLogFindFirst = jest.fn();
 
 const mockPrisma = {
   whatsappLog: {
     create: mockWhatsappLogCreate,
+    findFirst: mockWhatsappLogFindFirst,
   },
 };
 
@@ -27,12 +29,14 @@ jest.unstable_mockModule('../../logger.js', () => ({
 let checkRateLimitPorNumero;
 let registrarLogWhatsapp;
 let validarUsuarioAtivo;
+let isDuplicateMensagem;
 
 beforeAll(async () => {
   const mod = await import('../whatsappSecurityService.js');
   checkRateLimitPorNumero = mod.checkRateLimitPorNumero;
   registrarLogWhatsapp = mod.registrarLogWhatsapp;
   validarUsuarioAtivo = mod.validarUsuarioAtivo;
+  isDuplicateMensagem = mod.isDuplicateMensagem;
 });
 
 beforeEach(() => {
@@ -106,6 +110,46 @@ describe('checkRateLimitPorNumero', () => {
 
     // tel2 should still be allowed
     expect(checkRateLimitPorNumero(tel2)).toBe(true);
+  });
+});
+
+// ============================================================
+// isDuplicateMensagem
+// ============================================================
+
+describe('isDuplicateMensagem', () => {
+  test('retorna false quando provider_message_id é nulo', async () => {
+    const result = await isDuplicateMensagem(null);
+    expect(result).toBe(false);
+    expect(mockWhatsappLogFindFirst).not.toHaveBeenCalled();
+  });
+
+  test('retorna false quando provider_message_id é undefined', async () => {
+    const result = await isDuplicateMensagem(undefined);
+    expect(result).toBe(false);
+    expect(mockWhatsappLogFindFirst).not.toHaveBeenCalled();
+  });
+
+  test('retorna false quando mensagem não encontrada no banco', async () => {
+    mockWhatsappLogFindFirst.mockResolvedValue(null);
+    const result = await isDuplicateMensagem('MSG123');
+    expect(result).toBe(false);
+    expect(mockWhatsappLogFindFirst).toHaveBeenCalledWith({
+      where: { provider_message_id: 'MSG123' },
+      select: { id: true },
+    });
+  });
+
+  test('retorna true quando mensagem já existe no banco', async () => {
+    mockWhatsappLogFindFirst.mockResolvedValue({ id: 42n });
+    const result = await isDuplicateMensagem('MSG-DUPLICATE');
+    expect(result).toBe(true);
+  });
+
+  test('retorna false (fail-open) quando prisma lança erro', async () => {
+    mockWhatsappLogFindFirst.mockRejectedValue(new Error('DB error'));
+    const result = await isDuplicateMensagem('MSG-ERROR');
+    expect(result).toBe(false);
   });
 });
 
@@ -217,6 +261,55 @@ describe('registrarLogWhatsapp', () => {
     expect(mockWhatsappLogCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ conteudo: null }),
+      }),
+    );
+  });
+
+  test('salva provider_message_id, received_at, payload_raw e instance_name', async () => {
+    mockWhatsappLogCreate.mockResolvedValue({ id: 6n });
+    const received_at = new Date('2024-04-01T10:00:00Z');
+
+    await registrarLogWhatsapp({
+      usuario_id: null,
+      telefone: '5511666666666',
+      direcao: 'entrada',
+      conteudo: 'teste',
+      provider_message_id: 'MSG-ABC',
+      received_at,
+      payload_raw: '{"event":"messages.upsert"}',
+      instance_name: 'minha-instancia',
+    });
+
+    expect(mockWhatsappLogCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          provider_message_id: 'MSG-ABC',
+          received_at,
+          payload_raw: '{"event":"messages.upsert"}',
+          instance_name: 'minha-instancia',
+        }),
+      }),
+    );
+  });
+
+  test('usa null para campos opcionais não fornecidos', async () => {
+    mockWhatsappLogCreate.mockResolvedValue({ id: 7n });
+
+    await registrarLogWhatsapp({
+      usuario_id: null,
+      telefone: '5511777777777',
+      direcao: 'entrada',
+      conteudo: 'test',
+    });
+
+    expect(mockWhatsappLogCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          provider_message_id: null,
+          received_at: null,
+          payload_raw: null,
+          instance_name: null,
+        }),
       }),
     );
   });

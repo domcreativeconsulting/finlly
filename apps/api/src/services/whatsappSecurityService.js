@@ -4,7 +4,7 @@
  * Provides in-memory rate limiting per phone number, WhatsappLog persistence,
  * and active-user validation. All helpers are designed to be non-breaking:
  * errors in `registrarLogWhatsapp` are swallowed and logged without affecting
- * the main webhook flow.
+ * the main webhook processing flow.
  *
  * @module whatsappSecurityService
  */
@@ -51,6 +51,33 @@ export function checkRateLimitPorNumero(telefone) {
 }
 
 // ============================================================
+// Deduplication — provider_message_id
+// ============================================================
+
+/**
+ * Checks whether a WhatsApp message with the given provider_message_id has
+ * already been logged. Returns `true` when a duplicate is found, meaning
+ * the message should be skipped. When provider_message_id is falsy, always
+ * returns `false` (no deduplication attempted).
+ *
+ * @param {string|null|undefined} provider_message_id
+ * @returns {Promise<boolean>}
+ */
+export async function isDuplicateMensagem(provider_message_id) {
+  if (!provider_message_id) return false;
+  try {
+    const existing = await prisma.whatsappLog.findFirst({
+      where: { provider_message_id },
+      select: { id: true },
+    });
+    return existing !== null;
+  } catch (err) {
+    logger.error({ err, provider_message_id }, 'Erro ao verificar duplicidade WhatsApp');
+    return false; // fail-open: allow processing on DB error
+  }
+}
+
+// ============================================================
 // Audit logging
 // ============================================================
 
@@ -60,11 +87,15 @@ export function checkRateLimitPorNumero(telefone) {
  * break the main webhook processing flow.
  *
  * @param {object}  opts
- * @param {string|null|undefined} opts.usuario_id  - UUID of the Finlly user (nullable)
- * @param {string}  opts.telefone                  - Phone number (digits only)
- * @param {string}  opts.direcao                   - 'entrada' | 'saida'
- * @param {string|null|undefined} opts.conteudo    - Message text (nullable)
- * @param {string}  [opts.status='processado']     - Log status label
+ * @param {string|null|undefined} opts.usuario_id          - UUID of the Finlly user (nullable)
+ * @param {string}  opts.telefone                          - Phone number (digits only)
+ * @param {string}  opts.direcao                           - 'entrada' | 'saida'
+ * @param {string|null|undefined} opts.conteudo            - Message text (nullable)
+ * @param {string}  [opts.status='processado']             - Log status label
+ * @param {string|null|undefined} opts.provider_message_id - Provider's message ID
+ * @param {Date|null|undefined}   opts.received_at         - Message timestamp from provider
+ * @param {string|null|undefined} opts.payload_raw         - Raw JSON payload string
+ * @param {string|null|undefined} opts.instance_name       - Evolution instance name
  * @returns {Promise<void>}
  */
 export async function registrarLogWhatsapp({
@@ -73,6 +104,10 @@ export async function registrarLogWhatsapp({
   direcao,
   conteudo,
   status = 'processado',
+  provider_message_id,
+  received_at,
+  payload_raw,
+  instance_name,
 }) {
   try {
     await prisma.whatsappLog.create({
@@ -84,6 +119,10 @@ export async function registrarLogWhatsapp({
         tipo_mensagem: 'text',
         conteudo: conteudo ?? null,
         status,
+        provider_message_id: provider_message_id ?? null,
+        received_at: received_at ?? null,
+        payload_raw: payload_raw ?? null,
+        instance_name: instance_name ?? null,
         created_at: new Date(),
         updated_at: new Date(),
       },
