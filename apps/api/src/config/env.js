@@ -33,6 +33,11 @@ const envSchema = z.object({
   WA_TOKEN: z.string().optional(),
   WA_PHONE_NUMBER_ID: z.string().optional(),
 
+  // Evolution API — WhatsApp (Story 12.1, optional)
+  EVOLUTION_API_URL: z.preprocess((v) => v || undefined, z.string().url().optional()),
+  EVOLUTION_API_KEY: z.string().optional(),
+  EVOLUTION_INSTANCE: z.string().optional(),
+
   // Rate Limiting (optional)
   RATE_LIMIT_STORE: z.enum(['memory', 'redis']).default('memory'),
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10),

@@ -24,6 +24,7 @@ import cashMovementsRouter from './routes/cashMovements.js';
 import investimentosRouter from './routes/investimentos.js';
 import metasRouter from './routes/metas.js';
 import anexosRouter from './routes/anexos.js';
+import whatsappRouter from './routes/whatsapp.js';
 
 const app = express();
 
@@ -53,6 +54,7 @@ app.use(cashMovementsRouter);
 app.use(investimentosRouter);
 app.use(metasRouter);
 app.use(anexosRouter);
+app.use(whatsappRouter);
 
 app.get('/', (req, res) => {
   res.send('Hello World!');
