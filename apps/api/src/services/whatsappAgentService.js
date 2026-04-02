@@ -19,20 +19,7 @@ import {
   INTENT_GET_BALANCE,
   INTENT_GET_STATEMENT,
 } from './nlpService.js';
-
-// ============================================================
-// Helpers
-// ============================================================
-
-/**
- * Strips all non-digit characters from a phone number string.
- *
- * @param {string} tel
- * @returns {string}
- */
-function normalizar(tel) {
-  return String(tel ?? '').replace(/\D/g, '');
-}
+import { normalizePhoneNumber } from '../lib/whatsapp/evolutionPayloadParser.js';
 
 /**
  * Formats a number as Brazilian currency string (e.g. 1234.56 → "1.234,56").
@@ -150,7 +137,7 @@ function construirRespostaDespesa(usuario, mov, conta, descricao, dataHoje, tota
  * @returns {Promise<object|null>} usuario or null if not found
  */
 export async function resolverUsuarioPorWhatsapp(telefone) {
-  const telNormalizado = normalizar(telefone);
+  const telNormalizado = normalizePhoneNumber(telefone);
 
   // Fast path: try exact match first
   const exato = await prisma.usuario.findFirst({
@@ -163,7 +150,7 @@ export async function resolverUsuarioPorWhatsapp(telefone) {
     where: { whatsapp: { not: null }, status: 'ativo', deleted_at: null },
   });
 
-  return usuarios.find((u) => normalizar(u.whatsapp) === telNormalizado) ?? null;
+  return usuarios.find((u) => normalizePhoneNumber(u.whatsapp) === telNormalizado) ?? null;
 }
 
 /**
