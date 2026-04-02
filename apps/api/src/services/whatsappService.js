@@ -1,42 +1,29 @@
 import { sendText } from '../lib/evolution/evolutionClient.js';
 import logger from '../logger.js';
-import { identificarIntent, INTENT_CREATE_EXPENSE, INTENT_CREATE_INCOME, INTENT_GET_BALANCE, INTENT_GET_STATEMENT } from './nlpService.js';
+import { identificarIntent, INTENT_UNKNOWN } from './nlpService.js';
+import { resolverUsuarioPorWhatsapp, executarAcao } from './whatsappAgentService.js';
 
-/**
- * Builds a contextual reply text for the given intent and params.
- *
- * @param {string} intent - Detected intent constant
- * @param {object} params - Extracted parameters
- * @returns {string}
- */
-function gerarResposta(intent, params) {
-  switch (intent) {
-    case INTENT_CREATE_EXPENSE:
-      return `✅ Despesa de R$ ${params.valor} (${params.descricao}) registrada!`;
-    case INTENT_CREATE_INCOME:
-      return `✅ Receita de R$ ${params.valor} (${params.descricao}) registrada!`;
-    case INTENT_GET_BALANCE:
-      return '💰 Consultando seu saldo...';
-    case INTENT_GET_STATEMENT:
-      return '📊 Consultando seu extrato...';
-    default:
-      return (
-        'Não entendi sua mensagem. 🤔\n\n' +
-        'Você pode tentar:\n' +
-        "• 'gastei 50 no almoço'\n" +
-        "• 'recebi 2000 do cliente'\n" +
-        "• 'quanto tenho em caixa?'\n" +
-        "• 'me mostra meus gastos da semana'"
-      );
-  }
-}
+/** Reply sent when the user's number is not linked to any Finlly account */
+const RESPOSTA_NUMERO_NAO_VINCULADO =
+  '⚠️ Seu número não está vinculado a nenhuma conta no Finlly.\n\n' +
+  'Acesse o Finlly e cadastre seu número de WhatsApp no perfil para usar o agente.';
+
+/** Reply sent for unrecognised messages */
+const RESPOSTA_UNKNOWN =
+  'Não entendi sua mensagem. 🤔\n\n' +
+  'Você pode tentar:\n' +
+  "• 'gastei 50 no almoço'\n" +
+  "• 'recebi 2000 do cliente'\n" +
+  "• 'quanto tenho em caixa?'\n" +
+  "• 'me mostra meus gastos da semana'";
 
 /**
  * Processes an incoming WhatsApp webhook payload from the Evolution API.
  *
- * Extracts message data, runs NLP intent detection, logs the result and
- * sends a contextual reply to the user via `enviarMensagem`.
+ * Extracts message data, runs NLP intent detection, resolves the user by
+ * phone number and delegates to the agent service for action execution.
  * Messages sent by the bot itself (`fromMe === true`) are silently ignored.
+ * Unknown intents receive a help menu without touching the database.
  *
  * @param {object} payload - Parsed webhook payload from Evolution API
  * @returns {Promise<{ from: string, name: string, text: string, fromMe: boolean }>}
@@ -57,7 +44,30 @@ export async function processarMensagemRecebida(payload) {
   const { intent, params } = identificarIntent(text);
   logger.info({ from, intent, params }, 'Intent WhatsApp detectada');
 
-  const resposta = gerarResposta(intent, params);
+  // Unknown intent: reply with help menu, no user lookup needed
+  if (intent === INTENT_UNKNOWN) {
+    try {
+      await enviarMensagem(from, RESPOSTA_UNKNOWN);
+    } catch (err) {
+      logger.error({ err, from, intent }, 'Erro ao enviar resposta WhatsApp');
+    }
+    return { from, name, text, fromMe };
+  }
+
+  // Resolve user by WhatsApp number
+  const usuario = await resolverUsuarioPorWhatsapp(from);
+  if (!usuario) {
+    logger.warn({ from }, 'Número WhatsApp não vinculado a nenhum usuário');
+    try {
+      await enviarMensagem(from, RESPOSTA_NUMERO_NAO_VINCULADO);
+    } catch (err) {
+      logger.error({ err, from }, 'Erro ao enviar resposta de número não vinculado');
+    }
+    return { from, name, text, fromMe };
+  }
+
+  // Execute the action and send the reply
+  const resposta = await executarAcao(usuario, intent, params);
 
   try {
     await enviarMensagem(from, resposta);
