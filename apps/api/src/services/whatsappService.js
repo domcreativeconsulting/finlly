@@ -10,17 +10,23 @@ import {
 
 /** Reply sent when the user's number is not linked to any Finlly account */
 const RESPOSTA_NUMERO_NAO_VINCULADO =
-  '⚠️ Seu número não está vinculado a nenhuma conta no Finlly.\n\n' +
-  'Acesse o Finlly e cadastre seu número de WhatsApp no perfil para usar o agente.';
+  '👋 Olá! Parece que você ainda não vinculou seu WhatsApp ao Finlly.\n\n' +
+  'Para usar o agente financeiro, acesse seu perfil no Finlly e cadastre este número de WhatsApp.\n\n' +
+  'Após isso, você poderá:\n' +
+  '• Registrar despesas: "gastei 50 no almoço"\n' +
+  '• Registrar receitas: "recebi 2000 do cliente"\n' +
+  '• Consultar saldo: "quanto tenho em caixa?"\n' +
+  '• Ver extrato: "me mostra meus gastos da semana"';
 
 /** Reply sent for unrecognised messages */
 const RESPOSTA_UNKNOWN =
-  'Não entendi sua mensagem. 🤔\n\n' +
-  'Você pode tentar:\n' +
-  "• 'gastei 50 no almoço'\n" +
-  "• 'recebi 2000 do cliente'\n" +
-  "• 'quanto tenho em caixa?'\n" +
-  "• 'me mostra meus gastos da semana'";
+  '🤖 Não entendi sua mensagem.\n\n' +
+  'Tente um destes comandos:\n' +
+  '• "gastei 50 no almoço" → registra despesa\n' +
+  '• "recebi 2000 do cliente X" → registra receita\n' +
+  '• "quanto tenho em caixa?" → consulta saldo\n' +
+  '• "me mostra meus gastos da semana" → extrato\n\n' +
+  '💡 Dica: você pode escrever naturalmente!';
 
 /**
  * Processes an incoming WhatsApp webhook payload from the Evolution API.
