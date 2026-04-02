@@ -92,6 +92,7 @@ export async function isDuplicateMensagem(provider_message_id) {
  * @param {string}  opts.direcao                           - 'entrada' | 'saida'
  * @param {string|null|undefined} opts.conteudo            - Message text (nullable)
  * @param {string}  [opts.status='processado']             - Log status label
+ * @param {string}  [opts.tipo_mensagem='text']            - Message type (e.g. 'TEXT', 'IMAGE')
  * @param {string|null|undefined} opts.provider_message_id - Provider's message ID
  * @param {Date|null|undefined}   opts.received_at         - Message timestamp from provider
  * @param {string|null|undefined} opts.payload_raw         - Raw JSON payload string
@@ -104,6 +105,7 @@ export async function registrarLogWhatsapp({
   direcao,
   conteudo,
   status = 'processado',
+  tipo_mensagem = 'text',
   provider_message_id,
   received_at,
   payload_raw,
@@ -116,7 +118,7 @@ export async function registrarLogWhatsapp({
         provider: 'evolution',
         telefone,
         direcao,
-        tipo_mensagem: 'text',
+        tipo_mensagem,
         conteudo: conteudo ?? null,
         status,
         provider_message_id: provider_message_id ?? null,

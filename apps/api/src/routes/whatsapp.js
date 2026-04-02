@@ -71,7 +71,12 @@ const whatsappWebhookSchema = z.object({
             text: z.string().optional(),
           })
           .optional(),
+        imageMessage: z.object({}).passthrough().optional(),
+        audioMessage: z.object({}).passthrough().optional(),
+        documentMessage: z.object({}).passthrough().optional(),
+        stickerMessage: z.object({}).passthrough().optional(),
       })
+      .passthrough()
       .optional(),
     pushName: z.string().optional(),
   }),

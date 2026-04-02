@@ -8,6 +8,7 @@ import {
   validarUsuarioAtivo,
   isDuplicateMensagem,
 } from './whatsappSecurityService.js';
+import { normalizeEvolutionPayload } from '../lib/whatsapp/evolutionPayloadParser.js';
 
 /** Reply sent when the user's number is not linked to any Finlly account */
 const RESPOSTA_NUMERO_NAO_VINCULADO =
@@ -41,17 +42,11 @@ const RESPOSTA_UNKNOWN =
  * @returns {Promise<{ from: string, name: string, text: string, fromMe: boolean }>}
  */
 export async function processarMensagemRecebida(payload) {
-  const { data } = payload;
-  const from = data.key.remoteJid.replace(/@.*$/, '');
-  const fromMe = data.key.fromMe ?? false;
-  const name = data.pushName ?? from;
-  const text = data.message?.conversation ?? data.message?.extendedTextMessage?.text ?? '';
-
-  // Extract new fields (Gaps 3, 4, 5)
-  const provider_message_id = data.key.id ?? null;
-  const received_at = data.messageTimestamp ? new Date(data.messageTimestamp * 1000) : null;
-  const instance_name = payload.instance ?? null;
-  const payload_raw = JSON.stringify(payload);
+  const msg = normalizeEvolutionPayload(payload);
+  const { phoneNormalized: from, contactName, fromMe, messageText: text, messageType,
+          providerMessageId: provider_message_id, eventTimestamp: received_at,
+          instanceName: instance_name, payloadRaw: payload_raw } = msg;
+  const name = contactName ?? from;
 
   logger.info({ from, name, fromMe, text }, 'Mensagem WhatsApp recebida');
 
@@ -82,6 +77,7 @@ export async function processarMensagemRecebida(payload) {
       direcao: 'entrada',
       conteudo: text,
       status: 'rate_limited',
+      tipo_mensagem: messageType,
       provider_message_id,
       received_at,
       payload_raw,
@@ -105,6 +101,7 @@ export async function processarMensagemRecebida(payload) {
       telefone: from,
       direcao: 'entrada',
       conteudo: text,
+      tipo_mensagem: messageType,
       provider_message_id,
       received_at,
       payload_raw,
@@ -124,6 +121,7 @@ export async function processarMensagemRecebida(payload) {
       direcao: 'entrada',
       conteudo: text,
       status: 'sem_usuario',
+      tipo_mensagem: messageType,
       provider_message_id,
       received_at,
       payload_raw,
@@ -147,6 +145,7 @@ export async function processarMensagemRecebida(payload) {
       direcao: 'entrada',
       conteudo: text,
       status: 'usuario_inativo',
+      tipo_mensagem: messageType,
       provider_message_id,
       received_at,
       payload_raw,
@@ -167,6 +166,7 @@ export async function processarMensagemRecebida(payload) {
     telefone: from,
     direcao: 'entrada',
     conteudo: text,
+    tipo_mensagem: messageType,
     provider_message_id,
     received_at,
     payload_raw,
