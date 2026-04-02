@@ -5,6 +5,7 @@ import { processarMensagemRecebida } from '../services/whatsappService.js';
 import { AppError } from '../errors/AppError.js';
 import { toValidationError } from '../errors/toValidationError.js';
 import logger from '../logger.js';
+import { config } from '../config/env.js';
 
 const router = Router();
 
@@ -19,16 +20,49 @@ const webhookLimiter = rateLimit({
 });
 
 // ============================================================
+// Middleware — Evolution API key validation
+// ============================================================
+
+/**
+ * Validates the `apikey` request header against the configured EVOLUTION_API_KEY.
+ * When EVOLUTION_API_KEY is not set, validation is skipped (permissive/dev mode).
+ * Optionally validates the `instance` field in the body against EVOLUTION_INSTANCE.
+ */
+function evolutionApiKeyMiddleware(req, res, next) {
+  const expectedApiKey = config.EVOLUTION_API_KEY;
+  if (expectedApiKey) {
+    const receivedApiKey = req.headers['apikey'];
+    if (!receivedApiKey || receivedApiKey !== expectedApiKey) {
+      logger.warn({ path: req.path }, 'Webhook Evolution: falha na validação do apikey');
+      return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Unauthorized' });
+    }
+  }
+
+  const expectedInstance = config.EVOLUTION_INSTANCE;
+  if (expectedInstance && req.body && req.body.instance) {
+    if (req.body.instance !== expectedInstance) {
+      logger.warn({ path: req.path }, 'Webhook Evolution: instância não reconhecida');
+      return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Unauthorized' });
+    }
+  }
+
+  return next();
+}
+
+// ============================================================
 // Zod schema — Evolution API webhook payload
 // ============================================================
 
 const whatsappWebhookSchema = z.object({
   event: z.string().min(1),
+  instance: z.string().optional(),
   data: z.object({
     key: z.object({
       remoteJid: z.string().min(1),
       fromMe: z.boolean().optional(),
+      id: z.string().optional(),
     }),
+    messageTimestamp: z.number().optional(),
     message: z
       .object({
         conversation: z.string().optional(),
@@ -44,14 +78,10 @@ const whatsappWebhookSchema = z.object({
 });
 
 // ============================================================
-// POST /webhooks/whatsapp
-// Not authenticated — receives events from Evolution API.
+// Shared webhook handler
 // ============================================================
 
-/**
- * Receives and processes WhatsApp webhook events from the Evolution API.
- */
-router.post('/webhooks/whatsapp', webhookLimiter, async (req, res, next) => {
+async function handleWebhook(req, res, next) {
   const parsed = whatsappWebhookSchema.safeParse(req.body);
   if (!parsed.success) {
     return next(toValidationError(parsed.error));
@@ -72,6 +102,15 @@ router.post('/webhooks/whatsapp', webhookLimiter, async (req, res, next) => {
   } catch (err) {
     return next(err);
   }
-});
+}
+
+// ============================================================
+// POST /webhooks/evolution  (primary — Story 12.1)
+// POST /webhooks/whatsapp   (legacy alias — kept for backwards compatibility)
+// Not authenticated via JWT — uses Evolution API key validation instead.
+// ============================================================
+
+router.post('/webhooks/evolution', webhookLimiter, evolutionApiKeyMiddleware, handleWebhook);
+router.post('/webhooks/whatsapp', webhookLimiter, evolutionApiKeyMiddleware, handleWebhook);
 
 export default router;

@@ -6,6 +6,7 @@ import {
   checkRateLimitPorNumero,
   registrarLogWhatsapp,
   validarUsuarioAtivo,
+  isDuplicateMensagem,
 } from './whatsappSecurityService.js';
 
 /** Reply sent when the user's number is not linked to any Finlly account */
@@ -46,6 +47,12 @@ export async function processarMensagemRecebida(payload) {
   const name = data.pushName ?? from;
   const text = data.message?.conversation ?? data.message?.extendedTextMessage?.text ?? '';
 
+  // Extract new fields (Gaps 3, 4, 5)
+  const provider_message_id = data.key.id ?? null;
+  const received_at = data.messageTimestamp ? new Date(data.messageTimestamp * 1000) : null;
+  const instance_name = payload.instance ?? null;
+  const payload_raw = JSON.stringify(payload);
+
   logger.info({ from, name, fromMe, text }, 'Mensagem WhatsApp recebida');
 
   if (fromMe) {
@@ -57,10 +64,29 @@ export async function processarMensagemRecebida(payload) {
     return { from, name, text, fromMe };
   }
 
+  // Deduplication check (Gap 7): skip if this message was already processed
+  if (provider_message_id) {
+    const duplicate = await isDuplicateMensagem(provider_message_id);
+    if (duplicate) {
+      logger.info({ from, provider_message_id }, 'Mensagem WhatsApp duplicada ignorada');
+      return { from, name, text, fromMe };
+    }
+  }
+
   // Rate limit by phone number
   if (!checkRateLimitPorNumero(from)) {
     logger.warn({ from }, 'Rate limit WhatsApp excedido por número');
-    await registrarLogWhatsapp({ usuario_id: null, telefone: from, direcao: 'entrada', conteudo: text, status: 'rate_limited' });
+    await registrarLogWhatsapp({
+      usuario_id: null,
+      telefone: from,
+      direcao: 'entrada',
+      conteudo: text,
+      status: 'rate_limited',
+      provider_message_id,
+      received_at,
+      payload_raw,
+      instance_name,
+    });
     return { from, name, text, fromMe };
   }
 
@@ -74,7 +100,16 @@ export async function processarMensagemRecebida(payload) {
     } catch (err) {
       logger.error({ err, from, intent }, 'Erro ao enviar resposta WhatsApp');
     }
-    await registrarLogWhatsapp({ usuario_id: null, telefone: from, direcao: 'entrada', conteudo: text });
+    await registrarLogWhatsapp({
+      usuario_id: null,
+      telefone: from,
+      direcao: 'entrada',
+      conteudo: text,
+      provider_message_id,
+      received_at,
+      payload_raw,
+      instance_name,
+    });
     await registrarLogWhatsapp({ usuario_id: null, telefone: from, direcao: 'saida', conteudo: RESPOSTA_UNKNOWN });
     return { from, name, text, fromMe };
   }
@@ -83,7 +118,17 @@ export async function processarMensagemRecebida(payload) {
   const usuario = await resolverUsuarioPorWhatsapp(from);
   if (!usuario) {
     logger.warn({ from }, 'Número WhatsApp não vinculado a nenhum usuário');
-    await registrarLogWhatsapp({ usuario_id: null, telefone: from, direcao: 'entrada', conteudo: text, status: 'sem_usuario' });
+    await registrarLogWhatsapp({
+      usuario_id: null,
+      telefone: from,
+      direcao: 'entrada',
+      conteudo: text,
+      status: 'sem_usuario',
+      provider_message_id,
+      received_at,
+      payload_raw,
+      instance_name,
+    });
     try {
       await enviarMensagem(from, RESPOSTA_NUMERO_NAO_VINCULADO);
     } catch (err) {
@@ -96,7 +141,17 @@ export async function processarMensagemRecebida(payload) {
   const { valido, mensagem: mensagemBloqueio } = validarUsuarioAtivo(usuario);
   if (!valido) {
     logger.warn({ from, usuarioId: usuario.id }, 'Usuário inativo tentou usar WhatsApp');
-    await registrarLogWhatsapp({ usuario_id: usuario.id, telefone: from, direcao: 'entrada', conteudo: text, status: 'usuario_inativo' });
+    await registrarLogWhatsapp({
+      usuario_id: usuario.id,
+      telefone: from,
+      direcao: 'entrada',
+      conteudo: text,
+      status: 'usuario_inativo',
+      provider_message_id,
+      received_at,
+      payload_raw,
+      instance_name,
+    });
     try {
       await enviarMensagem(from, mensagemBloqueio);
     } catch (err) {
@@ -107,7 +162,16 @@ export async function processarMensagemRecebida(payload) {
   }
 
   // Log the incoming message
-  await registrarLogWhatsapp({ usuario_id: usuario.id, telefone: from, direcao: 'entrada', conteudo: text });
+  await registrarLogWhatsapp({
+    usuario_id: usuario.id,
+    telefone: from,
+    direcao: 'entrada',
+    conteudo: text,
+    provider_message_id,
+    received_at,
+    payload_raw,
+    instance_name,
+  });
 
   // Execute the action and send the reply
   const resposta = await executarAcao(usuario, intent, params);

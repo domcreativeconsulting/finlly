@@ -6,6 +6,12 @@ import { jest } from '@jest/globals';
 
 const mockProcessarMensagemRecebida = jest.fn();
 
+// Use a mutable object so mutations in tests are reflected in the route module.
+const mockConfig = {
+  EVOLUTION_API_KEY: undefined,
+  EVOLUTION_INSTANCE: undefined,
+};
+
 jest.unstable_mockModule('express-rate-limit', () => ({
   rateLimit: () => (_req, _res, next) => next(),
 }));
@@ -16,6 +22,10 @@ jest.unstable_mockModule('../../services/whatsappService.js', () => ({
 
 jest.unstable_mockModule('../../logger.js', () => ({
   default: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
+}));
+
+jest.unstable_mockModule('../../config/env.js', () => ({
+  config: mockConfig,
 }));
 
 // ============================================================
@@ -34,6 +44,9 @@ beforeAll(async () => {
 
 beforeEach(() => {
   mockProcessarMensagemRecebida.mockReset();
+  // Reset config state by mutating in place (preserves object reference)
+  mockConfig.EVOLUTION_API_KEY = undefined;
+  mockConfig.EVOLUTION_INSTANCE = undefined;
 });
 
 // ============================================================
@@ -97,8 +110,19 @@ const payloadValido = {
   },
 };
 
+const payloadComCamposExtras = {
+  event: 'messages.upsert',
+  instance: 'minha-instancia',
+  data: {
+    key: { remoteJid: '5511999999999@s.whatsapp.net', fromMe: false, id: 'MSG123' },
+    messageTimestamp: 1711900000,
+    message: { conversation: 'gastei 50 no almoço' },
+    pushName: 'João',
+  },
+};
+
 // ============================================================
-// POST /webhooks/whatsapp
+// POST /webhooks/whatsapp (legacy)
 // ============================================================
 
 describe('POST /webhooks/whatsapp', () => {
@@ -209,5 +233,148 @@ describe('POST /webhooks/whatsapp', () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ received: true });
+  });
+});
+
+// ============================================================
+// POST /webhooks/evolution (primary — Gap 1)
+// ============================================================
+
+describe('POST /webhooks/evolution', () => {
+  test('retorna 200 com received:true para payload válido', async () => {
+    mockProcessarMensagemRecebida.mockResolvedValue({
+      from: '5511999999999',
+      name: 'João',
+      text: 'gastei 50 no almoço',
+      fromMe: false,
+    });
+
+    const app = makeApp();
+    const res = await request(app, 'POST', '/webhooks/evolution', payloadValido);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ received: true });
+    expect(mockProcessarMensagemRecebida).toHaveBeenCalledWith(payloadValido);
+  });
+
+  test('retorna 200 para eventos que não são messages.upsert', async () => {
+    const payload = { event: 'connection.update', data: { key: { remoteJid: '5511999999999@s.whatsapp.net' } } };
+
+    const app = makeApp();
+    const res = await request(app, 'POST', '/webhooks/evolution', payload);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ received: true });
+    expect(mockProcessarMensagemRecebida).not.toHaveBeenCalled();
+  });
+
+  test('aceita payload com instance, messageTimestamp e key.id', async () => {
+    mockProcessarMensagemRecebida.mockResolvedValue({
+      from: '5511999999999',
+      name: 'João',
+      text: 'gastei 50 no almoço',
+      fromMe: false,
+    });
+
+    const app = makeApp();
+    const res = await request(app, 'POST', '/webhooks/evolution', payloadComCamposExtras);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ received: true });
+    expect(mockProcessarMensagemRecebida).toHaveBeenCalledWith(payloadComCamposExtras);
+  });
+
+  test('retorna 422 para payload inválido', async () => {
+    const app = makeApp();
+    const res = await request(app, 'POST', '/webhooks/evolution', {
+      data: { key: { remoteJid: '5511999999999@s.whatsapp.net' } },
+    });
+
+    expect(res.status).toBe(422);
+  });
+});
+
+// ============================================================
+// API key validation (Gap 2)
+// ============================================================
+
+describe('API key validation', () => {
+  test('permite requisição quando EVOLUTION_API_KEY não está configurado', async () => {
+    mockConfig.EVOLUTION_API_KEY = undefined;
+    mockProcessarMensagemRecebida.mockResolvedValue({ from: '55', name: 'X', text: 't', fromMe: false });
+
+    const app = makeApp();
+    const res = await request(app, 'POST', '/webhooks/evolution', payloadValido);
+
+    expect(res.status).toBe(200);
+  });
+
+  test('rejeita com 401 quando EVOLUTION_API_KEY está configurado e header ausente', async () => {
+    mockConfig.EVOLUTION_API_KEY = 'secret-key';
+
+    const app = makeApp();
+    const res = await request(app, 'POST', '/webhooks/evolution', payloadValido);
+
+    expect(res.status).toBe(401);
+    expect(mockProcessarMensagemRecebida).not.toHaveBeenCalled();
+  });
+
+  test('rejeita com 401 quando apikey header não bate com EVOLUTION_API_KEY', async () => {
+    mockConfig.EVOLUTION_API_KEY = 'secret-key';
+
+    const app = makeApp();
+    const res = await request(app, 'POST', '/webhooks/evolution', payloadValido, { apikey: 'wrong-key' });
+
+    expect(res.status).toBe(401);
+    expect(mockProcessarMensagemRecebida).not.toHaveBeenCalled();
+  });
+
+  test('permite requisição quando apikey header bate com EVOLUTION_API_KEY', async () => {
+    mockConfig.EVOLUTION_API_KEY = 'secret-key';
+    mockProcessarMensagemRecebida.mockResolvedValue({ from: '55', name: 'X', text: 't', fromMe: false });
+
+    const app = makeApp();
+    const res = await request(app, 'POST', '/webhooks/evolution', payloadValido, { apikey: 'secret-key' });
+
+    expect(res.status).toBe(200);
+    expect(mockProcessarMensagemRecebida).toHaveBeenCalled();
+  });
+
+  test('rejeita com 401 quando instância no payload não bate com EVOLUTION_INSTANCE', async () => {
+    mockConfig.EVOLUTION_API_KEY = undefined;
+    mockConfig.EVOLUTION_INSTANCE = 'instancia-certa';
+
+    const app = makeApp();
+    const res = await request(app, 'POST', '/webhooks/evolution', {
+      ...payloadValido,
+      instance: 'instancia-errada',
+    });
+
+    expect(res.status).toBe(401);
+    expect(mockProcessarMensagemRecebida).not.toHaveBeenCalled();
+  });
+
+  test('permite quando instância no payload bate com EVOLUTION_INSTANCE', async () => {
+    mockConfig.EVOLUTION_API_KEY = undefined;
+    mockConfig.EVOLUTION_INSTANCE = 'instancia-certa';
+    mockProcessarMensagemRecebida.mockResolvedValue({ from: '55', name: 'X', text: 't', fromMe: false });
+
+    const app = makeApp();
+    const res = await request(app, 'POST', '/webhooks/evolution', {
+      ...payloadValido,
+      instance: 'instancia-certa',
+    });
+
+    expect(res.status).toBe(200);
+  });
+
+  test('também aplica validação de apikey no endpoint /webhooks/whatsapp legado', async () => {
+    mockConfig.EVOLUTION_API_KEY = 'secret-key';
+
+    const app = makeApp();
+    const res = await request(app, 'POST', '/webhooks/whatsapp', payloadValido);
+
+    expect(res.status).toBe(401);
+    expect(mockProcessarMensagemRecebida).not.toHaveBeenCalled();
   });
 });
