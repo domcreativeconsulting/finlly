@@ -5,6 +5,7 @@ import { jest } from '@jest/globals';
 // ============================================================
 
 const mockEnviarMensagemImpl = jest.fn();
+const mockSendTextMessage = jest.fn();
 const mockIdentificarIntent = jest.fn();
 const mockResolverUsuarioPorWhatsapp = jest.fn();
 const mockExecutarAcao = jest.fn();
@@ -38,6 +39,10 @@ jest.unstable_mockModule('../whatsappSecurityService.js', () => ({
   isDuplicateMensagem: mockIsDuplicateMensagem,
 }));
 
+jest.unstable_mockModule('../whatsappSenderService.js', () => ({
+  sendTextMessage: mockSendTextMessage,
+}));
+
 // ============================================================
 // Module under test
 // ============================================================
@@ -57,6 +62,7 @@ beforeEach(() => {
   mockValidarUsuarioAtivo.mockReturnValue({ valido: true, mensagem: null });
   mockEnviarMensagemImpl.mockResolvedValue({ success: true });
   mockIsDuplicateMensagem.mockResolvedValue(false);
+  mockSendTextMessage.mockResolvedValue({ success: true, status: 'enviado', providerMessageId: null, erro: null });
 });
 
 // ============================================================
@@ -113,7 +119,7 @@ describe('texto vazio', () => {
     expect(mockCheckRateLimitPorNumero).not.toHaveBeenCalled();
     expect(mockIdentificarIntent).not.toHaveBeenCalled();
     expect(mockRegistrarLogWhatsapp).not.toHaveBeenCalled();
-    expect(mockEnviarMensagemImpl).not.toHaveBeenCalled();
+    expect(mockSendTextMessage).not.toHaveBeenCalled();
   });
 
   test('ignora mensagem com apenas espaços', async () => {
@@ -181,7 +187,7 @@ describe('rate limit', () => {
       expect.objectContaining({ status: 'rate_limited', direcao: 'entrada' }),
     );
     expect(mockIdentificarIntent).not.toHaveBeenCalled();
-    expect(mockEnviarMensagemImpl).not.toHaveBeenCalled();
+    expect(mockSendTextMessage).not.toHaveBeenCalled();
   });
 
   test('loga com provider_message_id e received_at quando disponíveis', async () => {
@@ -205,20 +211,17 @@ describe('rate limit', () => {
 // ============================================================
 
 describe('intent UNKNOWN', () => {
-  test('envia menu de ajuda e loga entrada e saída', async () => {
+  test('envia menu de ajuda e loga entrada', async () => {
     mockIdentificarIntent.mockReturnValue({ intent: 'UNKNOWN', params: {} });
     const payload = buildPayload({ text: 'olá' });
 
     await processarMensagemRecebida(payload);
 
-    expect(mockEnviarMensagemImpl).toHaveBeenCalledTimes(1);
+    expect(mockSendTextMessage).toHaveBeenCalledTimes(1);
     expect(mockResolverUsuarioPorWhatsapp).not.toHaveBeenCalled();
-    expect(mockRegistrarLogWhatsapp).toHaveBeenCalledTimes(2);
+    expect(mockRegistrarLogWhatsapp).toHaveBeenCalledTimes(1);
     expect(mockRegistrarLogWhatsapp).toHaveBeenCalledWith(
       expect.objectContaining({ direcao: 'entrada', usuario_id: null }),
-    );
-    expect(mockRegistrarLogWhatsapp).toHaveBeenCalledWith(
-      expect.objectContaining({ direcao: 'saida', usuario_id: null }),
     );
   });
 
@@ -255,7 +258,7 @@ describe('número não vinculado', () => {
     expect(mockRegistrarLogWhatsapp).toHaveBeenCalledWith(
       expect.objectContaining({ status: 'sem_usuario', direcao: 'entrada', usuario_id: null }),
     );
-    expect(mockEnviarMensagemImpl).toHaveBeenCalledTimes(1);
+    expect(mockSendTextMessage).toHaveBeenCalledTimes(1);
     expect(mockExecutarAcao).not.toHaveBeenCalled();
   });
 });
@@ -277,9 +280,11 @@ describe('usuário inativo', () => {
     const payload = buildPayload();
     await processarMensagemRecebida(payload);
 
-    expect(mockEnviarMensagemImpl).toHaveBeenCalledWith(
-      '5511999999999',
-      '⛔ Sua conta está suspensa. Entre em contato com o suporte.',
+    expect(mockSendTextMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        telefone: '5511999999999',
+        texto: '⛔ Sua conta está suspensa. Entre em contato com o suporte.',
+      }),
     );
     expect(mockExecutarAcao).not.toHaveBeenCalled();
     expect(mockRegistrarLogWhatsapp).toHaveBeenCalledWith(
@@ -305,34 +310,36 @@ describe('fluxo completo — usuário ativo', () => {
     const result = await processarMensagemRecebida(payload);
 
     expect(mockExecutarAcao).toHaveBeenCalledWith(usuario, 'GET_BALANCE', {});
-    expect(mockEnviarMensagemImpl).toHaveBeenCalledWith('5511999999999', '💰 Seu saldo atual é R$ 500,00');
+    expect(mockSendTextMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        telefone: '5511999999999',
+        texto: '💰 Seu saldo atual é R$ 500,00',
+        usuarioId: 'user-1',
+      }),
+    );
 
     // Entrada log
     expect(mockRegistrarLogWhatsapp).toHaveBeenCalledWith(
       expect.objectContaining({ direcao: 'entrada', usuario_id: 'user-1', conteudo: 'quanto tenho?' }),
     );
-    // Saída log
-    expect(mockRegistrarLogWhatsapp).toHaveBeenCalledWith(
-      expect.objectContaining({ direcao: 'saida', usuario_id: 'user-1', conteudo: '💰 Seu saldo atual é R$ 500,00' }),
-    );
 
     expect(result).toMatchObject({ from: '5511999999999', fromMe: false });
   });
 
-  test('loga saída mesmo quando enviarMensagem lança erro', async () => {
+  test('não lança erro quando sendTextMessage retorna falha', async () => {
     mockIdentificarIntent.mockReturnValue({ intent: 'GET_BALANCE', params: {} });
     mockResolverUsuarioPorWhatsapp.mockResolvedValue(usuario);
     mockValidarUsuarioAtivo.mockReturnValue({ valido: true, mensagem: null });
     mockExecutarAcao.mockResolvedValue('saldo ok');
-    mockEnviarMensagemImpl.mockRejectedValue(new Error('Evolution API down'));
+    mockSendTextMessage.mockResolvedValue({ success: false, status: 'falha', providerMessageId: null, erro: 'Evolution API down' });
 
     const payload = buildPayload();
-    // Should not throw
+    // Should not throw — sendTextMessage never rejects
     await expect(processarMensagemRecebida(payload)).resolves.not.toThrow();
 
-    // Log de saída ainda deve ter sido chamado
-    expect(mockRegistrarLogWhatsapp).toHaveBeenCalledWith(
-      expect.objectContaining({ direcao: 'saida', conteudo: 'saldo ok' }),
+    // sendTextMessage should still have been called
+    expect(mockSendTextMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ telefone: '5511999999999', texto: 'saldo ok' }),
     );
   });
 
