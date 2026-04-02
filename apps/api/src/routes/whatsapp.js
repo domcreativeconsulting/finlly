@@ -51,7 +51,7 @@ const whatsappWebhookSchema = z.object({
 /**
  * Receives and processes WhatsApp webhook events from the Evolution API.
  */
-router.post('/webhooks/whatsapp', webhookLimiter, (req, res, next) => {
+router.post('/webhooks/whatsapp', webhookLimiter, async (req, res, next) => {
   const parsed = whatsappWebhookSchema.safeParse(req.body);
   if (!parsed.success) {
     return next(toValidationError(parsed.error));
@@ -66,7 +66,7 @@ router.post('/webhooks/whatsapp', webhookLimiter, (req, res, next) => {
   }
 
   try {
-    const mensagem = processarMensagemRecebida(payload);
+    const mensagem = await processarMensagemRecebida(payload);
     logger.info({ event: payload.event, from: mensagem.from }, 'Webhook WhatsApp processado');
     return res.status(200).json({ received: true });
   } catch (err) {

@@ -103,7 +103,7 @@ const payloadValido = {
 
 describe('POST /webhooks/whatsapp', () => {
   test('retorna 200 com received:true para payload válido', async () => {
-    mockProcessarMensagemRecebida.mockReturnValue({
+    mockProcessarMensagemRecebida.mockResolvedValue({
       from: '5511999999999',
       name: 'João',
       text: 'gastei 50 no almoço',
@@ -156,9 +156,7 @@ describe('POST /webhooks/whatsapp', () => {
   });
 
   test('propaga erros do service como 500', async () => {
-    mockProcessarMensagemRecebida.mockImplementation(() => {
-      throw new Error('unexpected');
-    });
+    mockProcessarMensagemRecebida.mockRejectedValue(new Error('unexpected'));
 
     const app = makeApp();
     const res = await request(app, 'POST', '/webhooks/whatsapp', payloadValido);
@@ -176,7 +174,7 @@ describe('POST /webhooks/whatsapp', () => {
       },
     };
 
-    mockProcessarMensagemRecebida.mockReturnValue({
+    mockProcessarMensagemRecebida.mockResolvedValue({
       from: '5511999999999',
       name: 'Maria',
       text: 'mensagem longa',
@@ -199,7 +197,7 @@ describe('POST /webhooks/whatsapp', () => {
       },
     };
 
-    mockProcessarMensagemRecebida.mockReturnValue({
+    mockProcessarMensagemRecebida.mockResolvedValue({
       from: '5511999999999',
       name: 'Carlos',
       text: '',
