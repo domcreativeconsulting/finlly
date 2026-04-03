@@ -7,14 +7,18 @@ import { jest } from '@jest/globals';
 const mockFetch = jest.fn();
 const mockLogger = { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() };
 
+const mockConfig = {
+  ASAAS_ENV: 'sandbox',
+  ASAAS_API_KEY: 'test-key',
+  ASAAS_BASE_URL: undefined,
+  ASAAS_TIMEOUT_MS: 10000,
+  ASAAS_MAX_RETRIES: 3,
+  ASAAS_CB_FAILURE_THRESHOLD: 3,
+  ASAAS_CB_RESET_TIMEOUT_MS: 100,
+};
+
 jest.unstable_mockModule('../../../config/env.js', () => ({
-  config: {
-    ASAAS_ENV: 'sandbox',
-    ASAAS_API_KEY: 'test-key',
-    ASAAS_BASE_URL: undefined,
-    ASAAS_TIMEOUT_MS: 10000,
-    ASAAS_MAX_RETRIES: 3,
-  },
+  config: mockConfig,
 }));
 
 jest.unstable_mockModule('../../../logger.js', () => ({
@@ -45,15 +49,19 @@ function makeResponse(status, body = null, headers = {}) {
 // ---------------------------------------------------------------------------
 
 let asaas;
+let asaasCircuitBreaker;
 
 beforeAll(async () => {
   const mod = await import('../asaasClient.js');
   asaas = mod.asaas;
+  asaasCircuitBreaker = mod.asaasCircuitBreaker;
 });
 
 beforeEach(() => {
   jest.clearAllMocks();
   jest.useFakeTimers();
+  // Reset circuit breaker so tests are independent
+  asaasCircuitBreaker.reset();
 });
 
 afterEach(() => {
@@ -302,6 +310,70 @@ describe('asaasClient', () => {
     const [calledUrl] = mockFetch.mock.calls[0];
     expect(calledUrl).toMatch('/payments?subscription=');
     expect(calledUrl).toMatch('sub_pay');
+  });
+
+  // -------------------------------------------------------------------------
+  // Circuit breaker integration
+  // -------------------------------------------------------------------------
+
+  describe('circuit breaker', () => {
+    test('opens after ASAAS_CB_FAILURE_THRESHOLD consecutive retry-exhausting failures', async () => {
+      // Each getSubscription call exhausts all retries (1 initial + 3 retries = 4 fetches)
+      // After ASAAS_CB_FAILURE_THRESHOLD (3) such failures the circuit opens
+      mockFetch.mockResolvedValue(makeResponse(500));
+
+      for (let i = 0; i < mockConfig.ASAAS_CB_FAILURE_THRESHOLD; i++) {
+        const promise = asaas.getSubscription('sub_abc');
+        const expectation = expect(promise).rejects.toMatchObject({ status: 500 });
+        await jest.runAllTimersAsync();
+        await expectation;
+      }
+
+      expect(asaasCircuitBreaker.state).toBe('open');
+    });
+
+    test('when open — rejects immediately without calling fetch', async () => {
+      // Open the circuit
+      mockFetch.mockResolvedValue(makeResponse(500));
+      for (let i = 0; i < mockConfig.ASAAS_CB_FAILURE_THRESHOLD; i++) {
+        const promise = asaas.getSubscription('sub_abc');
+        const expectation = expect(promise).rejects.toMatchObject({ status: 500 });
+        await jest.runAllTimersAsync();
+        await expectation;
+      }
+
+      mockFetch.mockClear();
+
+      const promise = asaas.getSubscription('sub_abc');
+      const expectation = expect(promise).rejects.toMatchObject({ status: 500 });
+      await jest.runAllTimersAsync();
+      await expectation;
+
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    test('half_open — closes circuit on successful probe after reset timeout', async () => {
+      // Open the circuit
+      mockFetch.mockResolvedValue(makeResponse(500));
+      for (let i = 0; i < mockConfig.ASAAS_CB_FAILURE_THRESHOLD; i++) {
+        const promise = asaas.getSubscription('sub_abc');
+        const expectation = expect(promise).rejects.toMatchObject({ status: 500 });
+        await jest.runAllTimersAsync();
+        await expectation;
+      }
+
+      // Advance time past ASAAS_CB_RESET_TIMEOUT_MS (100ms)
+      jest.advanceTimersByTime(101);
+
+      // Probe succeeds → circuit closes
+      mockFetch.mockResolvedValueOnce(makeResponse(200, { id: 'sub_recovered' }));
+      const promise = asaas.getSubscription('sub_recovered');
+      const expectation = expect(promise).resolves.toEqual({ id: 'sub_recovered' });
+      await jest.runAllTimersAsync();
+      await expectation;
+
+      expect(asaasCircuitBreaker.state).toBe('closed');
+    });
   });
 });
 

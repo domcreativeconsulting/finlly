@@ -1,6 +1,7 @@
 import { config } from '../../config/env.js';
 import { AppError } from '../../errors/AppError.js';
 import logger from '../../logger.js';
+import { CircuitBreaker } from '../circuitBreaker.js';
 
 const RETRY_BASE_DELAY_MS = 500;
 const RETRY_JITTER_MS = 200;
@@ -8,6 +9,12 @@ const RETRY_MAX_DELAY_MS = 10000;
 
 const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
 const NON_RETRYABLE_STATUSES = new Set([400, 401, 403, 404, 422]);
+
+const evolutionCircuitBreaker = new CircuitBreaker({
+  name: 'evolution',
+  failureThreshold: config.EVOLUTION_CB_FAILURE_THRESHOLD,
+  resetTimeoutMs: config.EVOLUTION_CB_RESET_TIMEOUT_MS,
+});
 
 /**
  * Sleeps for the given number of milliseconds.
@@ -27,7 +34,7 @@ function sleep(ms) {
  * @returns {Promise<object>} Response body from Evolution API
  * @throws {AppError} On missing configuration or HTTP/network error
  */
-export async function sendText(number, text) {
+async function _sendText(number, text) {
   const baseUrl = config.EVOLUTION_API_URL;
   const apiKey = config.EVOLUTION_API_KEY;
   const instance = config.EVOLUTION_INSTANCE;
@@ -117,5 +124,18 @@ export async function sendText(number, text) {
   }
 }
 
+/**
+ * Public entry point — guarded by the circuit breaker.
+ * If the circuit is open the call fails immediately without exhausting retries.
+ *
+ * @param {string} number
+ * @param {string} text
+ * @returns {Promise<object>}
+ */
+export async function sendText(number, text) {
+  return evolutionCircuitBreaker.execute(() => _sendText(number, text));
+}
+
+export { evolutionCircuitBreaker };
 export const evolutionClient = { sendText };
 export default evolutionClient;

@@ -26,6 +26,8 @@ const envSchema = z.object({
   ASAAS_BASE_URL: z.preprocess((v) => v || undefined, z.string().url().optional()),
   ASAAS_TIMEOUT_MS: z.coerce.number().int().positive().default(10000), // 10000ms (10s) per attempt
   ASAAS_MAX_RETRIES: z.coerce.number().int().min(0).max(5).default(3), // max retries
+  ASAAS_CB_FAILURE_THRESHOLD: z.coerce.number().int().positive().default(5), // open after N consecutive full-retry failures
+  ASAAS_CB_RESET_TIMEOUT_MS: z.coerce.number().int().positive().default(30000), // ms to wait before probing
 
   // WhatsApp Agent (optional)
   WA_PROVIDER: z.string().optional(),
@@ -39,6 +41,8 @@ const envSchema = z.object({
   EVOLUTION_INSTANCE: z.string().optional(),
   EVOLUTION_TIMEOUT_MS: z.coerce.number().int().positive().default(8000),
   EVOLUTION_MAX_RETRIES: z.coerce.number().int().min(0).max(5).default(2),
+  EVOLUTION_CB_FAILURE_THRESHOLD: z.coerce.number().int().positive().default(5), // open after N consecutive full-retry failures
+  EVOLUTION_CB_RESET_TIMEOUT_MS: z.coerce.number().int().positive().default(30000), // ms to wait before probing
 
   // Rate Limiting (optional)
   RATE_LIMIT_STORE: z.enum(['memory', 'redis']).default('memory'),

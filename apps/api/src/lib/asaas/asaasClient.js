@@ -1,6 +1,7 @@
 import { config } from '../../config/env.js';
 import { AppError } from '../../errors/AppError.js';
 import logger from '../../logger.js';
+import { CircuitBreaker } from '../circuitBreaker.js';
 
 const RETRY_BASE_DELAY_MS = 500;
 const RETRY_JITTER_MS = 200;
@@ -8,6 +9,12 @@ const RETRY_MAX_DELAY_MS = 10000;
 
 const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
 const NON_RETRYABLE_STATUSES = new Set([400, 401, 403, 404, 409, 422]);
+
+const asaasCircuitBreaker = new CircuitBreaker({
+  name: 'asaas',
+  failureThreshold: config.ASAAS_CB_FAILURE_THRESHOLD,
+  resetTimeoutMs: config.ASAAS_CB_RESET_TIMEOUT_MS,
+});
 
 /**
  * Returns the Asaas base URL from config or derives it from ASAAS_ENV.
@@ -36,7 +43,7 @@ function sleep(ms) {
  * @param {RequestInit} [options] - fetch options
  * @returns {Promise<object>}
  */
-async function request(path, options = {}) {
+async function _request(path, options = {}) {
   const url = `${getBaseUrl()}${path}`;
   const headers = {
     'Content-Type': 'application/json',
@@ -117,6 +124,16 @@ async function request(path, options = {}) {
 }
 
 /**
+ * Public entry point — guarded by the circuit breaker.
+ * @param {string} path
+ * @param {RequestInit} [options]
+ * @returns {Promise<object>}
+ */
+function request(path, options = {}) {
+  return asaasCircuitBreaker.execute(() => _request(path, options));
+}
+
+/**
  * Returns the first customer matching the given email, or null.
  * @param {string} email
  * @returns {Promise<object|null>}
@@ -189,4 +206,5 @@ export const asaas = {
   getPaymentsBySubscription,
 };
 
+export { asaasCircuitBreaker };
 export default asaas;
