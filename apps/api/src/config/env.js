@@ -37,6 +37,8 @@ const envSchema = z.object({
   EVOLUTION_API_URL: z.preprocess((v) => v || undefined, z.string().url().optional()),
   EVOLUTION_API_KEY: z.string().optional(),
   EVOLUTION_INSTANCE: z.string().optional(),
+  EVOLUTION_TIMEOUT_MS: z.coerce.number().int().positive().default(8000),
+  EVOLUTION_MAX_RETRIES: z.coerce.number().int().min(0).max(5).default(2),
 
   // Rate Limiting (optional)
   RATE_LIMIT_STORE: z.enum(['memory', 'redis']).default('memory'),
