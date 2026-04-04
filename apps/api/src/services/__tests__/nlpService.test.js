@@ -311,8 +311,36 @@ describe('identificarIntent — CREATE_INVESTMENT', () => {
 });
 
 // ============================================================
-// Não-regressão: paguei + valor + sem menção de conta → CREATE_EXPENSE
+// PAY_BILL — extração de valor e data
 // ============================================================
+
+describe('PAY_BILL — extração de valor e data', () => {
+  test('"paguei a conta de luz de 120" → valor 120, descricao contém "luz"', () => {
+    const { intent, params } = identificarIntent('paguei a conta de luz de 120');
+    expect(intent).toBe(INTENT_PAY_BILL);
+    expect(params.valor).toBe(120);
+    expect(params.descricao.toLowerCase()).toContain('luz');
+  });
+
+  test('"quitei o boleto de 350,50" → valor 350.50', () => {
+    const { intent, params } = identificarIntent('quitei o boleto de 350,50');
+    expect(intent).toBe(INTENT_PAY_BILL);
+    expect(params.valor).toBeCloseTo(350.50);
+  });
+
+  test('"paguei a fatura do cartão" → valor null', () => {
+    const { intent, params } = identificarIntent('paguei a fatura do cartão');
+    expect(intent).toBe(INTENT_PAY_BILL);
+    expect(params.valor).toBeNull();
+  });
+
+  test('"paguei boleto vencendo dia 15" → data_vencimento extraída', () => {
+    const { intent, params } = identificarIntent('paguei boleto vencendo dia 15');
+    expect(intent).toBe(INTENT_PAY_BILL);
+    expect(params.data_vencimento).toMatch(/^\d{4}-\d{2}-15$/);
+  });
+});
+
 
 describe('não-regressão: paguei + valor + sem menção de conta', () => {
   test('"paguei 50 no almoço" → CREATE_EXPENSE (não PAY_BILL)', () => {

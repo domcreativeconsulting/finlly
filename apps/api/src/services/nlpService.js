@@ -184,7 +184,7 @@ function extrairDataVencimento(text) {
  * extracts relevant parameters.
  *
  * Supported intents (in detection priority order):
- * - `PAY_BILL`          — params: `{ descricao: string }`
+ * - `PAY_BILL`          — params: `{ descricao: string|null, valor: number|null, data_vencimento: string|null }`
  * - `CREATE_BILL`       — params: `{ valor: number, descricao: string, data_vencimento: string|null }`
  * - `CREATE_INVESTMENT` — params: `{ valor: number, descricao: string }`
  * - `CREATE_EXPENSE`    — params: `{ valor: number, descricao: string }`
@@ -201,9 +201,15 @@ export function identificarIntent(texto) {
 
   // PAY_BILL must come before CREATE_EXPENSE to capture "paguei a conta"
   if (PAY_BILL_PATTERN.test(lower)) {
+    const matchValor = lower.match(VALUE_PATTERN);
+    const rawValor = matchValor ? matchValor[1] : null;
     return {
       intent: INTENT_PAY_BILL,
-      params: { descricao: extrairDescricaoConta(lower) },
+      params: {
+        descricao: extrairDescricaoConta(lower),
+        valor: rawValor ? parseValor(rawValor) : null,
+        data_vencimento: extrairDataVencimento(texto),
+      },
     };
   }
 
