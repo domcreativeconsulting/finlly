@@ -419,8 +419,66 @@ describe('executarAcao — PAY_BILL', () => {
 });
 
 // ============================================================
-// executarAcao — CREATE_INVESTMENT
+// executarAcao — PAY_BILL scoring multi-critério
 // ============================================================
+
+describe('executarAcao — PAY_BILL scoring', () => {
+  const usuario = { id: 'user-1', nome: 'Andrey' };
+  const contaLuz = { id: 'uuid-luz', descricao: 'Conta de Luz', valor: '120.00', data_vencimento: '2026-04-10', status: 'pendente' };
+  const contaAgua = { id: 'uuid-agua', descricao: 'Conta de Água', valor: '80.00', data_vencimento: '2026-04-15', status: 'pendente' };
+  const contaNet = { id: 'uuid-net', descricao: 'Internet', valor: '150.00', data_vencimento: '2026-04-20', status: 'pendente' };
+
+  test('match por descrição: "conta de luz" → paga contaLuz', async () => {
+    mockListContasPagar.mockResolvedValue({ data: [contaLuz, contaAgua, contaNet] });
+    mockPagarContaPagar.mockResolvedValue({ ...contaLuz, status: 'pago', valor: '120.00' });
+
+    const resposta = await executarAcao(usuario, INTENT_PAY_BILL, { descricao: 'conta de luz', valor: null, data_vencimento: null });
+
+    expect(mockPagarContaPagar).toHaveBeenCalledWith('uuid-luz', 'user-1', expect.any(Object));
+    expect(resposta).toContain('✅ Conta paga!');
+    expect(resposta).toContain('Conta de Luz');
+  });
+
+  test('match por valor: valor=150 → paga contaNet', async () => {
+    mockListContasPagar.mockResolvedValue({ data: [contaLuz, contaAgua, contaNet] });
+    mockPagarContaPagar.mockResolvedValue({ ...contaNet, status: 'pago', valor: '150.00' });
+
+    const resposta = await executarAcao(usuario, INTENT_PAY_BILL, { descricao: null, valor: 150, data_vencimento: null });
+
+    expect(mockPagarContaPagar).toHaveBeenCalledWith('uuid-net', 'user-1', expect.any(Object));
+    expect(resposta).toContain('Internet');
+  });
+
+  test('match por data: data_vencimento dia 15 → paga contaAgua', async () => {
+    mockListContasPagar.mockResolvedValue({ data: [contaLuz, contaAgua, contaNet] });
+    mockPagarContaPagar.mockResolvedValue({ ...contaAgua, status: 'pago', valor: '80.00' });
+
+    const resposta = await executarAcao(usuario, INTENT_PAY_BILL, { descricao: null, valor: null, data_vencimento: '2026-04-15' });
+
+    expect(mockPagarContaPagar).toHaveBeenCalledWith('uuid-agua', 'user-1', expect.any(Object));
+    expect(resposta).toContain('Conta de Água');
+  });
+
+  test('sem critérios: paga a primeira conta da lista', async () => {
+    mockListContasPagar.mockResolvedValue({ data: [contaLuz, contaAgua] });
+    mockPagarContaPagar.mockResolvedValue({ ...contaLuz, status: 'pago', valor: '120.00' });
+
+    const resposta = await executarAcao(usuario, INTENT_PAY_BILL, { descricao: null, valor: null, data_vencimento: null });
+
+    expect(mockPagarContaPagar).toHaveBeenCalledWith('uuid-luz', 'user-1', expect.any(Object));
+    expect(resposta).toContain('✅ Conta paga!');
+  });
+
+  test('sem contas pendentes → resposta "Você não tem contas pendentes"', async () => {
+    mockListContasPagar.mockResolvedValue({ data: [] });
+
+    const resposta = await executarAcao(usuario, INTENT_PAY_BILL, { descricao: 'conta de luz', valor: null, data_vencimento: null });
+
+    expect(resposta).toContain('não tem contas pendentes');
+    expect(mockPagarContaPagar).not.toHaveBeenCalled();
+  });
+});
+
 
 describe('executarAcao — CREATE_INVESTMENT', () => {
   const usuario = { id: 'user-1', nome: 'João' };

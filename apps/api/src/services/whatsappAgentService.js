@@ -289,26 +289,56 @@ export async function executarAcao(usuario, intent, params) {
     // PAY_BILL
     // -------------------------------------------------------
     if (intent === INTENT_PAY_BILL) {
-      const result = await listContasPagar(userId, { status: 'pendente', limit: 5 });
-      const contas = result?.data ?? [];
+      const result = await listContasPagar(userId, { status: 'pendente', limit: 20 });
+      const lista = result?.data ?? [];
 
-      if (contas.length === 0) {
+      if (lista.length === 0) {
         return '✅ Você não tem contas pendentes no momento.';
       }
 
-      const descricaoBusca = params.descricao?.toLowerCase();
-      let contaAlvo = contas[0];
-      if (descricaoBusca) {
-        const match = contas.find((c) => c.descricao?.toLowerCase().includes(descricaoBusca));
-        if (match) contaAlvo = match;
+      const descricaoBusca = params.descricao?.toLowerCase().trim() || null;
+      const valorBusca = params.valor ?? null;
+      const dataBusca = params.data_vencimento ?? null;
+
+      function scoreConta(conta) {
+        let score = 0;
+
+        if (descricaoBusca && conta.descricao) {
+          const desc = conta.descricao.toLowerCase();
+          if (desc.includes(descricaoBusca)) score += 3;
+          if (desc.startsWith(descricaoBusca)) score += 2;
+        }
+
+        if (valorBusca !== null && valorBusca !== undefined) {
+          const diff = Math.abs(Number(conta.valor) - valorBusca);
+          if (diff < 0.01) score += 4;
+        }
+
+        if (dataBusca && conta.data_vencimento) {
+          const diaAlvo = new Date(dataBusca).getUTCDate();
+          const diaConta = new Date(conta.data_vencimento).getUTCDate();
+          if (diaAlvo === diaConta) score += 3;
+        }
+
+        return score;
       }
+
+      const scored = lista
+        .map((c) => ({ conta: c, score: scoreConta(c) }))
+        .filter(({ score }) => score > 0)
+        .sort((a, b) => {
+          if (b.score !== a.score) return b.score - a.score;
+          return new Date(a.conta.data_vencimento) - new Date(b.conta.data_vencimento);
+        });
+
+      const contaAlvo = scored.length > 0 ? scored[0].conta : lista[0];
 
       const pago = await pagarContaPagar(contaAlvo.id, userId, { data_pagamento: hoje() });
 
       return (
         `✅ Conta paga!\n\n` +
         `📝 ${contaAlvo.descricao}\n` +
-        `💸 Valor: R$ ${formatarMoeda(Number(pago.valor))}\n` +
+        `💸 Valor: R$ ${formatarMoeda(Number(pago.valor ?? contaAlvo.valor))}\n` +
         `📅 Data: ${formatarData(hoje())}`
       );
     }
