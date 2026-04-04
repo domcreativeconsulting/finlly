@@ -13,6 +13,8 @@ const mockConfig = {
   EVOLUTION_INSTANCE: 'test-instance',
   EVOLUTION_TIMEOUT_MS: 8000,
   EVOLUTION_MAX_RETRIES: 2,
+  EVOLUTION_CB_FAILURE_THRESHOLD: 3,
+  EVOLUTION_CB_RESET_TIMEOUT_MS: 100,
 };
 
 jest.unstable_mockModule('../../../config/env.js', () => ({
@@ -47,10 +49,12 @@ function makeResponse(status, body = null, headers = {}) {
 // ---------------------------------------------------------------------------
 
 let evo;
+let evolutionCircuitBreaker;
 
 beforeAll(async () => {
   const mod = await import('../evolutionClient.js');
   evo = mod.evolutionClient;
+  evolutionCircuitBreaker = mod.evolutionCircuitBreaker;
 });
 
 beforeEach(() => {
@@ -62,6 +66,8 @@ beforeEach(() => {
   mockConfig.EVOLUTION_INSTANCE = 'test-instance';
   mockConfig.EVOLUTION_TIMEOUT_MS = 8000;
   mockConfig.EVOLUTION_MAX_RETRIES = 2;
+  // Reset circuit breaker so tests are independent
+  evolutionCircuitBreaker.reset();
 });
 
 afterEach(() => {
@@ -216,5 +222,69 @@ describe('evolutionClient', () => {
     expect(init.signal).toBeDefined();
     expect(init.signal).not.toBeNull();
     expect(typeof init.signal.aborted).toBe('boolean');
+  });
+
+  // -------------------------------------------------------------------------
+  // Circuit breaker integration
+  // -------------------------------------------------------------------------
+
+  describe('circuit breaker', () => {
+    test('opens after EVOLUTION_CB_FAILURE_THRESHOLD consecutive retry-exhausting failures', async () => {
+      // Each sendText call exhausts all retries (1 initial + 2 retries = 3 fetches)
+      // After EVOLUTION_CB_FAILURE_THRESHOLD (3) such failures the circuit opens
+      mockFetch.mockResolvedValue(makeResponse(500));
+
+      for (let i = 0; i < mockConfig.EVOLUTION_CB_FAILURE_THRESHOLD; i++) {
+        const promise = evo.sendText('5511999999999', 'hello');
+        const expectation = expect(promise).rejects.toMatchObject({ status: 500 });
+        await jest.runAllTimersAsync();
+        await expectation;
+      }
+
+      expect(evolutionCircuitBreaker.state).toBe('open');
+    });
+
+    test('when open — rejects immediately without calling fetch', async () => {
+      // Open the circuit
+      mockFetch.mockResolvedValue(makeResponse(500));
+      for (let i = 0; i < mockConfig.EVOLUTION_CB_FAILURE_THRESHOLD; i++) {
+        const promise = evo.sendText('5511999999999', 'hello');
+        const expectation = expect(promise).rejects.toMatchObject({ status: 500 });
+        await jest.runAllTimersAsync();
+        await expectation;
+      }
+
+      mockFetch.mockClear();
+
+      const promise = evo.sendText('5511999999999', 'hello');
+      const expectation = expect(promise).rejects.toMatchObject({ status: 500 });
+      await jest.runAllTimersAsync();
+      await expectation;
+
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    test('half_open — closes circuit on successful probe after reset timeout', async () => {
+      // Open the circuit
+      mockFetch.mockResolvedValue(makeResponse(500));
+      for (let i = 0; i < mockConfig.EVOLUTION_CB_FAILURE_THRESHOLD; i++) {
+        const promise = evo.sendText('5511999999999', 'hello');
+        const expectation = expect(promise).rejects.toMatchObject({ status: 500 });
+        await jest.runAllTimersAsync();
+        await expectation;
+      }
+
+      // Advance time past EVOLUTION_CB_RESET_TIMEOUT_MS (100ms)
+      jest.advanceTimersByTime(101);
+
+      // Probe succeeds → circuit closes
+      mockFetch.mockResolvedValueOnce(makeResponse(200, { key: { id: 'msg_recovered' } }));
+      const promise = evo.sendText('5511999999999', 'hello');
+      const expectation = expect(promise).resolves.toEqual({ key: { id: 'msg_recovered' } });
+      await jest.runAllTimersAsync();
+      await expectation;
+
+      expect(evolutionCircuitBreaker.state).toBe('closed');
+    });
   });
 });
