@@ -13,11 +13,15 @@ import logger from '../logger.js';
 import { createMovimentacao, getSaldoConsolidado } from './movimentacoesService.js';
 import { getExtrato } from './extratoService.js';
 import { listContas } from './contaService.js';
+import { createContaPagar, listContasPagar, pagarContaPagar } from './contasPagarService.js';
 import {
   INTENT_CREATE_EXPENSE,
   INTENT_CREATE_INCOME,
   INTENT_GET_BALANCE,
   INTENT_GET_STATEMENT,
+  INTENT_CREATE_BILL,
+  INTENT_PAY_BILL,
+  INTENT_CREATE_INVESTMENT,
 } from './nlpService.js';
 import { normalizePhoneNumber } from '../lib/whatsapp/evolutionPayloadParser.js';
 
@@ -256,6 +260,86 @@ export async function executarAcao(usuario, intent, params) {
         '\n\n' +
         `Total de entradas: R$ ${formatarMoeda(totalIn)}\n` +
         `Total de saídas: R$ ${formatarMoeda(totalOut)}`
+      );
+    }
+
+    // -------------------------------------------------------
+    // CREATE_BILL
+    // -------------------------------------------------------
+    if (intent === INTENT_CREATE_BILL) {
+      const descricao = params.descricao || 'Conta via WhatsApp';
+      const dataVencimento = params.data_vencimento ?? hoje();
+
+      const conta = await createContaPagar(userId, {
+        descricao,
+        valor: params.valor,
+        data_vencimento: dataVencimento,
+      });
+
+      return (
+        `📋 Conta a pagar registrada!\n\n` +
+        `💸 Valor: R$ ${formatarMoeda(conta.valor)}\n` +
+        `📝 Descrição: ${descricao}\n` +
+        `📅 Vencimento: ${formatarData(dataVencimento)}\n\n` +
+        `Para pagar, acesse o Finlly ou envie: "paguei a ${descricao}"`
+      );
+    }
+
+    // -------------------------------------------------------
+    // PAY_BILL
+    // -------------------------------------------------------
+    if (intent === INTENT_PAY_BILL) {
+      const result = await listContasPagar(userId, { status: 'pendente', limit: 5 });
+      const contas = result?.data ?? [];
+
+      if (contas.length === 0) {
+        return '✅ Você não tem contas pendentes no momento.';
+      }
+
+      const descricaoBusca = params.descricao?.toLowerCase();
+      let contaAlvo = contas[0];
+      if (descricaoBusca) {
+        const match = contas.find((c) => c.descricao?.toLowerCase().includes(descricaoBusca));
+        if (match) contaAlvo = match;
+      }
+
+      const pago = await pagarContaPagar(contaAlvo.id, userId, { data_pagamento: hoje() });
+
+      return (
+        `✅ Conta paga!\n\n` +
+        `📝 ${contaAlvo.descricao}\n` +
+        `💸 Valor: R$ ${formatarMoeda(Number(pago.valor))}\n` +
+        `📅 Data: ${formatarData(hoje())}`
+      );
+    }
+
+    // -------------------------------------------------------
+    // CREATE_INVESTMENT
+    // -------------------------------------------------------
+    if (intent === INTENT_CREATE_INVESTMENT) {
+      const contas = await listContas(userId);
+      if (!contas || contas.length === 0) {
+        return '❌ Você não tem nenhuma conta cadastrada. Acesse o Finlly para criar uma conta primeiro.';
+      }
+
+      const conta = contas[0];
+      const descricao = params.descricao ? `Investimento: ${params.descricao}` : 'Investimento via WhatsApp';
+
+      const mov = await createMovimentacao(userId, {
+        conta_id: conta.id,
+        tipo: 'saida',
+        valor: params.valor,
+        descricao,
+        data: hoje(),
+      });
+
+      return (
+        `📈 Investimento registrado, ${usuario.nome}!\n\n` +
+        `💰 Valor: R$ ${formatarMoeda(mov.valor ?? params.valor)}\n` +
+        `📝 Descrição: ${descricao}\n` +
+        `🏦 Conta debitada: ${conta.nome}\n` +
+        `📅 Data: ${formatarData(hoje())}\n\n` +
+        `💡 Para detalhes dos seus investimentos, acesse o Finlly.`
       );
     }
 

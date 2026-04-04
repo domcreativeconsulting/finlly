@@ -28,7 +28,10 @@ const RESPOSTA_UNKNOWN =
   '• "gastei 50 no almoço" → registra despesa\n' +
   '• "recebi 2000 do cliente X" → registra receita\n' +
   '• "quanto tenho em caixa?" → consulta saldo\n' +
-  '• "me mostra meus gastos da semana" → extrato\n\n' +
+  '• "me mostra meus gastos da semana" → extrato\n' +
+  '• "tenho boleto de 150 vencendo dia 20" → registra conta a pagar\n' +
+  '• "paguei a conta de luz" → marca conta como paga\n' +
+  '• "investi 500 na poupança" → registra investimento\n\n' +
   '💡 Dica: você pode escrever naturalmente!';
 
 /**
