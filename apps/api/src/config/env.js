@@ -69,6 +69,9 @@ const envSchema = z.object({
   // Reconciliation job
   RECONCILIACAO_INTERVAL_MS: z.coerce.number().int().positive().default(3600000), // 1 hour in ms
 
+  // Daily bill summary job (Story 12.4)
+  CONTAS_DIA_JOB_HOUR_UTC: z.coerce.number().int().min(0).max(23).default(8), // 08:00 UTC
+
   // Billing status cache
   BILLING_STATUS_CACHE_TTL: z.coerce.number().int().positive().default(60), // seconds
 

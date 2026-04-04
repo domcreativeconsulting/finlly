@@ -18,6 +18,7 @@ import perfilRouter from './routes/perfil.js';
 import billingRouter from './routes/billing.js';
 import { startReconciliacaoJob } from './jobs/reconciliacao.job.js';
 import { startOcrJob } from './jobs/ocr.job.js';
+import { startContasDoDiaJob } from './jobs/contasDoDia.job.js';
 import contasPagarRouter from './routes/contasPagar.js';
 import contasReceberRouter from './routes/contasReceber.js';
 import categoriasRouter from './routes/categorias.js';
@@ -88,5 +89,6 @@ app.listen(config.API_PORT, () => {
   if (config.NODE_ENV !== 'test') {
     startReconciliacaoJob();
     startOcrJob();
+    startContasDoDiaJob();
   }
 });
