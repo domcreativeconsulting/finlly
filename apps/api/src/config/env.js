@@ -72,6 +72,11 @@ const envSchema = z.object({
   // Daily bill summary job (Story 12.4)
   CONTAS_DIA_JOB_HOUR_UTC: z.coerce.number().int().min(0).max(23).default(8), // 08:00 UTC
 
+  // Daily WhatsApp summary queue (Story 12.4.1)
+  WHATSAPP_DIARIO_JOB_ATTEMPTS: z.coerce.number().int().positive().default(3),
+  WHATSAPP_DIARIO_JOB_BACKOFF_DELAY_MS: z.coerce.number().int().positive().default(5000),
+  WHATSAPP_DIARIO_WORKER_CONCURRENCY: z.coerce.number().int().positive().default(5),
+
   // Billing status cache
   BILLING_STATUS_CACHE_TTL: z.coerce.number().int().positive().default(60), // seconds
 

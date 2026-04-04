@@ -1,9 +1,9 @@
 /**
- * Daily bill summary job — WhatsApp Agent (Story 12.4).
+ * Daily bill summary job — WhatsApp Agent (Story 12.4 / 12.4.1).
  *
  * Fires once per day (configurable via CONTAS_DIA_JOB_HOUR_UTC, default 08:00 UTC).
- * Fetches all active users with WhatsApp linked, queries their bills due today
- * and overdue bills, and sends a proactive summary via WhatsApp.
+ * Fetches all active users with WhatsApp linked and enqueues one BullMQ job per user
+ * in the 'whatsapp-diario' queue. The worker handles the actual sending.
  *
  * Uses a setTimeout-based scheduler (same pattern as reconciliacao.job.js).
  * On startup, calculates the ms until the next scheduled run time.
@@ -11,10 +11,8 @@
  * @module contasDoDia.job
  */
 
-import { buscarUsuariosComWhatsapp, buscarContasDoDia } from '../services/contasPagarDiariaService.js';
-import { replyResumoDiario } from '../lib/whatsapp/whatsappReplyBuilder.js';
-import { sendTextMessage } from '../services/whatsappSenderService.js';
-import { normalizePhoneNumber } from '../lib/whatsapp/evolutionPayloadParser.js';
+import { buscarUsuariosComWhatsapp } from '../services/contasPagarDiariaService.js';
+import { addWhatsappDiarioJob } from '../queues/whatsappDiario.queue.js';
 import { config } from '../config/env.js';
 import logger from '../logger.js';
 
@@ -40,37 +38,35 @@ function msAteProximaExecucao() {
 }
 
 /**
- * Processes one user: fetches their bills and sends the summary.
- * Errors per user are caught individually so one failure doesn't abort the batch.
+ * Enqueues a daily summary job for one user in the BullMQ queue.
+ * Errors are caught individually so one failure doesn't abort the batch.
  * @param {{ id: string, nome: string, whatsapp: string }} usuario
  */
-async function processarUsuario(usuario) {
+async function enfileirarUsuario(usuario) {
   try {
-    const { hoje, atrasadas } = await buscarContasDoDia(usuario.id);
-    const texto = replyResumoDiario({
-      nome: usuario.nome.split(' ')[0],
-      contasHoje: hoje,
-      contasAtrasadas: atrasadas,
+    await addWhatsappDiarioJob({
+      usuarioId: usuario.id,
+      nome: usuario.nome,
+      whatsapp: usuario.whatsapp,
     });
-    await sendTextMessage({ telefone: normalizePhoneNumber(usuario.whatsapp), texto, usuarioId: usuario.id });
-    logger.info({ usuarioId: usuario.id, contasHoje: hoje.length, atrasadas: atrasadas.length }, 'Resumo diário WhatsApp enviado');
+    logger.info({ usuarioId: usuario.id }, 'Job contasDoDia: resumo enfileirado para usuário');
   } catch (err) {
-    logger.error({ err, usuarioId: usuario.id }, 'Erro ao enviar resumo diário WhatsApp para usuário');
+    logger.error({ err, usuarioId: usuario.id }, 'Job contasDoDia: erro ao enfileirar resumo para usuário');
   }
 }
 
 /**
- * Main job execution: fetch all users and send summaries.
+ * Main job execution: fetch all users and enqueue summary jobs.
  */
 async function run() {
-  logger.info('Job contasDoDia: iniciando envio de resumos diários');
+  logger.info('Job contasDoDia: iniciando agendamento de resumos diários');
   try {
     const usuarios = await buscarUsuariosComWhatsapp();
     logger.info({ total: usuarios.length }, 'Job contasDoDia: usuários com WhatsApp encontrados');
     for (const usuario of usuarios) {
-      await processarUsuario(usuario);
+      await enfileirarUsuario(usuario);
     }
-    logger.info('Job contasDoDia: envio concluído');
+    logger.info('Job contasDoDia: enfileiramento concluído');
   } catch (err) {
     logger.error({ err }, 'Erro no job contasDoDia');
   } finally {
@@ -105,3 +101,4 @@ export function stopContasDoDiaJob() {
     logger.info('Job contasDoDia parado');
   }
 }
+
