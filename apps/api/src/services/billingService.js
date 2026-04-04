@@ -8,6 +8,19 @@ import { config } from '../config/env.js';
 
 const BILLING_STATUS_CACHE_PREFIX = 'billing:status:';
 
+/**
+ * Persists a billing audit event to usuario_eventos_auth.
+ * Fire-and-forget: errors are logged but never re-thrown.
+ * @param {object} data
+ */
+async function createBillingEvent(data) {
+  try {
+    await prisma.usuarioEventoAuth.create({ data });
+  } catch (err) {
+    logger.error({ err, tipo: data.tipo }, 'Falha ao registrar evento de billing');
+  }
+}
+
 /** Base prices in BRL */
 const PRECOS = {
   mensal: 29.9,
@@ -131,6 +144,12 @@ export async function criarAssinatura(usuarioId, { plano, ciclo, formaPagamento,
 
   logger.info({ usuarioId, subscriptionId: subscription.id, plano, ciclo }, 'Assinatura criada');
 
+  await createBillingEvent({
+    usuario_id: usuarioId,
+    tipo: 'assinatura_criada',
+    sucesso: true,
+  });
+
   return {
     assinante,
     paymentLink: subscription.invoiceUrl ?? null,
@@ -176,6 +195,12 @@ export async function cancelarAssinatura(usuarioId) {
   }
 
   logger.info({ usuarioId }, 'Assinatura cancelada');
+
+  await createBillingEvent({
+    usuario_id: usuarioId,
+    tipo: 'assinatura_cancelada',
+    sucesso: true,
+  });
 }
 
 /**

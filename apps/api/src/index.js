@@ -1,6 +1,7 @@
 import express from 'express';
 import 'dotenv/config';
 import cookieParser from 'cookie-parser';
+import { rateLimit } from 'express-rate-limit';
 import { config } from './config/env.js';
 import logger from './logger.js';
 import { corsMiddleware } from './middleware/cors.js';
@@ -9,6 +10,8 @@ import { requestIdMiddleware } from './middleware/requestId.js';
 import { requestLogger } from './middleware/requestLogger.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { csrfProtection } from './middleware/csrfProtection.js';
+import { AppError } from './errors/AppError.js';
+import { buildStore } from './utils/rateLimitStore.js';
 import healthRouter from './routes/health.js';
 import authRouter from './routes/auth.js';
 import perfilRouter from './routes/perfil.js';
@@ -28,8 +31,24 @@ import whatsappRouter from './routes/whatsapp.js';
 
 const app = express();
 
+/** Global safety-net rate limiter: configurable via RATE_LIMIT_MAX / RATE_LIMIT_WINDOW_MS. */
+const globalLimiter = rateLimit({
+  windowMs: config.RATE_LIMIT_WINDOW_MS,
+  max: config.RATE_LIMIT_MAX,
+  skip: () => config.NODE_ENV === 'development',
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: buildStore(config.RATE_LIMIT_WINDOW_MS),
+  message: { code: 'RATE_LIMITED', message: 'Muitas requisições. Tente novamente mais tarde.' },
+  handler: (req, res, next, options) => {
+    logger.warn({ msg: 'Global rate limit atingido', ip: req.ip, path: req.path });
+    return next(AppError.tooManyRequests(options.message.message));
+  },
+});
+
 app.use(corsMiddleware);
 app.use(securityHeaders);
+app.use(globalLimiter);
 
 // Apply raw body parsing for the webhook path before express.json(),
 // so the raw bytes are preserved for HMAC signature verification.

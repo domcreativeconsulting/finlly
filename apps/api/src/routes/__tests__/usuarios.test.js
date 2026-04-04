@@ -1,7 +1,13 @@
 import { jest } from '@jest/globals';
 import { Buffer } from 'buffer';
+import { AppError } from '../../errors/AppError.js';
 
 const mockRegisterUser = jest.fn();
+
+// express-rate-limit → passthrough em testes
+jest.unstable_mockModule('express-rate-limit', () => ({
+    rateLimit: () => (_req, _res, next) => next(),
+}));
 
 jest.unstable_mockModule('../../services/usuarioService.js', () => ({
     registerUser: mockRegisterUser,
@@ -12,7 +18,11 @@ jest.unstable_mockModule('../../logger.js', () => ({
 }));
 
 jest.unstable_mockModule('../../config/env.js', () => ({
-    config: { NODE_ENV: 'test', API_PORT: 3001, },
+    config: { NODE_ENV: 'test', API_PORT: 3001, RATE_LIMIT_STORE: 'memory' },
+}));
+
+jest.unstable_mockModule('../../utils/rateLimitStore.js', () => ({
+    buildStore: () => undefined,
 }));
 
 let usuariosRouter;
@@ -110,5 +120,13 @@ describe('POST /usuarios', () => {
         const res = await request(app, 'POST', '/usuarios', {});
         expect(res.status).toBe(422);
         expect(res.body.code).toBe('VALIDATION_ERROR');
+    });
+
+    test('returns 429 when rate limit exceeded', async () => {
+        mockRegisterUser.mockRejectedValue(AppError.tooManyRequests('Muitas tentativas de registro. Tente novamente em 1 hora.'));
+        const app = makeApp();
+        const res = await request(app, 'POST', '/usuarios', { nome: 'João', email: 'joao@example.com', senha: 'password123', });
+        expect(res.status).toBe(429);
+        expect(res.body.code).toBe('TOO_MANY_REQUESTS');
     });
 });

@@ -17,6 +17,9 @@ const mockPrisma = {
     findFirst: jest.fn(),
     update: jest.fn(),
   },
+  usuarioEventoAuth: {
+    create: jest.fn(),
+  },
 };
 
 const mockAsaas = {
@@ -75,6 +78,7 @@ beforeEach(() => {
   mockRedis.get.mockResolvedValue(null);
   mockRedis.set.mockResolvedValue('OK');
   mockRedis.del.mockResolvedValue(1);
+  mockPrisma.usuarioEventoAuth.create.mockResolvedValue({});
 });
 
 // ---------------------------------------------------------------------------
@@ -125,6 +129,16 @@ describe('criarAssinatura', () => {
         cycle: 'MONTHLY',
         value: 29.9,
         billingType: 'PIX',
+      }),
+    );
+
+    expect(mockPrisma.usuarioEventoAuth.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          usuario_id: USUARIO_ID,
+          tipo: 'assinatura_criada',
+          sucesso: true,
+        }),
       }),
     );
   });
@@ -251,6 +265,15 @@ describe('cancelarAssinatura', () => {
     );
     expect(mockPrisma.usuario.update).toHaveBeenCalledWith(
       expect.objectContaining({ data: { status: 'ativo' } }),
+    );
+    expect(mockPrisma.usuarioEventoAuth.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          usuario_id: USUARIO_ID,
+          tipo: 'assinatura_cancelada',
+          sucesso: true,
+        }),
+      }),
     );
   });
 
