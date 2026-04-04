@@ -19,7 +19,7 @@ export default [
     files: ['apps/**/*.{js,jsx}'],
     languageOptions: {
       parserOptions: {
-        ecmaVersion: 2020,
+        ecmaVersion: 2022,
         sourceType: 'module',
         ecmaFeatures: {
           jsx: true,
@@ -79,6 +79,10 @@ export default [
   {
     files: ['apps/api/**/*.js'],
     languageOptions: {
+      parserOptions: {
+        ecmaVersion: 2022,
+        sourceType: 'module',
+      },
       globals: {
         fetch: 'readonly',
         Buffer: 'readonly',
@@ -97,6 +101,14 @@ export default [
     },
     rules: {
       'no-console': ['warn'],
+      'no-unused-vars': [
+        'warn',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          destructuredArrayIgnorePattern: '^_',
+        },
+      ],
     },
   },
   {
