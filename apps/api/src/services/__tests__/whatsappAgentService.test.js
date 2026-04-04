@@ -198,7 +198,7 @@ describe('executarAcao — CREATE_EXPENSE', () => {
 
     const resposta = await executarAcao(usuario, INTENT_CREATE_EXPENSE, { valor: 50, descricao: 'almoço' });
 
-    expect(resposta).toContain('❌ Você não tem nenhuma conta cadastrada');
+    expect(resposta).toContain('❌ Você ainda não tem uma conta bancária cadastrada no Finlly.');
     expect(mockCreateMovimentacao).not.toHaveBeenCalled();
   });
 
@@ -327,7 +327,7 @@ describe('executarAcao — tratamento de erros', () => {
 
     const resposta = await executarAcao(usuario, INTENT_CREATE_EXPENSE, { valor: 100, descricao: 'teste' });
 
-    expect(resposta).toBe('❌ Ocorreu um erro ao processar sua solicitação. Tente novamente.');
+    expect(resposta).toBe('❌ Não conseguimos processar sua solicitação agora. Tente novamente em alguns instantes.');
   });
 });
 
@@ -399,7 +399,7 @@ describe('executarAcao — PAY_BILL', () => {
 
     const resposta = await executarAcao(usuario, INTENT_PAY_BILL, { descricao: '' });
 
-    expect(resposta).toBe('✅ Você não tem contas pendentes no momento.');
+    expect(resposta).toBe('✅ Você não tem contas pendentes no momento. Ótimo trabalho! 🎉');
     expect(mockPagarContaPagar).not.toHaveBeenCalled();
   });
 
@@ -475,6 +475,7 @@ describe('executarAcao — PAY_BILL scoring', () => {
     const resposta = await executarAcao(usuario, INTENT_PAY_BILL, { descricao: 'conta de luz', valor: null, data_vencimento: null });
 
     expect(resposta).toContain('não tem contas pendentes');
+    expect(resposta).toContain('🎉');
     expect(mockPagarContaPagar).not.toHaveBeenCalled();
   });
 });
@@ -517,7 +518,64 @@ describe('executarAcao — CREATE_INVESTMENT', () => {
 
     const resposta = await executarAcao(usuario, INTENT_CREATE_INVESTMENT, { valor: 500, descricao: 'poupança' });
 
-    expect(resposta).toContain('❌ Você não tem nenhuma conta cadastrada');
+    expect(resposta).toContain('❌ Você ainda não tem uma conta bancária cadastrada no Finlly.');
     expect(mockCreateMovimentacao).not.toHaveBeenCalled();
+  });
+});
+
+// ============================================================
+// executarAcao — valor inválido / não identificado
+// ============================================================
+
+describe('executarAcao — valor não identificado', () => {
+  const usuario = { id: 'user-1', nome: 'João' };
+  const conta = { id: 'conta-1', nome: 'Conta Corrente' };
+
+  test('CREATE_EXPENSE com valor 0 retorna orientação ao usuário', async () => {
+    const resposta = await executarAcao(usuario, INTENT_CREATE_EXPENSE, { valor: 0, descricao: 'almoço' });
+    expect(resposta).toContain('🤔');
+    expect(resposta).toContain('valor');
+    expect(mockListContas).not.toHaveBeenCalled();
+  });
+
+  test('CREATE_EXPENSE com valor null retorna orientação ao usuário', async () => {
+    const resposta = await executarAcao(usuario, INTENT_CREATE_EXPENSE, { valor: null, descricao: 'almoço' });
+    expect(resposta).toContain('🤔');
+    expect(mockListContas).not.toHaveBeenCalled();
+  });
+
+  test('CREATE_INCOME com valor 0 retorna orientação ao usuário', async () => {
+    const resposta = await executarAcao(usuario, INTENT_CREATE_INCOME, { valor: 0, descricao: 'salário' });
+    expect(resposta).toContain('🤔');
+    expect(mockListContas).not.toHaveBeenCalled();
+  });
+
+  test('CREATE_INCOME com valor null retorna orientação ao usuário', async () => {
+    const resposta = await executarAcao(usuario, INTENT_CREATE_INCOME, { valor: null, descricao: 'salário' });
+    expect(resposta).toContain('🤔');
+    expect(mockListContas).not.toHaveBeenCalled();
+  });
+
+  test('CREATE_INVESTMENT com valor 0 retorna orientação ao usuário', async () => {
+    const resposta = await executarAcao(usuario, INTENT_CREATE_INVESTMENT, { valor: 0, descricao: 'poupança' });
+    expect(resposta).toContain('🤔');
+    expect(mockListContas).not.toHaveBeenCalled();
+  });
+
+  test('CREATE_INVESTMENT com valor null retorna orientação ao usuário', async () => {
+    const resposta = await executarAcao(usuario, INTENT_CREATE_INVESTMENT, { valor: null, descricao: 'poupança' });
+    expect(resposta).toContain('🤔');
+    expect(mockListContas).not.toHaveBeenCalled();
+  });
+
+  test('CREATE_EXPENSE com valor positivo prossegue normalmente', async () => {
+    mockListContas.mockResolvedValue([conta]);
+    mockCreateMovimentacao.mockResolvedValue({ id: 'mov-1', valor: 50, tipo: 'saida' });
+    mockGetSaldoConsolidado.mockResolvedValue({ saldo: 500, entradas: 3000, saidas: 2500 });
+    mockGetExtrato.mockResolvedValue({ items: [], totals: { totalIn: 0, totalOut: 0 } });
+
+    const resposta = await executarAcao(usuario, INTENT_CREATE_EXPENSE, { valor: 50, descricao: 'almoço' });
+    expect(resposta).toContain('✅ Despesa registrada');
+    expect(mockListContas).toHaveBeenCalled();
   });
 });

@@ -24,30 +24,20 @@ import {
   INTENT_CREATE_INVESTMENT,
 } from './nlpService.js';
 import { normalizePhoneNumber } from '../lib/whatsapp/evolutionPayloadParser.js';
-
-/**
- * Formats a number as Brazilian currency string (e.g. 1234.56 → "1.234,56").
- *
- * @param {number} value
- * @returns {string}
- */
-function formatarMoeda(value) {
-  return Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-/**
- * Formats a date string (YYYY-MM-DD) or Date object as dd/mm/yyyy.
- *
- * @param {string|Date} date
- * @returns {string}
- */
-function formatarData(date) {
-  const d = typeof date === 'string' ? new Date(date + 'T12:00:00Z') : date;
-  const dia = String(d.getUTCDate()).padStart(2, '0');
-  const mes = String(d.getUTCMonth() + 1).padStart(2, '0');
-  const ano = d.getUTCFullYear();
-  return `${dia}/${mes}/${ano}`;
-}
+import {
+  replyDespesaRegistrada,
+  replyReceitaRegistrada,
+  replyContaPagarRegistrada,
+  replyContaPaga,
+  replySemContasPendentes,
+  replySaldo,
+  replyExtrato,
+  replyExtratoVazio,
+  replyInvestimentoRegistrado,
+  replyErroSemConta,
+  replyErroGenerico,
+  replyValorNaoIdentificado,
+} from '../lib/whatsapp/whatsappReplyBuilder.js';
 
 /**
  * Returns today's date in YYYY-MM-DD format (UTC).
@@ -78,55 +68,6 @@ function diasAtras(dias) {
   const d = new Date();
   d.setUTCDate(d.getUTCDate() - dias);
   return d.toISOString().slice(0, 10);
-}
-
-/** Threshold below which a low-balance warning is added to expense replies (BRL) */
-const SALDO_BAIXO_THRESHOLD = 100;
-
-// ============================================================
-// Private helpers
-// ============================================================
-
-/**
- * Builds the reply text for a successfully registered expense.
- *
- * Sections (in order):
- *  1. Confirmation line with user name
- *  2. Transaction details (value, description, account, date)
- *  3. Weekly spending summary (always included)
- *  4. Low-balance / negative-balance warning (only when saldo < SALDO_BAIXO_THRESHOLD)
- *
- * @param {object} usuario    - Resolved usuario (must have `nome`)
- * @param {object} mov        - Created movimentacao object (must have `valor`)
- * @param {object} conta      - Account used (must have `nome`)
- * @param {string} descricao  - Transaction description
- * @param {string} dataHoje   - Date string (YYYY-MM-DD)
- * @param {number} totalSemana - Total spent in the last 7 days (totalOut)
- * @param {number} saldoAtual  - Current consolidated balance
- * @returns {string}
- */
-function construirRespostaDespesa(usuario, mov, conta, descricao, dataHoje, totalSemana, saldoAtual) {
-  const valorFormatado = formatarMoeda(mov.valor ?? 0);
-  const dataFormatada = formatarData(dataHoje);
-
-  let msg =
-    `✅ Despesa registrada, ${usuario.nome}!\n\n` +
-    `💸 Valor: R$ ${valorFormatado}\n` +
-    `📝 Descrição: ${descricao}\n` +
-    `🏦 Conta: ${conta.nome}\n` +
-    `📅 Data: ${dataFormatada}`;
-
-  msg += `\n\n📈 Total gasto nesta semana: R$ ${formatarMoeda(totalSemana)}`;
-
-  if (saldoAtual < SALDO_BAIXO_THRESHOLD) {
-    if (saldoAtual < 0) {
-      msg += `\n⚠️ Atenção: seu saldo está negativo (R$ ${formatarMoeda(saldoAtual)}).`;
-    } else {
-      msg += `\n⚠️ Atenção: seu saldo está baixo (R$ ${formatarMoeda(saldoAtual)}).`;
-    }
-  }
-
-  return msg;
 }
 
 // ============================================================
@@ -176,9 +117,13 @@ export async function executarAcao(usuario, intent, params) {
     if (intent === INTENT_CREATE_EXPENSE || intent === INTENT_CREATE_INCOME) {
       const tipo = intent === INTENT_CREATE_EXPENSE ? 'saida' : 'entrada';
 
+      if (!params.valor || params.valor <= 0) {
+        return replyValorNaoIdentificado();
+      }
+
       const contas = await listContas(userId);
       if (!contas || contas.length === 0) {
-        return '❌ Você não tem nenhuma conta cadastrada. Acesse o Finlly para criar uma conta primeiro.';
+        return replyErroSemConta();
       }
 
       const conta = contas[0];
@@ -195,15 +140,13 @@ export async function executarAcao(usuario, intent, params) {
 
       // CREATE_INCOME: simple formatted reply with user name
       if (tipo === 'entrada') {
-        const valorFormatado = formatarMoeda(mov.valor ?? params.valor);
-        const dataFormatada = formatarData(dataHoje);
-        return (
-          `✅ Receita registrada, ${usuario.nome}!\n\n` +
-          `💰 Valor: R$ ${valorFormatado}\n` +
-          `📝 Descrição: ${descricao}\n` +
-          `🏦 Conta: ${conta.nome}\n` +
-          `📅 Data: ${dataFormatada}`
-        );
+        return replyReceitaRegistrada({
+          nome: usuario.nome,
+          valor: mov.valor ?? params.valor,
+          descricao,
+          conta: conta.nome,
+          data: dataHoje,
+        });
       }
 
       // CREATE_EXPENSE: enrich with weekly summary and low-balance alert
@@ -215,7 +158,15 @@ export async function executarAcao(usuario, intent, params) {
       const totalSemana = extratoResult?.totals?.totalOut ?? 0;
       const saldoAtual = saldoResult?.saldo ?? 0;
 
-      return construirRespostaDespesa(usuario, mov, conta, descricao, dataHoje, totalSemana, saldoAtual);
+      return replyDespesaRegistrada({
+        nome: usuario.nome,
+        valor: mov.valor ?? 0,
+        descricao,
+        conta: conta.nome,
+        data: dataHoje,
+        totalSemana,
+        saldo: saldoAtual,
+      });
     }
 
     // -------------------------------------------------------
@@ -223,13 +174,7 @@ export async function executarAcao(usuario, intent, params) {
     // -------------------------------------------------------
     if (intent === INTENT_GET_BALANCE) {
       const { saldo, entradas, saidas } = await getSaldoConsolidado(userId);
-
-      return (
-        `💰 Saldo de ${usuario.nome}\n\n` +
-        `Saldo: R$ ${formatarMoeda(saldo)}\n` +
-        `Entradas: R$ ${formatarMoeda(entradas)}\n` +
-        `Saídas: R$ ${formatarMoeda(saidas)}`
-      );
+      return replySaldo({ nome: usuario.nome, saldo, entradas, saidas });
     }
 
     // -------------------------------------------------------
@@ -244,23 +189,18 @@ export async function executarAcao(usuario, intent, params) {
       const extrato = await getExtrato(userId, { dateFrom, dateTo, perPage: 5 });
 
       if (!extrato.items || extrato.items.length === 0) {
-        return '📊 Nenhuma movimentação encontrada no período.';
+        return replyExtratoVazio();
       }
-
-      const linhas = extrato.items.map((item) => {
-        const emojiTipo = item.type === 'IN' ? '💚' : '🔴';
-        return `${emojiTipo} ${item.description} — R$ ${formatarMoeda(item.amount)}`;
-      });
 
       const { totalIn, totalOut } = extrato.totals;
 
-      return (
-        `📊 Extrato da ${labelPeriodo} — ${usuario.nome}\n\n` +
-        linhas.join('\n') +
-        '\n\n' +
-        `Total de entradas: R$ ${formatarMoeda(totalIn)}\n` +
-        `Total de saídas: R$ ${formatarMoeda(totalOut)}`
-      );
+      return replyExtrato({
+        nome: usuario.nome,
+        periodo: labelPeriodo,
+        items: extrato.items,
+        totalIn,
+        totalOut,
+      });
     }
 
     // -------------------------------------------------------
@@ -276,13 +216,11 @@ export async function executarAcao(usuario, intent, params) {
         data_vencimento: dataVencimento,
       });
 
-      return (
-        `📋 Conta a pagar registrada!\n\n` +
-        `💸 Valor: R$ ${formatarMoeda(conta.valor)}\n` +
-        `📝 Descrição: ${descricao}\n` +
-        `📅 Vencimento: ${formatarData(dataVencimento)}\n\n` +
-        `Para pagar, acesse o Finlly ou envie: "paguei a ${descricao}"`
-      );
+      return replyContaPagarRegistrada({
+        descricao,
+        valor: conta.valor,
+        dataVencimento,
+      });
     }
 
     // -------------------------------------------------------
@@ -293,7 +231,7 @@ export async function executarAcao(usuario, intent, params) {
       const lista = result?.data ?? [];
 
       if (lista.length === 0) {
-        return '✅ Você não tem contas pendentes no momento.';
+        return replySemContasPendentes();
       }
 
       const descricaoBusca = params.descricao?.toLowerCase().trim() || null;
@@ -335,21 +273,24 @@ export async function executarAcao(usuario, intent, params) {
 
       const pago = await pagarContaPagar(contaAlvo.id, userId, { data_pagamento: hoje() });
 
-      return (
-        `✅ Conta paga!\n\n` +
-        `📝 ${contaAlvo.descricao}\n` +
-        `💸 Valor: R$ ${formatarMoeda(Number(pago.valor ?? contaAlvo.valor))}\n` +
-        `📅 Data: ${formatarData(hoje())}`
-      );
+      return replyContaPaga({
+        descricao: contaAlvo.descricao,
+        valor: pago.valor ?? contaAlvo.valor,
+        data: hoje(),
+      });
     }
 
     // -------------------------------------------------------
     // CREATE_INVESTMENT
     // -------------------------------------------------------
     if (intent === INTENT_CREATE_INVESTMENT) {
+      if (!params.valor || params.valor <= 0) {
+        return replyValorNaoIdentificado();
+      }
+
       const contas = await listContas(userId);
       if (!contas || contas.length === 0) {
-        return '❌ Você não tem nenhuma conta cadastrada. Acesse o Finlly para criar uma conta primeiro.';
+        return replyErroSemConta();
       }
 
       const conta = contas[0];
@@ -363,20 +304,19 @@ export async function executarAcao(usuario, intent, params) {
         data: hoje(),
       });
 
-      return (
-        `📈 Investimento registrado, ${usuario.nome}!\n\n` +
-        `💰 Valor: R$ ${formatarMoeda(mov.valor ?? params.valor)}\n` +
-        `📝 Descrição: ${descricao}\n` +
-        `🏦 Conta debitada: ${conta.nome}\n` +
-        `📅 Data: ${formatarData(hoje())}\n\n` +
-        `💡 Para detalhes dos seus investimentos, acesse o Finlly.`
-      );
+      return replyInvestimentoRegistrado({
+        nome: usuario.nome,
+        valor: mov.valor ?? params.valor,
+        descricao,
+        conta: conta.nome,
+        data: hoje(),
+      });
     }
 
     // Fallback (should not happen as UNKNOWN is handled upstream)
     return '❓ Ação não reconhecida.';
   } catch (err) {
     logger.error({ err, userId, intent }, 'Erro ao executar ação WhatsApp Agent');
-    return '❌ Ocorreu um erro ao processar sua solicitação. Tente novamente.';
+    return replyErroGenerico();
   }
 }
