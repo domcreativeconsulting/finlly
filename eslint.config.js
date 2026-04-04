@@ -79,6 +79,8 @@ export default [
   {
     files: ['apps/api/**/*.js'],
     languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
       globals: {
         fetch: 'readonly',
         Buffer: 'readonly',
@@ -97,6 +99,14 @@ export default [
     },
     rules: {
       'no-console': ['warn'],
+      'no-unused-vars': [
+        'warn',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          destructuredArrayIgnorePattern: '^_',
+        },
+      ],
     },
   },
   {

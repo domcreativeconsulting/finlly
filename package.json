@@ -2,6 +2,7 @@
   "name": "finlly",
   "private": true,
   "version": "1.0.0",
+  "type": "module",
   "description": "Monorepo",
   "workspaces": [
     "apps/api",
