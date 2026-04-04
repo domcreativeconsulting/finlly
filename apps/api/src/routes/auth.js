@@ -21,57 +21,10 @@ import { jwtAuthMiddleware } from '../middleware/jwtAuth.js';
 import { toValidationError } from '../errors/toValidationError.js';
 import { AppError } from '../errors/AppError.js';
 import { config } from '../config/env.js';
-import { getRedisClient } from '../utils/redisClient.js';
+import { buildStore } from '../utils/rateLimitStore.js';
 import logger from '../logger.js';
 
 const router = Router();
-
-// ============================================================
-// Rate Limit Store
-// ============================================================
-
-/**
- * Builds an express-rate-limit compatible store backed by Redis when
- * RATE_LIMIT_STORE=redis, or returns undefined (MemoryStore default) otherwise.
- * @param {number} windowMs - Window duration in milliseconds.
- * @returns {object|undefined}
- */
-function buildStore(windowMs) {
-  if (config.NODE_ENV === 'development') return undefined;
-  if (config.RATE_LIMIT_STORE !== 'redis') return undefined;
-
-  const windowSeconds = Math.ceil(windowMs / 1000);
-
-  return {
-    async increment(key) {
-      let redis;
-      try {
-        redis = await getRedisClient();
-      } catch {
-        return { totalHits: 0, resetTime: new Date(Date.now() + windowMs) };
-      }
-      const value = await redis.incr(key);
-      if (value === 1) await redis.expire(key, windowSeconds);
-      return { totalHits: value, resetTime: new Date(Date.now() + windowMs) };
-    },
-    async decrement(key) {
-      try {
-        const redis = await getRedisClient();
-        await redis.decr(key);
-      } catch {
-        // ignore
-      }
-    },
-    async resetKey(key) {
-      try {
-        const redis = await getRedisClient();
-        await redis.del(key);
-      } catch {
-        // ignore
-      }
-    },
-  };
-}
 
 // ============================================================
 // Rate Limiters
@@ -137,12 +90,14 @@ const forgotPasswordLimiter = rateLimit({
 });
 
 /** General limiter for sensitive auth endpoints: 30 requests per 15 minutes per IP. */
+const AUTH_LIMITER_WINDOW_MS = 15 * 60 * 1000;
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
+  windowMs: AUTH_LIMITER_WINDOW_MS,
   max: 30,
   skip: () => config.NODE_ENV === 'development',
   standardHeaders: true,
   legacyHeaders: false,
+  store: buildStore(AUTH_LIMITER_WINDOW_MS),
   message: {
     code: 'RATE_LIMITED',
     message: 'Muitas tentativas. Tente novamente mais tarde.',

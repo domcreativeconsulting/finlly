@@ -46,8 +46,8 @@ const envSchema = z.object({
 
   // Rate Limiting (optional)
   RATE_LIMIT_STORE: z.enum(['memory', 'redis']).default('memory'),
-  RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10),
-  RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(600000),
+  RATE_LIMIT_MAX: z.coerce.number().int().positive().default(500),        // global limiter: max requests per window
+  RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(900000), // global limiter: 15 minutes
 
   // Email (optional — emails are skipped when not configured)
   MAIL_HOST: z.string().optional(),

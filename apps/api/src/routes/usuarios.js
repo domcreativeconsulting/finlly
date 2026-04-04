@@ -1,11 +1,33 @@
 import { Router } from 'express';
+import { rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
 import { registerUser } from '../services/usuarioService.js';
 import { AppError } from '../errors/AppError.js';
 import { toValidationError } from '../errors/toValidationError.js';
+import { buildStore } from '../utils/rateLimitStore.js';
+import { config } from '../config/env.js';
 import logger from '../logger.js';
 
 const router = Router();
+
+/** Registration limiter: 10 requests per hour per IP. */
+const REGISTER_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const registerLimiter = rateLimit({
+  windowMs: REGISTER_WINDOW_MS,
+  max: 10,
+  skip: () => config.NODE_ENV === 'development',
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: buildStore(REGISTER_WINDOW_MS),
+  message: {
+    code: 'RATE_LIMITED',
+    message: 'Muitas tentativas de registro. Tente novamente em 1 hora.',
+  },
+  handler: (req, res, next, options) => {
+    logger.warn({ msg: 'Register rate limit atingido', ip: req.ip });
+    return next(AppError.tooManyRequests(options.message.message));
+  },
+});
 
 const createUsuarioSchema = z.object({
   nome: z.string().min(1),
@@ -13,7 +35,7 @@ const createUsuarioSchema = z.object({
   senha: z.string().min(8),
 });
 
-router.post('/usuarios', async (req, res, next) => {
+router.post('/usuarios', registerLimiter, async (req, res, next) => {
   const parsed = createUsuarioSchema.safeParse(req.body);
   if (!parsed.success) {
     return next(toValidationError(parsed.error));
