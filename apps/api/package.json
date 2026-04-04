@@ -10,7 +10,9 @@
     "build": "echo 'Building...'",
     "test": "node --experimental-vm-modules ../../node_modules/.bin/jest",
     "worker": "node src/workers/attachment.worker.js",
-    "worker:dev": "nodemon src/workers/attachment.worker.js"
+    "worker:dev": "nodemon src/workers/attachment.worker.js",
+    "worker:whatsapp-diario": "node src/workers/whatsappDiario.worker.js",
+    "worker:whatsapp-diario:dev": "nodemon src/workers/whatsappDiario.worker.js"
   },
   "jest": {
     "testEnvironment": "node",
