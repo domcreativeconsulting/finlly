@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { rateLimit } from 'express-rate-limit';
+import { userOrIpKeyGenerator } from '../utils/rateLimitStore.js';
 import { z } from 'zod';
 import {
   listMovimentacoes,
@@ -23,6 +24,7 @@ const readLimiter = rateLimit({
   max: 60,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: userOrIpKeyGenerator,
   message: { code: 'RATE_LIMITED', message: 'Muitas tentativas. Tente novamente mais tarde.' },
   handler: (req, res, next, options) => next(AppError.tooManyRequests(options.message.message)),
 });
@@ -32,6 +34,7 @@ const writeLimiter = rateLimit({
   max: 30,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: userOrIpKeyGenerator,
   message: { code: 'RATE_LIMITED', message: 'Muitas tentativas. Tente novamente mais tarde.' },
   handler: (req, res, next, options) => next(AppError.tooManyRequests(options.message.message)),
 });

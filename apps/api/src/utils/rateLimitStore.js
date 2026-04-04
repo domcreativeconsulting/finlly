@@ -1,3 +1,4 @@
+import { ipKeyGenerator } from 'express-rate-limit';
 import { getRedisClient } from './redisClient.js';
 import { config } from '../config/env.js';
 
@@ -47,4 +48,14 @@ export function buildStore(windowMs) {
       }
     },
   };
+}
+
+/**
+ * Key generator for authenticated rate limiters.
+ * Uses the JWT subject (user UUID) when available, falls back to IP.
+ * @param {import('express').Request} req
+ * @returns {string}
+ */
+export function userOrIpKeyGenerator(req) {
+  return req.user?.sub || ipKeyGenerator(req);
 }
