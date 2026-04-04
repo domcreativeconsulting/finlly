@@ -15,6 +15,7 @@ import {
   replyContaSuspensa,
   replyNumeroNaoVinculado,
   replyUnknown,
+  replyResumoDiario,
 } from '../whatsappReplyBuilder.js';
 
 // ============================================================
@@ -328,5 +329,60 @@ describe('replyUnknown', () => {
     expect(msg).toContain('gastei');
     expect(msg).toContain('recebi');
     expect(msg).toContain('saldo');
+  });
+});
+
+// ============================================================
+// replyResumoDiario
+// ============================================================
+
+describe('replyResumoDiario', () => {
+  test('Cenário 1 — sem contas: saudação, mensagem motivacional e emoji, sem seções de contas', () => {
+    const msg = replyResumoDiario({ nome: 'Ana', contasHoje: [], contasAtrasadas: [] });
+    expect(msg).toContain('🌅 Bom dia, Ana!');
+    expect(msg).toContain('Você não tem contas a pagar hoje');
+    expect(msg).toContain('🎉');
+    expect(msg).not.toContain('Vencendo hoje');
+    expect(msg).not.toContain('Em atraso');
+  });
+
+  test('Cenário 2 — somente contas vencendo hoje: lista, total e CTA, sem seção de atraso', () => {
+    const contasHoje = [
+      { descricao: 'Conta de Luz', valor: 180 },
+      { descricao: 'Internet', valor: 99.9 },
+    ];
+    const msg = replyResumoDiario({ nome: 'Carlos', contasHoje, contasAtrasadas: [] });
+    expect(msg).toContain('🌅 Bom dia, Carlos!');
+    expect(msg).toContain('📋 *Vencendo hoje* (2)');
+    expect(msg).toContain('Conta de Luz');
+    expect(msg).toContain('R$ 180,00');
+    expect(msg).toContain('Internet');
+    expect(msg).toContain('R$ 99,90');
+    expect(msg).toContain('💸 Total do dia: R$ 279,90');
+    expect(msg).not.toContain('Em atraso');
+    expect(msg).toContain('Acesse o Finlly para gerenciar suas contas');
+  });
+
+  test('Cenário 3 — contas hoje + em atraso: ambas as seções, data formatada e total em atraso', () => {
+    const contasHoje = [{ descricao: 'Internet', valor: 99.9 }];
+    const contasAtrasadas = [{ descricao: 'Aluguel', valor: 1200, data_vencimento: '2026-04-01' }];
+    const msg = replyResumoDiario({ nome: 'Maria', contasHoje, contasAtrasadas });
+    expect(msg).toContain('Vencendo hoje');
+    expect(msg).toContain('Em atraso');
+    expect(msg).toContain('01/04/2026');
+    expect(msg).toContain('💸 Total em atraso: R$ 1.200,00');
+    expect(msg).toContain('Acesse o Finlly para gerenciar suas contas');
+  });
+
+  test('Cenário 4 — somente contas em atraso: seção de atraso presente, sem seção de hoje', () => {
+    const contasAtrasadas = [{ descricao: 'Aluguel', valor: 1200, data_vencimento: '2026-03-31' }];
+    const msg = replyResumoDiario({ nome: 'Pedro', contasHoje: [], contasAtrasadas });
+    expect(msg).toContain('⚠️ *Em atraso*');
+    expect(msg).not.toContain('Vencendo hoje');
+  });
+
+  test('Cenário 5 — primeiro nome aparece na saudação', () => {
+    const msg = replyResumoDiario({ nome: 'Ana', contasHoje: [], contasAtrasadas: [] });
+    expect(msg).toContain('Bom dia, Ana');
   });
 });
