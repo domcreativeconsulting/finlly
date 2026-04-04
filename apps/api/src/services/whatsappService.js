@@ -10,29 +10,12 @@ import {
 } from './whatsappSecurityService.js';
 import { normalizeEvolutionPayload } from '../lib/whatsapp/evolutionPayloadParser.js';
 import { sendTextMessage } from './whatsappSenderService.js';
-
-/** Reply sent when the user's number is not linked to any Finlly account */
-const RESPOSTA_NUMERO_NAO_VINCULADO =
-  '👋 Olá! Parece que você ainda não vinculou seu WhatsApp ao Finlly.\n\n' +
-  'Para usar o agente financeiro, acesse seu perfil no Finlly e cadastre este número de WhatsApp.\n\n' +
-  'Após isso, você poderá:\n' +
-  '• Registrar despesas: "gastei 50 no almoço"\n' +
-  '• Registrar receitas: "recebi 2000 do cliente"\n' +
-  '• Consultar saldo: "quanto tenho em caixa?"\n' +
-  '• Ver extrato: "me mostra meus gastos da semana"';
-
-/** Reply sent for unrecognised messages */
-const RESPOSTA_UNKNOWN =
-  '🤖 Não entendi sua mensagem.\n\n' +
-  'Tente um destes comandos:\n' +
-  '• "gastei 50 no almoço" → registra despesa\n' +
-  '• "recebi 2000 do cliente X" → registra receita\n' +
-  '• "quanto tenho em caixa?" → consulta saldo\n' +
-  '• "me mostra meus gastos da semana" → extrato\n' +
-  '• "tenho boleto de 150 vencendo dia 20" → registra conta a pagar\n' +
-  '• "paguei a conta de luz" → marca conta como paga\n' +
-  '• "investi 500 na poupança" → registra investimento\n\n' +
-  '💡 Dica: você pode escrever naturalmente!';
+import {
+  replyNumeroNaoVinculado,
+  replyUnknown,
+  replyRateLimitExcedido,
+  replyContaSuspensa,
+} from '../lib/whatsapp/whatsappReplyBuilder.js';
 
 /**
  * Processes an incoming WhatsApp webhook payload from the Evolution API.
@@ -87,6 +70,7 @@ export async function processarMensagemRecebida(payload) {
       payload_raw,
       instance_name,
     });
+    await sendTextMessage({ telefone: from, texto: replyRateLimitExcedido(), usuarioId: null });
     return { from, name, text, fromMe };
   }
 
@@ -95,7 +79,7 @@ export async function processarMensagemRecebida(payload) {
 
   // Unknown intent: reply with help menu, no user lookup needed
   if (intent === INTENT_UNKNOWN) {
-    await sendTextMessage({ telefone: from, texto: RESPOSTA_UNKNOWN, usuarioId: null });
+    await sendTextMessage({ telefone: from, texto: replyUnknown(), usuarioId: null });
     await registrarLogWhatsapp({
       usuario_id: null,
       telefone: from,
@@ -126,12 +110,12 @@ export async function processarMensagemRecebida(payload) {
       payload_raw,
       instance_name,
     });
-    await sendTextMessage({ telefone: from, texto: RESPOSTA_NUMERO_NAO_VINCULADO, usuarioId: null });
+    await sendTextMessage({ telefone: from, texto: replyNumeroNaoVinculado(), usuarioId: null });
     return { from, name, text, fromMe };
   }
 
   // Validate that the user account is active
-  const { valido, mensagem: mensagemBloqueio } = validarUsuarioAtivo(usuario);
+  const { valido } = validarUsuarioAtivo(usuario);
   if (!valido) {
     logger.warn({ from, usuarioId: usuario.id }, 'Usuário inativo tentou usar WhatsApp');
     await registrarLogWhatsapp({
@@ -146,7 +130,7 @@ export async function processarMensagemRecebida(payload) {
       payload_raw,
       instance_name,
     });
-    await sendTextMessage({ telefone: from, texto: mensagemBloqueio, usuarioId: usuario.id });
+    await sendTextMessage({ telefone: from, texto: replyContaSuspensa(), usuarioId: usuario.id });
     return { from, name, text, fromMe };
   }
 

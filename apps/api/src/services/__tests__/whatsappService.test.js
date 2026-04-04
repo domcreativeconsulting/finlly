@@ -176,7 +176,7 @@ describe('deduplicação', () => {
 // ============================================================
 
 describe('rate limit', () => {
-  test('bloqueia e loga quando rate limit excedido', async () => {
+  test('bloqueia, loga e envia mensagem de rate limit ao usuário', async () => {
     mockCheckRateLimitPorNumero.mockReturnValue(false);
     const payload = buildPayload();
 
@@ -187,7 +187,13 @@ describe('rate limit', () => {
       expect.objectContaining({ status: 'rate_limited', direcao: 'entrada' }),
     );
     expect(mockIdentificarIntent).not.toHaveBeenCalled();
-    expect(mockSendTextMessage).not.toHaveBeenCalled();
+    expect(mockSendTextMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        telefone: '5511999999999',
+        texto: expect.stringContaining('⏳'),
+        usuarioId: null,
+      }),
+    );
   });
 
   test('loga com provider_message_id e received_at quando disponíveis', async () => {
@@ -283,7 +289,12 @@ describe('usuário inativo', () => {
     expect(mockSendTextMessage).toHaveBeenCalledWith(
       expect.objectContaining({
         telefone: '5511999999999',
-        texto: '⛔ Sua conta está suspensa. Entre em contato com o suporte.',
+        texto: expect.stringContaining('⛔'),
+      }),
+    );
+    expect(mockSendTextMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        texto: expect.stringContaining('suporte@finlly.com.br'),
       }),
     );
     expect(mockExecutarAcao).not.toHaveBeenCalled();
