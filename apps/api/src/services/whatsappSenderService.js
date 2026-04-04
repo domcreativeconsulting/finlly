@@ -24,10 +24,10 @@ import logger from '../logger.js';
  * @param {string}      opts.telefone    - Destination phone number (will be normalized)
  * @param {string}      opts.texto       - Message text (must not be empty)
  * @param {string|null} [opts.usuarioId] - Finlly user UUID (nullable)
- * @param {object}      [opts.context]   - Optional context for logging { requestId, intent }
- * @returns {Promise<{ success: boolean, providerMessageId: string|null, status: 'enviado'|'falha', erro: string|null }>}
+ * @param {object}      [opts._context]  - Optional context for logging { requestId, intent }
+ * @returns {Promise<{ success: boolean, providerMessageId: string|null, status: 'enviado'|'falha', erro: string|null }>}  
  */
-export async function sendTextMessage({ telefone, texto, usuarioId = null, context = {} }) {
+export async function sendTextMessage({ telefone, texto, usuarioId = null, _context = {} }) {
   // Validate that message text is not empty — return immediately without log
   if (!texto || !texto.trim()) {
     return { success: false, status: 'falha', providerMessageId: null, erro: 'Mensagem vazia' };
