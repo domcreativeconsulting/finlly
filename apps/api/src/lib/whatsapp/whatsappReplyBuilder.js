@@ -319,3 +319,45 @@ export function replyUnknown() {
     '💡 Dica: você pode escrever naturalmente!'
   );
 }
+
+// ============================================================
+// Proactive — daily summary (Story 12.4)
+// ============================================================
+
+/**
+ * Daily bill summary sent proactively to the user.
+ *
+ * @param {object} opts
+ * @param {string} opts.nome - User's first name
+ * @param {Array<{ descricao: string, valor: number, data_vencimento: string }>} opts.contasHoje
+ * @param {Array<{ descricao: string, valor: number, data_vencimento: string }>} opts.contasAtrasadas
+ * @returns {string}
+ */
+export function replyResumoDiario({ nome, contasHoje, contasAtrasadas }) {
+  if (contasHoje.length === 0 && contasAtrasadas.length === 0) {
+    return `🌅 Bom dia, ${nome}!\n\nVocê não tem contas a pagar hoje. Continue assim! 🎉`;
+  }
+
+  let msg = `🌅 Bom dia, ${nome}! Aqui está seu resumo financeiro do dia:\n`;
+
+  if (contasHoje.length > 0) {
+    const total = contasHoje.reduce((s, c) => s + Number(c.valor), 0);
+    msg += `\n📋 *Vencendo hoje* (${contasHoje.length}):\n`;
+    contasHoje.forEach((c) => {
+      msg += `• ${c.descricao} — R$ ${formatarMoeda(Number(c.valor))}\n`;
+    });
+    msg += `💸 Total do dia: R$ ${formatarMoeda(total)}\n`;
+  }
+
+  if (contasAtrasadas.length > 0) {
+    const totalAtrasado = contasAtrasadas.reduce((s, c) => s + Number(c.valor), 0);
+    msg += `\n⚠️ *Em atraso* (${contasAtrasadas.length}):\n`;
+    contasAtrasadas.forEach((c) => {
+      msg += `• ${c.descricao} — R$ ${formatarMoeda(Number(c.valor))} (venceu ${formatarData(c.data_vencimento)})\n`;
+    });
+    msg += `💸 Total em atraso: R$ ${formatarMoeda(totalAtrasado)}\n`;
+  }
+
+  msg += `\nAcesse o Finlly para gerenciar suas contas.`;
+  return msg;
+}
