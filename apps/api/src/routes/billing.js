@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { rateLimit } from 'express-rate-limit';
+import { userOrIpKeyGenerator } from '../utils/rateLimitStore.js';
 import { z } from 'zod';
 import { criarAssinatura, cancelarAssinatura, getStatusAssinatura } from '../services/billingService.js';
 import { processarWebhookAsaas } from '../services/webhookService.js';
@@ -26,22 +27,24 @@ const webhookLimiter = rateLimit({
   handler: (req, res, next, options) => next(AppError.tooManyRequests(options.message.message)),
 });
 
-/** Rate limiter for billing routes: 30 req/15min per IP */
+/** Rate limiter for billing routes: 30 req/15min per user/IP */
 const billingLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 30,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: userOrIpKeyGenerator,
   message: { code: 'RATE_LIMITED', message: 'Muitas tentativas. Tente novamente mais tarde.' },
   handler: (req, res, next, options) => next(AppError.tooManyRequests(options.message.message)),
 });
 
-/** Rate limiter for admin routes: 5 req/min per IP */
+/** Rate limiter for admin routes: 5 req/min per user/IP */
 const adminLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: userOrIpKeyGenerator,
   message: { code: 'RATE_LIMITED', message: 'Muitas tentativas. Tente novamente mais tarde.' },
   handler: (req, res, next, options) => next(AppError.tooManyRequests(options.message.message)),
 });

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { rateLimit } from 'express-rate-limit';
+import { userOrIpKeyGenerator } from '../utils/rateLimitStore.js';
 import { z } from 'zod';
 import { getPerfil, updatePerfil } from '../services/perfilService.js';
 import { jwtAuthMiddleware } from '../middleware/jwtAuth.js';
@@ -10,12 +11,13 @@ import logger from '../logger.js';
 
 const router = Router();
 
-/** General limiter for profile endpoints: 30 requests per 15 minutes per IP. */
+/** General limiter for profile endpoints: 30 requests per 15 minutes per user/IP. */
 const perfilLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 30,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: userOrIpKeyGenerator,
   message: { code: 'RATE_LIMITED', message: 'Muitas tentativas. Tente novamente mais tarde.' },
   handler: (req, res, next, options) => next(AppError.tooManyRequests(options.message.message)),
 });

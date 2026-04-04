@@ -18,6 +18,8 @@ const mockConfig = {
   RATE_LIMIT_STORE: 'redis',
 };
 
+const mockIpKeyGenerator = jest.fn();
+
 jest.unstable_mockModule('../../utils/redisClient.js', () => ({
   getRedisClient: mockGetRedisClient,
 }));
@@ -26,15 +28,21 @@ jest.unstable_mockModule('../../config/env.js', () => ({
   config: mockConfig,
 }));
 
+jest.unstable_mockModule('express-rate-limit', () => ({
+  ipKeyGenerator: mockIpKeyGenerator,
+}));
+
 // ---------------------------------------------------------------------------
 // Module under test (imported after mocks)
 // ---------------------------------------------------------------------------
 
 let buildStore;
+let userOrIpKeyGenerator;
 
 beforeAll(async () => {
   const mod = await import('../rateLimitStore.js');
   buildStore = mod.buildStore;
+  userOrIpKeyGenerator = mod.userOrIpKeyGenerator;
 });
 
 beforeEach(() => {
@@ -168,5 +176,39 @@ describe('buildStore — resetKey', () => {
     const store = buildStore(60_000);
 
     await expect(store.resetKey('rl:reset-key')).resolves.not.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// userOrIpKeyGenerator
+// ---------------------------------------------------------------------------
+
+describe('userOrIpKeyGenerator', () => {
+  beforeEach(() => {
+    mockIpKeyGenerator.mockReturnValue('1.2.3.4');
+  });
+
+  test('returns req.user.sub when available', () => {
+    const req = { user: { sub: 'user-uuid-123' } };
+    expect(userOrIpKeyGenerator(req)).toBe('user-uuid-123');
+    expect(mockIpKeyGenerator).not.toHaveBeenCalled();
+  });
+
+  test('falls back to IP when req.user is undefined', () => {
+    const req = { user: undefined };
+    expect(userOrIpKeyGenerator(req)).toBe('1.2.3.4');
+    expect(mockIpKeyGenerator).toHaveBeenCalledWith(req);
+  });
+
+  test('falls back to IP when req.user.sub is null', () => {
+    const req = { user: { sub: null } };
+    expect(userOrIpKeyGenerator(req)).toBe('1.2.3.4');
+    expect(mockIpKeyGenerator).toHaveBeenCalledWith(req);
+  });
+
+  test('falls back to IP when req.user.sub is undefined', () => {
+    const req = { user: { sub: undefined } };
+    expect(userOrIpKeyGenerator(req)).toBe('1.2.3.4');
+    expect(mockIpKeyGenerator).toHaveBeenCalledWith(req);
   });
 });

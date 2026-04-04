@@ -7,6 +7,12 @@ import { Buffer } from 'buffer';
 
 jest.unstable_mockModule('express-rate-limit', () => ({
   rateLimit: () => (_req, _res, next) => next(),
+  ipKeyGenerator: (req) => req.ip || '127.0.0.1',
+}));
+
+jest.unstable_mockModule('../../utils/rateLimitStore.js', () => ({
+  userOrIpKeyGenerator: (req) => req.user?.sub || req.ip || '127.0.0.1',
+  buildStore: () => undefined,
 }));
 
 // Upload middleware mock (mutable so beforeEach can override behavior)
