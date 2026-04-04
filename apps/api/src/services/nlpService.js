@@ -164,7 +164,11 @@ function extrairDataVencimento(text) {
     const dia = parseInt(matchSlash[1], 10);
     const mes = parseInt(matchSlash[2], 10);
     if (dia >= 1 && dia <= 31 && mes >= 1 && mes <= 12) {
-      return `${anoAtual}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+      // Validate the date is real (e.g. reject "30/02")
+      const dateCandidate = new Date(`${anoAtual}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}T12:00:00Z`);
+      if (dateCandidate.getUTCMonth() + 1 === mes && dateCandidate.getUTCDate() === dia) {
+        return `${anoAtual}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+      }
     }
   }
 
