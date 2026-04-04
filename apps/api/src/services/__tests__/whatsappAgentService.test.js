@@ -36,6 +36,15 @@ jest.unstable_mockModule('../contaService.js', () => ({
   listContas: mockListContas,
 }));
 
+const mockCreateContaPagar = jest.fn();
+const mockListContasPagar = jest.fn();
+const mockPagarContaPagar = jest.fn();
+jest.unstable_mockModule('../contasPagarService.js', () => ({
+  createContaPagar: mockCreateContaPagar,
+  listContasPagar: mockListContasPagar,
+  pagarContaPagar: mockPagarContaPagar,
+}));
+
 // ============================================================
 // Module under test
 // ============================================================
@@ -46,6 +55,9 @@ let INTENT_CREATE_EXPENSE;
 let INTENT_CREATE_INCOME;
 let INTENT_GET_BALANCE;
 let INTENT_GET_STATEMENT;
+let INTENT_CREATE_BILL;
+let INTENT_PAY_BILL;
+let INTENT_CREATE_INVESTMENT;
 
 beforeAll(async () => {
   const agentMod = await import('../whatsappAgentService.js');
@@ -57,6 +69,9 @@ beforeAll(async () => {
   INTENT_CREATE_INCOME = nlpMod.INTENT_CREATE_INCOME;
   INTENT_GET_BALANCE = nlpMod.INTENT_GET_BALANCE;
   INTENT_GET_STATEMENT = nlpMod.INTENT_GET_STATEMENT;
+  INTENT_CREATE_BILL = nlpMod.INTENT_CREATE_BILL;
+  INTENT_PAY_BILL = nlpMod.INTENT_PAY_BILL;
+  INTENT_CREATE_INVESTMENT = nlpMod.INTENT_CREATE_INVESTMENT;
 });
 
 beforeEach(() => {
@@ -313,5 +328,138 @@ describe('executarAcao — tratamento de erros', () => {
     const resposta = await executarAcao(usuario, INTENT_CREATE_EXPENSE, { valor: 100, descricao: 'teste' });
 
     expect(resposta).toBe('❌ Ocorreu um erro ao processar sua solicitação. Tente novamente.');
+  });
+});
+
+// ============================================================
+// executarAcao — CREATE_BILL
+// ============================================================
+
+describe('executarAcao — CREATE_BILL', () => {
+  const usuario = { id: 'user-1', nome: 'João' };
+
+  test('registra conta a pagar e retorna resposta formatada', async () => {
+    mockCreateContaPagar.mockResolvedValue({ id: 'cp-1', valor: 150, descricao: 'Conta de Luz' });
+
+    const resposta = await executarAcao(usuario, INTENT_CREATE_BILL, {
+      valor: 150,
+      descricao: 'Conta de Luz',
+      data_vencimento: '2026-04-15',
+    });
+
+    expect(mockCreateContaPagar).toHaveBeenCalledWith(
+      'user-1',
+      expect.objectContaining({ descricao: 'Conta de Luz', valor: 150, data_vencimento: '2026-04-15' }),
+    );
+    expect(resposta).toContain('📋 Conta a pagar registrada!');
+    expect(resposta).toContain('R$ 150,00');
+    expect(resposta).toContain('Conta de Luz');
+  });
+
+  test('usa descrição padrão quando descricao está vazia', async () => {
+    mockCreateContaPagar.mockResolvedValue({ id: 'cp-2', valor: 80, descricao: 'Conta via WhatsApp' });
+
+    const resposta = await executarAcao(usuario, INTENT_CREATE_BILL, {
+      valor: 80,
+      descricao: '',
+      data_vencimento: null,
+    });
+
+    expect(mockCreateContaPagar).toHaveBeenCalledWith(
+      'user-1',
+      expect.objectContaining({ descricao: 'Conta via WhatsApp' }),
+    );
+    expect(resposta).toContain('Conta via WhatsApp');
+  });
+});
+
+// ============================================================
+// executarAcao — PAY_BILL
+// ============================================================
+
+describe('executarAcao — PAY_BILL', () => {
+  const usuario = { id: 'user-1', nome: 'João' };
+
+  test('paga a primeira conta pendente e retorna resposta formatada', async () => {
+    const contaPendente = { id: 'cp-1', descricao: 'Conta de Luz', valor: 150 };
+    mockListContasPagar.mockResolvedValue({ data: [contaPendente], total: 1, page: 1, totalPages: 1 });
+    mockPagarContaPagar.mockResolvedValue({ id: 'cp-1', valor: 150, status: 'pago' });
+
+    const resposta = await executarAcao(usuario, INTENT_PAY_BILL, { descricao: 'luz' });
+
+    expect(mockListContasPagar).toHaveBeenCalledWith('user-1', expect.objectContaining({ status: 'pendente' }));
+    expect(mockPagarContaPagar).toHaveBeenCalledWith('cp-1', 'user-1', expect.objectContaining({ data_pagamento: expect.any(String) }));
+    expect(resposta).toContain('✅ Conta paga!');
+    expect(resposta).toContain('Conta de Luz');
+    expect(resposta).toContain('R$ 150,00');
+  });
+
+  test('retorna mensagem quando não há contas pendentes', async () => {
+    mockListContasPagar.mockResolvedValue({ data: [], total: 0, page: 1, totalPages: 0 });
+
+    const resposta = await executarAcao(usuario, INTENT_PAY_BILL, { descricao: '' });
+
+    expect(resposta).toBe('✅ Você não tem contas pendentes no momento.');
+    expect(mockPagarContaPagar).not.toHaveBeenCalled();
+  });
+
+  test('encontra conta por match parcial de descrição', async () => {
+    const contas = [
+      { id: 'cp-1', descricao: 'Aluguel', valor: 1200 },
+      { id: 'cp-2', descricao: 'Conta de Luz', valor: 150 },
+    ];
+    mockListContasPagar.mockResolvedValue({ data: contas, total: 2, page: 1, totalPages: 1 });
+    mockPagarContaPagar.mockResolvedValue({ id: 'cp-2', valor: 150, status: 'pago' });
+
+    const resposta = await executarAcao(usuario, INTENT_PAY_BILL, { descricao: 'luz' });
+
+    expect(mockPagarContaPagar).toHaveBeenCalledWith('cp-2', 'user-1', expect.any(Object));
+    expect(resposta).toContain('Conta de Luz');
+  });
+});
+
+// ============================================================
+// executarAcao — CREATE_INVESTMENT
+// ============================================================
+
+describe('executarAcao — CREATE_INVESTMENT', () => {
+  const usuario = { id: 'user-1', nome: 'João' };
+  const conta = { id: 'conta-1', nome: 'Conta Corrente' };
+
+  test('registra investimento como saída e retorna resposta formatada', async () => {
+    mockListContas.mockResolvedValue([conta]);
+    mockCreateMovimentacao.mockResolvedValue({ id: 'mov-1', valor: 1000, tipo: 'saida' });
+
+    const resposta = await executarAcao(usuario, INTENT_CREATE_INVESTMENT, { valor: 1000, descricao: 'tesouro direto' });
+
+    expect(mockCreateMovimentacao).toHaveBeenCalledWith(
+      'user-1',
+      expect.objectContaining({ conta_id: 'conta-1', tipo: 'saida', valor: 1000, descricao: 'Investimento: tesouro direto' }),
+    );
+    expect(resposta).toContain('📈 Investimento registrado, João!');
+    expect(resposta).toContain('R$ 1.000,00');
+    expect(resposta).toContain('Conta Corrente');
+  });
+
+  test('usa descrição padrão quando descricao está vazia', async () => {
+    mockListContas.mockResolvedValue([conta]);
+    mockCreateMovimentacao.mockResolvedValue({ id: 'mov-2', valor: 500, tipo: 'saida' });
+
+    const resposta = await executarAcao(usuario, INTENT_CREATE_INVESTMENT, { valor: 500, descricao: '' });
+
+    expect(mockCreateMovimentacao).toHaveBeenCalledWith(
+      'user-1',
+      expect.objectContaining({ descricao: 'Investimento via WhatsApp' }),
+    );
+    expect(resposta).toContain('Investimento via WhatsApp');
+  });
+
+  test('retorna erro quando não há conta cadastrada', async () => {
+    mockListContas.mockResolvedValue([]);
+
+    const resposta = await executarAcao(usuario, INTENT_CREATE_INVESTMENT, { valor: 500, descricao: 'poupança' });
+
+    expect(resposta).toContain('❌ Você não tem nenhuma conta cadastrada');
+    expect(mockCreateMovimentacao).not.toHaveBeenCalled();
   });
 });

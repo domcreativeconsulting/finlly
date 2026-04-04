@@ -10,6 +10,9 @@ let INTENT_CREATE_INCOME;
 let INTENT_GET_BALANCE;
 let INTENT_GET_STATEMENT;
 let INTENT_UNKNOWN;
+let INTENT_CREATE_BILL;
+let INTENT_PAY_BILL;
+let INTENT_CREATE_INVESTMENT;
 
 beforeAll(async () => {
   const mod = await import('../nlpService.js');
@@ -19,6 +22,9 @@ beforeAll(async () => {
   INTENT_GET_BALANCE = mod.INTENT_GET_BALANCE;
   INTENT_GET_STATEMENT = mod.INTENT_GET_STATEMENT;
   INTENT_UNKNOWN = mod.INTENT_UNKNOWN;
+  INTENT_CREATE_BILL = mod.INTENT_CREATE_BILL;
+  INTENT_PAY_BILL = mod.INTENT_PAY_BILL;
+  INTENT_CREATE_INVESTMENT = mod.INTENT_CREATE_INVESTMENT;
 });
 
 // ============================================================
@@ -197,5 +203,127 @@ describe('normalização de valor monetário', () => {
   test('valor sem decimais: "recebi 3000"', () => {
     const result = identificarIntent('recebi 3000');
     expect(result.params.valor).toBe(3000);
+  });
+});
+
+// ============================================================
+// CREATE_BILL
+// ============================================================
+
+describe('identificarIntent — CREATE_BILL', () => {
+  test('"tenho uma conta de luz de 150 para pagar dia 15" → CREATE_BILL', () => {
+    const result = identificarIntent('tenho uma conta de luz de 150 para pagar dia 15');
+    expect(result.intent).toBe(INTENT_CREATE_BILL);
+    expect(result.params.valor).toBe(150);
+  });
+
+  test('"boleto de 200 vence dia 20" → CREATE_BILL com valor 200', () => {
+    const result = identificarIntent('boleto de 200 vence dia 20');
+    expect(result.intent).toBe(INTENT_CREATE_BILL);
+    expect(result.params.valor).toBe(200);
+  });
+
+  test('"fatura de 350 do cartão" → CREATE_BILL', () => {
+    const result = identificarIntent('fatura de 350 do cartão');
+    expect(result.intent).toBe(INTENT_CREATE_BILL);
+    expect(result.params.valor).toBe(350);
+  });
+
+  test('"conta a pagar de 80" → CREATE_BILL com valor 80', () => {
+    const result = identificarIntent('conta a pagar de 80');
+    expect(result.intent).toBe(INTENT_CREATE_BILL);
+    expect(result.params.valor).toBe(80);
+  });
+
+  test('"boleto de 200 vencendo dia 20" → data_vencimento com dia 20', () => {
+    const result = identificarIntent('boleto de 200 vencendo dia 20');
+    expect(result.intent).toBe(INTENT_CREATE_BILL);
+    expect(result.params.data_vencimento).toMatch(/\d{4}-\d{2}-20/);
+  });
+
+  test('"fatura de 100 vence 15/04" → data_vencimento 2026-04-15', () => {
+    const result = identificarIntent('fatura de 100 vence 15/04');
+    expect(result.intent).toBe(INTENT_CREATE_BILL);
+    expect(result.params.data_vencimento).toMatch(/\d{4}-04-15/);
+  });
+
+  test('"fatura de 300 sem data" → data_vencimento null', () => {
+    const result = identificarIntent('fatura de 300 sem data');
+    expect(result.intent).toBe(INTENT_CREATE_BILL);
+    expect(result.params.data_vencimento).toBeNull();
+  });
+});
+
+// ============================================================
+// PAY_BILL
+// ============================================================
+
+describe('identificarIntent — PAY_BILL', () => {
+  test('"paguei a conta de luz" → PAY_BILL', () => {
+    const result = identificarIntent('paguei a conta de luz');
+    expect(result.intent).toBe(INTENT_PAY_BILL);
+  });
+
+  test('"quitei o boleto do aluguel" → PAY_BILL', () => {
+    const result = identificarIntent('quitei o boleto do aluguel');
+    expect(result.intent).toBe(INTENT_PAY_BILL);
+  });
+
+  test('"conta paga" → PAY_BILL', () => {
+    const result = identificarIntent('conta paga');
+    expect(result.intent).toBe(INTENT_PAY_BILL);
+  });
+
+  test('"liquidei a fatura" → PAY_BILL', () => {
+    const result = identificarIntent('liquidei a fatura');
+    expect(result.intent).toBe(INTENT_PAY_BILL);
+  });
+});
+
+// ============================================================
+// CREATE_INVESTMENT
+// ============================================================
+
+describe('identificarIntent — CREATE_INVESTMENT', () => {
+  test('"investi 1000 em tesouro direto" → CREATE_INVESTMENT, valor 1000', () => {
+    const result = identificarIntent('investi 1000 em tesouro direto');
+    expect(result.intent).toBe(INTENT_CREATE_INVESTMENT);
+    expect(result.params.valor).toBe(1000);
+  });
+
+  test('"apliquei 500 na poupança" → CREATE_INVESTMENT, valor 500', () => {
+    const result = identificarIntent('apliquei 500 na poupança');
+    expect(result.intent).toBe(INTENT_CREATE_INVESTMENT);
+    expect(result.params.valor).toBe(500);
+  });
+
+  test('"aportei 2000 no fundo" → CREATE_INVESTMENT, valor 2000', () => {
+    const result = identificarIntent('aportei 2000 no fundo');
+    expect(result.intent).toBe(INTENT_CREATE_INVESTMENT);
+    expect(result.params.valor).toBe(2000);
+  });
+
+  test('"investi 300" → CREATE_INVESTMENT (sem ativo específico)', () => {
+    const result = identificarIntent('investi 300');
+    expect(result.intent).toBe(INTENT_CREATE_INVESTMENT);
+    expect(result.params.valor).toBe(300);
+  });
+});
+
+// ============================================================
+// Não-regressão: paguei + valor + sem menção de conta → CREATE_EXPENSE
+// ============================================================
+
+describe('não-regressão: paguei + valor + sem menção de conta', () => {
+  test('"paguei 50 no almoço" → CREATE_EXPENSE (não PAY_BILL)', () => {
+    const result = identificarIntent('paguei 50 no almoço');
+    expect(result.intent).toBe(INTENT_CREATE_EXPENSE);
+    expect(result.params.valor).toBe(50);
+  });
+
+  test('"paguei 120,50 no mercado" → CREATE_EXPENSE (não PAY_BILL)', () => {
+    const result = identificarIntent('paguei 120,50 no mercado');
+    expect(result.intent).toBe(INTENT_CREATE_EXPENSE);
+    expect(result.params.valor).toBe(120.5);
   });
 });
