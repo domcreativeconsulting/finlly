@@ -8,6 +8,7 @@ import {
   faChartLine,
   faBullseye,
   faPaperclip,
+  faClipboardList,
   faRightFromBracket,
 } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../hooks/useAuth.js';
@@ -36,6 +37,7 @@ const NAV_ITEMS = [
   },
   { icon: <FontAwesomeIcon icon={faBullseye} style={{ fontSize: '20px' }} />, label: 'Metas', path: '/metas' },
   { icon: <FontAwesomeIcon icon={faPaperclip} style={{ fontSize: '20px' }} />, label: 'Anexos', path: '/anexos' },
+  { icon: <FontAwesomeIcon icon={faClipboardList} style={{ fontSize: '20px' }} />, label: 'Relatórios', path: '/relatorios' },
   {
     icon: <FontAwesomeIcon icon={faRightFromBracket} style={{ fontSize: '20px' }} />,
     label: 'Sair',
