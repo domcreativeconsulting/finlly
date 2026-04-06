@@ -17,12 +17,11 @@ import {
   faCreditCard,
   faCircleUser,
   faDoorOpen,
-  faFileExport,
-  faFilePdf,
 } from '@fortawesome/free-solid-svg-icons';
 import { Button, Badge } from '../design-system/index.js';
 import { colors, typography, radius, shadows } from '../design-system/tokens.js';
 import { downloadBlob } from '../utils/downloadBlob.js';
+import ExportMenu from '../components/ExportMenu.jsx';
 
 function getInitials(name) {
   if (!name) return '?';
@@ -297,6 +296,13 @@ export default function ExtratoPage() {
               + Novo lançamento
             </Button>
 
+            <ExportMenu
+              onExportCSV={handleExportarCSV}
+              onExportPDF={handleExportarPDF}
+              loadingCSV={exportandoCSV}
+              loadingPDF={exportandoPDF}
+            />
+
             {/* Avatar / Dropdown */}
             <div ref={dropdownRef} style={{ position: 'relative', marginLeft: '12px' }}>
               <button
@@ -522,14 +528,6 @@ export default function ExtratoPage() {
                     <label style={s.filterLabel}>&nbsp;</label>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <Button onClick={handleFiltrar}>Filtrar</Button>
-                      <Button variant="outline" onClick={handleExportarCSV} disabled={exportandoCSV} title="Exportar CSV">
-                        <FontAwesomeIcon icon={faFileExport} style={{ marginRight: '6px' }} />
-                        {exportandoCSV ? 'Exportando...' : 'CSV'}
-                      </Button>
-                      <Button variant="outline" onClick={handleExportarPDF} disabled={exportandoPDF} title="Exportar PDF">
-                        <FontAwesomeIcon icon={faFilePdf} style={{ marginRight: '6px' }} />
-                        {exportandoPDF ? 'Exportando...' : 'PDF'}
-                      </Button>
                     </div>
                   </div>
                 </div>

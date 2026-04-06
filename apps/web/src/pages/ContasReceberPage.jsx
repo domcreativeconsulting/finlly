@@ -33,8 +33,6 @@ import {
   faCreditCard,
   faCircleUser,
   faDoorOpen,
-  faFileExport,
-  faFilePdf,
 } from '@fortawesome/free-solid-svg-icons';
 import { Button, Modal, Badge } from '../design-system/index.js';
 import {
@@ -44,6 +42,7 @@ import {
   shadows,
 } from '../design-system/tokens.js';
 import { downloadBlob } from '../utils/downloadBlob.js';
+import ExportMenu from '../components/ExportMenu.jsx';
 
 const TIPO_MODAL_CAT = 'entrada';
 const DEFAULT_FORM_CAT = { nome: '', icone: '', cor: '#33528a', pai_id: '' };
@@ -819,6 +818,13 @@ export default function ContasReceberPage() {
                 <FontAwesomeIcon icon={faChevronDown} /> Filtros
               </Button>
 
+              <ExportMenu
+                onExportCSV={handleExportarCSV}
+                onExportPDF={handleExportarPDF}
+                loadingCSV={exportandoCSV}
+                loadingPDF={exportandoPDF}
+              />
+
               {/* Avatar / Dropdown */}
               <div ref={dropdownRef} style={{ position: 'relative' }}>
                 <button
@@ -1231,26 +1237,6 @@ export default function ContasReceberPage() {
                         onClick={handleLimpar}
                       >
                         Limpar
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleExportarCSV}
-                        disabled={exportandoCSV}
-                        title="Exportar CSV"
-                      >
-                        <FontAwesomeIcon icon={faFileExport} style={{ marginRight: '6px' }} />
-                        {exportandoCSV ? 'Exportando...' : 'CSV'}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleExportarPDF}
-                        disabled={exportandoPDF}
-                        title="Exportar PDF"
-                      >
-                        <FontAwesomeIcon icon={faFilePdf} style={{ marginRight: '6px' }} />
-                        {exportandoPDF ? 'Exportando...' : 'PDF'}
                       </Button>
                     </div>
                   </form>
