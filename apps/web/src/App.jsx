@@ -20,6 +20,7 @@ import ExtratoPage from './pages/ExtratoPage.jsx';
 import InvestimentosPage from './pages/InvestimentosPage.jsx';
 import MetasPage from './pages/MetasPage.jsx';
 import AnexosPage from './pages/AnexosPage.jsx';
+import RelatoriosPage from './pages/RelatoriosPage.jsx';
 
 export default function App() {
   return (
@@ -88,6 +89,10 @@ export default function App() {
         <Route
           path="/anexos"
           element={<ProtectedRoute element={<AnexosPage />} />}
+        />
+        <Route
+          path="/relatorios"
+          element={<ProtectedRoute element={<RelatoriosPage />} />}
         />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/logout" element={<Navigate to="/login" replace />} />

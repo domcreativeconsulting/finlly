@@ -29,6 +29,7 @@ import investimentosRouter from './routes/investimentos.js';
 import metasRouter from './routes/metas.js';
 import anexosRouter from './routes/anexos.js';
 import whatsappRouter from './routes/whatsapp.js';
+import dashboardRouter from './routes/dashboard.js';
 
 const app = express();
 
@@ -75,6 +76,7 @@ app.use(investimentosRouter);
 app.use(metasRouter);
 app.use(anexosRouter);
 app.use(whatsappRouter);
+app.use(dashboardRouter);
 
 app.get('/', (req, res) => {
   res.send('Hello World!');
