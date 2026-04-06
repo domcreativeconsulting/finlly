@@ -208,6 +208,130 @@ export async function getSaldoPorConta(usuarioId) {
 }
 
 /**
+ * Returns consolidated monthly dashboard data for executive view.
+ * @param {string} usuarioId
+ * @param {{ year: number, month: number }} params
+ */
+export async function getDashboardMensal(usuarioId, { year, month }) {
+  const dataInicio = new Date(year, month - 1, 1);
+  const dataFim = new Date(year, month, 0);
+
+  const [contasPagarAgg, contasPagarCount, contasReceberAgg, contasReceberCount, saldoContasAgg, categoriasGrupos] =
+    await Promise.all([
+      // Contas a pagar: soma no mês
+      prisma.contaPagar.aggregate({
+        where: {
+          usuario_id: usuarioId,
+          status: 'pendente',
+          data_vencimento: { gte: dataInicio, lte: dataFim },
+          deleted_at: null,
+        },
+        _sum: { valor: true },
+      }),
+
+      // Contas a pagar: contagem no mês
+      prisma.contaPagar.count({
+        where: {
+          usuario_id: usuarioId,
+          status: 'pendente',
+          data_vencimento: { gte: dataInicio, lte: dataFim },
+          deleted_at: null,
+        },
+      }),
+
+      // Contas a receber: soma no mês
+      prisma.contaReceber.aggregate({
+        where: {
+          usuario_id: usuarioId,
+          status: 'pendente',
+          data_vencimento: { gte: dataInicio, lte: dataFim },
+          deleted_at: null,
+        },
+        _sum: { valor: true },
+      }),
+
+      // Contas a receber: contagem no mês
+      prisma.contaReceber.count({
+        where: {
+          usuario_id: usuarioId,
+          status: 'pendente',
+          data_vencimento: { gte: dataInicio, lte: dataFim },
+          deleted_at: null,
+        },
+      }),
+
+      // Saldo atual: contas com incluir_total = true (sem filtro de data)
+      prisma.movimentacaoCaixa.groupBy({
+        by: ['tipo'],
+        where: {
+          usuario_id: usuarioId,
+          deleted_at: null,
+          conta: { incluir_total: true, deleted_at: null },
+        },
+        _sum: { valor: true },
+      }),
+
+      // Categorias: agrupamento por categoria_id no mês, ambos os tipos
+      prisma.movimentacaoCaixa.groupBy({
+        by: ['categoria_id', 'tipo'],
+        where: {
+          usuario_id: usuarioId,
+          deleted_at: null,
+          data: { gte: dataInicio, lte: dataFim },
+          categoria_id: { not: null },
+        },
+        _sum: { valor: true },
+        orderBy: { _sum: { valor: 'desc' } },
+        take: 10,
+      }),
+    ]);
+
+  // Saldo atual acumulado
+  let saldoEntradas = 0;
+  let saldoSaidas = 0;
+  for (const row of saldoContasAgg) {
+    if (row.tipo === 'entrada') saldoEntradas = Number(row._sum.valor ?? 0);
+    if (row.tipo === 'saida') saldoSaidas = Number(row._sum.valor ?? 0);
+  }
+  const currentBalance = saldoEntradas - saldoSaidas;
+
+  // Buscar nomes das categorias
+  const categoriaIds = [...new Set(categoriasGrupos.map((g) => g.categoria_id))];
+  const categoriasInfo =
+    categoriaIds.length > 0
+      ? await prisma.categoria.findMany({
+          where: { id: { in: categoriaIds }, usuario_id: usuarioId, deleted_at: null },
+          select: { id: true, nome: true },
+        })
+      : [];
+
+  const catMap = Object.fromEntries(categoriasInfo.map((c) => [c.id, c.nome]));
+
+  const categories = categoriasGrupos.map((g) => ({
+    categoryId: g.categoria_id,
+    categoryName: catMap[g.categoria_id] ?? 'Sem categoria',
+    type: g.tipo === 'entrada' ? 'IN' : 'OUT',
+    amount: Number(g._sum.valor ?? 0),
+  }));
+
+  return {
+    reference: { year, month },
+    cards: {
+      accountsPayable: {
+        amount: Number(contasPagarAgg._sum.valor ?? 0),
+        count: contasPagarCount,
+      },
+      accountsReceivable: {
+        amount: Number(contasReceberAgg._sum.valor ?? 0),
+        count: contasReceberCount,
+      },
+      currentBalance,
+    },
+    categories,
+  };
+}
+
+/**
  * Returns paginated report of movimentacoes_caixa with optional filters.
  * @param {string} usuarioId
  * @param {{ dataInicio?, dataFim?, categoriaId?, contaId?, tipo?, page?, limit? }} params

@@ -10,29 +10,16 @@ import {
   faBars,
   faCircleUser,
   faDoorOpen,
-  faArrowTrendUp,
-  faArrowTrendDown,
-  faScaleBalanced,
   faWallet,
   faCircleExclamation,
   faCircleCheck,
+  faChevronLeft,
+  faChevronRight,
 } from '@fortawesome/free-solid-svg-icons';
-import { Button } from '../design-system/index.js';
 import { colors, typography, radius, shadows } from '../design-system/tokens.js';
 
 function formatBRL(valor) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor ?? 0);
-}
-
-function firstDayOfMonth() {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-}
-
-function lastDayOfMonth() {
-  const now = new Date();
-  const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  return `${last.getFullYear()}-${String(last.getMonth() + 1).padStart(2, '0')}-${String(last.getDate()).padStart(2, '0')}`;
 }
 
 function formatMes(mesStr) {
@@ -40,6 +27,11 @@ function formatMes(mesStr) {
   const [year, month] = mesStr.split('-');
   const date = new Date(Number(year), Number(month) - 1, 1);
   return date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+}
+
+function formatarMesAno({ year, month }) {
+  const date = new Date(year, month - 1, 1);
+  return date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
 }
 
 function BarChart({ data }) {
@@ -85,7 +77,7 @@ function BarChart({ data }) {
   );
 }
 
-function KPICard({ label, value, color, bgColor, icon, loading }) {
+function KPICard({ label, value, subtitle, color, bgColor, icon, loading }) {
   return (
     <div
       style={{
@@ -115,6 +107,9 @@ function KPICard({ label, value, color, bgColor, icon, loading }) {
           {value}
         </span>
       )}
+      {!loading && subtitle && (
+        <span style={{ fontSize: typography.sizes.xs, color: colors.neutral400 }}>{subtitle}</span>
+      )}
     </div>
   );
 }
@@ -126,39 +121,44 @@ export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
 
-  const [dataInicio, setDataInicio] = useState(firstDayOfMonth());
-  const [dataFim, setDataFim] = useState(lastDayOfMonth());
+  const hoje = new Date();
+  const [mesSelecionado, setMesSelecionado] = useState({ year: hoje.getFullYear(), month: hoje.getMonth() + 1 });
 
-  const [kpis, setKpis] = useState(null);
+  const [dashboardMensal, setDashboardMensal] = useState(null);
   const [evolucao, setEvolucao] = useState([]);
-  const [categorias, setCategorias] = useState([]);
   const [contas, setContas] = useState([]);
 
-  const [loadingKpis, setLoadingKpis] = useState(true);
+  const [loadingMensal, setLoadingMensal] = useState(true);
   const [loadingEvolucao, setLoadingEvolucao] = useState(true);
-  const [loadingCategorias, setLoadingCategorias] = useState(true);
   const [loadingContas, setLoadingContas] = useState(true);
 
   const contentMarginLeft = !sidebarOpen ? '0px' : sidebarExpanded ? '236px' : '108px';
 
-  const carregarDados = useCallback(async () => {
-    setLoadingKpis(true);
-    setLoadingCategorias(true);
+  function mesAnterior() {
+    setMesSelecionado((prev) => {
+      if (prev.month === 1) return { year: prev.year - 1, month: 12 };
+      return { year: prev.year, month: prev.month - 1 };
+    });
+  }
 
+  function mesSeguinte() {
+    setMesSelecionado((prev) => {
+      if (prev.month === 12) return { year: prev.year + 1, month: 1 };
+      return { year: prev.year, month: prev.month + 1 };
+    });
+  }
+
+  const carregarDadosMensais = useCallback(async () => {
+    setLoadingMensal(true);
     try {
-      const [kpisData, categoriasData] = await Promise.all([
-        dashboardService.getKPIs({ dataInicio, dataFim }),
-        dashboardService.getTopCategorias({ dataInicio, dataFim, tipo: 'saida', limit: 8 }),
-      ]);
-      setKpis(kpisData);
-      setCategorias(categoriasData);
+      const data = await dashboardService.getDashboardMensal(mesSelecionado);
+      setDashboardMensal(data);
     } catch {
       toast.error('Erro ao carregar dados do dashboard');
     } finally {
-      setLoadingKpis(false);
-      setLoadingCategorias(false);
+      setLoadingMensal(false);
     }
-  }, [dataInicio, dataFim]);
+  }, [mesSelecionado]);
 
   const carregarEvolucao = useCallback(async () => {
     setLoadingEvolucao(true);
@@ -185,17 +185,35 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    carregarDados();
-  }, [carregarDados]);
+    carregarDadosMensais();
+  }, [carregarDadosMensais]);
 
   useEffect(() => {
     carregarEvolucao();
     carregarContas();
   }, [carregarEvolucao, carregarContas]);
 
-  const maxCategoria = categorias.length > 0 ? Math.max(...categorias.map((c) => c.total), 1) : 1;
+  const categorias = dashboardMensal?.categories ?? [];
+  const categoriasOut = categorias.filter((c) => c.type === 'OUT');
+  const categoriasIn = categorias.filter((c) => c.type === 'IN');
+  const maxOut = categoriasOut.length > 0 ? Math.max(...categoriasOut.map((c) => c.amount), 1) : 1;
+  const maxIn = categoriasIn.length > 0 ? Math.max(...categoriasIn.map((c) => c.amount), 1) : 1;
 
-  const resultadoColor = kpis?.resultado >= 0 ? colors.success : colors.error;
+  const cards = dashboardMensal?.cards;
+
+  const navBtnStyle = {
+    background: colors.neutral100,
+    border: `1px solid ${colors.border}`,
+    borderRadius: radius.md,
+    cursor: 'pointer',
+    width: '32px',
+    height: '32px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: colors.neutral600,
+    fontSize: '12px',
+  };
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: colors.bg }}>
@@ -255,20 +273,18 @@ export default function DashboardPage() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-            <input
-              type="date"
-              value={dataInicio}
-              onChange={(e) => setDataInicio(e.target.value)}
-              style={{ padding: '7px 10px', borderRadius: radius.md, border: `1px solid ${colors.border}`, fontSize: typography.sizes.sm, color: colors.neutral700 }}
-            />
-            <span style={{ color: colors.neutral400, fontSize: typography.sizes.sm }}>até</span>
-            <input
-              type="date"
-              value={dataFim}
-              onChange={(e) => setDataFim(e.target.value)}
-              style={{ padding: '7px 10px', borderRadius: radius.md, border: `1px solid ${colors.border}`, fontSize: typography.sizes.sm, color: colors.neutral700 }}
-            />
-            <Button size="sm" onClick={carregarDados}>Filtrar</Button>
+            {/* Month selector */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button style={navBtnStyle} onClick={mesAnterior} aria-label="Mês anterior">
+                <FontAwesomeIcon icon={faChevronLeft} />
+              </button>
+              <span style={{ fontWeight: typography.weights.semibold, minWidth: '130px', textAlign: 'center', fontSize: typography.sizes.sm, color: colors.neutral800 }}>
+                {formatarMesAno(mesSelecionado)}
+              </span>
+              <button style={navBtnStyle} onClick={mesSeguinte} aria-label="Próximo mês">
+                <FontAwesomeIcon icon={faChevronRight} />
+              </button>
+            </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '8px' }}>
               <button
@@ -293,7 +309,7 @@ export default function DashboardPage() {
         <InadimplenteGuard>
           <main style={{ flex: 1, padding: '28px 28px 40px' }}>
 
-            {/* KPI Cards */}
+            {/* KPI Cards — executive view */}
             <div
               style={{
                 display: 'grid',
@@ -303,52 +319,30 @@ export default function DashboardPage() {
               }}
             >
               <KPICard
-                label="Saldo Atual"
-                value={formatBRL(kpis?.saldo_atual)}
-                color={colors.primaryLight}
-                bgColor={colors.primaryBg}
-                icon={faWallet}
-                loading={loadingKpis}
-              />
-              <KPICard
-                label="Entradas"
-                value={formatBRL(kpis?.total_entradas)}
-                color={colors.success}
-                bgColor={colors.successBg}
-                icon={faArrowTrendUp}
-                loading={loadingKpis}
-              />
-              <KPICard
-                label="Saídas"
-                value={formatBRL(kpis?.total_saidas)}
-                color={colors.error}
-                bgColor={colors.errorBg}
-                icon={faArrowTrendDown}
-                loading={loadingKpis}
-              />
-              <KPICard
-                label="Resultado"
-                value={formatBRL(kpis?.resultado)}
-                color={resultadoColor}
-                bgColor={kpis?.resultado >= 0 ? colors.successBg : colors.errorBg}
-                icon={faScaleBalanced}
-                loading={loadingKpis}
-              />
-              <KPICard
-                label="A Pagar (pendente)"
-                value={formatBRL(kpis?.contas_pagar_pendente)}
+                label="A Pagar (mês)"
+                value={formatBRL(cards?.accountsPayable?.amount)}
+                subtitle={cards?.accountsPayable?.count != null ? `${cards.accountsPayable.count} lançamento${cards.accountsPayable.count !== 1 ? 's' : ''}` : undefined}
                 color={colors.warning}
                 bgColor={colors.warningBg}
                 icon={faCircleExclamation}
-                loading={loadingKpis}
+                loading={loadingMensal}
               />
               <KPICard
-                label="A Receber (pendente)"
-                value={formatBRL(kpis?.contas_receber_pendente)}
+                label="A Receber (mês)"
+                value={formatBRL(cards?.accountsReceivable?.amount)}
+                subtitle={cards?.accountsReceivable?.count != null ? `${cards.accountsReceivable.count} lançamento${cards.accountsReceivable.count !== 1 ? 's' : ''}` : undefined}
                 color="#0369a1"
                 bgColor="#e0f2fe"
                 icon={faCircleCheck}
-                loading={loadingKpis}
+                loading={loadingMensal}
+              />
+              <KPICard
+                label="Saldo Atual"
+                value={formatBRL(cards?.currentBalance)}
+                color={colors.primaryLight}
+                bgColor={colors.primaryBg}
+                icon={faWallet}
+                loading={loadingMensal}
               />
             </div>
 
@@ -387,7 +381,7 @@ export default function DashboardPage() {
                 )}
               </div>
 
-              {/* Top Categorias */}
+              {/* Categorias — Saídas e Entradas */}
               <div
                 style={{
                   background: colors.white,
@@ -397,9 +391,9 @@ export default function DashboardPage() {
                 }}
               >
                 <h2 style={{ margin: '0 0 16px', fontSize: typography.sizes['2xl'], fontWeight: typography.weights.semibold, color: colors.neutral800 }}>
-                  Top Categorias (Saídas)
+                  Categorias do Mês
                 </h2>
-                {loadingCategorias ? (
+                {loadingMensal ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {[1, 2, 3, 4].map((i) => (
                       <div key={i} style={{ height: '28px', background: colors.neutral100, borderRadius: radius.sm }} />
@@ -407,33 +401,74 @@ export default function DashboardPage() {
                   </div>
                 ) : categorias.length === 0 ? (
                   <p style={{ color: colors.neutral500, textAlign: 'center', padding: '24px 0', fontSize: typography.sizes.sm }}>
-                    Sem saídas por categoria no período.
+                    Sem movimentações por categoria no mês.
                   </p>
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {categorias.map((cat) => (
-                      <div key={cat.categoria_id ?? cat.categoria_nome}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
-                          <span style={{ fontSize: typography.sizes.sm, color: colors.neutral700, fontWeight: typography.weights.medium }}>
-                            {cat.categoria_nome}
-                          </span>
-                          <span style={{ fontSize: typography.sizes.sm, color: colors.neutral600 }}>
-                            {formatBRL(cat.total)}
-                          </span>
-                        </div>
-                        <div style={{ background: colors.neutral100, borderRadius: radius.full, height: '6px', overflow: 'hidden' }}>
-                          <div
-                            style={{
-                              height: '100%',
-                              width: `${(cat.total / maxCategoria) * 100}%`,
-                              background: colors.error,
-                              borderRadius: radius.full,
-                              transition: 'width 0.4s ease',
-                            }}
-                          />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    {categoriasOut.length > 0 && (
+                      <div>
+                        <p style={{ margin: '0 0 8px', fontSize: typography.sizes.xs, fontWeight: typography.weights.semibold, color: colors.error, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          Saídas
+                        </p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                          {categoriasOut.map((cat) => (
+                            <div key={cat.categoryId}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+                                <span style={{ fontSize: typography.sizes.sm, color: colors.neutral700, fontWeight: typography.weights.medium }}>
+                                  {cat.categoryName}
+                                </span>
+                                <span style={{ fontSize: typography.sizes.sm, color: colors.neutral600 }}>
+                                  {formatBRL(cat.amount)}
+                                </span>
+                              </div>
+                              <div style={{ background: colors.neutral100, borderRadius: radius.full, height: '6px', overflow: 'hidden' }}>
+                                <div
+                                  style={{
+                                    height: '100%',
+                                    width: `${(cat.amount / maxOut) * 100}%`,
+                                    background: colors.error,
+                                    borderRadius: radius.full,
+                                    transition: 'width 0.4s ease',
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                    ))}
+                    )}
+                    {categoriasIn.length > 0 && (
+                      <div>
+                        <p style={{ margin: '0 0 8px', fontSize: typography.sizes.xs, fontWeight: typography.weights.semibold, color: colors.success, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          Entradas
+                        </p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                          {categoriasIn.map((cat) => (
+                            <div key={cat.categoryId}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+                                <span style={{ fontSize: typography.sizes.sm, color: colors.neutral700, fontWeight: typography.weights.medium }}>
+                                  {cat.categoryName}
+                                </span>
+                                <span style={{ fontSize: typography.sizes.sm, color: colors.neutral600 }}>
+                                  {formatBRL(cat.amount)}
+                                </span>
+                              </div>
+                              <div style={{ background: colors.neutral100, borderRadius: radius.full, height: '6px', overflow: 'hidden' }}>
+                                <div
+                                  style={{
+                                    height: '100%',
+                                    width: `${(cat.amount / maxIn) * 100}%`,
+                                    background: colors.success,
+                                    borderRadius: radius.full,
+                                    transition: 'width 0.4s ease',
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -498,3 +533,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+
