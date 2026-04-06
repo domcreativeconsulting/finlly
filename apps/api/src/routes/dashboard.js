@@ -10,6 +10,7 @@ import {
   getTopCategorias,
   getSaldoPorConta,
   getRelatorio,
+  getDashboardMensal,
 } from '../services/dashboardService.js';
 
 const router = Router();
@@ -144,6 +145,27 @@ router.get('/relatorios/exportar', readLimiter, jwtAuthMiddleware, requireAtivo,
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', 'attachment; filename="relatorio.csv"');
     return res.status(200).send(csv);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// GET /dashboard/monthly?year=2026&month=4
+router.get('/dashboard/monthly', readLimiter, jwtAuthMiddleware, requireAtivo, async (req, res, next) => {
+  try {
+    const usuarioId = req.user.sub;
+    const now = new Date();
+    const year = req.query.year ? parseInt(req.query.year) : now.getFullYear();
+    const month = req.query.month ? parseInt(req.query.month) : now.getMonth() + 1;
+    const currentYear = now.getFullYear();
+
+    if (!Number.isInteger(year) || year < 2000 || year > currentYear + 5 || !Number.isInteger(month) || month < 1 || month > 12) {
+      return res.status(400).json({ code: 'VALIDATION_ERROR', message: 'year e month devem ser inteiros positivos válidos' });
+    }
+
+    const result = await getDashboardMensal(usuarioId, { year, month });
+    logger.info({ msg: 'Dashboard mensal consultado', userId: usuarioId, year, month });
+    return res.status(200).json(result);
   } catch (err) {
     return next(err);
   }

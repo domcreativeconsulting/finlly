@@ -21,6 +21,11 @@ export const dashboardService = {
     return response.data;
   },
 
+  async getDashboardMensal({ year, month }) {
+    const response = await api.get('/dashboard/monthly', { params: { year, month } });
+    return response.data;
+  },
+
   async getRelatorio(params = {}) {
     const response = await api.get('/relatorios', { params });
     return response.data;
