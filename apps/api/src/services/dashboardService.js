@@ -1,13 +1,25 @@
 import prisma from '../utils/database.js';
 
 /**
+ * Parses filter date strings into Date objects with proper day boundaries.
+ * @param {string|undefined} dataInicio
+ * @param {string|undefined} dataFim
+ * @returns {{ inicio: Date, fim: Date }}
+ */
+function parseDateRange(dataInicio, dataFim) {
+  return {
+    inicio: new Date(dataInicio + 'T00:00:00.000Z'),
+    fim: new Date(dataFim + 'T23:59:59.999Z'),
+  };
+}
+
+/**
  * Returns KPIs for the given period.
  * @param {string} usuarioId
  * @param {{ dataInicio: string, dataFim: string }} params
  */
 export async function getKPIs(usuarioId, { dataInicio, dataFim }) {
-  const inicio = new Date(dataInicio + 'T00:00:00.000Z');
-  const fim = new Date(dataFim + 'T23:59:59.999Z');
+  const { inicio, fim } = parseDateRange(dataInicio, dataFim);
 
   const [entradasAgg, saidasAgg, saldoContasAgg, contasPagarAgg, contasReceberAgg] =
     await Promise.all([
@@ -122,8 +134,7 @@ export async function getEvolucaoMensal(usuarioId, meses = 6) {
  * @param {{ dataInicio: string, dataFim: string, tipo?: string, limit?: number }} params
  */
 export async function getTopCategorias(usuarioId, { dataInicio, dataFim, tipo = 'saida', limit = 10 }) {
-  const inicio = new Date(dataInicio + 'T00:00:00.000Z');
-  const fim = new Date(dataFim + 'T23:59:59.999Z');
+  const { inicio, fim } = parseDateRange(dataInicio, dataFim);
 
   const where = {
     usuario_id: usuarioId,
@@ -213,8 +224,8 @@ export async function getRelatorio(
 
   if (dataInicio || dataFim) {
     where.data = {};
-    if (dataInicio) where.data.gte = new Date(dataInicio + 'T00:00:00.000Z');
-    if (dataFim) where.data.lte = new Date(dataFim + 'T23:59:59.999Z');
+    if (dataInicio) where.data.gte = parseDateRange(dataInicio, dataInicio).inicio;
+    if (dataFim) where.data.lte = parseDateRange(dataFim, dataFim).fim;
   }
 
   const safeLimit = Math.min(Number(limit) || 50, 100);

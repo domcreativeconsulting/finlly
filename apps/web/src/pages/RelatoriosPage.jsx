@@ -17,7 +17,6 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { Button } from '../design-system/index.js';
 import { colors, typography, radius, shadows } from '../design-system/tokens.js';
-import api from '../services/api.js';
 
 function formatBRL(valor) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor ?? 0);
@@ -126,8 +125,8 @@ export default function RelatoriosPage() {
       if (contaId) params.contaId = contaId;
       if (tipo) params.tipo = tipo;
 
-      const response = await api.get('/relatorios/exportar', { params, responseType: 'blob' });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const blob = await dashboardService.exportarRelatorioCSV(params);
+      const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = 'relatorio.csv';
