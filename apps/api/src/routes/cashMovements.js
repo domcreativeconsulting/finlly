@@ -9,6 +9,8 @@ import { AppError } from '../errors/AppError.js';
 import { toValidationError } from '../errors/toValidationError.js';
 import logger from '../logger.js';
 import prisma from '../utils/database.js';
+import { gerarCSV } from '../utils/csvGenerator.js';
+import { gerarPDF } from '../utils/pdfGenerator.js';
 
 const router = Router();
 
@@ -55,6 +57,78 @@ async function handleGetExtrato(req, res, next) {
     const result = await getExtrato(req.user.sub, parsed.data);
     logger.info({ msg: 'Extrato consultado', userId: req.user.sub });
     return res.status(200).json(result);
+  } catch (err) {
+    return next(err);
+  }
+}
+
+const ExportExtratoQuerySchema = z.object({
+  format: z.enum(['csv', 'pdf']).default('csv'),
+  dateFrom: z.string().regex(ISO_DATE_REGEX).optional(),
+  dateTo: z.string().regex(ISO_DATE_REGEX).optional(),
+  accountId: z.string().uuid().optional(),
+  type: z.enum(['IN', 'OUT']).optional(),
+  originType: z.enum(['ACCOUNTS_PAYABLE', 'ACCOUNTS_RECEIVABLE', 'MANUAL']).optional(),
+  q: z.string().max(100).optional(),
+});
+
+async function handleExportExtrato(req, res, next) {
+  const parsed = ExportExtratoQuerySchema.safeParse(req.query);
+  if (!parsed.success) return next(toValidationError(parsed.error));
+
+  try {
+    const { format, ...filters } = parsed.data;
+    const result = await getExtrato(req.user.sub, { ...filters, page: 1, perPage: 10000 });
+    const items = result.items ?? [];
+
+    const now = new Date();
+    const fromLabel = filters.dateFrom || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+    const toLabel = filters.dateTo || now.toISOString().substring(0, 10);
+    const filenameBase = `extrato-${fromLabel}_a_${toLabel}`;
+
+    const ORIGIN_LABELS = {
+      ACCOUNTS_PAYABLE: 'Conta a pagar',
+      ACCOUNTS_RECEIVABLE: 'Conta a receber',
+      MANUAL: 'Manual',
+    };
+
+    const headers = ['data', 'descricao', 'conta', 'tipo', 'origem', 'valor'];
+    const rows = items.map((item) => [
+      item.date ? item.date.substring(0, 10).split('-').reverse().join('/') : '',
+      item.description || '',
+      item.accountName || '',
+      item.type === 'IN' ? 'Entrada' : 'Saída',
+      ORIGIN_LABELS[item.originType] || item.originType || '',
+      Number(item.amount).toFixed(2),
+    ]);
+
+    const totals = result.totals ?? {};
+
+    if (format === 'pdf') {
+      const pdfBuffer = await gerarPDF({
+        titulo: 'Extrato Financeiro',
+        periodo: `${fromLabel} a ${toLabel}`,
+        colunas: ['Data', 'Descrição', 'Conta', 'Tipo', 'Origem', 'Valor (R$)'],
+        linhas: rows,
+        totalizadores: [
+          { label: 'Total Entradas', value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totals.totalIn ?? 0) },
+          { label: 'Total Saídas', value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totals.totalOut ?? 0) },
+          { label: 'Resultado Líquido', value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totals.balanceDelta ?? 0) },
+          { label: 'Quantidade de registros', value: String(items.length) },
+        ],
+      });
+
+      logger.info({ msg: 'Extrato exportado PDF', userId: req.user.sub, registros: items.length });
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filenameBase}.pdf"`);
+      return res.status(200).send(pdfBuffer);
+    }
+
+    const csv = gerarCSV(headers, rows);
+    logger.info({ msg: 'Extrato exportado CSV', userId: req.user.sub, registros: items.length });
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${filenameBase}.csv"`);
+    return res.status(200).send(csv);
   } catch (err) {
     return next(err);
   }
@@ -116,6 +190,7 @@ async function handleCreateManual(req, res, next) {
 }
 
 router.get('/cash-movements', readLimiter, jwtAuthMiddleware, requireAtivo, handleGetExtrato);
+router.get('/cash-movements/export', readLimiter, jwtAuthMiddleware, requireAtivo, handleExportExtrato);
 router.post('/cash-movements/manual', writeLimiter, jwtAuthMiddleware, requireAtivo, handleCreateManual);
 
 export default router;

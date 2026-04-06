@@ -17,9 +17,12 @@ import {
   faCreditCard,
   faCircleUser,
   faDoorOpen,
+  faFileExport,
+  faFilePdf,
 } from '@fortawesome/free-solid-svg-icons';
 import { Button, Badge } from '../design-system/index.js';
 import { colors, typography, radius, shadows } from '../design-system/tokens.js';
+import { downloadBlob } from '../utils/downloadBlob.js';
 
 function getInitials(name) {
   if (!name) return '?';
@@ -103,6 +106,8 @@ export default function ExtratoPage() {
   const [showModalManual, setShowModalManual] = useState(false);
   const [formManual, setFormManual] = useState({ type: 'IN', accountId: '', amount: '', date: todayISO(), description: '', notes: '' });
   const [savingManual, setSavingManual] = useState(false);
+  const [exportandoCSV, setExportandoCSV] = useState(false);
+  const [exportandoPDF, setExportandoPDF] = useState(false);
 
   useEffect(() => {
     contasService
@@ -169,6 +174,44 @@ export default function ExtratoPage() {
   function handleFiltrar() {
     setPage(1);
     setAppliedFilters({ dateFrom, dateTo, accountId });
+  }
+
+  async function handleExportarCSV() {
+    setExportandoCSV(true);
+    try {
+      const params = { format: 'csv' };
+      if (appliedFilters.dateFrom) params.dateFrom = appliedFilters.dateFrom;
+      if (appliedFilters.dateTo) params.dateTo = appliedFilters.dateTo;
+      if (appliedFilters.accountId) params.accountId = appliedFilters.accountId;
+      const blob = await extratoService.exportar(params);
+      const from = appliedFilters.dateFrom || new Date().toISOString().substring(0, 10);
+      const to = appliedFilters.dateTo || new Date().toISOString().substring(0, 10);
+      downloadBlob(blob, `extrato-${from}_a_${to}.csv`);
+      toast.success('Exportação CSV concluída!');
+    } catch {
+      toast.error('Erro ao exportar CSV');
+    } finally {
+      setExportandoCSV(false);
+    }
+  }
+
+  async function handleExportarPDF() {
+    setExportandoPDF(true);
+    try {
+      const params = { format: 'pdf' };
+      if (appliedFilters.dateFrom) params.dateFrom = appliedFilters.dateFrom;
+      if (appliedFilters.dateTo) params.dateTo = appliedFilters.dateTo;
+      if (appliedFilters.accountId) params.accountId = appliedFilters.accountId;
+      const blob = await extratoService.exportar(params);
+      const from = appliedFilters.dateFrom || new Date().toISOString().substring(0, 10);
+      const to = appliedFilters.dateTo || new Date().toISOString().substring(0, 10);
+      downloadBlob(blob, `extrato-${from}_a_${to}.pdf`);
+      toast.success('Exportação PDF concluída!');
+    } catch {
+      toast.error('Erro ao exportar PDF');
+    } finally {
+      setExportandoPDF(false);
+    }
   }
 
   function handleSort(field) {
@@ -477,7 +520,17 @@ export default function ExtratoPage() {
                   </div>
                   <div style={s.filterField}>
                     <label style={s.filterLabel}>&nbsp;</label>
-                    <Button onClick={handleFiltrar}>Filtrar</Button>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <Button onClick={handleFiltrar}>Filtrar</Button>
+                      <Button variant="outline" onClick={handleExportarCSV} disabled={exportandoCSV} title="Exportar CSV">
+                        <FontAwesomeIcon icon={faFileExport} style={{ marginRight: '6px' }} />
+                        {exportandoCSV ? 'Exportando...' : 'CSV'}
+                      </Button>
+                      <Button variant="outline" onClick={handleExportarPDF} disabled={exportandoPDF} title="Exportar PDF">
+                        <FontAwesomeIcon icon={faFilePdf} style={{ marginRight: '6px' }} />
+                        {exportandoPDF ? 'Exportando...' : 'PDF'}
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>

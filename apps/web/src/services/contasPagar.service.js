@@ -45,4 +45,12 @@ export const contasPagarService = {
     const response = await api.patch(`/contas-pagar/grupos/${grupoId}/cancelar`);
     return response.data;
   },
+
+  async exportar(params = {}) {
+    const response = await api.get('/contas-pagar/export', {
+      params,
+      responseType: 'blob',
+    });
+    return response.data;
+  },
 };
