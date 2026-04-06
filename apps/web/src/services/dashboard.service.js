@@ -31,11 +31,15 @@ export const dashboardService = {
     return response.data;
   },
 
-  async exportarRelatorioCSV(params = {}) {
+  async exportarRelatorio(params = {}) {
     const response = await api.get('/relatorios/exportar', {
       params,
       responseType: 'blob',
     });
     return response.data;
+  },
+
+  async exportarRelatorioCSV(params = {}) {
+    return this.exportarRelatorio({ ...params, format: 'csv' });
   },
 };

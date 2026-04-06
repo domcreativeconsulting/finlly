@@ -12,6 +12,8 @@ import {
   getRelatorio,
   getDashboardMensal,
 } from '../services/dashboardService.js';
+import { gerarCSV } from '../utils/csvGenerator.js';
+import { gerarPDF } from '../utils/pdfGenerator.js';
 
 const router = Router();
 
@@ -113,11 +115,11 @@ router.get('/relatorios', readLimiter, jwtAuthMiddleware, requireAtivo, async (r
   }
 });
 
-// GET /relatorios/exportar?dataInicio=&dataFim=&categoriaId=&contaId=&tipo=
+// GET /relatorios/exportar?dataInicio=&dataFim=&categoriaId=&contaId=&tipo=&format=csv|pdf
 router.get('/relatorios/exportar', readLimiter, jwtAuthMiddleware, requireAtivo, async (req, res, next) => {
   try {
     const usuarioId = req.user.sub;
-    const { dataInicio, dataFim, categoriaId, contaId, tipo } = req.query;
+    const { dataInicio, dataFim, categoriaId, contaId, tipo, format = 'csv' } = req.query;
 
     const { data } = await getRelatorio(usuarioId, {
       dataInicio,
@@ -129,22 +131,59 @@ router.get('/relatorios/exportar', readLimiter, jwtAuthMiddleware, requireAtivo,
       limit: 10000,
     });
 
-    const header = 'data,tipo,valor,descricao,categoria,conta';
-    const rows = data.map((m) => {
-      const data_fmt = m.data ? new Date(m.data).toISOString().split('T')[0] : '';
-      const descricao = (m.descricao || '').replace(/"/g, '""');
-      const categoria = (m.categoria?.nome || '').replace(/"/g, '""');
-      const conta = (m.conta?.nome || '').replace(/"/g, '""');
-      return `${data_fmt},${m.tipo},${m.valor},"${descricao}","${categoria}","${conta}"`;
-    });
+    const now = new Date();
+    const dateRef = dataInicio ? dataInicio.substring(0, 10) : now.toISOString().substring(0, 10);
 
-    const csv = [header, ...rows].join('\n');
+    const headers = ['data', 'tipo', 'valor', 'descricao', 'categoria', 'conta'];
+    const rows = data.map((m) => [
+      m.data ? m.data.substring(0, 10).split('-').reverse().join('/') : '',
+      m.tipo || '',
+      Number(m.valor).toFixed(2),
+      m.descricao || '',
+      m.categoria?.nome || '',
+      m.conta?.nome || '',
+    ]);
+
+    const totalEntradas = data.filter((m) => m.tipo === 'entrada').reduce((acc, m) => acc + Number(m.valor), 0);
+    const totalSaidas = data.filter((m) => m.tipo === 'saida').reduce((acc, m) => acc + Number(m.valor), 0);
+    const resultado = totalEntradas - totalSaidas;
+
+    if (format === 'pdf') {
+      const periodoPDF = [dataInicio, dataFim].filter(Boolean).join(' a ') || dateRef;
+
+      const pdfBuffer = await gerarPDF({
+        titulo: 'Relatório Financeiro',
+        periodo: periodoPDF,
+        colunas: ['Data', 'Tipo', 'Valor (R$)', 'Descrição', 'Categoria', 'Conta'],
+        linhas: rows,
+        totalizadores: [
+          { label: 'Total Entradas', value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalEntradas) },
+          { label: 'Total Saídas', value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalSaidas) },
+          { label: 'Resultado Líquido', value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(resultado) },
+          { label: 'Quantidade de registros', value: String(data.length) },
+        ],
+      });
+
+      logger.info({ msg: 'Relatório exportado PDF', userId: usuarioId, registros: data.length });
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="relatorio-${dateRef}.pdf"`);
+      return res.status(200).send(pdfBuffer);
+    }
+
+    // CSV (default) — mantém compatibilidade e adiciona totalizadores no rodapé
+    const csvBody = gerarCSV(headers, rows);
+    const totaisLines = [
+      '',
+      `,,,,`,
+      `Total Entradas,,${totalEntradas.toFixed(2)},,`,
+      `Total Saídas,,${totalSaidas.toFixed(2)},,`,
+      `Resultado Líquido,,${resultado.toFixed(2)},,`,
+    ].join('\n');
 
     logger.info({ msg: 'Relatório exportado CSV', userId: usuarioId, registros: data.length });
-
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', 'attachment; filename="relatorio.csv"');
-    return res.status(200).send(csv);
+    res.setHeader('Content-Disposition', `attachment; filename="relatorio-${dateRef}.csv"`);
+    return res.status(200).send(csvBody + totaisLines);
   } catch (err) {
     return next(err);
   }

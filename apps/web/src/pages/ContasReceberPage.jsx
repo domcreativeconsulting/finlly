@@ -33,6 +33,8 @@ import {
   faCreditCard,
   faCircleUser,
   faDoorOpen,
+  faFileExport,
+  faFilePdf,
 } from '@fortawesome/free-solid-svg-icons';
 import { Button, Modal, Badge } from '../design-system/index.js';
 import {
@@ -41,6 +43,7 @@ import {
   radius,
   shadows,
 } from '../design-system/tokens.js';
+import { downloadBlob } from '../utils/downloadBlob.js';
 
 const TIPO_MODAL_CAT = 'entrada';
 const DEFAULT_FORM_CAT = { nome: '', icone: '', cor: '#33528a', pai_id: '' };
@@ -207,6 +210,9 @@ export default function ContasReceberPage() {
   });
   const [salvandoContaFinanceira, setSalvandoContaFinanceira] = useState(false);
 
+  const [exportandoCSV, setExportandoCSV] = useState(false);
+  const [exportandoPDF, setExportandoPDF] = useState(false);
+
   const carregarLista = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -311,6 +317,46 @@ export default function ContasReceberPage() {
       setSortDir('asc');
     }
     setPage(1);
+  }
+
+  async function handleExportarCSV() {
+    setExportandoCSV(true);
+    try {
+      const params = { format: 'csv', ...filtrosAtivos };
+      Object.keys(params).forEach((k) => {
+        if (params[k] === '' || params[k] === null || params[k] === undefined) delete params[k];
+      });
+      const blob = await contasReceberService.exportar(params);
+      const now = new Date();
+      const mesRef = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const periodo = filtrosAtivos.data_vencimento_de ? filtrosAtivos.data_vencimento_de.substring(0, 7) : mesRef;
+      downloadBlob(blob, `contas-receber-${periodo}.csv`);
+      toast.success('Exportação CSV concluída!');
+    } catch {
+      toast.error('Erro ao exportar CSV');
+    } finally {
+      setExportandoCSV(false);
+    }
+  }
+
+  async function handleExportarPDF() {
+    setExportandoPDF(true);
+    try {
+      const params = { format: 'pdf', ...filtrosAtivos };
+      Object.keys(params).forEach((k) => {
+        if (params[k] === '' || params[k] === null || params[k] === undefined) delete params[k];
+      });
+      const blob = await contasReceberService.exportar(params);
+      const now = new Date();
+      const mesRef = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const periodo = filtrosAtivos.data_vencimento_de ? filtrosAtivos.data_vencimento_de.substring(0, 7) : mesRef;
+      downloadBlob(blob, `contas-receber-${periodo}.pdf`);
+      toast.success('Exportação PDF concluída!');
+    } catch {
+      toast.error('Erro ao exportar PDF');
+    } finally {
+      setExportandoPDF(false);
+    }
   }
 
   function abrirModalNovo() {
@@ -1185,6 +1231,26 @@ export default function ContasReceberPage() {
                         onClick={handleLimpar}
                       >
                         Limpar
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleExportarCSV}
+                        disabled={exportandoCSV}
+                        title="Exportar CSV"
+                      >
+                        <FontAwesomeIcon icon={faFileExport} style={{ marginRight: '6px' }} />
+                        {exportandoCSV ? 'Exportando...' : 'CSV'}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleExportarPDF}
+                        disabled={exportandoPDF}
+                        title="Exportar PDF"
+                      >
+                        <FontAwesomeIcon icon={faFilePdf} style={{ marginRight: '6px' }} />
+                        {exportandoPDF ? 'Exportando...' : 'PDF'}
                       </Button>
                     </div>
                   </form>

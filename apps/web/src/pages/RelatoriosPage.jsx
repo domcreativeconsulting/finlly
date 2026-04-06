@@ -13,10 +13,12 @@ import {
   faCircleUser,
   faDoorOpen,
   faFileExport,
+  faFilePdf,
   faFilter,
 } from '@fortawesome/free-solid-svg-icons';
 import { Button } from '../design-system/index.js';
 import { colors, typography, radius, shadows } from '../design-system/tokens.js';
+import { downloadBlob } from '../utils/downloadBlob.js';
 
 function formatBRL(valor) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor ?? 0);
@@ -67,6 +69,7 @@ export default function RelatoriosPage() {
   const [relatorio, setRelatorio] = useState({ data: [], total: 0, page: 1, limit: 50, totalPages: 0 });
   const [loading, setLoading] = useState(false);
   const [exportando, setExportando] = useState(false);
+  const [exportandoPDF, setExportandoPDF] = useState(false);
   const [page, setPage] = useState(1);
 
   const contentMarginLeft = !sidebarOpen ? '0px' : sidebarExpanded ? '236px' : '108px';
@@ -118,27 +121,42 @@ export default function RelatoriosPage() {
   async function handleExportar() {
     setExportando(true);
     try {
-      const params = {};
+      const params = { format: 'csv' };
       if (dataInicio) params.dataInicio = dataInicio;
       if (dataFim) params.dataFim = dataFim;
       if (categoriaId) params.categoriaId = categoriaId;
       if (contaId) params.contaId = contaId;
       if (tipo) params.tipo = tipo;
 
-      const blob = await dashboardService.exportarRelatorioCSV(params);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'relatorio.csv';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
+      const blob = await dashboardService.exportarRelatorio(params);
+      const dateRef = dataInicio || new Date().toISOString().substring(0, 10);
+      downloadBlob(blob, `relatorio-${dateRef}.csv`);
       toast.success('Relatório exportado com sucesso!');
     } catch {
       toast.error('Erro ao exportar relatório');
     } finally {
       setExportando(false);
+    }
+  }
+
+  async function handleExportarPDF() {
+    setExportandoPDF(true);
+    try {
+      const params = { format: 'pdf' };
+      if (dataInicio) params.dataInicio = dataInicio;
+      if (dataFim) params.dataFim = dataFim;
+      if (categoriaId) params.categoriaId = categoriaId;
+      if (contaId) params.contaId = contaId;
+      if (tipo) params.tipo = tipo;
+
+      const blob = await dashboardService.exportarRelatorio(params);
+      const dateRef = dataInicio || new Date().toISOString().substring(0, 10);
+      downloadBlob(blob, `relatorio-${dateRef}.pdf`);
+      toast.success('Relatório PDF exportado com sucesso!');
+    } catch {
+      toast.error('Erro ao exportar relatório PDF');
+    } finally {
+      setExportandoPDF(false);
     }
   }
 
@@ -294,6 +312,10 @@ export default function RelatoriosPage() {
                   <Button size="sm" variant="outline" onClick={handleExportar} disabled={exportando || loading}>
                     <FontAwesomeIcon icon={faFileExport} style={{ marginRight: '6px' }} />
                     {exportando ? 'Exportando...' : 'Exportar CSV'}
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={handleExportarPDF} disabled={exportandoPDF || loading}>
+                    <FontAwesomeIcon icon={faFilePdf} style={{ marginRight: '6px' }} />
+                    {exportandoPDF ? 'Exportando...' : 'Exportar PDF'}
                   </Button>
                 </div>
               </div>

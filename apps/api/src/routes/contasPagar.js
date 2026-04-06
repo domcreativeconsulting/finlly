@@ -18,6 +18,8 @@ import { requireAtivo } from '../middleware/requireAtivo.js';
 import { AppError } from '../errors/AppError.js';
 import { toValidationError } from '../errors/toValidationError.js';
 import logger from '../logger.js';
+import { gerarCSV } from '../utils/csvGenerator.js';
+import { gerarPDF } from '../utils/pdfGenerator.js';
 
 const router = Router();
 
@@ -173,6 +175,72 @@ async function handleCancelar(req, res, next) {
   }
 }
 
+const ExportQuerySchema = z.object({
+  format: z.enum(['csv', 'pdf']).default('csv'),
+  status: z.enum(STATUS_ENUM).optional(),
+  categoria_id: z.string().uuid().optional(),
+  conta_id: z.string().uuid().optional(),
+  data_vencimento_de: z.string().regex(ISO_DATE_REGEX).optional(),
+  data_vencimento_ate: z.string().regex(ISO_DATE_REGEX).optional(),
+  busca: z.string().max(100).optional(),
+});
+
+async function handleExport(req, res, next) {
+  const parsed = ExportQuerySchema.safeParse(req.query);
+  if (!parsed.success) return next(toValidationError(parsed.error));
+
+  try {
+    const { format, ...filters } = parsed.data;
+    const { data } = await listContasPagar(req.user.sub, { ...filters, page: 1, limit: 10000 });
+
+    const now = new Date();
+    const periodo = filters.data_vencimento_de || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const mesRef = periodo.substring(0, 7);
+
+    const headers = ['descricao', 'valor', 'vencimento', 'status', 'categoria', 'conta', 'observacoes'];
+    const rows = data.map((c) => [
+      c.descricao || '',
+      Number(c.valor).toFixed(2),
+      c.data_vencimento ? c.data_vencimento.substring(0, 10).split('-').reverse().join('/') : '',
+      c.status || '',
+      c.categoria?.nome || '',
+      c.conta?.nome || '',
+      c.observacoes || '',
+    ]);
+
+    if (format === 'pdf') {
+      const totalGeral = data.reduce((acc, c) => acc + Number(c.valor), 0);
+      const periodoPDF = [filters.data_vencimento_de, filters.data_vencimento_ate]
+        .filter(Boolean)
+        .join(' a ') || mesRef;
+
+      const pdfBuffer = await gerarPDF({
+        titulo: 'Contas a Pagar',
+        periodo: periodoPDF,
+        colunas: ['Descrição', 'Valor (R$)', 'Vencimento', 'Status', 'Categoria', 'Conta', 'Observações'],
+        linhas: rows,
+        totalizadores: [
+          { label: 'Total geral', value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalGeral) },
+          { label: 'Quantidade de registros', value: String(data.length) },
+        ],
+      });
+
+      logger.info({ msg: 'Contas a pagar exportadas PDF', userId: req.user.sub, registros: data.length });
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="contas-pagar-${mesRef}.pdf"`);
+      return res.status(200).send(pdfBuffer);
+    }
+
+    const csv = gerarCSV(headers, rows);
+    logger.info({ msg: 'Contas a pagar exportadas CSV', userId: req.user.sub, registros: data.length });
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="contas-pagar-${mesRef}.csv"`);
+    return res.status(200).send(csv);
+  } catch (err) {
+    return next(err);
+  }
+}
+
 async function handleGetGrupo(req, res, next) {
   try {
     const parcelas = await getGrupoParcelas(req.params.grupoId, req.user.sub);
@@ -194,6 +262,7 @@ async function handleCancelarGrupo(req, res, next) {
 
 router.get('/contas-pagar', readLimiter, jwtAuthMiddleware, requireAtivo, handleList);
 router.post('/contas-pagar', writeLimiter, jwtAuthMiddleware, requireAtivo, handleCreate);
+router.get('/contas-pagar/export', readLimiter, jwtAuthMiddleware, requireAtivo, handleExport);
 router.get('/contas-pagar/grupos/:grupoId', readLimiter, jwtAuthMiddleware, requireAtivo, handleGetGrupo);
 router.patch('/contas-pagar/grupos/:grupoId/cancelar', writeLimiter, jwtAuthMiddleware, requireAtivo, handleCancelarGrupo);
 router.get('/contas-pagar/:id', readLimiter, jwtAuthMiddleware, requireAtivo, handleGet);
