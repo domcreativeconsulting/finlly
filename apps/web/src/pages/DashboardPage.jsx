@@ -20,6 +20,7 @@ import {
   faChevronRight,
 } from '@fortawesome/free-solid-svg-icons';
 import { colors, typography, radius, shadows } from '../design-system/tokens.js';
+import { OfflineDataBadge } from '../components/OfflineDataBadge.jsx';
 
 function formatBRL(valor) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor ?? 0);
@@ -347,8 +348,8 @@ export default function DashboardPage() {
 
             {/* Cache notice when offline */}
             {!isOnline && cacheMensalInfo && (
-              <div style={{ marginBottom: '16px', padding: '8px 12px', background: '#fef3c7', border: '1px solid #fde68a', borderRadius: '8px', fontSize: '13px', color: '#92400e' }}>
-                📦 Dados em cache • última atualização: {cacheMensalInfo.toLocaleString('pt-BR')}
+              <div style={{ marginBottom: '16px' }}>
+                <OfflineDataBadge savedAt={cacheMensalInfo} />
               </div>
             )}
 

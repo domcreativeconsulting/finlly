@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['finlly.png', 'favicon.ico', 'apple-touch-icon.png'],
+      includeAssets: ['finlly.png', 'favicon.ico'],
       manifest: {
         name: 'Finlly',
         short_name: 'Finlly',
@@ -18,19 +18,25 @@ export default defineConfig({
         orientation: 'portrait',
         scope: '/',
         start_url: '/',
+        categories: ['finance', 'productivity'],
         icons: [
           {
-            src: 'pwa-192x192.png',
+            src: 'finlly.png',
+            sizes: 'any',
+            type: 'image/png',
+          },
+          {
+            src: 'finlly.png',
             sizes: '192x192',
             type: 'image/png',
           },
           {
-            src: 'pwa-512x512.png',
+            src: 'finlly.png',
             sizes: '512x512',
             type: 'image/png',
           },
           {
-            src: 'pwa-512x512.png',
+            src: 'finlly.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable',
@@ -38,13 +44,16 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,ttf,eot}'],
+        cleanupOutdatedCaches: true,
+        navigateFallback: 'index.html',
+        navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'google-fonts-cache',
+              cacheName: 'finlly-google-fonts-stylesheets',
               expiration: {
                 maxEntries: 10,
                 maxAgeSeconds: 60 * 60 * 24 * 365,
@@ -58,10 +67,25 @@ export default defineConfig({
             urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'gstatic-fonts-cache',
+              cacheName: 'finlly-google-fonts-webfonts',
               expiration: {
-                maxEntries: 10,
+                maxEntries: 20,
                 maxAgeSeconds: 60 * 60 * 24 * 365,
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+          {
+            urlPattern: /^https?:\/\/.*\/api\/(dashboard|extrato|contas-pagar|contas-receber|contas|categorias)(\/.*)?$/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'finlly-api-readonly',
+              networkTimeoutSeconds: 5,
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24,
               },
               cacheableResponse: {
                 statuses: [0, 200],
