@@ -17,7 +17,10 @@ export default function ExportButtons({
         loading={loadingCSV}
         title="Exportar CSV"
       >
-        {!loadingCSV && <FontAwesomeIcon icon={faFileExport} style={{ marginRight: '6px' }} />}
+        <FontAwesomeIcon
+          icon={faFileExport}
+          style={{ marginRight: '6px', visibility: loadingCSV ? 'hidden' : 'visible' }}
+        />
         {loadingCSV ? 'Exportando...' : 'CSV'}
       </Button>
       <Button
@@ -27,7 +30,10 @@ export default function ExportButtons({
         loading={loadingPDF}
         title="Exportar PDF"
       >
-        {!loadingPDF && <FontAwesomeIcon icon={faFilePdf} style={{ marginRight: '6px' }} />}
+        <FontAwesomeIcon
+          icon={faFilePdf}
+          style={{ marginRight: '6px', visibility: loadingPDF ? 'hidden' : 'visible' }}
+        />
         {loadingPDF ? 'Exportando...' : 'PDF'}
       </Button>
     </>
