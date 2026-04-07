@@ -15,6 +15,9 @@ import { contasPagarService } from '../services/contasPagar.service.js';
 import { categoriasService } from '../services/categorias.service.js';
 import { contasService } from '../services/contas.service.js';
 import api from '../services/api.js';
+import { useOnlineStatus } from '../hooks/useOnlineStatus.js';
+import { useOfflineCache } from '../hooks/useOfflineCache.js';
+import { useContentLayout } from '../hooks/useContentLayout.js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faHourglassHalf,
@@ -138,6 +141,9 @@ function SortableTh({ field, label, sortField, sortDir, onSort, style }) {
 export default function ContasPagarPage() {
   const { usuario, logout } = useAuth();
   const navigate = useNavigate();
+  const isOnline = useOnlineStatus();
+  const { saveCache, readCache } = useOfflineCache(usuario?.id);
+  const { isMobile, contentStyle } = useContentLayout();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [menuAbertoId, setMenuAbertoId] = useState(null);
@@ -212,6 +218,7 @@ export default function ContasPagarPage() {
 
   const [exportandoCSV, setExportandoCSV] = useState(false);
   const [exportandoPDF, setExportandoPDF] = useState(false);
+  const [cacheInfo, setCacheInfo] = useState(null);
 
   const carregarLista = useCallback(async () => {
     setLoading(true);
@@ -232,14 +239,26 @@ export default function ContasPagarPage() {
       setLista(result.data);
       setTotalPages(result.totalPages);
       setTotal(result.total ?? 0);
+      saveCache('contas-pagar', { data: result.data, totalPages: result.totalPages, total: result.total ?? 0 });
+      setCacheInfo(null);
     } catch (err) {
+      if (!isOnline) {
+        const cached = readCache('contas-pagar');
+        if (cached) {
+          setLista(cached.data.data);
+          setTotalPages(cached.data.totalPages);
+          setTotal(cached.data.total);
+          setCacheInfo(cached.savedAt);
+          return;
+        }
+      }
       const msg =
         err?.response?.data?.message || 'Erro ao carregar contas a pagar.';
       setError(msg);
     } finally {
       setLoading(false);
     }
-  }, [page, filtrosAtivos, sortField, sortDir]);
+  }, [page, filtrosAtivos, sortField, sortDir, isOnline, saveCache, readCache]);
 
   useEffect(() => {
     carregarLista();
@@ -784,12 +803,12 @@ export default function ContasPagarPage() {
         <div
           style={{
             ...s.mainArea,
-            marginLeft: !sidebarOpen
-              ? '0px'
-              : sidebarExpanded
-                ? '236px'
-                : '108px',
-            transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            ...(isMobile
+              ? contentStyle
+              : {
+                  marginLeft: !sidebarOpen ? '0px' : sidebarExpanded ? '236px' : '108px',
+                  transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                }),
           }}
         >
           {/* Header */}
@@ -814,7 +833,7 @@ export default function ContasPagarPage() {
               </div>
             </div>
             <div style={s.topBarRight}>
-              <Button onClick={abrirModalNovo}>+ Nova conta</Button>
+              <Button onClick={abrirModalNovo} disabled={!isOnline} title={!isOnline ? 'Disponível apenas online' : undefined}>+ Nova conta</Button>
               <Button variant="outline" onClick={abrirModalContaFinanceira}>
                 <FontAwesomeIcon icon={faBuilding} /> Nova conta financeira
               </Button>
@@ -1017,6 +1036,12 @@ export default function ContasPagarPage() {
           {/* Content */}
           <InadimplenteGuard>
             <div style={s.content}>
+              {/* Cache notice when offline */}
+              {!isOnline && cacheInfo && (
+                <div style={{ marginBottom: '16px', padding: '8px 12px', background: '#fef3c7', border: '1px solid #fde68a', borderRadius: '8px', fontSize: '13px', color: '#92400e' }}>
+                  📦 Dados em cache • última atualização: {cacheInfo.toLocaleString('pt-BR')}
+                </div>
+              )}
               {/* Summary Cards */}
               <div style={s.summaryRow}>
                 <div style={s.summaryCard}>
@@ -1500,7 +1525,8 @@ export default function ContasPagarPage() {
                                         <button
                                           style={s.btnPagar}
                                           onClick={() => abrirModalPagar(conta)}
-                                          title="Registrar pagamento"
+                                          title={!isOnline ? 'Disponível apenas online' : 'Registrar pagamento'}
+                                          disabled={!isOnline}
                                         >
                                           <FontAwesomeIcon icon={faCheck} />{' '}
                                           Pagar
@@ -1522,7 +1548,10 @@ export default function ContasPagarPage() {
                                           <div style={s.dropdownMenu}>
                                             <button
                                               style={s.dropdownItem}
+                                              disabled={!isOnline}
+                                              title={!isOnline ? 'Disponível apenas online' : undefined}
                                               onClick={() => {
+                                                if (!isOnline) return;
                                                 setMenuAbertoId(null);
                                                 handleCancelar(conta);
                                               }}
@@ -1534,7 +1563,10 @@ export default function ContasPagarPage() {
                                                 ...s.dropdownItem,
                                                 color: '#dc2626',
                                               }}
+                                              disabled={!isOnline}
+                                              title={!isOnline ? 'Disponível apenas online' : undefined}
                                               onClick={() => {
+                                                if (!isOnline) return;
                                                 setMenuAbertoId(null);
                                                 handleExcluir(conta);
                                               }}
@@ -1868,7 +1900,8 @@ export default function ContasPagarPage() {
                                                 onClick={() =>
                                                   abrirModalPagar(conta)
                                                 }
-                                                title="Registrar pagamento"
+                                                title={!isOnline ? 'Disponível apenas online' : 'Registrar pagamento'}
+                                                disabled={!isOnline}
                                               >
                                                 <FontAwesomeIcon
                                                   icon={faCheck}
@@ -1898,7 +1931,10 @@ export default function ContasPagarPage() {
                                                 <div style={s.dropdownMenu}>
                                                   <button
                                                     style={s.dropdownItem}
+                                                    disabled={!isOnline}
+                                                    title={!isOnline ? 'Disponível apenas online' : undefined}
                                                     onClick={() => {
+                                                      if (!isOnline) return;
                                                       setMenuAbertoId(null);
                                                       handleCancelar(conta);
                                                     }}
@@ -1910,7 +1946,10 @@ export default function ContasPagarPage() {
                                                       ...s.dropdownItem,
                                                       color: '#dc2626',
                                                     }}
+                                                    disabled={!isOnline}
+                                                    title={!isOnline ? 'Disponível apenas online' : undefined}
                                                     onClick={() => {
+                                                      if (!isOnline) return;
                                                       setMenuAbertoId(null);
                                                       handleExcluir(conta);
                                                     }}

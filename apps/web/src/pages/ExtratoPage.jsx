@@ -8,6 +8,9 @@ import { extratoService } from '../services/extrato.service.js';
 import { contasService } from '../services/contas.service.js';
 import { cashMovementsService } from '../services/cashMovements.service.js';
 import { useAuth } from '../hooks/useAuth.js';
+import { useOnlineStatus } from '../hooks/useOnlineStatus.js';
+import { useOfflineCache } from '../hooks/useOfflineCache.js';
+import { useContentLayout } from '../hooks/useContentLayout.js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faBars,
@@ -75,6 +78,9 @@ function SortableTh({ field, label, sortField, sortDir, onSort, style }) {
 export default function ExtratoPage() {
   const { usuario, logout } = useAuth();
   const navigate = useNavigate();
+  const isOnline = useOnlineStatus();
+  const { saveCache, readCache } = useOfflineCache(usuario?.id);
+  const { isMobile, contentStyle } = useContentLayout();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -97,6 +103,7 @@ export default function ExtratoPage() {
   const [filterQ, setFilterQ] = useState('');
 
   const [contas, setContas] = useState([]);
+  const [cacheInfo, setCacheInfo] = useState(null);
 
   const [appliedFilters, setAppliedFilters] = useState({
     dateFrom: firstDayOfMonth(),
@@ -142,12 +149,24 @@ export default function ExtratoPage() {
       setPage(result.page ?? 1);
       setTotalPages(result.totalPages ?? 1);
       setTotal(result.total ?? 0);
+      saveCache('extrato', { items: result.items ?? [], totals: result.totals ?? { totalIn: 0, totalOut: 0, balanceDelta: 0 }, total: result.total ?? 0 });
+      setCacheInfo(null);
     } catch (err) {
+      if (!isOnline) {
+        const cached = readCache('extrato');
+        if (cached) {
+          setItems(cached.data.items);
+          setTotals(cached.data.totals);
+          setTotal(cached.data.total);
+          setCacheInfo(cached.savedAt);
+          return;
+        }
+      }
       setError(err?.response?.data?.message || 'Erro ao carregar extrato.');
     } finally {
       setLoading(false);
     }
-  }, [page, sortField, sortDir, appliedFilters]);
+  }, [page, sortField, sortDir, appliedFilters, isOnline, saveCache, readCache]);
 
   useEffect(() => {
     carregarExtrato();
@@ -272,12 +291,12 @@ export default function ExtratoPage() {
         <div
           style={{
             ...s.mainArea,
-            marginLeft: !sidebarOpen
-              ? '0px'
-              : sidebarExpanded
-                ? '236px'
-                : '108px',
-            transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            ...(isMobile
+              ? contentStyle
+              : {
+                  marginLeft: !sidebarOpen ? '0px' : sidebarExpanded ? '236px' : '108px',
+                  transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                }),
           }}
         >
           {/* Header */}
@@ -302,7 +321,7 @@ export default function ExtratoPage() {
               </div>
               <span style={s.badge}>Movimentações do período</span>
             </div>
-            <Button onClick={() => setShowModalManual(true)} style={{ marginLeft: 'auto' }}>
+            <Button onClick={() => setShowModalManual(true)} style={{ marginLeft: 'auto' }} disabled={!isOnline} title={!isOnline ? 'Disponível apenas online' : undefined}>
               + Novo lançamento
             </Button>
 
@@ -490,6 +509,13 @@ export default function ExtratoPage() {
           {/* Content */}
           <InadimplenteGuard>
             <div style={s.content}>
+
+              {/* Cache notice when offline */}
+              {!isOnline && cacheInfo && (
+                <div style={{ marginBottom: '16px', padding: '8px 12px', background: '#fef3c7', border: '1px solid #fde68a', borderRadius: '8px', fontSize: '13px', color: '#92400e' }}>
+                  📦 Dados em cache • última atualização: {cacheInfo.toLocaleString('pt-BR')}
+                </div>
+              )}
 
               {/* Filtros */}
               <div style={s.filterCard}>

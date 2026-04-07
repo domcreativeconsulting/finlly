@@ -1,0 +1,19 @@
+{
+  "name": "Finlly",
+  "short_name": "Finlly",
+  "description": "Gestão financeira inteligente",
+  "theme_color": "#33528a",
+  "background_color": "#f3f4f6",
+  "display": "standalone",
+  "orientation": "portrait",
+  "scope": "/",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "/finlly.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

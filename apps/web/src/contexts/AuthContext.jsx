@@ -2,6 +2,7 @@ import {
   createContext,
   useState,
   useEffect,
+  useRef,
   useCallback,
   useMemo,
 } from 'react';
@@ -14,6 +15,11 @@ export function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(null);
   const [accessToken, setAccessTokenState] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const usuarioRef = useRef(usuario);
+
+  useEffect(() => {
+    usuarioRef.current = usuario;
+  }, [usuario]);
 
   const storeToken = useCallback((token) => {
     setAccessToken(token);
@@ -21,6 +27,14 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(async () => {
+    // Limpar cache offline do usuário antes de deslogar
+    const currentUsuario = usuarioRef.current;
+    if (currentUsuario?.id) {
+      const prefix = `finlly_offline_${currentUsuario.id}_`;
+      Object.keys(localStorage)
+        .filter((k) => k.startsWith(prefix))
+        .forEach((k) => localStorage.removeItem(k));
+    }
     try {
       await authService.logout();
     } catch {
