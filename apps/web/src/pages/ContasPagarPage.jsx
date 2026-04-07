@@ -33,8 +33,6 @@ import {
   faCreditCard,
   faCircleUser,
   faDoorOpen,
-  faFileExport,
-  faFilePdf,
 } from '@fortawesome/free-solid-svg-icons';
 import { Button, Modal, Badge } from '../design-system/index.js';
 import {
@@ -44,6 +42,7 @@ import {
   shadows,
 } from '../design-system/tokens.js';
 import { downloadBlob } from '../utils/downloadBlob.js';
+import ExportButtons from '../components/ExportButtons.jsx';
 
 const TIPO_MODAL_CAT = 'saida';
 const DEFAULT_FORM_CAT = { nome: '', icone: '', cor: '#33528a', pai_id: '' };
@@ -157,6 +156,7 @@ export default function ContasPagarPage() {
     data_vencimento_ate: '',
     busca: '',
     categoria_id: '',
+    conta_id: '',
     valor_min: '',
     valor_max: '',
   });
@@ -302,6 +302,7 @@ export default function ContasPagarPage() {
       data_vencimento_ate: '',
       busca: '',
       categoria_id: '',
+      conta_id: '',
       valor_min: '',
       valor_max: '',
     });
@@ -1229,6 +1230,24 @@ export default function ContasPagarPage() {
                           onBlur={handleInputBlur}
                         />
                       </div>
+                      <div style={{ ...s.filterField, maxWidth: '200px' }}>
+                        <label style={s.filterLabel}>Conta financeira</label>
+                        <select
+                          name="conta_id"
+                          value={filtros.conta_id}
+                          onChange={handleFiltroChange}
+                          style={s.filterInputPlain}
+                          onFocus={handleInputFocus}
+                          onBlur={handleInputBlur}
+                        >
+                          <option value="">Todas</option>
+                          {contas.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.nome}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                       <div style={{ flex: 1 }} />
                       <Button type="submit">
                         <FontAwesomeIcon icon={faCheck} /> Aplicar
@@ -1240,26 +1259,12 @@ export default function ContasPagarPage() {
                       >
                         Limpar
                       </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleExportarCSV}
-                        disabled={exportandoCSV}
-                        title="Exportar CSV"
-                      >
-                        <FontAwesomeIcon icon={faFileExport} style={{ marginRight: '6px' }} />
-                        {exportandoCSV ? 'Exportando...' : 'CSV'}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleExportarPDF}
-                        disabled={exportandoPDF}
-                        title="Exportar PDF"
-                      >
-                        <FontAwesomeIcon icon={faFilePdf} style={{ marginRight: '6px' }} />
-                        {exportandoPDF ? 'Exportando...' : 'PDF'}
-                      </Button>
+                      <ExportButtons
+                        onExportCSV={handleExportarCSV}
+                        onExportPDF={handleExportarPDF}
+                        loadingCSV={exportandoCSV}
+                        loadingPDF={exportandoPDF}
+                      />
                     </div>
                   </form>
                 </div>
