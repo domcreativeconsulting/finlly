@@ -10,7 +10,12 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['finlly.png', 'favicon.ico'],
+      injectRegister: 'auto',
+      includeAssets: ['finlly.png'],
+      devOptions: {
+        enabled: true,
+        type: 'module',
+      },
       manifest: {
         name: 'Finlly',
         short_name: 'Finlly',
@@ -25,24 +30,15 @@ export default defineConfig({
         icons: [
           {
             src: 'finlly.png',
-            sizes: '192x192',
+            sizes: 'any',
             type: 'image/png',
-          },
-          {
-            src: 'finlly.png',
-            sizes: '512x512',
-            type: 'image/png',
-          },
-          {
-            src: 'finlly.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any maskable',
+            purpose: 'any',
           },
           {
             src: 'finlly.png',
             sizes: 'any',
             type: 'image/png',
+            purpose: 'maskable',
           },
         ],
       },
@@ -50,7 +46,7 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,ttf,eot}'],
         cleanupOutdatedCaches: true,
         navigateFallback: 'index.html',
-        navigateFallbackDenylist: [/^\/api\//],
+        navigateFallbackDenylist: [/^\/api\//, /^\/auth\//],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -91,7 +87,7 @@ export default defineConfig({
                 maxAgeSeconds: 60 * 60 * 24,
               },
               cacheableResponse: {
-                statuses: [0, 200],
+                statuses: [200],
               },
             },
           },
