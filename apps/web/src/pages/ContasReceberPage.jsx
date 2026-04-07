@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
 import { toast } from 'react-toastify';
 import AppSidebar from '../components/AppSidebar.jsx';
+import ExportButtons from '../components/ExportButtons.jsx';
 import { InadimplenteGuard } from '../components/InadimplenteGuard.jsx';
 import { contasReceberService } from '../services/contasReceber.service.js';
 import { categoriasService } from '../services/categorias.service.js';
@@ -33,8 +34,6 @@ import {
   faCreditCard,
   faCircleUser,
   faDoorOpen,
-  faFileExport,
-  faFilePdf,
 } from '@fortawesome/free-solid-svg-icons';
 import { Button, Modal, Badge } from '../design-system/index.js';
 import {
@@ -157,6 +156,7 @@ export default function ContasReceberPage() {
     data_vencimento_ate: '',
     busca: '',
     categoria_id: '',
+    conta_id: '',
     valor_min: '',
     valor_max: '',
   });
@@ -302,6 +302,7 @@ export default function ContasReceberPage() {
       data_vencimento_ate: '',
       busca: '',
       categoria_id: '',
+      conta_id: '',
       valor_min: '',
       valor_max: '',
     });
@@ -1221,6 +1222,24 @@ export default function ContasReceberPage() {
                           onBlur={handleInputBlur}
                         />
                       </div>
+                      <div style={s.filterField}>
+                        <label style={s.filterLabel}>Conta financeira</label>
+                        <select
+                          name="conta_id"
+                          value={filtros.conta_id}
+                          onChange={handleFiltroChange}
+                          style={s.filterInputPlain}
+                          onFocus={handleInputFocus}
+                          onBlur={handleInputBlur}
+                        >
+                          <option value="">Todas</option>
+                          {contas.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.nome}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                       <div style={{ flex: 1 }} />
                       <Button type="submit">
                         <FontAwesomeIcon icon={faCheck} /> Aplicar
@@ -1232,26 +1251,12 @@ export default function ContasReceberPage() {
                       >
                         Limpar
                       </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleExportarCSV}
-                        disabled={exportandoCSV}
-                        title="Exportar CSV"
-                      >
-                        <FontAwesomeIcon icon={faFileExport} style={{ marginRight: '6px' }} />
-                        {exportandoCSV ? 'Exportando...' : 'CSV'}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleExportarPDF}
-                        disabled={exportandoPDF}
-                        title="Exportar PDF"
-                      >
-                        <FontAwesomeIcon icon={faFilePdf} style={{ marginRight: '6px' }} />
-                        {exportandoPDF ? 'Exportando...' : 'PDF'}
-                      </Button>
+                      <ExportButtons
+                        onExportCSV={handleExportarCSV}
+                        onExportPDF={handleExportarPDF}
+                        loadingCSV={exportandoCSV}
+                        loadingPDF={exportandoPDF}
+                      />
                     </div>
                   </form>
                 </div>

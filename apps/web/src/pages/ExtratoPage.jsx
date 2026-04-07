@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import AppSidebar from '../components/AppSidebar.jsx';
+import ExportButtons from '../components/ExportButtons.jsx';
 import { InadimplenteGuard } from '../components/InadimplenteGuard.jsx';
 import { extratoService } from '../services/extrato.service.js';
 import { contasService } from '../services/contas.service.js';
@@ -17,8 +18,6 @@ import {
   faCreditCard,
   faCircleUser,
   faDoorOpen,
-  faFileExport,
-  faFilePdf,
 } from '@fortawesome/free-solid-svg-icons';
 import { Button, Badge } from '../design-system/index.js';
 import { colors, typography, radius, shadows } from '../design-system/tokens.js';
@@ -94,6 +93,8 @@ export default function ExtratoPage() {
   const [dateFrom, setDateFrom] = useState(firstDayOfMonth());
   const [dateTo, setDateTo] = useState(todayISO());
   const [accountId, setAccountId] = useState('');
+  const [filterType, setFilterType] = useState('');
+  const [filterQ, setFilterQ] = useState('');
 
   const [contas, setContas] = useState([]);
 
@@ -101,6 +102,8 @@ export default function ExtratoPage() {
     dateFrom: firstDayOfMonth(),
     dateTo: todayISO(),
     accountId: '',
+    type: '',
+    q: '',
   });
 
   const [showModalManual, setShowModalManual] = useState(false);
@@ -130,6 +133,8 @@ export default function ExtratoPage() {
         ...(appliedFilters.dateFrom && { dateFrom: appliedFilters.dateFrom }),
         ...(appliedFilters.dateTo && { dateTo: appliedFilters.dateTo }),
         ...(appliedFilters.accountId && { accountId: appliedFilters.accountId }),
+        ...(appliedFilters.type && { type: appliedFilters.type }),
+        ...(appliedFilters.q && { q: appliedFilters.q }),
       };
       const result = await extratoService.listar(params);
       setItems(result.items ?? []);
@@ -173,7 +178,7 @@ export default function ExtratoPage() {
 
   function handleFiltrar() {
     setPage(1);
-    setAppliedFilters({ dateFrom, dateTo, accountId });
+    setAppliedFilters({ dateFrom, dateTo, accountId, type: filterType, q: filterQ });
   }
 
   async function handleExportarCSV() {
@@ -183,6 +188,8 @@ export default function ExtratoPage() {
       if (appliedFilters.dateFrom) params.dateFrom = appliedFilters.dateFrom;
       if (appliedFilters.dateTo) params.dateTo = appliedFilters.dateTo;
       if (appliedFilters.accountId) params.accountId = appliedFilters.accountId;
+      if (appliedFilters.type) params.type = appliedFilters.type;
+      if (appliedFilters.q) params.q = appliedFilters.q;
       const blob = await extratoService.exportar(params);
       const from = appliedFilters.dateFrom || new Date().toISOString().substring(0, 10);
       const to = appliedFilters.dateTo || new Date().toISOString().substring(0, 10);
@@ -202,6 +209,8 @@ export default function ExtratoPage() {
       if (appliedFilters.dateFrom) params.dateFrom = appliedFilters.dateFrom;
       if (appliedFilters.dateTo) params.dateTo = appliedFilters.dateTo;
       if (appliedFilters.accountId) params.accountId = appliedFilters.accountId;
+      if (appliedFilters.type) params.type = appliedFilters.type;
+      if (appliedFilters.q) params.q = appliedFilters.q;
       const blob = await extratoService.exportar(params);
       const from = appliedFilters.dateFrom || new Date().toISOString().substring(0, 10);
       const to = appliedFilters.dateTo || new Date().toISOString().substring(0, 10);
@@ -519,17 +528,37 @@ export default function ExtratoPage() {
                     </select>
                   </div>
                   <div style={s.filterField}>
+                    <label style={s.filterLabel}>Buscar</label>
+                    <input
+                      type="text"
+                      value={filterQ}
+                      onChange={(e) => setFilterQ(e.target.value)}
+                      style={s.filterInputPlain}
+                      placeholder="Descrição ou observação"
+                    />
+                  </div>
+                  <div style={s.filterField}>
+                    <label style={s.filterLabel}>Tipo</label>
+                    <select
+                      value={filterType}
+                      onChange={(e) => setFilterType(e.target.value)}
+                      style={s.filterInputPlain}
+                    >
+                      <option value="">Todos</option>
+                      <option value="IN">Entrada</option>
+                      <option value="OUT">Saída</option>
+                    </select>
+                  </div>
+                  <div style={s.filterField}>
                     <label style={s.filterLabel}>&nbsp;</label>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <Button onClick={handleFiltrar}>Filtrar</Button>
-                      <Button variant="outline" onClick={handleExportarCSV} disabled={exportandoCSV} title="Exportar CSV">
-                        <FontAwesomeIcon icon={faFileExport} style={{ marginRight: '6px' }} />
-                        {exportandoCSV ? 'Exportando...' : 'CSV'}
-                      </Button>
-                      <Button variant="outline" onClick={handleExportarPDF} disabled={exportandoPDF} title="Exportar PDF">
-                        <FontAwesomeIcon icon={faFilePdf} style={{ marginRight: '6px' }} />
-                        {exportandoPDF ? 'Exportando...' : 'PDF'}
-                      </Button>
+                      <ExportButtons
+                        onExportCSV={handleExportarCSV}
+                        onExportPDF={handleExportarPDF}
+                        loadingCSV={exportandoCSV}
+                        loadingPDF={exportandoPDF}
+                      />
                     </div>
                   </div>
                 </div>
