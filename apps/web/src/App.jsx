@@ -21,10 +21,12 @@ import InvestimentosPage from './pages/InvestimentosPage.jsx';
 import MetasPage from './pages/MetasPage.jsx';
 import AnexosPage from './pages/AnexosPage.jsx';
 import RelatoriosPage from './pages/RelatoriosPage.jsx';
+import OfflineBanner from './components/OfflineBanner.jsx';
 
 export default function App() {
   return (
     <> 
+      <OfflineBanner />
       <style>{` 
         @keyframes spin { 
           to { transform: rotate(360deg); } 

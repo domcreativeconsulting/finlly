@@ -5,6 +5,9 @@ import AppSidebar from '../components/AppSidebar.jsx';
 import { InadimplenteGuard } from '../components/InadimplenteGuard.jsx';
 import { dashboardService } from '../services/dashboard.service.js';
 import { useAuth } from '../hooks/useAuth.js';
+import { useOnlineStatus } from '../hooks/useOnlineStatus.js';
+import { useOfflineCache } from '../hooks/useOfflineCache.js';
+import { useContentLayout } from '../hooks/useContentLayout.js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faBars,
@@ -117,6 +120,9 @@ function KPICard({ label, value, subtitle, color, bgColor, icon, loading }) {
 export default function DashboardPage() {
   const { usuario, logout } = useAuth();
   const navigate = useNavigate();
+  const isOnline = useOnlineStatus();
+  const { saveCache, readCache } = useOfflineCache(usuario?.id);
+  const { isMobile, contentStyle } = useContentLayout();
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
@@ -132,7 +138,12 @@ export default function DashboardPage() {
   const [loadingEvolucao, setLoadingEvolucao] = useState(true);
   const [loadingContas, setLoadingContas] = useState(true);
 
+  const [cacheMensalInfo, setCacheMensalInfo] = useState(null);
+
   const contentMarginLeft = !sidebarOpen ? '0px' : sidebarExpanded ? '236px' : '108px';
+  const mainContentStyle = isMobile
+    ? { ...contentStyle }
+    : { marginLeft: contentMarginLeft, transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)' };
 
   function mesAnterior() {
     setMesSelecionado((prev) => {
@@ -153,36 +164,62 @@ export default function DashboardPage() {
     try {
       const data = await dashboardService.getDashboardMensal(mesSelecionado);
       setDashboardMensal(data);
+      saveCache('dashboard', { mensal: data, mes: mesSelecionado });
+      setCacheMensalInfo(null);
     } catch {
+      if (!isOnline) {
+        const cached = readCache('dashboard');
+        if (cached) {
+          setDashboardMensal(cached.data.mensal);
+          setCacheMensalInfo(cached.savedAt);
+          return;
+        }
+      }
       toast.error('Erro ao carregar dados do dashboard');
     } finally {
       setLoadingMensal(false);
     }
-  }, [mesSelecionado]);
+  }, [mesSelecionado, isOnline, saveCache, readCache]);
 
   const carregarEvolucao = useCallback(async () => {
     setLoadingEvolucao(true);
     try {
       const data = await dashboardService.getEvolucaoMensal(6);
       setEvolucao(data);
+      saveCache('dashboard-evolucao', data);
     } catch {
+      if (!isOnline) {
+        const cached = readCache('dashboard-evolucao');
+        if (cached) {
+          setEvolucao(cached.data);
+          return;
+        }
+      }
       toast.error('Erro ao carregar evolução mensal');
     } finally {
       setLoadingEvolucao(false);
     }
-  }, []);
+  }, [isOnline, saveCache, readCache]);
 
   const carregarContas = useCallback(async () => {
     setLoadingContas(true);
     try {
       const data = await dashboardService.getSaldoPorConta();
       setContas(data);
+      saveCache('dashboard-contas', data);
     } catch {
+      if (!isOnline) {
+        const cached = readCache('dashboard-contas');
+        if (cached) {
+          setContas(cached.data);
+          return;
+        }
+      }
       toast.error('Erro ao carregar saldo por conta');
     } finally {
       setLoadingContas(false);
     }
-  }, []);
+  }, [isOnline, saveCache, readCache]);
 
   useEffect(() => {
     carregarDadosMensais();
@@ -230,8 +267,7 @@ export default function DashboardPage() {
           display: 'flex',
           flexDirection: 'column',
           minHeight: '100vh',
-          marginLeft: contentMarginLeft,
-          transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          ...mainContentStyle,
         }}
       >
         {/* Top Bar */}
@@ -308,6 +344,13 @@ export default function DashboardPage() {
         {/* Main content */}
         <InadimplenteGuard>
           <main style={{ flex: 1, padding: '28px 28px 40px' }}>
+
+            {/* Cache notice when offline */}
+            {!isOnline && cacheMensalInfo && (
+              <div style={{ marginBottom: '16px', padding: '8px 12px', background: '#fef3c7', border: '1px solid #fde68a', borderRadius: '8px', fontSize: '13px', color: '#92400e' }}>
+                📦 Dados em cache • última atualização: {cacheMensalInfo.toLocaleString('pt-BR')}
+              </div>
+            )}
 
             {/* KPI Cards — executive view */}
             <div

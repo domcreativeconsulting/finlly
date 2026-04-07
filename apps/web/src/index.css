@@ -169,3 +169,35 @@ button, input, select, textarea {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* Mobile base adjustments */
+@media (max-width: 768px) {
+  /* Evitar overflow horizontal */
+  html, body {
+    overflow-x: hidden;
+  }
+
+  /* Tabelas responsivas */
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Tamanho mínimo de toque */
+  button, a, [role="button"] {
+    min-height: 44px;
+  }
+
+  /* Inputs com tamanho legível no iOS (evita zoom automático) */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Safe area para iPhone X+ */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  body {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}

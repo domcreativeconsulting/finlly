@@ -12,6 +12,7 @@ import {
   faRightFromBracket,
 } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../hooks/useAuth.js';
+import { useIsMobile } from '../hooks/useMediaQuery.js';
 import logoIcon from '../assets/logo.png';
 
 const NAV_ITEMS = [
@@ -171,6 +172,38 @@ function NavItemExpanded({ item, onNavigate }) {
   );
 }
 
+function MobileNavItem({ item, onNavigate }) {
+  return (
+    <button
+      onClick={() => onNavigate(item)}
+      title={item.label}
+      aria-label={item.label}
+      aria-current={item.active ? 'page' : undefined}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '2px',
+        background: 'none',
+        border: 'none',
+        cursor: 'pointer',
+        color: item.active ? '#ffffff' : 'rgba(255,255,255,0.65)',
+        fontSize: '9px',
+        fontWeight: item.active ? 600 : 400,
+        padding: '4px 8px',
+        borderRadius: '8px',
+        minWidth: '44px',
+        minHeight: '44px',
+        transition: 'color 0.15s ease',
+      }}
+    >
+      <span style={{ fontSize: '20px' }}>{item.icon}</span>
+      <span>{item.label.split(' ')[0]}</span>
+    </button>
+  );
+}
+
 export default function AppSidebar({
   sidebarOpen,
   currentPath,
@@ -179,6 +212,7 @@ export default function AppSidebar({
 }) {
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [isHovered, setIsHovered] = useState(false);
   const effectivelyExpanded = isHovered || isExpanded;
 
@@ -204,6 +238,32 @@ export default function AppSidebar({
     } else {
       navigate(item.path);
     }
+  }
+
+  if (isMobile) {
+    return (
+      <nav
+        aria-label="Navegação principal"
+        style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: '64px',
+          backgroundColor: '#33528a',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-around',
+          zIndex: 1030,
+          boxShadow: '0 -2px 12px rgba(0,0,0,0.15)',
+          paddingBottom: 'env(safe-area-inset-bottom)',
+        }}
+      >
+        {navItems.map((item) => (
+          <MobileNavItem key={item.path} item={item} onNavigate={handleNavigate} />
+        ))}
+      </nav>
+    );
   }
 
   return (
