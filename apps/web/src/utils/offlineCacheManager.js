@@ -1,5 +1,7 @@
 export const CACHE_PREFIX = 'finlly_offline_';
-export const CACHE_VERSION = 'v1'; // increment on deploys that break the cache schema
+// Increment CACHE_VERSION on deploys that break the cache schema.
+// To invalidate all user data caches after a breaking deploy, increment `CACHE_VERSION`.
+export const CACHE_VERSION = 'v1';
 
 // Clears caches from older versions (called at app boot)
 export function cleanupLegacyCaches() {

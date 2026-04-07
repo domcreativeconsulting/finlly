@@ -5,6 +5,11 @@ import AppSidebar from '../components/AppSidebar.jsx';
 import { InadimplenteGuard } from '../components/InadimplenteGuard.jsx';
 import { contasService } from '../services/contas.service.js';
 import { useAuth } from '../hooks/useAuth.js';
+import { useOnlineStatus } from '../hooks/useOnlineStatus.js';
+import { useOfflineCache } from '../hooks/useOfflineCache.js';
+import { useRequireOnline } from '../hooks/useRequireOnline.js';
+import { OfflineDataBadge } from '../components/OfflineDataBadge.jsx';
+import { OfflineFallback } from '../components/OfflineFallback.jsx';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCreditCard, faCheck, faCircleUser, faDoorOpen } from '@fortawesome/free-solid-svg-icons';
 import { Button, Input, Select, Modal, Badge, Card } from '../design-system/index.js';
@@ -60,6 +65,9 @@ const EMPTY_FORM = {
 export default function ContasPage() {
   const { usuario, logout } = useAuth();
   const navigate = useNavigate();
+  const isOnline = useOnlineStatus();
+  const { saveCache, readCache } = useOfflineCache(usuario?.id);
+  const { requireOnline } = useRequireOnline();
   const [sidebarOpen] = useState(true);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -68,6 +76,7 @@ export default function ContasPage() {
   const [lista, setLista] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [cacheInfo, setCacheInfo] = useState(null);
 
   const [filtroStatus, setFiltroStatus] = useState('');
 
@@ -87,14 +96,25 @@ export default function ContasPage() {
       const params = {};
       if (filtroStatus) params.status = filtroStatus;
       const result = await contasService.listar(params);
-      setLista(Array.isArray(result) ? result : []);
+      const data = Array.isArray(result) ? result : [];
+      setLista(data);
+      saveCache('contas', data);
+      setCacheInfo(null);
     } catch (err) {
+      if (!isOnline) {
+        const cached = readCache('contas');
+        if (cached) {
+          setLista(cached.data);
+          setCacheInfo(cached.savedAt);
+          return;
+        }
+      }
       const msg = err?.response?.data?.message || 'Erro ao carregar carteiras.';
       setError(msg);
     } finally {
       setLoading(false);
     }
-  }, [filtroStatus]);
+  }, [filtroStatus, isOnline, saveCache, readCache]);
 
   useEffect(() => {
     carregarLista();
@@ -149,7 +169,7 @@ export default function ContasPage() {
     setForm((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   }
 
-  async function handleSalvar(e) {
+  const handleSalvar = requireOnline(async function handleSalvar(e) {
     e.preventDefault();
     setSalvando(true);
     try {
@@ -178,7 +198,7 @@ export default function ContasPage() {
     } finally {
       setSalvando(false);
     }
-  }
+  });
 
   function abrirModalExcluir(conta) {
     setContaParaExcluir(conta);
@@ -190,7 +210,7 @@ export default function ContasPage() {
     setContaParaExcluir(null);
   }
 
-  async function handleExcluir() {
+  const handleExcluir = requireOnline(async function handleExcluir() {
     if (!contaParaExcluir) return;
     setExcluindo(true);
     try {
@@ -204,11 +224,13 @@ export default function ContasPage() {
     } finally {
       setExcluindo(false);
     }
-  }
+  });
 
   const saldoTotal = lista
     .filter((c) => c.incluir_total && c.status === 'ativa')
     .reduce((acc, c) => acc + (c.saldo ?? 0), 0);
+
+  const shouldShowOfflineFallback = !isOnline && !cacheInfo && lista.length === 0 && !loading;
 
   const contentMarginLeft = sidebarExpanded ? '236px' : '108px';
 
@@ -248,7 +270,7 @@ export default function ContasPage() {
                 Gerencie suas contas financeiras
               </p>
             </div>
-            <Button onClick={abrirModalNovo}>+ Nova Carteira</Button>
+            <Button onClick={abrirModalNovo} disabled={!isOnline} title={!isOnline ? 'Disponível apenas online' : undefined}>+ Nova Carteira</Button>
 
             {/* Avatar / Dropdown */}
             <div ref={dropdownRef} style={{ position: 'relative' }}>
@@ -391,9 +413,19 @@ export default function ContasPage() {
           </Card>
 
           {/* Content */}
+          {/* Cache notice when offline */}
+          {!isOnline && cacheInfo && (
+            <div style={{ marginBottom: '16px' }}>
+              <OfflineDataBadge savedAt={cacheInfo} />
+            </div>
+          )}
           {loading ? (
             <Card>
               <div style={{ padding: '24px', textAlign: 'center', color: colors.neutral500 }}>Carregando...</div>
+            </Card>
+          ) : shouldShowOfflineFallback ? (
+            <Card>
+              <OfflineFallback message="A lista de carteiras não está disponível offline. Conecte-se à internet para acessar seus dados." />
             </Card>
           ) : error ? (
             <Card>
@@ -409,7 +441,7 @@ export default function ContasPage() {
                 <p style={{ color: colors.neutral500, fontSize: typography.sizes.md, margin: '0 0 24px' }}>
                   Crie sua primeira carteira para controlar seu saldo.
                 </p>
-                <Button onClick={abrirModalNovo}>+ Criar primeira carteira</Button>
+                <Button onClick={abrirModalNovo} disabled={!isOnline} title={!isOnline ? 'Disponível apenas online' : undefined}>+ Criar primeira carteira</Button>
               </div>
             </Card>
           ) : (
@@ -509,6 +541,8 @@ export default function ContasPage() {
                       variant="ghost"
                       size="sm"
                       onClick={() => abrirModalEdicao(conta)}
+                      disabled={!isOnline}
+                      title={!isOnline ? 'Disponível apenas online' : undefined}
                       style={{ flex: 1, background: '#e0f2fe', color: '#0369a1' }}
                     >
                       Editar
@@ -517,6 +551,8 @@ export default function ContasPage() {
                       variant="ghost"
                       size="sm"
                       onClick={() => abrirModalExcluir(conta)}
+                      disabled={!isOnline}
+                      title={!isOnline ? 'Disponível apenas online' : undefined}
                       style={{ flex: 1, background: colors.errorBg, color: colors.errorText }}
                     >
                       Excluir

@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
+import { CACHE_PREFIX } from '../utils/offlineCacheManager.js';
 
-const CACHE_PREFIX = 'finlly_offline_';
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 horas
 
 export function useOfflineCache(userId) {
