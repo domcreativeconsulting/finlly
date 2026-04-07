@@ -10,6 +10,7 @@ import { cashMovementsService } from '../services/cashMovements.service.js';
 import { useAuth } from '../hooks/useAuth.js';
 import { useOnlineStatus } from '../hooks/useOnlineStatus.js';
 import { useOfflineCache } from '../hooks/useOfflineCache.js';
+import { useRequireOnline } from '../hooks/useRequireOnline.js';
 import { useContentLayout } from '../hooks/useContentLayout.js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -25,6 +26,7 @@ import {
 import { Button, Badge } from '../design-system/index.js';
 import { colors, typography, radius, shadows } from '../design-system/tokens.js';
 import { downloadBlob } from '../utils/downloadBlob.js';
+import { OfflineDataBadge } from '../components/OfflineDataBadge.jsx';
 
 function getInitials(name) {
   if (!name) return '?';
@@ -80,6 +82,7 @@ export default function ExtratoPage() {
   const navigate = useNavigate();
   const isOnline = useOnlineStatus();
   const { saveCache, readCache } = useOfflineCache(usuario?.id);
+  const { requireOnline } = useRequireOnline();
   const { isMobile, contentStyle } = useContentLayout();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
@@ -172,7 +175,7 @@ export default function ExtratoPage() {
     carregarExtrato();
   }, [carregarExtrato]);
 
-  async function handleSubmitManual(e) {
+  const handleSubmitManual = requireOnline(async function handleSubmitManual(e) {
     e.preventDefault();
     setSavingManual(true);
     try {
@@ -193,7 +196,7 @@ export default function ExtratoPage() {
     } finally {
       setSavingManual(false);
     }
-  }
+  });
 
   function handleFiltrar() {
     setPage(1);
@@ -512,8 +515,8 @@ export default function ExtratoPage() {
 
               {/* Cache notice when offline */}
               {!isOnline && cacheInfo && (
-                <div style={{ marginBottom: '16px', padding: '8px 12px', background: '#fef3c7', border: '1px solid #fde68a', borderRadius: '8px', fontSize: '13px', color: '#92400e' }}>
-                  📦 Dados em cache • última atualização: {cacheInfo.toLocaleString('pt-BR')}
+                <div style={{ marginBottom: '16px' }}>
+                  <OfflineDataBadge savedAt={cacheInfo} />
                 </div>
               )}
 

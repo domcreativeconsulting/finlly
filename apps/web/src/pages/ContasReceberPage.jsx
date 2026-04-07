@@ -17,6 +17,7 @@ import { contasService } from '../services/contas.service.js';
 import api from '../services/api.js';
 import { useOnlineStatus } from '../hooks/useOnlineStatus.js';
 import { useOfflineCache } from '../hooks/useOfflineCache.js';
+import { useRequireOnline } from '../hooks/useRequireOnline.js';
 import { useContentLayout } from '../hooks/useContentLayout.js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -46,6 +47,7 @@ import {
   shadows,
 } from '../design-system/tokens.js';
 import { downloadBlob } from '../utils/downloadBlob.js';
+import { OfflineDataBadge } from '../components/OfflineDataBadge.jsx';
 
 const TIPO_MODAL_CAT = 'entrada';
 const DEFAULT_FORM_CAT = { nome: '', icone: '', cor: '#33528a', pai_id: '' };
@@ -143,6 +145,7 @@ export default function ContasReceberPage() {
   const navigate = useNavigate();
   const isOnline = useOnlineStatus();
   const { saveCache, readCache } = useOfflineCache(usuario?.id);
+  const { requireOnline } = useRequireOnline();
   const { isMobile, contentStyle } = useContentLayout();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
@@ -431,7 +434,7 @@ export default function ContasReceberPage() {
     }));
   }
 
-  async function handleSalvar(e) {
+  const handleSalvar = requireOnline(async function handleSalvar(e) {
     e.preventDefault();
     setSalvando(true);
     try {
@@ -486,9 +489,9 @@ export default function ContasReceberPage() {
     } finally {
       setSalvando(false);
     }
-  }
+  });
 
-  async function handleExcluir(conta) {
+  const handleExcluir = requireOnline(async function handleExcluir(conta) {
     if (!window.confirm(`Excluir a conta "${conta.descricao}"?`)) return;
     try {
       await contasReceberService.excluir(conta.id);
@@ -498,7 +501,7 @@ export default function ContasReceberPage() {
       const msg = err?.response?.data?.message || 'Erro ao excluir conta.';
       toast.error(msg);
     }
-  }
+  });
 
   function abrirModalReceber(conta) {
     setContaParaReceber(conta);
@@ -519,7 +522,7 @@ export default function ContasReceberPage() {
     setComprovante(null);
   }
 
-  async function handleConfirmarRecebimento(e) {
+  const handleConfirmarRecebimento = requireOnline(async function handleConfirmarRecebimento(e) {
     e.preventDefault();
     if (!contaParaReceber) return;
     setRecebendo(true);
@@ -546,9 +549,9 @@ export default function ContasReceberPage() {
     } finally {
       setRecebendo(false);
     }
-  }
+  });
 
-  async function handleCancelar(conta) {
+  const handleCancelar = requireOnline(async function handleCancelar(conta) {
     if (!window.confirm(`Cancelar a conta "${conta.descricao}"?`)) return;
     try {
       await contasReceberService.cancelar(conta.id);
@@ -558,7 +561,7 @@ export default function ContasReceberPage() {
       const msg = err?.response?.data?.message || 'Erro ao cancelar conta.';
       toast.error(msg);
     }
-  }
+  });
 
   function toggleGrupo(grupoId) {
     setGruposExpandidos((prev) => {
@@ -645,7 +648,7 @@ export default function ContasReceberPage() {
     };
   }, [lista, hoje, total]);
 
-  async function handleCancelarGrupo(grupoId, descricao) {
+  const handleCancelarGrupo = requireOnline(async function handleCancelarGrupo(grupoId, descricao) {
     if (
       !window.confirm(`Cancelar todas as parcelas pendentes de "${descricao}"?`)
     )
@@ -658,7 +661,7 @@ export default function ContasReceberPage() {
       const msg = err?.response?.data?.message || 'Erro ao cancelar grupo.';
       toast.error(msg);
     }
-  }
+  });
 
   async function carregarCategoriasModal() {
     setLoadingCategoriasModal(true);
@@ -1030,8 +1033,8 @@ export default function ContasReceberPage() {
             <div style={s.content}>
               {/* Cache notice when offline */}
               {!isOnline && cacheInfo && (
-                <div style={{ marginBottom: '16px', padding: '8px 12px', background: '#fef3c7', border: '1px solid #fde68a', borderRadius: '8px', fontSize: '13px', color: '#92400e' }}>
-                  📦 Dados em cache • última atualização: {cacheInfo.toLocaleString('pt-BR')}
+                <div style={{ marginBottom: '16px' }}>
+                  <OfflineDataBadge savedAt={cacheInfo} />
                 </div>
               )}
               {/* Summary Cards */}

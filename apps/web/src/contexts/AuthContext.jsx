@@ -8,6 +8,7 @@ import {
 } from 'react';
 import { authService } from '../services/auth.service.js';
 import { setAccessToken, setLogoutHandler } from '../services/api.js';
+import { clearUserOfflineCache } from '../utils/offlineCacheManager.js';
 
 export const AuthContext = createContext(null);
 
@@ -27,14 +28,9 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(async () => {
-    // Limpar cache offline do usuário antes de deslogar
+    // Clear offline cache for the current user before logging out
     const currentUsuario = usuarioRef.current;
-    if (currentUsuario?.id) {
-      const prefix = `finlly_offline_${currentUsuario.id}_`;
-      Object.keys(localStorage)
-        .filter((k) => k.startsWith(prefix))
-        .forEach((k) => localStorage.removeItem(k));
-    }
+    clearUserOfflineCache(currentUsuario?.id);
     try {
       await authService.logout();
     } catch {
