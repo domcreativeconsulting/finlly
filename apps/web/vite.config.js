@@ -2,6 +2,9 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
+const API_READONLY_ROUTES_PATTERN =
+  /^https?:\/\/.*\/api\/(dashboard|extrato|contas-pagar|contas-receber|contas|categorias)(\/.*)?$/i
+
 export default defineConfig({
   plugins: [
     react(),
@@ -22,11 +25,6 @@ export default defineConfig({
         icons: [
           {
             src: 'finlly.png',
-            sizes: 'any',
-            type: 'image/png',
-          },
-          {
-            src: 'finlly.png',
             sizes: '192x192',
             type: 'image/png',
           },
@@ -40,6 +38,11 @@ export default defineConfig({
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable',
+          },
+          {
+            src: 'finlly.png',
+            sizes: 'any',
+            type: 'image/png',
           },
         ],
       },
@@ -78,7 +81,7 @@ export default defineConfig({
             },
           },
           {
-            urlPattern: /^https?:\/\/.*\/api\/(dashboard|extrato|contas-pagar|contas-receber|contas|categorias)(\/.*)?$/i,
+            urlPattern: API_READONLY_ROUTES_PATTERN,
             handler: 'NetworkFirst',
             options: {
               cacheName: 'finlly-api-readonly',
