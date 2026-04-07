@@ -43,6 +43,8 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     setLogoutHandler(() => {
+      const currentUsuario = usuarioRef.current;
+      clearUserOfflineCache(currentUsuario?.id);
       storeToken(null);
       setUsuario(null);
     });
