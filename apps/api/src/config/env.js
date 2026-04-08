@@ -44,6 +44,14 @@ const envSchema = z.object({
   EVOLUTION_CB_FAILURE_THRESHOLD: z.coerce.number().int().positive().default(5), // open after N consecutive full-retry failures
   EVOLUTION_CB_RESET_TIMEOUT_MS: z.coerce.number().int().positive().default(30000), // ms to wait before probing
 
+  // Reverse Proxy — trust N hops so req.ip reflects the real client IP.
+  // Set TRUST_PROXY=0 or TRUST_PROXY=false to disable (direct connections only).
+  // Set TRUST_PROXY=1 (default) for a single reverse proxy (nginx, Railway, Render, etc.).
+  TRUST_PROXY: z.union([
+    z.enum(['false']),
+    z.coerce.number().int().min(0).max(10),
+  ]).default('1'),
+
   // Rate Limiting (optional)
   RATE_LIMIT_STORE: z.enum(['memory', 'redis']).default('memory'),
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(500),        // global limiter: max requests per window
