@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import { rateLimit } from 'express-rate-limit';
-import { z } from 'zod';
 import { processarMensagemRecebida } from '../services/whatsappService.js';
 import { AppError } from '../errors/AppError.js';
-import { toValidationError } from '../errors/toValidationError.js';
+import { validate } from '../middleware/validate.js';
 import logger from '../logger.js';
 import { config } from '../config/env.js';
+import { whatsappWebhookSchema } from '../schemas/whatsapp.schemas.js';
 
 const router = Router();
 
@@ -50,49 +50,11 @@ function evolutionApiKeyMiddleware(req, res, next) {
 }
 
 // ============================================================
-// Zod schema — Evolution API webhook payload
-// ============================================================
-
-const whatsappWebhookSchema = z.object({
-  event: z.string().min(1),
-  instance: z.string().optional(),
-  data: z.object({
-    key: z.object({
-      remoteJid: z.string().min(1),
-      fromMe: z.boolean().optional(),
-      id: z.string().optional(),
-    }),
-    messageTimestamp: z.number().optional(),
-    message: z
-      .object({
-        conversation: z.string().optional(),
-        extendedTextMessage: z
-          .object({
-            text: z.string().optional(),
-          })
-          .optional(),
-        imageMessage: z.object({}).passthrough().optional(),
-        audioMessage: z.object({}).passthrough().optional(),
-        documentMessage: z.object({}).passthrough().optional(),
-        stickerMessage: z.object({}).passthrough().optional(),
-      })
-      .passthrough()
-      .optional(),
-    pushName: z.string().optional(),
-  }),
-});
-
-// ============================================================
 // Shared webhook handler
 // ============================================================
 
 async function handleWebhook(req, res, next) {
-  const parsed = whatsappWebhookSchema.safeParse(req.body);
-  if (!parsed.success) {
-    return next(toValidationError(parsed.error));
-  }
-
-  const payload = parsed.data;
+  const payload = req.body;
 
   // Only process incoming messages; silently acknowledge other events.
   if (payload.event !== 'messages.upsert') {
@@ -115,7 +77,7 @@ async function handleWebhook(req, res, next) {
 // Not authenticated via JWT — uses Evolution API key validation instead.
 // ============================================================
 
-router.post('/webhooks/evolution', webhookLimiter, evolutionApiKeyMiddleware, handleWebhook);
-router.post('/webhooks/whatsapp', webhookLimiter, evolutionApiKeyMiddleware, handleWebhook);
+router.post('/webhooks/evolution', webhookLimiter, evolutionApiKeyMiddleware, validate(whatsappWebhookSchema), handleWebhook);
+router.post('/webhooks/whatsapp', webhookLimiter, evolutionApiKeyMiddleware, validate(whatsappWebhookSchema), handleWebhook);
 
 export default router;

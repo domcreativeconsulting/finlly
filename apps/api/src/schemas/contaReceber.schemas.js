@@ -3,6 +3,38 @@ import { z } from 'zod';
 const STATUS_ENUM = ['pendente', 'recebido', 'cancelado', 'estornado', 'falhou'];
 const RECORRENCIA_ENUM = ['diario', 'semanal', 'quinzenal', 'mensal', 'bimestral', 'trimestral', 'semestral', 'anual'];
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+const SORTABLE_FIELDS = ['data_vencimento', 'valor', 'descricao', 'created_at', 'status'];
+
+export const listContasReceberQuerySchema = z.object({
+  status: z.enum(STATUS_ENUM).optional(),
+  categoria_id: z.string().uuid().optional(),
+  conta_id: z.string().uuid().optional(),
+  grupo_recorrencia_id: z.string().uuid().optional(),
+  data_vencimento_de: z.string().regex(ISO_DATE_REGEX).optional(),
+  data_vencimento_ate: z.string().regex(ISO_DATE_REGEX).optional(),
+  busca: z.string().max(100).optional(),
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  cursor: z.string().uuid().optional(),
+  order_by: z.enum(SORTABLE_FIELDS).default('data_vencimento'),
+  order_dir: z.enum(['asc', 'desc']).default('asc'),
+});
+
+export const exportContasReceberQuerySchema = z.object({
+  format: z.enum(['csv', 'pdf']).default('csv'),
+  status: z.enum(STATUS_ENUM).optional(),
+  categoria_id: z.string().uuid().optional(),
+  conta_id: z.string().uuid().optional(),
+  data_vencimento_de: z.string().regex(ISO_DATE_REGEX).optional(),
+  data_vencimento_ate: z.string().regex(ISO_DATE_REGEX).optional(),
+  busca: z.string().max(100).optional(),
+});
+
+export const receberContaReceberSchema = z.object({
+  data_recebimento: z.string().regex(ISO_DATE_REGEX).optional(),
+  conta_id: z.string().uuid().optional(),
+  observacoes: z.string().max(500).optional(),
+});
 
 export const createContaReceberSchema = z.object({
   descricao: z.string().trim().min(1).max(500),
