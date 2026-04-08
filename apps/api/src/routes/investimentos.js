@@ -4,12 +4,20 @@ import { userOrIpKeyGenerator } from '../utils/rateLimitStore.js';
 import { z } from 'zod';
 import { jwtAuthMiddleware } from '../middleware/jwtAuth.js';
 import { requireAtivo } from '../middleware/requireAtivo.js';
+import { validate } from '../middleware/validate.js';
 import { auditarAcao } from '../middleware/auditoria.js';
 import { AppError } from '../errors/AppError.js';
-import { toValidationError } from '../errors/toValidationError.js';
 import logger from '../logger.js';
 import prisma from '../utils/database.js';
 import { calcularPosicao } from '../services/investimentoService.js';
+import {
+  listInvestimentosQuerySchema,
+  eventoQuerySchema,
+  createEventoSchema,
+  createInvestimentoSchema,
+  updateInvestimentoSchema,
+} from '../schemas/investimento.schemas.js';
+import { uuidParam } from '../schemas/shared.schemas.js';
 
 const router = Router();
 
@@ -32,8 +40,6 @@ const writeLimiter = rateLimit({
   message: { code: 'RATE_LIMITED', message: 'Muitas tentativas. Tente novamente mais tarde.' },
   handler: (req, res, next, options) => next(AppError.tooManyRequests(options.message.message)),
 });
-
-const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 function formatEvento(ev) {
   return {
@@ -66,46 +72,7 @@ function formatInvestimento(inv) {
 
 // ─── Query schemas ───────────────────────────────────────────────────────────
 
-const ListQuerySchema = z.object({
-  status: z.enum(['ativa', 'inativa', 'arquivada']).optional(),
-  tipoId: z.string().uuid().optional(),
-  page: z.coerce.number().int().min(1).default(1),
-  perPage: z.coerce.number().int().min(1).max(100).default(20),
-});
-
-const CreateSchema = z.object({
-  nome: z.string().min(1).max(255),
-  tipoId: z.string().uuid(),
-  valorInicial: z.number().min(0).default(0).optional(),
-  dataInicio: z.string().regex(ISO_DATE_REGEX),
-  dataVencimento: z.string().regex(ISO_DATE_REGEX).optional(),
-  observacoes: z.string().max(1000).optional(),
-});
-
-const UpdateSchema = z
-  .object({
-    nome: z.string().min(1).max(255).optional(),
-    tipoId: z.string().uuid().optional(),
-    valorInicial: z.number().min(0).optional(),
-    dataInicio: z.string().regex(ISO_DATE_REGEX).optional(),
-    dataVencimento: z.string().regex(ISO_DATE_REGEX).nullable().optional(),
-    observacoes: z.string().max(1000).nullable().optional(),
-    status: z.enum(['ativa', 'inativa', 'arquivada']).optional(),
-  })
-  .refine((data) => Object.keys(data).length > 0, { message: 'Pelo menos um campo deve ser informado.' });
-
-const EventoQuerySchema = z.object({
-  page: z.coerce.number().int().min(1).default(1),
-  perPage: z.coerce.number().int().min(1).max(100).default(20),
-  tipo: z.enum(['aporte', 'resgate', 'rendimento', 'taxa', 'dividendo']).optional(),
-});
-
-const CreateEventoSchema = z.object({
-  tipo: z.enum(['aporte', 'resgate', 'rendimento', 'taxa', 'dividendo']),
-  valor: z.number().positive(),
-  data: z.string().regex(ISO_DATE_REGEX),
-  descricao: z.string().max(500).optional(),
-});
+// (schemas are imported from ../schemas/investimento.schemas.js)
 
 // ─── Handlers ────────────────────────────────────────────────────────────────
 
@@ -124,10 +91,7 @@ async function handleListTipos(req, res, next) {
 }
 
 async function handleList(req, res, next) {
-  const parsed = ListQuerySchema.safeParse(req.query);
-  if (!parsed.success) return next(toValidationError(parsed.error));
-
-  const { status, tipoId, page, perPage } = parsed.data;
+  const { status, tipoId, page, perPage } = req.query;
   const userId = req.user.sub;
 
   try {
@@ -161,10 +125,7 @@ async function handleList(req, res, next) {
 }
 
 async function handleCreate(req, res, next) {
-  const parsed = CreateSchema.safeParse(req.body);
-  if (!parsed.success) return next(toValidationError(parsed.error));
-
-  const { nome, tipoId, valorInicial = 0, dataInicio, dataVencimento, observacoes } = parsed.data;
+  const { nome, tipoId, valorInicial = 0, dataInicio, dataVencimento, observacoes } = req.body;
   const userId = req.user.sub;
 
   try {
@@ -228,9 +189,6 @@ async function handleGet(req, res, next) {
 }
 
 async function handleUpdate(req, res, next) {
-  const parsed = UpdateSchema.safeParse(req.body);
-  if (!parsed.success) return next(toValidationError(parsed.error));
-
   const userId = req.user.sub;
   const { id } = req.params;
 
@@ -238,7 +196,7 @@ async function handleUpdate(req, res, next) {
     const inv = await prisma.investimento.findFirst({ where: { id, usuario_id: userId, deleted_at: null } });
     if (!inv) return next(AppError.notFound('Investimento não encontrado.'));
 
-    const { nome, tipoId, valorInicial, dataInicio, dataVencimento, observacoes, status } = parsed.data;
+    const { nome, tipoId, valorInicial, dataInicio, dataVencimento, observacoes, status } = req.body;
 
     if (tipoId !== undefined) {
       const tipo = await prisma.tipoInvestimento.findFirst({ where: { id: tipoId, deleted_at: null } });
@@ -301,12 +259,9 @@ async function handleDelete(req, res, next) {
 }
 
 async function handleListEventos(req, res, next) {
-  const parsedQuery = EventoQuerySchema.safeParse(req.query);
-  if (!parsedQuery.success) return next(toValidationError(parsedQuery.error));
-
   const userId = req.user.sub;
   const { id } = req.params;
-  const { page, perPage, tipo } = parsedQuery.data;
+  const { page, perPage, tipo } = req.query;
 
   try {
     const inv = await prisma.investimento.findFirst({ where: { id, usuario_id: userId, deleted_at: null } });
@@ -337,12 +292,9 @@ async function handleListEventos(req, res, next) {
 }
 
 async function handleCreateEvento(req, res, next) {
-  const parsed = CreateEventoSchema.safeParse(req.body);
-  if (!parsed.success) return next(toValidationError(parsed.error));
-
   const userId = req.user.sub;
   const { id } = req.params;
-  const { tipo, valor, data, descricao } = parsed.data;
+  const { tipo, valor, data, descricao } = req.body;
 
   try {
     const inv = await prisma.investimento.findFirst({ where: { id, usuario_id: userId, deleted_at: null } });
@@ -419,14 +371,14 @@ async function handleGetPosicao(req, res, next) {
 // ─── Routes ──────────────────────────────────────────────────────────────────
 
 router.get('/investimentos/tipos', readLimiter, jwtAuthMiddleware, requireAtivo, handleListTipos);
-router.get('/investimentos', readLimiter, jwtAuthMiddleware, requireAtivo, handleList);
-router.post('/investimentos', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('investimento_criado'), handleCreate);
-router.get('/investimentos/:id', readLimiter, jwtAuthMiddleware, requireAtivo, handleGet);
-router.patch('/investimentos/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, handleUpdate);
-router.delete('/investimentos/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('investimento_excluido', (req) => ({ id: req.params.id })), handleDelete);
-router.get('/investimentos/:id/eventos', readLimiter, jwtAuthMiddleware, requireAtivo, handleListEventos);
-router.post('/investimentos/:id/eventos', writeLimiter, jwtAuthMiddleware, requireAtivo, handleCreateEvento);
-router.delete('/investimentos/:id/eventos/:eventoId', writeLimiter, jwtAuthMiddleware, requireAtivo, handleDeleteEvento);
-router.get('/investimentos/:id/posicao', readLimiter, jwtAuthMiddleware, requireAtivo, handleGetPosicao);
+router.get('/investimentos', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ query: listInvestimentosQuerySchema }), handleList);
+router.post('/investimentos', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('investimento_criado'), validate(createInvestimentoSchema), handleCreate);
+router.get('/investimentos/:id', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ params: uuidParam }), handleGet);
+router.patch('/investimentos/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ body: updateInvestimentoSchema, params: uuidParam }), handleUpdate);
+router.delete('/investimentos/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('investimento_excluido', (req) => ({ id: req.params.id })), validate({ params: uuidParam }), handleDelete);
+router.get('/investimentos/:id/eventos', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ query: eventoQuerySchema, params: uuidParam }), handleListEventos);
+router.post('/investimentos/:id/eventos', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ body: createEventoSchema, params: uuidParam }), handleCreateEvento);
+router.delete('/investimentos/:id/eventos/:eventoId', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ params: z.object({ id: z.string().uuid(), eventoId: z.string().uuid() }) }), handleDeleteEvento);
+router.get('/investimentos/:id/posicao', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ params: uuidParam }), handleGetPosicao);
 
 export default router;

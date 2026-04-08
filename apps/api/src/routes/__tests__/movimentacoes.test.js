@@ -372,7 +372,7 @@ describe('GET /movimentacoes/saldo/:contaId', () => {
     mockGetSaldoConta.mockRejectedValue(AppError.notFound('Conta não encontrada'));
 
     const app = makeApp();
-    const res = await request(app, 'GET', '/movimentacoes/saldo/conta-inexistente', null);
+    const res = await request(app, 'GET', `/movimentacoes/saldo/${CONTA_ID}`, null);
 
     expect(res.status).toBe(404);
     expect(res.body.code).toBe('NOT_FOUND');
@@ -388,11 +388,11 @@ describe('GET /movimentacoes/:id', () => {
     mockGetMovimentacao.mockResolvedValue(movimentacaoBase);
 
     const app = makeApp();
-    const res = await request(app, 'GET', '/movimentacoes/mov-uuid-001', null);
+    const res = await request(app, 'GET', `/movimentacoes/${MOV_ID}`, null);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(movimentacaoBase);
-    expect(mockGetMovimentacao).toHaveBeenCalledWith('mov-uuid-001', 'usuario-uuid-001');
+    expect(mockGetMovimentacao).toHaveBeenCalledWith(MOV_ID, 'usuario-uuid-001');
   });
 
   test('retorna 404 quando movimentação não encontrada', async () => {
@@ -400,7 +400,7 @@ describe('GET /movimentacoes/:id', () => {
     mockGetMovimentacao.mockRejectedValue(AppError.notFound('Movimentação não encontrada'));
 
     const app = makeApp();
-    const res = await request(app, 'GET', '/movimentacoes/nao-existe', null);
+    const res = await request(app, 'GET', `/movimentacoes/${MOV_ID}`, null);
 
     expect(res.status).toBe(404);
     expect(res.body.code).toBe('NOT_FOUND');
@@ -513,16 +513,16 @@ describe('PUT /movimentacoes/:id', () => {
     mockUpdateMovimentacao.mockResolvedValue(atualizada);
 
     const app = makeApp();
-    const res = await request(app, 'PUT', '/movimentacoes/mov-uuid-001', { descricao: 'Novo nome' });
+    const res = await request(app, 'PUT', `/movimentacoes/${MOV_ID}`, { descricao: 'Novo nome' });
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(atualizada);
-    expect(mockUpdateMovimentacao).toHaveBeenCalledWith('mov-uuid-001', 'usuario-uuid-001', expect.objectContaining({ descricao: 'Novo nome' }));
+    expect(mockUpdateMovimentacao).toHaveBeenCalledWith(MOV_ID, 'usuario-uuid-001', expect.objectContaining({ descricao: 'Novo nome' }));
   });
 
   test('retorna 422 quando body está vazio', async () => {
     const app = makeApp();
-    const res = await request(app, 'PUT', '/movimentacoes/mov-uuid-001', {});
+    const res = await request(app, 'PUT', `/movimentacoes/${MOV_ID}`, {});
 
     expect(res.status).toBe(422);
     expect(res.body.code).toBe('VALIDATION_ERROR');
@@ -533,7 +533,7 @@ describe('PUT /movimentacoes/:id', () => {
     mockUpdateMovimentacao.mockRejectedValue(AppError.badRequest('Movimentações geradas por baixas não podem ser editadas manualmente'));
 
     const app = makeApp();
-    const res = await request(app, 'PUT', '/movimentacoes/mov-uuid-001', { descricao: 'Teste' });
+    const res = await request(app, 'PUT', `/movimentacoes/${MOV_ID}`, { descricao: 'Teste' });
 
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('BAD_REQUEST');
@@ -550,7 +550,7 @@ describe('PATCH /movimentacoes/:id', () => {
     mockUpdateMovimentacao.mockResolvedValue(atualizada);
 
     const app = makeApp();
-    const res = await request(app, 'PATCH', '/movimentacoes/mov-uuid-001', { valor: 999 });
+    const res = await request(app, 'PATCH', `/movimentacoes/${MOV_ID}`, { valor: 999 });
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(atualizada);
@@ -566,10 +566,10 @@ describe('DELETE /movimentacoes/:id', () => {
     mockDeleteMovimentacao.mockResolvedValue(undefined);
 
     const app = makeApp();
-    const res = await request(app, 'DELETE', '/movimentacoes/mov-uuid-001', null);
+    const res = await request(app, 'DELETE', `/movimentacoes/${MOV_ID}`, null);
 
     expect(res.status).toBe(204);
-    expect(mockDeleteMovimentacao).toHaveBeenCalledWith('mov-uuid-001', 'usuario-uuid-001');
+    expect(mockDeleteMovimentacao).toHaveBeenCalledWith(MOV_ID, 'usuario-uuid-001');
   });
 
   test('retorna 404 quando movimentação não encontrada', async () => {
@@ -577,7 +577,7 @@ describe('DELETE /movimentacoes/:id', () => {
     mockDeleteMovimentacao.mockRejectedValue(AppError.notFound('Movimentação não encontrada'));
 
     const app = makeApp();
-    const res = await request(app, 'DELETE', '/movimentacoes/nao-existe', null);
+    const res = await request(app, 'DELETE', `/movimentacoes/${MOV_ID}`, null);
 
     expect(res.status).toBe(404);
     expect(res.body.code).toBe('NOT_FOUND');
@@ -588,7 +588,7 @@ describe('DELETE /movimentacoes/:id', () => {
     mockDeleteMovimentacao.mockRejectedValue(AppError.badRequest('Movimentações geradas por baixas não podem ser excluídas manualmente'));
 
     const app = makeApp();
-    const res = await request(app, 'DELETE', '/movimentacoes/mov-uuid-001', null);
+    const res = await request(app, 'DELETE', `/movimentacoes/${MOV_ID}`, null);
 
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('BAD_REQUEST');

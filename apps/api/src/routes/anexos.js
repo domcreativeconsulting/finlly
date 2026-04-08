@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import { rateLimit } from 'express-rate-limit';
 import { userOrIpKeyGenerator } from '../utils/rateLimitStore.js';
-import { z } from 'zod';
 import {
   uploadAnexo,
   listarAnexos,
@@ -15,9 +14,11 @@ import {
 import { jwtAuthMiddleware } from '../middleware/jwtAuth.js';
 import { requireAtivo } from '../middleware/requireAtivo.js';
 import { uploadMiddleware } from '../middleware/upload.js';
+import { validate } from '../middleware/validate.js';
 import { AppError } from '../errors/AppError.js';
-import { toValidationError } from '../errors/toValidationError.js';
 import logger from '../logger.js';
+import { listAnexosQuerySchema, vinculoSchema, ocrConfirmarSchema } from '../schemas/anexo.schemas.js';
+import { uuidParam } from '../schemas/shared.schemas.js';
 
 const router = Router();
 
@@ -41,27 +42,6 @@ const writeLimiter = rateLimit({
   handler: (req, res, next, options) => next(AppError.tooManyRequests(options.message.message)),
 });
 
-const ENTIDADE_TIPOS = ['contas_pagar', 'contas_receber', 'movimentacoes_caixa', 'investimentos', 'metas'];
-
-const ListQuerySchema = z.object({
-  entidade_tipo: z.enum(ENTIDADE_TIPOS).optional(),
-  entidade_id: z.string().uuid().optional(),
-  page: z.coerce.number().int().positive().default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
-});
-
-const VinculoSchema = z.object({
-  entidade_tipo: z.enum(ENTIDADE_TIPOS),
-  entidade_id: z.string().uuid(),
-});
-
-const OcrConfirmarSchema = z.object({
-  extracted_amount: z.number().nullable().optional(),
-  extracted_date: z.string().nullable().optional(),
-  extracted_description: z.string().max(500).nullable().optional(),
-  extracted_type: z.string().max(50).nullable().optional(),
-});
-
 // ---------------------------------------------------------------------------
 // POST /anexos — upload de arquivo
 // ---------------------------------------------------------------------------
@@ -82,16 +62,14 @@ async function handleUpload(req, res, next) {
 // GET /anexos — listar anexos do usuário
 // ---------------------------------------------------------------------------
 async function handleList(req, res, next) {
-  const parsed = ListQuerySchema.safeParse(req.query);
-  if (!parsed.success) return next(toValidationError(parsed.error));
-
   try {
+    const { entidade_tipo, entidade_id, page, limit } = req.query;
     const result = await listarAnexos({
       usuarioId: req.user.sub,
-      entidadeTipo: parsed.data.entidade_tipo,
-      entidadeId: parsed.data.entidade_id,
-      page: parsed.data.page,
-      limit: parsed.data.limit,
+      entidadeTipo: entidade_tipo,
+      entidadeId: entidade_id,
+      page,
+      limit,
     });
     return res.status(200).json(result);
   } catch (err) {
@@ -141,15 +119,13 @@ async function handleDelete(req, res, next) {
 // POST /anexos/:id/vinculos — vincular a entidade
 // ---------------------------------------------------------------------------
 async function handleVincular(req, res, next) {
-  const parsed = VinculoSchema.safeParse(req.body);
-  if (!parsed.success) return next(toValidationError(parsed.error));
-
   try {
+    const { entidade_tipo, entidade_id } = req.body;
     const vinculo = await vincularAnexo({
       usuarioId: req.user.sub,
       anexoId: req.params.id,
-      entidadeTipo: parsed.data.entidade_tipo,
-      entidadeId: parsed.data.entidade_id,
+      entidadeTipo: entidade_tipo,
+      entidadeId: entidade_id,
     });
     logger.info({ anexoId: req.params.id, userId: req.user.sub }, 'Vínculo criado.');
     return res.status(201).json(vinculo);
@@ -162,15 +138,13 @@ async function handleVincular(req, res, next) {
 // DELETE /anexos/:id/vinculos — desvincular de entidade
 // ---------------------------------------------------------------------------
 async function handleDesvincular(req, res, next) {
-  const parsed = VinculoSchema.safeParse(req.body);
-  if (!parsed.success) return next(toValidationError(parsed.error));
-
   try {
+    const { entidade_tipo, entidade_id } = req.body;
     await desvincularAnexo({
       usuarioId: req.user.sub,
       anexoId: req.params.id,
-      entidadeTipo: parsed.data.entidade_tipo,
-      entidadeId: parsed.data.entidade_id,
+      entidadeTipo: entidade_tipo,
+      entidadeId: entidade_id,
     });
     logger.info({ anexoId: req.params.id, userId: req.user.sub }, 'Vínculo removido.');
     return res.status(204).send();
@@ -195,18 +169,12 @@ async function handleGetOcr(req, res, next) {
 // POST /anexos/:id/ocr/confirmar — confirmar/ajustar dados do OCR
 // ---------------------------------------------------------------------------
 async function handleOcrConfirmar(req, res, next) {
-  const parsed = OcrConfirmarSchema.safeParse(req.body);
-  if (!parsed.success) return next(toValidationError(parsed.error));
-
   try {
     const ocr = await buscarOcrResultado({ usuarioId: req.user.sub, anexoId: req.params.id });
 
-    // Merge user-adjusted fields with the stored OCR result and return the
-    // confirmed suggestion. This is intentionally NOT persisted as a financial
-    // record — the client must explicitly create the entity using this data.
     const confirmado = {
       ...ocr,
-      ...parsed.data,
+      ...req.body,
       confirmed: true,
     };
 
@@ -221,13 +189,13 @@ async function handleOcrConfirmar(req, res, next) {
 // Routes
 // ---------------------------------------------------------------------------
 router.post('/anexos', writeLimiter, jwtAuthMiddleware, requireAtivo, uploadMiddleware, handleUpload);
-router.get('/anexos', readLimiter, jwtAuthMiddleware, requireAtivo, handleList);
-router.get('/anexos/:id/download', readLimiter, jwtAuthMiddleware, requireAtivo, handleDownload);
-router.get('/anexos/:id', readLimiter, jwtAuthMiddleware, requireAtivo, handleGet);
-router.delete('/anexos/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, handleDelete);
-router.post('/anexos/:id/vinculos', writeLimiter, jwtAuthMiddleware, requireAtivo, handleVincular);
-router.delete('/anexos/:id/vinculos', writeLimiter, jwtAuthMiddleware, requireAtivo, handleDesvincular);
-router.get('/anexos/:id/ocr', readLimiter, jwtAuthMiddleware, requireAtivo, handleGetOcr);
-router.post('/anexos/:id/ocr/confirmar', writeLimiter, jwtAuthMiddleware, requireAtivo, handleOcrConfirmar);
+router.get('/anexos', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ query: listAnexosQuerySchema }), handleList);
+router.get('/anexos/:id/download', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ params: uuidParam }), handleDownload);
+router.get('/anexos/:id', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ params: uuidParam }), handleGet);
+router.delete('/anexos/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ params: uuidParam }), handleDelete);
+router.post('/anexos/:id/vinculos', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ body: vinculoSchema, params: uuidParam }), handleVincular);
+router.delete('/anexos/:id/vinculos', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ body: vinculoSchema, params: uuidParam }), handleDesvincular);
+router.get('/anexos/:id/ocr', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ params: uuidParam }), handleGetOcr);
+router.post('/anexos/:id/ocr/confirmar', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ body: ocrConfirmarSchema, params: uuidParam }), handleOcrConfirmar);
 
 export default router;
