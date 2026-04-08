@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { rateLimit } from 'express-rate-limit';
-import { z } from 'zod';
 import { registerUser } from '../services/usuarioService.js';
 import { AppError } from '../errors/AppError.js';
-import { toValidationError } from '../errors/toValidationError.js';
+import { validate } from '../middleware/validate.js';
 import { buildStore } from '../utils/rateLimitStore.js';
 import { config } from '../config/env.js';
 import logger from '../logger.js';
+import { createUsuarioSchema } from '../schemas/usuario.schemas.js';
 
 const router = Router();
 
@@ -29,20 +29,9 @@ const registerLimiter = rateLimit({
   },
 });
 
-const createUsuarioSchema = z.object({
-  nome: z.string().min(1),
-  email: z.string().email(),
-  senha: z.string().min(8),
-});
-
-router.post('/usuarios', registerLimiter, async (req, res, next) => {
-  const parsed = createUsuarioSchema.safeParse(req.body);
-  if (!parsed.success) {
-    return next(toValidationError(parsed.error));
-  }
-
+router.post('/usuarios', registerLimiter, validate(createUsuarioSchema), async (req, res, next) => {
   try {
-    const usuario = await registerUser(parsed.data);
+    const usuario = await registerUser(req.body);
     logger.info({ msg: 'Usuário criado com sucesso', usuarioId: usuario.id });
     return res.status(201).json({ message: 'Usuário criado com sucesso', usuario });
   } catch (err) {

@@ -133,7 +133,7 @@ async function request(app, method, path, body, headers = {}) {
 }
 
 const contaBase = {
-  id: 'conta-uuid-001',
+  id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
   usuario_id: 'usuario-uuid-001',
   descricao: 'Aluguel',
   valor: 1500,
@@ -226,11 +226,11 @@ describe('GET /contas-pagar/:id', () => {
     mockGetContaPagar.mockResolvedValue(contaBase);
 
     const app = makeApp();
-    const res = await request(app, 'GET', '/contas-pagar/conta-uuid-001', null);
+    const res = await request(app, 'GET', '/contas-pagar/f47ac10b-58cc-4372-a567-0e02b2c3d479', null);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(contaBase);
-    expect(mockGetContaPagar).toHaveBeenCalledWith('conta-uuid-001', 'usuario-uuid-001');
+    expect(mockGetContaPagar).toHaveBeenCalledWith('f47ac10b-58cc-4372-a567-0e02b2c3d479', 'usuario-uuid-001');
   });
 
   test('retorna 404 quando conta não encontrada', async () => {
@@ -238,7 +238,7 @@ describe('GET /contas-pagar/:id', () => {
     mockGetContaPagar.mockRejectedValue(AppError.notFound('Conta a pagar não encontrada'));
 
     const app = makeApp();
-    const res = await request(app, 'GET', '/contas-pagar/nao-existe', null);
+    const res = await request(app, 'GET', '/contas-pagar/550e8400-e29b-41d4-a716-446655440000', null);
 
     expect(res.status).toBe(404);
     expect(res.body.code).toBe('NOT_FOUND');
@@ -339,16 +339,16 @@ describe('PUT /contas-pagar/:id', () => {
     mockUpdateContaPagar.mockResolvedValue({ ...contaBase, descricao: 'Atualizado' });
 
     const app = makeApp();
-    const res = await request(app, 'PUT', '/contas-pagar/conta-uuid-001', { descricao: 'Atualizado' });
+    const res = await request(app, 'PUT', '/contas-pagar/f47ac10b-58cc-4372-a567-0e02b2c3d479', { descricao: 'Atualizado' });
 
     expect(res.status).toBe(200);
     expect(res.body.descricao).toBe('Atualizado');
-    expect(mockUpdateContaPagar).toHaveBeenCalledWith('conta-uuid-001', 'usuario-uuid-001', expect.objectContaining({ descricao: 'Atualizado' }));
+    expect(mockUpdateContaPagar).toHaveBeenCalledWith('f47ac10b-58cc-4372-a567-0e02b2c3d479', 'usuario-uuid-001', expect.objectContaining({ descricao: 'Atualizado' }));
   });
 
   test('retorna 422 quando body está vazio', async () => {
     const app = makeApp();
-    const res = await request(app, 'PUT', '/contas-pagar/conta-uuid-001', {});
+    const res = await request(app, 'PUT', '/contas-pagar/f47ac10b-58cc-4372-a567-0e02b2c3d479', {});
 
     expect(res.status).toBe(422);
     expect(res.body.code).toBe('VALIDATION_ERROR');
@@ -359,7 +359,7 @@ describe('PUT /contas-pagar/:id', () => {
     mockUpdateContaPagar.mockRejectedValue(AppError.notFound('Conta a pagar não encontrada'));
 
     const app = makeApp();
-    const res = await request(app, 'PUT', '/contas-pagar/nao-existe', { descricao: 'Teste' });
+    const res = await request(app, 'PUT', '/contas-pagar/550e8400-e29b-41d4-a716-446655440000', { descricao: 'Teste' });
 
     expect(res.status).toBe(404);
     expect(res.body.code).toBe('NOT_FOUND');
@@ -370,7 +370,7 @@ describe('PUT /contas-pagar/:id', () => {
     mockUpdateContaPagar.mockRejectedValue(AppError.badRequest('Não é possível editar uma conta já paga'));
 
     const app = makeApp();
-    const res = await request(app, 'PUT', '/contas-pagar/conta-uuid-001', { descricao: 'Teste' });
+    const res = await request(app, 'PUT', '/contas-pagar/f47ac10b-58cc-4372-a567-0e02b2c3d479', { descricao: 'Teste' });
 
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('BAD_REQUEST');
@@ -386,16 +386,16 @@ describe('PATCH /contas-pagar/:id', () => {
     mockUpdateContaPagar.mockResolvedValue({ ...contaBase, valor: 2000 });
 
     const app = makeApp();
-    const res = await request(app, 'PATCH', '/contas-pagar/conta-uuid-001', { valor: 2000 });
+    const res = await request(app, 'PATCH', '/contas-pagar/f47ac10b-58cc-4372-a567-0e02b2c3d479', { valor: 2000 });
 
     expect(res.status).toBe(200);
     expect(res.body.valor).toBe(2000);
-    expect(mockUpdateContaPagar).toHaveBeenCalledWith('conta-uuid-001', 'usuario-uuid-001', expect.objectContaining({ valor: 2000 }));
+    expect(mockUpdateContaPagar).toHaveBeenCalledWith('f47ac10b-58cc-4372-a567-0e02b2c3d479', 'usuario-uuid-001', expect.objectContaining({ valor: 2000 }));
   });
 
   test('retorna 422 quando body está vazio', async () => {
     const app = makeApp();
-    const res = await request(app, 'PATCH', '/contas-pagar/conta-uuid-001', {});
+    const res = await request(app, 'PATCH', '/contas-pagar/f47ac10b-58cc-4372-a567-0e02b2c3d479', {});
 
     expect(res.status).toBe(422);
     expect(res.body.code).toBe('VALIDATION_ERROR');
@@ -412,11 +412,11 @@ describe('POST /contas-pagar/:id/pagar', () => {
     mockPagarContaPagar.mockResolvedValue(contaPaga);
 
     const app = makeApp();
-    const res = await request(app, 'POST', '/contas-pagar/conta-uuid-001/pagar', {});
+    const res = await request(app, 'POST', '/contas-pagar/f47ac10b-58cc-4372-a567-0e02b2c3d479/pagar', {});
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('pago');
-    expect(mockPagarContaPagar).toHaveBeenCalledWith('conta-uuid-001', 'usuario-uuid-001', expect.any(Object));
+    expect(mockPagarContaPagar).toHaveBeenCalledWith('f47ac10b-58cc-4372-a567-0e02b2c3d479', 'usuario-uuid-001', expect.any(Object));
   });
 
   test('retorna 200 com data_pagamento customizada', async () => {
@@ -424,13 +424,13 @@ describe('POST /contas-pagar/:id/pagar', () => {
     mockPagarContaPagar.mockResolvedValue(contaPaga);
 
     const app = makeApp();
-    const res = await request(app, 'POST', '/contas-pagar/conta-uuid-001/pagar', {
+    const res = await request(app, 'POST', '/contas-pagar/f47ac10b-58cc-4372-a567-0e02b2c3d479/pagar', {
       data_pagamento: '2025-01-10',
     });
 
     expect(res.status).toBe(200);
     expect(mockPagarContaPagar).toHaveBeenCalledWith(
-      'conta-uuid-001',
+      'f47ac10b-58cc-4372-a567-0e02b2c3d479',
       'usuario-uuid-001',
       expect.objectContaining({ data_pagamento: '2025-01-10' }),
     );
@@ -438,7 +438,7 @@ describe('POST /contas-pagar/:id/pagar', () => {
 
   test('retorna 422 quando data_pagamento tem formato inválido', async () => {
     const app = makeApp();
-    const res = await request(app, 'POST', '/contas-pagar/conta-uuid-001/pagar', { data_pagamento: 'invalido' });
+    const res = await request(app, 'POST', '/contas-pagar/f47ac10b-58cc-4372-a567-0e02b2c3d479/pagar', { data_pagamento: 'invalido' });
 
     expect(res.status).toBe(422);
     expect(res.body.code).toBe('VALIDATION_ERROR');
@@ -449,14 +449,14 @@ describe('POST /contas-pagar/:id/pagar', () => {
     mockPagarContaPagar.mockResolvedValue(contaPaga);
 
     const app = makeApp();
-    const res = await request(app, 'POST', '/contas-pagar/conta-uuid-001/pagar', {
+    const res = await request(app, 'POST', '/contas-pagar/f47ac10b-58cc-4372-a567-0e02b2c3d479/pagar', {
       conta_id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
     });
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('pago');
     expect(mockPagarContaPagar).toHaveBeenCalledWith(
-      'conta-uuid-001',
+      'f47ac10b-58cc-4372-a567-0e02b2c3d479',
       'usuario-uuid-001',
       expect.objectContaining({ conta_id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479' }),
     );
@@ -464,7 +464,7 @@ describe('POST /contas-pagar/:id/pagar', () => {
 
   test('retorna 422 quando conta_id não é UUID válido', async () => {
     const app = makeApp();
-    const res = await request(app, 'POST', '/contas-pagar/conta-uuid-001/pagar', { conta_id: 'nao-e-uuid' });
+    const res = await request(app, 'POST', '/contas-pagar/f47ac10b-58cc-4372-a567-0e02b2c3d479/pagar', { conta_id: 'nao-e-uuid' });
 
     expect(res.status).toBe(422);
     expect(res.body.code).toBe('VALIDATION_ERROR');
@@ -475,7 +475,7 @@ describe('POST /contas-pagar/:id/pagar', () => {
     mockPagarContaPagar.mockRejectedValue(AppError.notFound('Conta a pagar não encontrada'));
 
     const app = makeApp();
-    const res = await request(app, 'POST', '/contas-pagar/nao-existe/pagar', {});
+    const res = await request(app, 'POST', '/contas-pagar/550e8400-e29b-41d4-a716-446655440000/pagar', {});
 
     expect(res.status).toBe(404);
     expect(res.body.code).toBe('NOT_FOUND');
@@ -486,7 +486,7 @@ describe('POST /contas-pagar/:id/pagar', () => {
     mockPagarContaPagar.mockRejectedValue(AppError.badRequest('Conta a pagar já está paga'));
 
     const app = makeApp();
-    const res = await request(app, 'POST', '/contas-pagar/conta-uuid-001/pagar', {});
+    const res = await request(app, 'POST', '/contas-pagar/f47ac10b-58cc-4372-a567-0e02b2c3d479/pagar', {});
 
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('BAD_REQUEST');
@@ -504,11 +504,11 @@ describe('PATCH /contas-pagar/:id/cancelar', () => {
     mockCancelarContaPagar.mockResolvedValue(contaCancelada);
 
     const app = makeApp();
-    const res = await request(app, 'PATCH', '/contas-pagar/conta-uuid-001/cancelar', null);
+    const res = await request(app, 'PATCH', '/contas-pagar/f47ac10b-58cc-4372-a567-0e02b2c3d479/cancelar', null);
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('cancelado');
-    expect(mockCancelarContaPagar).toHaveBeenCalledWith('conta-uuid-001', 'usuario-uuid-001');
+    expect(mockCancelarContaPagar).toHaveBeenCalledWith('f47ac10b-58cc-4372-a567-0e02b2c3d479', 'usuario-uuid-001');
   });
 
   test('retorna 404 quando conta não encontrada', async () => {
@@ -516,7 +516,7 @@ describe('PATCH /contas-pagar/:id/cancelar', () => {
     mockCancelarContaPagar.mockRejectedValue(AppError.notFound('Conta a pagar não encontrada'));
 
     const app = makeApp();
-    const res = await request(app, 'PATCH', '/contas-pagar/nao-existe/cancelar', null);
+    const res = await request(app, 'PATCH', '/contas-pagar/550e8400-e29b-41d4-a716-446655440000/cancelar', null);
 
     expect(res.status).toBe(404);
     expect(res.body.code).toBe('NOT_FOUND');
@@ -527,7 +527,7 @@ describe('PATCH /contas-pagar/:id/cancelar', () => {
     mockCancelarContaPagar.mockRejectedValue(AppError.badRequest('Não é possível cancelar uma conta já paga'));
 
     const app = makeApp();
-    const res = await request(app, 'PATCH', '/contas-pagar/conta-uuid-001/cancelar', null);
+    const res = await request(app, 'PATCH', '/contas-pagar/f47ac10b-58cc-4372-a567-0e02b2c3d479/cancelar', null);
 
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('BAD_REQUEST');
@@ -539,7 +539,7 @@ describe('PATCH /contas-pagar/:id/cancelar', () => {
     mockCancelarContaPagar.mockRejectedValue(AppError.badRequest('Conta a pagar já está cancelada'));
 
     const app = makeApp();
-    const res = await request(app, 'PATCH', '/contas-pagar/conta-uuid-001/cancelar', null);
+    const res = await request(app, 'PATCH', '/contas-pagar/f47ac10b-58cc-4372-a567-0e02b2c3d479/cancelar', null);
 
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('BAD_REQUEST');
@@ -556,10 +556,10 @@ describe('DELETE /contas-pagar/:id', () => {
     mockDeleteContaPagar.mockResolvedValue(undefined);
 
     const app = makeApp();
-    const res = await request(app, 'DELETE', '/contas-pagar/conta-uuid-001', null);
+    const res = await request(app, 'DELETE', '/contas-pagar/f47ac10b-58cc-4372-a567-0e02b2c3d479', null);
 
     expect(res.status).toBe(204);
-    expect(mockDeleteContaPagar).toHaveBeenCalledWith('conta-uuid-001', 'usuario-uuid-001');
+    expect(mockDeleteContaPagar).toHaveBeenCalledWith('f47ac10b-58cc-4372-a567-0e02b2c3d479', 'usuario-uuid-001');
   });
 
   test('retorna 404 quando conta não encontrada', async () => {
@@ -567,7 +567,7 @@ describe('DELETE /contas-pagar/:id', () => {
     mockDeleteContaPagar.mockRejectedValue(AppError.notFound('Conta a pagar não encontrada'));
 
     const app = makeApp();
-    const res = await request(app, 'DELETE', '/contas-pagar/nao-existe', null);
+    const res = await request(app, 'DELETE', '/contas-pagar/550e8400-e29b-41d4-a716-446655440000', null);
 
     expect(res.status).toBe(404);
     expect(res.body.code).toBe('NOT_FOUND');
@@ -578,7 +578,7 @@ describe('DELETE /contas-pagar/:id', () => {
     mockDeleteContaPagar.mockRejectedValue(AppError.badRequest('Não é possível excluir uma conta já paga'));
 
     const app = makeApp();
-    const res = await request(app, 'DELETE', '/contas-pagar/conta-uuid-001', null);
+    const res = await request(app, 'DELETE', '/contas-pagar/f47ac10b-58cc-4372-a567-0e02b2c3d479', null);
 
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('BAD_REQUEST');

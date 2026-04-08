@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const registerSchema = z.object({
-  nome: z.string().trim().min(2).max(255),
+  nome: z.string().trim().min(3).max(255),
   email: z.string().trim().toLowerCase().email(),
   senha: z
     .string()
@@ -45,4 +45,21 @@ export const changePasswordSchema = z.object({
     .regex(/[a-z]/, 'Deve conter letra minúscula')
     .regex(/[0-9]/, 'Deve conter número')
     .regex(/[!@#$%^&*]/, 'Deve conter caractere especial'),
+});
+
+export const refreshSchema = z.object({
+  refreshToken: z.string().optional(),
+});
+
+export const logoutSchema = z.object({
+  sessao_id: z.string().uuid().optional(),
+  todas: z.boolean().optional(),
+});
+
+export const verifyEmailSchema = z.object({
+  token: z.string().min(1, 'Token obrigatório'),
+});
+
+export const resendVerificationEmailSchema = z.object({
+  email: z.string().trim().toLowerCase().email('E-mail inválido'),
 });

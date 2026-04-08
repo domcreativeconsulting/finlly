@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import { rateLimit, ipKeyGenerator } from 'express-rate-limit';
-import { z } from 'zod';
 import {
   register,
   login,
@@ -18,12 +17,22 @@ import {
   resendVerificationEmail,
 } from '../services/emailVerificationService.js';
 import { jwtAuthMiddleware } from '../middleware/jwtAuth.js';
-import { toValidationError } from '../errors/toValidationError.js';
+import { validate } from '../middleware/validate.js';
 import { auditarAcao } from '../middleware/auditoria.js';
 import { AppError } from '../errors/AppError.js';
 import { config } from '../config/env.js';
 import { buildStore } from '../utils/rateLimitStore.js';
 import logger from '../logger.js';
+import {
+  registerSchema,
+  loginSchema,
+  refreshSchema,
+  logoutSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+  verifyEmailSchema,
+  resendVerificationEmailSchema,
+} from '../schemas/auth.schemas.js';
 
 const router = Router();
 
@@ -108,62 +117,6 @@ const authLimiter = rateLimit({
 });
 
 // ============================================================
-// Validation Schemas
-// ============================================================
-
-const RegisterSchema = z.object({
-  nome: z.string().min(3).max(255),
-  email: z.string().email(),
-  senha: z
-    .string()
-    .min(8, 'Mínimo 8 caracteres')
-    .max(255)
-    .regex(/[A-Z]/, 'Deve conter letra maiúscula')
-    .regex(/[a-z]/, 'Deve conter letra minúscula')
-    .regex(/[0-9]/, 'Deve conter número')
-    .regex(/[!@#$%^&*]/, 'Deve conter caractere especial'),
-});
-
-const LoginSchema = z.object({
-  email: z.string().email(),
-  senha: z.string().min(1),
-  device_info: z.string().optional(),
-});
-
-const RefreshSchema = z.object({
-  refreshToken: z.string().optional(),
-});
-
-const LogoutSchema = z.object({
-  sessao_id: z.string().uuid().optional(),
-  todas: z.boolean().optional(),
-});
-
-const ForgotPasswordSchema = z.object({
-  email: z.string().email('E-mail inválido'),
-});
-
-const ResetPasswordSchema = z.object({
-  token: z.string().min(1, 'Token obrigatório'),
-  nova_senha: z
-    .string()
-    .min(8, 'Mínimo 8 caracteres')
-    .max(255)
-    .regex(/[A-Z]/, 'Deve conter letra maiúscula')
-    .regex(/[a-z]/, 'Deve conter letra minúscula')
-    .regex(/[0-9]/, 'Deve conter número')
-    .regex(/[!@#$%^&*]/, 'Deve conter caractere especial !@#$%^&*'),
-});
-
-const VerifyEmailSchema = z.object({
-  token: z.string().min(1, 'Token obrigatório'),
-});
-
-const ResendVerificationEmailSchema = z.object({
-  email: z.string().email('E-mail inválido'),
-});
-
-// ============================================================
 // Helper: extract request metadata
 // ============================================================
 
@@ -182,13 +135,10 @@ function getRequestMeta(req) {
  * POST /auth/register
  * Cadastro de novo usuário.
  */
-router.post('/auth/register', registerLimiter, auditarAcao('registro', (req) => ({ email: req.body?.email })), async (req, res, next) => {
-  const parsed = RegisterSchema.safeParse(req.body);
-  if (!parsed.success) return next(toValidationError(parsed.error));
-
+router.post('/auth/register', registerLimiter, auditarAcao('registro', (req) => ({ email: req.body?.email })), validate(registerSchema), async (req, res, next) => {
   try {
-    const result = await register(parsed.data, getRequestMeta(req));
-    logger.info({ msg: 'Usuário registrado', email: parsed.data.email });
+    const result = await register(req.body, getRequestMeta(req));
+    logger.info({ msg: 'Usuário registrado', email: req.body.email });
     return res.status(201).json(result);
   } catch (err) {
     return next(err);
@@ -199,12 +149,9 @@ router.post('/auth/register', registerLimiter, auditarAcao('registro', (req) => 
  * POST /auth/login
  * Login e geração de tokens JWT.
  */
-router.post('/auth/login', loginLimiter, auditarAcao('login', (req) => ({ email: req.body?.email })), async (req, res, next) => {
-  const parsed = LoginSchema.safeParse(req.body);
-  if (!parsed.success) return next(toValidationError(parsed.error));
-
+router.post('/auth/login', loginLimiter, auditarAcao('login', (req) => ({ email: req.body?.email })), validate(loginSchema), async (req, res, next) => {
   try {
-    const result = await login(parsed.data, getRequestMeta(req));
+    const result = await login(req.body, getRequestMeta(req));
 
     const refreshExpiresMs =
       parseExpiresInSeconds(config.JWT_REFRESH_EXPIRES_IN) * 1000;
@@ -216,7 +163,7 @@ router.post('/auth/login', loginLimiter, auditarAcao('login', (req) => ({ email:
       maxAge: refreshExpiresMs,
     });
 
-    logger.info({ msg: 'Login realizado', email: parsed.data.email });
+    logger.info({ msg: 'Login realizado', email: req.body.email });
     return res.status(200).json({
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
@@ -231,11 +178,8 @@ router.post('/auth/login', loginLimiter, auditarAcao('login', (req) => ({ email:
  * POST /auth/refresh
  * Renova o access token usando o refresh token (cookie ou body).
  */
-router.post('/auth/refresh', authLimiter, async (req, res, next) => {
-  const parsed = RefreshSchema.safeParse(req.body);
-  if (!parsed.success) return next(toValidationError(parsed.error));
-
-  const refreshToken = parsed.data.refreshToken || req.cookies?.refreshToken;
+router.post('/auth/refresh', authLimiter, validate(refreshSchema), async (req, res, next) => {
+  const refreshToken = req.body.refreshToken || req.cookies?.refreshToken;
   if (!refreshToken) return next(AppError.badRequest('Refresh token ausente'));
 
   try {
@@ -255,16 +199,14 @@ router.post(
   authLimiter,
   jwtAuthMiddleware,
   auditarAcao('logout'),
+  validate(logoutSchema),
   async (req, res, next) => {
-    const parsed = LogoutSchema.safeParse(req.body);
-    if (!parsed.success) return next(toValidationError(parsed.error));
-
     try {
       const userId = req.user.sub;
       const sessionId = req.user.sessionId;
       const result = await logout(
         userId,
-        { ...parsed.data, sessionId },
+        { ...req.body, sessionId },
         getRequestMeta(req)
       );
 
@@ -302,18 +244,16 @@ router.get(
 router.post(
   '/auth/forgot-password',
   forgotPasswordLimiter,
+  validate(forgotPasswordSchema),
   async (req, res, next) => {
-    const parsed = ForgotPasswordSchema.safeParse(req.body);
-    if (!parsed.success) return next(toValidationError(parsed.error));
-
     try {
       const result = await forgotPassword(
-        parsed.data.email,
+        req.body.email,
         getRequestMeta(req)
       );
       logger.info({
         msg: 'Forgot password requested',
-        email: parsed.data.email,
+        email: req.body.email,
       });
       return res.status(200).json(result);
     } catch (err) {
@@ -326,12 +266,9 @@ router.post(
  * POST /auth/reset-password
  * Redefine a senha usando token de recuperação.
  */
-router.post('/auth/reset-password', authLimiter, auditarAcao('senha_alterada'), async (req, res, next) => {
-  const parsed = ResetPasswordSchema.safeParse(req.body);
-  if (!parsed.success) return next(toValidationError(parsed.error));
-
+router.post('/auth/reset-password', authLimiter, auditarAcao('senha_alterada'), validate(resetPasswordSchema), async (req, res, next) => {
   try {
-    const result = await resetPassword(parsed.data, getRequestMeta(req));
+    const result = await resetPassword(req.body, getRequestMeta(req));
     logger.info({
       msg: 'Password reset completed',
       usuario_id: result.usuario_id,
@@ -346,12 +283,9 @@ router.post('/auth/reset-password', authLimiter, auditarAcao('senha_alterada'), 
  * POST /auth/verify-email
  * Verifica o e-mail do usuário.
  */
-router.post('/auth/verify-email', authLimiter, async (req, res, next) => {
-  const parsed = VerifyEmailSchema.safeParse(req.body);
-  if (!parsed.success) return next(toValidationError(parsed.error));
-
+router.post('/auth/verify-email', authLimiter, validate(verifyEmailSchema), async (req, res, next) => {
   try {
-    const result = await verifyEmail(parsed.data.token, getRequestMeta(req));
+    const result = await verifyEmail(req.body.token, getRequestMeta(req));
     logger.info({ msg: 'Email verified', usuario_id: result.usuario_id });
     return res.status(200).json(result);
   } catch (err) {
@@ -366,18 +300,16 @@ router.post('/auth/verify-email', authLimiter, async (req, res, next) => {
 router.post(
   '/auth/resend-verification-email',
   authLimiter,
+  validate(resendVerificationEmailSchema),
   async (req, res, next) => {
-    const parsed = ResendVerificationEmailSchema.safeParse(req.body);
-    if (!parsed.success) return next(toValidationError(parsed.error));
-
     try {
       const result = await resendVerificationEmail(
-        parsed.data.email,
+        req.body.email,
         getRequestMeta(req)
       );
       logger.info({
         msg: 'Verification email resent',
-        email: parsed.data.email,
+        email: req.body.email,
       });
       return res.status(200).json(result);
     } catch (err) {

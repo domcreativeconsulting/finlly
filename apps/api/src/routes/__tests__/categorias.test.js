@@ -119,7 +119,7 @@ async function request(app, method, path, body, headers = {}) {
 }
 
 const categoriaBase = {
-  id: 'cat-uuid-001',
+  id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
   usuario_id: 'usuario-uuid-001',
   nome: 'Salário',
   tipo: 'entrada',
@@ -189,11 +189,11 @@ describe('PUT /categorias/:id', () => {
     mockUpdateCategoria.mockResolvedValue(atualizada);
 
     const app = makeApp();
-    const res = await request(app, 'PUT', '/categorias/cat-uuid-001', { nome: 'Freelance' });
+    const res = await request(app, 'PUT', '/categorias/f47ac10b-58cc-4372-a567-0e02b2c3d479', { nome: 'Freelance' });
 
     expect(res.status).toBe(200);
     expect(res.body.nome).toBe('Freelance');
-    expect(mockUpdateCategoria).toHaveBeenCalledWith('cat-uuid-001', 'usuario-uuid-001', expect.objectContaining({ nome: 'Freelance' }));
+    expect(mockUpdateCategoria).toHaveBeenCalledWith('f47ac10b-58cc-4372-a567-0e02b2c3d479', 'usuario-uuid-001', expect.objectContaining({ nome: 'Freelance' }));
   });
 
   test('retorna 409 com code CONFLICT ao renomear para nome+tipo já existente', async () => {
@@ -203,7 +203,7 @@ describe('PUT /categorias/:id', () => {
     );
 
     const app = makeApp();
-    const res = await request(app, 'PUT', '/categorias/cat-uuid-001', { nome: 'Freelance' });
+    const res = await request(app, 'PUT', '/categorias/f47ac10b-58cc-4372-a567-0e02b2c3d479', { nome: 'Freelance' });
 
     expect(res.status).toBe(409);
     expect(res.body.code).toBe('CONFLICT');
@@ -212,7 +212,7 @@ describe('PUT /categorias/:id', () => {
 
   test('retorna 422 quando nenhum campo é fornecido', async () => {
     const app = makeApp();
-    const res = await request(app, 'PUT', '/categorias/cat-uuid-001', {});
+    const res = await request(app, 'PUT', '/categorias/f47ac10b-58cc-4372-a567-0e02b2c3d479', {});
 
     expect(res.status).toBe(422);
     expect(res.body.code).toBe('VALIDATION_ERROR');
