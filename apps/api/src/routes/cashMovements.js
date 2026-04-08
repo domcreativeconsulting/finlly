@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { getExtrato } from '../services/extratoService.js';
 import { jwtAuthMiddleware } from '../middleware/jwtAuth.js';
 import { requireAtivo } from '../middleware/requireAtivo.js';
+import { auditarAcao } from '../middleware/auditoria.js';
 import { AppError } from '../errors/AppError.js';
 import { toValidationError } from '../errors/toValidationError.js';
 import logger from '../logger.js';
@@ -191,6 +192,6 @@ async function handleCreateManual(req, res, next) {
 
 router.get('/cash-movements', readLimiter, jwtAuthMiddleware, requireAtivo, handleGetExtrato);
 router.get('/cash-movements/export', readLimiter, jwtAuthMiddleware, requireAtivo, handleExportExtrato);
-router.post('/cash-movements/manual', writeLimiter, jwtAuthMiddleware, requireAtivo, handleCreateManual);
+router.post('/cash-movements/manual', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('movimentacao_criada'), handleCreateManual);
 
 export default router;

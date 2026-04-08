@@ -52,6 +52,10 @@ jest.unstable_mockModule('../../middleware/requireAtivo.js', () => ({
   requireAtivo: (_req, _res, next) => next(),
 }));
 
+jest.unstable_mockModule('../../middleware/auditoria.js', () => ({
+  auditarAcao: () => (_req, _res, next) => next(),
+}));
+
 let movimentacoesRouter;
 let express;
 

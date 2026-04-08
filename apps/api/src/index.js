@@ -6,6 +6,7 @@ import { config } from './config/env.js';
 import logger from './logger.js';
 import { corsMiddleware } from './middleware/cors.js';
 import { securityHeaders } from './middleware/securityHeaders.js';
+import { sanitizeResponse } from './middleware/sanitizeResponse.js';
 import { requestIdMiddleware } from './middleware/requestId.js';
 import { requestLogger } from './middleware/requestLogger.js';
 import { errorHandler } from './middleware/errorHandler.js';
@@ -30,8 +31,11 @@ import metasRouter from './routes/metas.js';
 import anexosRouter from './routes/anexos.js';
 import whatsappRouter from './routes/whatsapp.js';
 import dashboardRouter from './routes/dashboard.js';
+import lgpdRouter from './routes/lgpd.js';
 
 const app = express();
+
+app.disable('x-powered-by');
 
 /** Global safety-net rate limiter: configurable via RATE_LIMIT_MAX / RATE_LIMIT_WINDOW_MS. */
 const globalLimiter = rateLimit({
@@ -51,6 +55,7 @@ const globalLimiter = rateLimit({
 app.use(corsMiddleware);
 app.use(securityHeaders);
 app.use(globalLimiter);
+app.use(sanitizeResponse);
 
 // Apply raw body parsing for the webhook path before express.json(),
 // so the raw bytes are preserved for HMAC signature verification.
@@ -77,6 +82,7 @@ app.use(metasRouter);
 app.use(anexosRouter);
 app.use(whatsappRouter);
 app.use(dashboardRouter);
+app.use(lgpdRouter);
 
 app.get('/', (req, res) => {
   res.send('Hello World!');

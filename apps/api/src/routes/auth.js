@@ -19,6 +19,7 @@ import {
 } from '../services/emailVerificationService.js';
 import { jwtAuthMiddleware } from '../middleware/jwtAuth.js';
 import { toValidationError } from '../errors/toValidationError.js';
+import { auditarAcao } from '../middleware/auditoria.js';
 import { AppError } from '../errors/AppError.js';
 import { config } from '../config/env.js';
 import { buildStore } from '../utils/rateLimitStore.js';
@@ -181,7 +182,7 @@ function getRequestMeta(req) {
  * POST /auth/register
  * Cadastro de novo usuário.
  */
-router.post('/auth/register', registerLimiter, async (req, res, next) => {
+router.post('/auth/register', registerLimiter, auditarAcao('registro', (req) => ({ email: req.body?.email })), async (req, res, next) => {
   const parsed = RegisterSchema.safeParse(req.body);
   if (!parsed.success) return next(toValidationError(parsed.error));
 
@@ -198,7 +199,7 @@ router.post('/auth/register', registerLimiter, async (req, res, next) => {
  * POST /auth/login
  * Login e geração de tokens JWT.
  */
-router.post('/auth/login', loginLimiter, async (req, res, next) => {
+router.post('/auth/login', loginLimiter, auditarAcao('login', (req) => ({ email: req.body?.email })), async (req, res, next) => {
   const parsed = LoginSchema.safeParse(req.body);
   if (!parsed.success) return next(toValidationError(parsed.error));
 
@@ -253,6 +254,7 @@ router.post(
   '/auth/logout',
   authLimiter,
   jwtAuthMiddleware,
+  auditarAcao('logout'),
   async (req, res, next) => {
     const parsed = LogoutSchema.safeParse(req.body);
     if (!parsed.success) return next(toValidationError(parsed.error));
@@ -324,7 +326,7 @@ router.post(
  * POST /auth/reset-password
  * Redefine a senha usando token de recuperação.
  */
-router.post('/auth/reset-password', authLimiter, async (req, res, next) => {
+router.post('/auth/reset-password', authLimiter, auditarAcao('senha_alterada'), async (req, res, next) => {
   const parsed = ResetPasswordSchema.safeParse(req.body);
   if (!parsed.success) return next(toValidationError(parsed.error));
 

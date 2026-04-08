@@ -13,6 +13,7 @@ import {
 } from '../services/movimentacoesService.js';
 import { jwtAuthMiddleware } from '../middleware/jwtAuth.js';
 import { requireAtivo } from '../middleware/requireAtivo.js';
+import { auditarAcao } from '../middleware/auditoria.js';
 import { AppError } from '../errors/AppError.js';
 import { toValidationError } from '../errors/toValidationError.js';
 import logger from '../logger.js';
@@ -185,12 +186,12 @@ async function handleDelete(req, res, next) {
 }
 
 router.get('/movimentacoes', readLimiter, jwtAuthMiddleware, requireAtivo, handleList);
-router.post('/movimentacoes', writeLimiter, jwtAuthMiddleware, requireAtivo, handleCreate);
+router.post('/movimentacoes', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('movimentacao_criada'), handleCreate);
 router.get('/movimentacoes/saldo', readLimiter, jwtAuthMiddleware, requireAtivo, handleGetSaldoConsolidado);
 router.get('/movimentacoes/saldo/:contaId', readLimiter, jwtAuthMiddleware, requireAtivo, handleGetSaldoConta);
 router.get('/movimentacoes/:id', readLimiter, jwtAuthMiddleware, requireAtivo, handleGet);
 router.put('/movimentacoes/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, handleUpdate);
 router.patch('/movimentacoes/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, handleUpdate);
-router.delete('/movimentacoes/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, handleDelete);
+router.delete('/movimentacoes/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('movimentacao_excluida', (req) => ({ id: req.params.id })), handleDelete);
 
 export default router;

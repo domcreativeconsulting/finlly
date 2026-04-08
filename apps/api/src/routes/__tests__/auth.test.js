@@ -53,6 +53,10 @@ jest.unstable_mockModule('../../logger.js', () => ({
   default: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
 }));
 
+jest.unstable_mockModule('../../middleware/auditoria.js', () => ({
+  auditarAcao: () => (_req, _res, next) => next(),
+}));
+
 jest.unstable_mockModule('../../config/env.js', () => ({
   config: {
     NODE_ENV: 'test',

@@ -11,6 +11,7 @@ import {
 } from '../services/contaService.js';
 import { jwtAuthMiddleware } from '../middleware/jwtAuth.js';
 import { requireAtivo } from '../middleware/requireAtivo.js';
+import { auditarAcao } from '../middleware/auditoria.js';
 import { AppError } from '../errors/AppError.js';
 import { toValidationError } from '../errors/toValidationError.js';
 import logger from '../logger.js';
@@ -121,10 +122,10 @@ async function handleDelete(req, res, next) {
 }
 
 router.get('/contas', readLimiter, jwtAuthMiddleware, requireAtivo, handleList);
-router.post('/contas', writeLimiter, jwtAuthMiddleware, requireAtivo, handleCreate);
+router.post('/contas', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('conta_criada'), handleCreate);
 router.get('/contas/:id', readLimiter, jwtAuthMiddleware, requireAtivo, handleGet);
 router.put('/contas/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, handleUpdate);
 router.patch('/contas/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, handleUpdate);
-router.delete('/contas/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, handleDelete);
+router.delete('/contas/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('conta_excluida', (req) => ({ contaId: req.params.id })), handleDelete);
 
 export default router;

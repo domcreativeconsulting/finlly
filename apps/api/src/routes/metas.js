@@ -4,6 +4,7 @@ import { userOrIpKeyGenerator } from '../utils/rateLimitStore.js';
 import { z } from 'zod';
 import { jwtAuthMiddleware } from '../middleware/jwtAuth.js';
 import { requireAtivo } from '../middleware/requireAtivo.js';
+import { auditarAcao } from '../middleware/auditoria.js';
 import { AppError } from '../errors/AppError.js';
 import { toValidationError } from '../errors/toValidationError.js';
 import logger from '../logger.js';
@@ -96,7 +97,7 @@ router.get('/goals', readLimiter, jwtAuthMiddleware, requireAtivo, async (req, r
   }
 });
 
-router.post('/goals', writeLimiter, jwtAuthMiddleware, requireAtivo, async (req, res, next) => {
+router.post('/goals', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('meta_criada'), async (req, res, next) => {
   try {
     const parsed = CreateGoalSchema.safeParse(req.body);
     if (!parsed.success) return next(toValidationError(parsed.error));
@@ -129,7 +130,7 @@ router.patch('/goals/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, async 
   }
 });
 
-router.delete('/goals/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, async (req, res, next) => {
+router.delete('/goals/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('meta_excluida', (req) => ({ id: req.params.id })), async (req, res, next) => {
   try {
     const result = await deleteMeta(req.user.sub, req.params.id);
     logger.info({ msg: 'Meta excluída', userId: req.user.sub, metaId: req.params.id });
