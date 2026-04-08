@@ -1,17 +1,17 @@
 import { Router } from 'express';
 import { rateLimit } from 'express-rate-limit';
 import { userOrIpKeyGenerator } from '../utils/rateLimitStore.js';
-import { z } from 'zod';
 import { getExtrato } from '../services/extratoService.js';
 import { jwtAuthMiddleware } from '../middleware/jwtAuth.js';
 import { requireAtivo } from '../middleware/requireAtivo.js';
+import { validate } from '../middleware/validate.js';
 import { auditarAcao } from '../middleware/auditoria.js';
 import { AppError } from '../errors/AppError.js';
-import { toValidationError } from '../errors/toValidationError.js';
 import logger from '../logger.js';
 import prisma from '../utils/database.js';
 import { gerarCSV } from '../utils/csvGenerator.js';
 import { gerarPDF } from '../utils/pdfGenerator.js';
+import { extratoQuerySchema, exportExtratoQuerySchema, manualMovementSchema } from '../schemas/cashMovement.schemas.js';
 
 const router = Router();
 
@@ -35,27 +35,9 @@ const writeLimiter = rateLimit({
   handler: (req, res, next, options) => next(AppError.tooManyRequests(options.message.message)),
 });
 
-const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
-
-const ExtratoQuerySchema = z.object({
-  dateFrom: z.string().regex(ISO_DATE_REGEX).optional(),
-  dateTo: z.string().regex(ISO_DATE_REGEX).optional(),
-  accountId: z.string().uuid().optional(),
-  type: z.enum(['IN', 'OUT']).optional(),
-  originType: z.enum(['ACCOUNTS_PAYABLE', 'ACCOUNTS_RECEIVABLE', 'MANUAL']).optional(),
-  q: z.string().max(100).optional(),
-  page: z.coerce.number().int().positive().default(1),
-  perPage: z.coerce.number().int().min(1).max(100).default(20),
-  sortBy: z.enum(['date', 'amount', 'description', 'createdAt']).default('date'),
-  sortOrder: z.enum(['asc', 'desc']).default('desc'),
-});
-
 async function handleGetExtrato(req, res, next) {
-  const parsed = ExtratoQuerySchema.safeParse(req.query);
-  if (!parsed.success) return next(toValidationError(parsed.error));
-
   try {
-    const result = await getExtrato(req.user.sub, parsed.data);
+    const result = await getExtrato(req.user.sub, req.query);
     logger.info({ msg: 'Extrato consultado', userId: req.user.sub });
     return res.status(200).json(result);
   } catch (err) {
@@ -63,22 +45,9 @@ async function handleGetExtrato(req, res, next) {
   }
 }
 
-const ExportExtratoQuerySchema = z.object({
-  format: z.enum(['csv', 'pdf']).default('csv'),
-  dateFrom: z.string().regex(ISO_DATE_REGEX).optional(),
-  dateTo: z.string().regex(ISO_DATE_REGEX).optional(),
-  accountId: z.string().uuid().optional(),
-  type: z.enum(['IN', 'OUT']).optional(),
-  originType: z.enum(['ACCOUNTS_PAYABLE', 'ACCOUNTS_RECEIVABLE', 'MANUAL']).optional(),
-  q: z.string().max(100).optional(),
-});
-
 async function handleExportExtrato(req, res, next) {
-  const parsed = ExportExtratoQuerySchema.safeParse(req.query);
-  if (!parsed.success) return next(toValidationError(parsed.error));
-
   try {
-    const { format, ...filters } = parsed.data;
+    const { format, ...filters } = req.query;
     const result = await getExtrato(req.user.sub, { ...filters, page: 1, perPage: 10000 });
     const items = result.items ?? [];
 
@@ -135,20 +104,8 @@ async function handleExportExtrato(req, res, next) {
   }
 }
 
-const ManualMovementSchema = z.object({
-  accountId: z.string().uuid(),
-  type: z.enum(['IN', 'OUT']),
-  amount: z.number().positive(),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  description: z.string().min(1),
-  notes: z.string().optional(),
-});
-
 async function handleCreateManual(req, res, next) {
-  const parsed = ManualMovementSchema.safeParse(req.body);
-  if (!parsed.success) return next(toValidationError(parsed.error));
-
-  const { accountId, type, amount, date, description, notes } = parsed.data;
+  const { accountId, type, amount, date, description, notes } = req.body;
   const userId = req.user.sub;
 
   try {
@@ -190,8 +147,8 @@ async function handleCreateManual(req, res, next) {
   }
 }
 
-router.get('/cash-movements', readLimiter, jwtAuthMiddleware, requireAtivo, handleGetExtrato);
-router.get('/cash-movements/export', readLimiter, jwtAuthMiddleware, requireAtivo, handleExportExtrato);
-router.post('/cash-movements/manual', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('movimentacao_criada'), handleCreateManual);
+router.get('/cash-movements', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ query: extratoQuerySchema }), handleGetExtrato);
+router.get('/cash-movements/export', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ query: exportExtratoQuerySchema }), handleExportExtrato);
+router.post('/cash-movements/manual', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('movimentacao_criada'), validate(manualMovementSchema), handleCreateManual);
 
 export default router;

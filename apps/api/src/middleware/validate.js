@@ -3,15 +3,16 @@ import { toValidationError } from '../errors/toValidationError.js';
 /**
  * Middleware factory para validação centralizada de requisições com Zod.
  *
- * Accepts either:
- *   - A single Zod schema → validates req.body
- *   - An object with optional `body`, `query`, and/or `params` Zod schemas
+ * Aceita:
+ *   - Um Zod schema diretamente → valida req.body
+ *   - Um objeto com campos opcionais `body`, `query`, `params` e/ou `headers`
  *
- * On success, replaces req.body/req.query/req.params with the parsed (coerced) values.
- * On failure, calls next(AppError) with status 422 and VALIDATION_ERROR code.
+ * Política de campos desconhecidos:
+ *   - Zod usa "strip" por padrão: campos extras em req.body são removidos silenciosamente.
+ *   - Para rejeitar campos extras, use z.object({...}).strict() no schema.
  *
- * @param {import('zod').ZodTypeAny | { body?: import('zod').ZodTypeAny, query?: import('zod').ZodTypeAny, params?: import('zod').ZodTypeAny }} schema
- * @returns {import('express').RequestHandler}
+ * Em caso de sucesso, substitui req.body/req.query/req.params com os dados parseados (coercidos).
+ * Em caso de falha, chama next(AppError) com status 422 e code VALIDATION_ERROR.
  */
 export function validate(schema) {
   return (req, res, next) => {
@@ -19,43 +20,37 @@ export function validate(schema) {
     // A Zod schema always has a .safeParse method.
     const isZodSchema = typeof schema?.safeParse === 'function';
 
-    const bodySchema = isZodSchema ? schema : schema?.body;
-    const querySchema = isZodSchema ? undefined : schema?.query;
-    const paramsSchema = isZodSchema ? undefined : schema?.params;
+    const bodySchema    = isZodSchema ? schema : schema?.body;
+    const querySchema   = isZodSchema ? undefined : schema?.query;
+    const paramsSchema  = isZodSchema ? undefined : schema?.params;
+    const headersSchema = isZodSchema ? undefined : schema?.headers;
 
     const allIssues = [];
 
     if (bodySchema) {
       const result = bodySchema.safeParse(req.body);
-      if (!result.success) {
-        allIssues.push(...(result.error.issues || result.error.errors || []));
-      } else {
-        req.body = result.data;
-      }
+      if (!result.success) allIssues.push(...(result.error.issues || result.error.errors || []));
+      else req.body = result.data;
     }
 
     if (querySchema) {
       const result = querySchema.safeParse(req.query);
-      if (!result.success) {
-        allIssues.push(...(result.error.issues || result.error.errors || []));
-      } else {
-        req.query = result.data;
-      }
+      if (!result.success) allIssues.push(...(result.error.issues || result.error.errors || []));
+      else req.query = result.data;
     }
 
     if (paramsSchema) {
       const result = paramsSchema.safeParse(req.params);
-      if (!result.success) {
-        allIssues.push(...(result.error.issues || result.error.errors || []));
-      } else {
-        req.params = result.data;
-      }
+      if (!result.success) allIssues.push(...(result.error.issues || result.error.errors || []));
+      else req.params = result.data;
     }
 
-    if (allIssues.length > 0) {
-      return next(toValidationError({ issues: allIssues }));
+    if (headersSchema) {
+      const result = headersSchema.safeParse(req.headers);
+      if (!result.success) allIssues.push(...(result.error.issues || result.error.errors || []));
     }
 
+    if (allIssues.length > 0) return next(toValidationError({ issues: allIssues }));
     next();
   };
 }

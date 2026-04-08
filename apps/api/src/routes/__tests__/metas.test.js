@@ -365,7 +365,7 @@ describe('GET /goals/:id', () => {
     mockGetMeta.mockRejectedValue(AppError.notFound('Meta não encontrada'));
 
     const app = makeApp();
-    const res = await request(app, 'GET', '/goals/nao-existe', null);
+    const res = await request(app, 'GET', `/goals/${META_ID}`, null);
 
     expect(res.status).toBe(404);
     expect(res.body.code).toBe('NOT_FOUND');
@@ -409,7 +409,7 @@ describe('PATCH /goals/:id', () => {
     mockUpdateMeta.mockRejectedValue(AppError.notFound('Meta não encontrada'));
 
     const app = makeApp();
-    const res = await request(app, 'PATCH', '/goals/nao-existe', { nome: 'X' });
+    const res = await request(app, 'PATCH', `/goals/${META_ID}`, { nome: 'X' });
 
     expect(res.status).toBe(404);
     expect(res.body.code).toBe('NOT_FOUND');
@@ -445,7 +445,7 @@ describe('DELETE /goals/:id', () => {
     mockDeleteMeta.mockRejectedValue(AppError.notFound('Meta não encontrada'));
 
     const app = makeApp();
-    const res = await request(app, 'DELETE', '/goals/nao-existe', null);
+    const res = await request(app, 'DELETE', `/goals/${META_ID}`, null);
 
     expect(res.status).toBe(404);
     expect(res.body.code).toBe('NOT_FOUND');
@@ -492,7 +492,7 @@ describe('GET /goals/:id/progress', () => {
     mockGetProgresso.mockRejectedValue(AppError.notFound('Meta não encontrada'));
 
     const app = makeApp();
-    const res = await request(app, 'GET', '/goals/nao-existe/progress', null);
+    const res = await request(app, 'GET', `/goals/${META_ID}/progress`, null);
 
     expect(res.status).toBe(404);
     expect(res.body.code).toBe('NOT_FOUND');
@@ -560,7 +560,7 @@ describe('POST /goals/:id/movements', () => {
     mockCreateMovimento.mockRejectedValue(AppError.notFound('Meta não encontrada'));
 
     const app = makeApp();
-    const res = await request(app, 'POST', '/goals/nao-existe/movements', bodyValido);
+    const res = await request(app, 'POST', `/goals/${META_ID}/movements`, bodyValido);
 
     expect(res.status).toBe(404);
     expect(res.body.code).toBe('NOT_FOUND');
@@ -605,7 +605,7 @@ describe('DELETE /goals/:id/movements/:movId', () => {
     mockDeleteMovimento.mockRejectedValue(AppError.notFound('Movimento não encontrado'));
 
     const app = makeApp();
-    const res = await request(app, 'DELETE', `/goals/${META_ID}/movements/nao-existe`, null);
+    const res = await request(app, 'DELETE', `/goals/${META_ID}/movements/${MOV_ID}`, null);
 
     expect(res.status).toBe(404);
     expect(res.body.code).toBe('NOT_FOUND');
@@ -684,7 +684,7 @@ describe('GET /goals/:id/movements', () => {
     mockListMovimentos.mockRejectedValue(AppError.notFound('Meta não encontrada'));
 
     const app = makeApp();
-    const res = await request(app, 'GET', '/goals/nao-existe/movements', null);
+    const res = await request(app, 'GET', `/goals/${META_ID}/movements`, null);
 
     expect(res.status).toBe(404);
     expect(res.body.code).toBe('NOT_FOUND');

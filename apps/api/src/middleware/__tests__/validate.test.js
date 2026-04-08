@@ -122,4 +122,26 @@ describe('validate middleware', () => {
       expect(req.body.email).toBe('alice@test.com');
     });
   });
+
+  describe('com schema de headers', () => {
+    const headersSchema = z.object({
+      'x-custom-header': z.string().min(1),
+    });
+
+    test('passa quando header obrigatório está presente', () => {
+      const req = { body: {}, query: {}, params: {}, headers: { 'x-custom-header': 'valor' } };
+      const next = jest.fn();
+      validate({ headers: headersSchema })(req, {}, next);
+      expect(next).toHaveBeenCalledWith();
+    });
+
+    test('retorna erro 422 quando header obrigatório está ausente', () => {
+      const req = { body: {}, query: {}, params: {}, headers: {} };
+      const next = jest.fn();
+      validate({ headers: headersSchema })(req, {}, next);
+      const err = next.mock.calls[0][0];
+      expect(err.status).toBe(422);
+      expect(err.code).toBe('VALIDATION_ERROR');
+    });
+  });
 });

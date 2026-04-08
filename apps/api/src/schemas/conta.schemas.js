@@ -3,6 +3,10 @@ import { z } from 'zod';
 const TIPO_CONTA_ENUM = ['corrente', 'poupanca', 'investimento', 'cartao_credito', 'cartao_debito', 'dinheiro', 'outro'];
 const STATUS_CONTA_ENUM = ['ativa', 'inativa', 'arquivada'];
 
+export const listContasQuerySchema = z.object({
+  status: z.enum(['ativa', 'inativa']).optional(),
+});
+
 export const createContaSchema = z.object({
   nome: z.string().trim().min(1).max(255),
   tipo: z.enum(TIPO_CONTA_ENUM),
