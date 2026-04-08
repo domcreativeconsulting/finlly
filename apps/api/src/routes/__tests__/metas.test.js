@@ -183,7 +183,6 @@ const progressoBase = {
   dataInicio: '2026-01-01',
   dataFim: null,
 };
-
 describe('GET /goals', () => {
   test('retorna 200 com shape correto (items, page, limit, total, totalPages)', async () => {
     mockListMetas.mockResolvedValue({ items: [metaBase], page: 1, limit: 20, total: 1, totalPages: 1 });
