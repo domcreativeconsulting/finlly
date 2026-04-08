@@ -7,6 +7,7 @@ import { requireAtivo } from '../middleware/requireAtivo.js';
 import { auditarAcao } from '../middleware/auditoria.js';
 import { AppError } from '../errors/AppError.js';
 import { toValidationError } from '../errors/toValidationError.js';
+import { config } from '../config/env.js';
 import logger from '../logger.js';
 import prisma from '../utils/database.js';
 import { calcularPosicao } from '../services/investimentoService.js';
@@ -14,8 +15,8 @@ import { calcularPosicao } from '../services/investimentoService.js';
 const router = Router();
 
 const readLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 60,
+  windowMs: config.RATE_LIMIT_READ_WINDOW_MS,
+  max: config.RATE_LIMIT_READ_MAX,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: userOrIpKeyGenerator,
@@ -24,8 +25,8 @@ const readLimiter = rateLimit({
 });
 
 const writeLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 30,
+  windowMs: config.RATE_LIMIT_WRITE_WINDOW_MS,
+  max: config.RATE_LIMIT_WRITE_MAX,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: userOrIpKeyGenerator,
@@ -422,11 +423,11 @@ router.get('/investimentos/tipos', readLimiter, jwtAuthMiddleware, requireAtivo,
 router.get('/investimentos', readLimiter, jwtAuthMiddleware, requireAtivo, handleList);
 router.post('/investimentos', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('investimento_criado'), handleCreate);
 router.get('/investimentos/:id', readLimiter, jwtAuthMiddleware, requireAtivo, handleGet);
-router.patch('/investimentos/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, handleUpdate);
+router.patch('/investimentos/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('investimento_atualizado', (req) => ({ id: req.params.id })), handleUpdate);
 router.delete('/investimentos/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('investimento_excluido', (req) => ({ id: req.params.id })), handleDelete);
 router.get('/investimentos/:id/eventos', readLimiter, jwtAuthMiddleware, requireAtivo, handleListEventos);
-router.post('/investimentos/:id/eventos', writeLimiter, jwtAuthMiddleware, requireAtivo, handleCreateEvento);
-router.delete('/investimentos/:id/eventos/:eventoId', writeLimiter, jwtAuthMiddleware, requireAtivo, handleDeleteEvento);
+router.post('/investimentos/:id/eventos', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('eventoInvestimento_criado', (req) => ({ investimentoId: req.params.id })), handleCreateEvento);
+router.delete('/investimentos/:id/eventos/:eventoId', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('eventoInvestimento_excluido', (req) => ({ investimentoId: req.params.id, eventoId: req.params.eventoId })), handleDeleteEvento);
 router.get('/investimentos/:id/posicao', readLimiter, jwtAuthMiddleware, requireAtivo, handleGetPosicao);
 
 export default router;
