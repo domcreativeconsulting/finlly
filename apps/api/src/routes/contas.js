@@ -127,6 +127,6 @@ router.post('/contas', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAca
 router.get('/contas/:id', readLimiter, jwtAuthMiddleware, requireAtivo, handleGet);
 router.put('/contas/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('conta_atualizada', (req) => ({ id: req.params.id })), handleUpdate);
 router.patch('/contas/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('conta_atualizada', (req) => ({ id: req.params.id })), handleUpdate);
-router.delete('/contas/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('conta_excluida', (req) => ({ contaId: req.params.id })), handleDelete);
+router.delete('/contas/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('conta_excluida', (req) => ({ id: req.params.id })), handleDelete);
 
 export default router;
