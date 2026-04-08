@@ -3,6 +3,7 @@ import { rateLimit } from 'express-rate-limit';
 import { userOrIpKeyGenerator } from '../utils/rateLimitStore.js';
 import { jwtAuthMiddleware } from '../middleware/jwtAuth.js';
 import { requireAtivo } from '../middleware/requireAtivo.js';
+import { validate } from '../middleware/validate.js';
 import logger from '../logger.js';
 import {
   getKPIs,
@@ -14,6 +15,14 @@ import {
 } from '../services/dashboardService.js';
 import { gerarCSV } from '../utils/csvGenerator.js';
 import { gerarPDF } from '../utils/pdfGenerator.js';
+import {
+  kpisQuerySchema,
+  evolucaoQuerySchema,
+  categoriasQuerySchema,
+  relatorioQuerySchema,
+  exportarRelatorioQuerySchema,
+  monthlyQuerySchema,
+} from '../schemas/dashboard.schemas.js';
 
 const router = Router();
 
@@ -27,14 +36,10 @@ const readLimiter = rateLimit({
 });
 
 // GET /dashboard/kpis?dataInicio=YYYY-MM-DD&dataFim=YYYY-MM-DD
-router.get('/dashboard/kpis', readLimiter, jwtAuthMiddleware, requireAtivo, async (req, res, next) => {
+router.get('/dashboard/kpis', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ query: kpisQuerySchema }), async (req, res, next) => {
   try {
     const usuarioId = req.user.sub;
     const { dataInicio, dataFim } = req.query;
-
-    if (!dataInicio || !dataFim) {
-      return res.status(400).json({ code: 'VALIDATION_ERROR', message: 'dataInicio e dataFim são obrigatórios' });
-    }
 
     const result = await getKPIs(usuarioId, { dataInicio, dataFim });
     logger.info({ msg: 'Dashboard KPIs consultados', userId: usuarioId });
@@ -45,10 +50,10 @@ router.get('/dashboard/kpis', readLimiter, jwtAuthMiddleware, requireAtivo, asyn
 });
 
 // GET /dashboard/evolucao?meses=6
-router.get('/dashboard/evolucao', readLimiter, jwtAuthMiddleware, requireAtivo, async (req, res, next) => {
+router.get('/dashboard/evolucao', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ query: evolucaoQuerySchema }), async (req, res, next) => {
   try {
     const usuarioId = req.user.sub;
-    const meses = Math.min(Math.max(parseInt(req.query.meses) || 6, 1), 24);
+    const { meses } = req.query;
 
     const result = await getEvolucaoMensal(usuarioId, meses);
     logger.info({ msg: 'Evolução mensal consultada', userId: usuarioId });
@@ -59,21 +64,12 @@ router.get('/dashboard/evolucao', readLimiter, jwtAuthMiddleware, requireAtivo, 
 });
 
 // GET /dashboard/categorias?dataInicio=&dataFim=&tipo=saida&limit=10
-router.get('/dashboard/categorias', readLimiter, jwtAuthMiddleware, requireAtivo, async (req, res, next) => {
+router.get('/dashboard/categorias', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ query: categoriasQuerySchema }), async (req, res, next) => {
   try {
     const usuarioId = req.user.sub;
-    const { dataInicio, dataFim, tipo = 'saida', limit = '10' } = req.query;
+    const { dataInicio, dataFim, tipo, limit } = req.query;
 
-    if (!dataInicio || !dataFim) {
-      return res.status(400).json({ code: 'VALIDATION_ERROR', message: 'dataInicio e dataFim são obrigatórios' });
-    }
-
-    const result = await getTopCategorias(usuarioId, {
-      dataInicio,
-      dataFim,
-      tipo,
-      limit: Math.min(parseInt(limit) || 10, 50),
-    });
+    const result = await getTopCategorias(usuarioId, { dataInicio, dataFim, tipo, limit });
     logger.info({ msg: 'Top categorias consultadas', userId: usuarioId });
     return res.status(200).json(result);
   } catch (err) {
@@ -94,7 +90,7 @@ router.get('/dashboard/contas', readLimiter, jwtAuthMiddleware, requireAtivo, as
 });
 
 // GET /relatorios?dataInicio=&dataFim=&categoriaId=&contaId=&tipo=&page=1&limit=50
-router.get('/relatorios', readLimiter, jwtAuthMiddleware, requireAtivo, async (req, res, next) => {
+router.get('/relatorios', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ query: relatorioQuerySchema }), async (req, res, next) => {
   try {
     const usuarioId = req.user.sub;
     const { dataInicio, dataFim, categoriaId, contaId, tipo, page, limit } = req.query;
@@ -105,8 +101,8 @@ router.get('/relatorios', readLimiter, jwtAuthMiddleware, requireAtivo, async (r
       categoriaId,
       contaId,
       tipo,
-      page: parseInt(page) || 1,
-      limit: parseInt(limit) || 50,
+      page,
+      limit,
     });
     logger.info({ msg: 'Relatório consultado', userId: usuarioId });
     return res.status(200).json(result);
@@ -116,10 +112,10 @@ router.get('/relatorios', readLimiter, jwtAuthMiddleware, requireAtivo, async (r
 });
 
 // GET /relatorios/exportar?dataInicio=&dataFim=&categoriaId=&contaId=&tipo=&format=csv|pdf
-router.get('/relatorios/exportar', readLimiter, jwtAuthMiddleware, requireAtivo, async (req, res, next) => {
+router.get('/relatorios/exportar', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ query: exportarRelatorioQuerySchema }), async (req, res, next) => {
   try {
     const usuarioId = req.user.sub;
-    const { dataInicio, dataFim, categoriaId, contaId, tipo, format = 'csv' } = req.query;
+    const { dataInicio, dataFim, categoriaId, contaId, tipo, format } = req.query;
 
     const { data } = await getRelatorio(usuarioId, {
       dataInicio,
@@ -190,17 +186,10 @@ router.get('/relatorios/exportar', readLimiter, jwtAuthMiddleware, requireAtivo,
 });
 
 // GET /dashboard/monthly?year=2026&month=4
-router.get('/dashboard/monthly', readLimiter, jwtAuthMiddleware, requireAtivo, async (req, res, next) => {
+router.get('/dashboard/monthly', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ query: monthlyQuerySchema }), async (req, res, next) => {
   try {
     const usuarioId = req.user.sub;
-    const now = new Date();
-    const year = req.query.year ? parseInt(req.query.year) : now.getFullYear();
-    const month = req.query.month ? parseInt(req.query.month) : now.getMonth() + 1;
-    const currentYear = now.getFullYear();
-
-    if (!Number.isInteger(year) || year < 2000 || year > currentYear + 5 || !Number.isInteger(month) || month < 1 || month > 12) {
-      return res.status(400).json({ code: 'VALIDATION_ERROR', message: 'year e month devem ser inteiros positivos válidos' });
-    }
+    const { year, month } = req.query;
 
     const result = await getDashboardMensal(usuarioId, { year, month });
     logger.info({ msg: 'Dashboard mensal consultado', userId: usuarioId, year, month });

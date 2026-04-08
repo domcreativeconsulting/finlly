@@ -1,15 +1,15 @@
 import { Router } from 'express';
 import { rateLimit } from 'express-rate-limit';
 import { userOrIpKeyGenerator } from '../utils/rateLimitStore.js';
-import { z } from 'zod';
 import { criarAssinatura, cancelarAssinatura, getStatusAssinatura } from '../services/billingService.js';
 import { processarWebhookAsaas } from '../services/webhookService.js';
 import { reconciliarAssinaturas } from '../services/reconciliacaoService.js';
 import { jwtAuthMiddleware } from '../middleware/jwtAuth.js';
 import { requireAtivo } from '../middleware/requireAtivo.js';
-import { toValidationError } from '../errors/toValidationError.js';
+import { validate } from '../middleware/validate.js';
 import { AppError } from '../errors/AppError.js';
 import logger from '../logger.js';
+import { subscribeSchema } from '../schemas/billing.schemas.js';
 
 const router = Router();
 
@@ -50,15 +50,8 @@ const adminLimiter = rateLimit({
 });
 
 // ============================================================
-// Zod schema for subscribe
+// Zod schema for subscribe — defined in billing.schemas.js
 // ============================================================
-
-const subscribeSchema = z.object({
-  plano: z.enum(['mensal', 'anual']),
-  ciclo: z.enum(['mensal', 'anual']),
-  formaPagamento: z.enum(['PIX', 'CREDIT_CARD']),
-  cupomCodigo: z.string().optional(),
-});
 
 // ============================================================
 // POST /webhooks/asaas
@@ -110,12 +103,9 @@ router.post(
  * POST /billing/subscribe
  * Creates or updates a subscription for the authenticated user.
  */
-router.post('/billing/subscribe', billingLimiter, jwtAuthMiddleware, requireAtivo, async (req, res, next) => {
-  const parsed = subscribeSchema.safeParse(req.body);
-  if (!parsed.success) return next(toValidationError(parsed.error));
-
+router.post('/billing/subscribe', billingLimiter, jwtAuthMiddleware, requireAtivo, validate(subscribeSchema), async (req, res, next) => {
   try {
-    const { assinante, paymentLink } = await criarAssinatura(req.user.sub, parsed.data);
+    const { assinante, paymentLink } = await criarAssinatura(req.user.sub, req.body);
     return res.status(201).json({
       message: 'Assinatura criada com sucesso',
       assinante,

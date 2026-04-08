@@ -7,15 +7,11 @@ import { auditarAcao } from '../middleware/auditoria.js';
 import { authLimiter, sensitiveWriteLimiter } from '../middleware/rateLimiter.js';
 import { exportarDadosUsuario, anonimizarUsuario } from '../services/lgpd.service.js';
 import { AppError } from '../errors/AppError.js';
-import { z } from 'zod';
+import { confirmDeleteSchema } from '../schemas/lgpd.schemas.js';
 import logger from '../logger.js';
 import prisma from '../utils/database.js';
 
 const router = Router();
-
-const confirmDeleteSchema = z.object({
-  senha: z.string().min(1, 'Senha obrigatória'),
-});
 
 /**
  * GET /lgpd/meus-dados
