@@ -26,3 +26,16 @@ export const optionalIsoDateString = z.string().regex(ISO_DATE_REGEX).optional()
 export const optionalUuid          = z.string().uuid().optional().nullable();
 export const moneyPositive         = z.number().positive();
 export const sortOrderSchema       = z.enum(['asc', 'desc']).default('desc');
+
+/** Intervalo de datas opcional { dateFrom?, dateTo? } */
+export const dateRangeSchema = z.object({
+  dateFrom: optionalIsoDateString,
+  dateTo:   optionalIsoDateString,
+});
+
+/** Cria schema de params com dois UUIDs para rotas aninhadas */
+export const uuidDoubleParam = (param1, param2) =>
+  z.object({
+    [param1]: z.string().uuid(`${param1} inválido`),
+    [param2]: z.string().uuid(`${param2} inválido`),
+  });

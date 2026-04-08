@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import { rateLimit } from 'express-rate-limit';
 import { userOrIpKeyGenerator } from '../utils/rateLimitStore.js';
-import { z } from 'zod';
 import { jwtAuthMiddleware } from '../middleware/jwtAuth.js';
 import { requireAtivo } from '../middleware/requireAtivo.js';
 import { validate } from '../middleware/validate.js';
@@ -17,7 +16,7 @@ import {
   createInvestimentoSchema,
   updateInvestimentoSchema,
 } from '../schemas/investimento.schemas.js';
-import { uuidParam } from '../schemas/shared.schemas.js';
+import { uuidParam, uuidDoubleParam } from '../schemas/shared.schemas.js';
 
 const router = Router();
 
@@ -378,7 +377,7 @@ router.patch('/investimentos/:id', writeLimiter, jwtAuthMiddleware, requireAtivo
 router.delete('/investimentos/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('investimento_excluido', (req) => ({ id: req.params.id })), validate({ params: uuidParam }), handleDelete);
 router.get('/investimentos/:id/eventos', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ query: eventoQuerySchema, params: uuidParam }), handleListEventos);
 router.post('/investimentos/:id/eventos', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ body: createEventoSchema, params: uuidParam }), handleCreateEvento);
-router.delete('/investimentos/:id/eventos/:eventoId', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ params: z.object({ id: z.string().uuid(), eventoId: z.string().uuid() }) }), handleDeleteEvento);
+router.delete('/investimentos/:id/eventos/:eventoId', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ params: uuidDoubleParam('id', 'eventoId') }), handleDeleteEvento);
 router.get('/investimentos/:id/posicao', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ params: uuidParam }), handleGetPosicao);
 
 export default router;

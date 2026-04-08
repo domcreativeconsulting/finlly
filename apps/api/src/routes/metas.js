@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import { rateLimit } from 'express-rate-limit';
 import { userOrIpKeyGenerator } from '../utils/rateLimitStore.js';
-import { z } from 'zod';
 import { jwtAuthMiddleware } from '../middleware/jwtAuth.js';
 import { requireAtivo } from '../middleware/requireAtivo.js';
 import { validate } from '../middleware/validate.js';
@@ -26,7 +25,7 @@ import {
   createMovimentoMetaSchema,
   listMovimentosMetaQuerySchema,
 } from '../schemas/meta.schemas.js';
-import { uuidParam } from '../schemas/shared.schemas.js';
+import { uuidParam, uuidDoubleParam } from '../schemas/shared.schemas.js';
 
 const router = Router();
 
@@ -128,7 +127,7 @@ router.post('/goals/:id/movements', writeLimiter, jwtAuthMiddleware, requireAtiv
   }
 });
 
-router.delete('/goals/:id/movements/:movId', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ params: z.object({ id: z.string().uuid(), movId: z.string().uuid() }) }), async (req, res, next) => {
+router.delete('/goals/:id/movements/:movId', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ params: uuidDoubleParam('id', 'movId') }), async (req, res, next) => {
   try {
     const result = await deleteMovimento(req.user.sub, req.params.id, req.params.movId);
     logger.info({ msg: 'Movimento de meta excluído', userId: req.user.sub, metaId: req.params.id, movId: req.params.movId });
