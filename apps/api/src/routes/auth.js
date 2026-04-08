@@ -31,18 +31,14 @@ const router = Router();
 // Rate Limiters
 // ============================================================
 
-const LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
-const REGISTER_WINDOW_MS = 60 * 60 * 1000; // 1 hour
-const FORGOT_PASSWORD_WINDOW_MS = 60 * 60 * 1000; // 1 hour
-
-/** Strict limiter for login: 5 attempts per 15 minutes per IP. */
+/** Strict limiter for login: configurable via RATE_LIMIT_LOGIN_MAX / RATE_LIMIT_LOGIN_WINDOW_MS. */
 const loginLimiter = rateLimit({
-  windowMs: LOGIN_WINDOW_MS,
-  max: 5,
+  windowMs: config.RATE_LIMIT_LOGIN_WINDOW_MS,
+  max: config.RATE_LIMIT_LOGIN_MAX,
   skip: () => config.NODE_ENV === 'development',
   standardHeaders: true,
   legacyHeaders: false,
-  store: buildStore(LOGIN_WINDOW_MS),
+  store: buildStore(config.RATE_LIMIT_LOGIN_WINDOW_MS),
   message: {
     code: 'RATE_LIMITED',
     message: 'Muitas tentativas. Tente novamente em 15 minutos.',
@@ -53,14 +49,14 @@ const loginLimiter = rateLimit({
   },
 });
 
-/** Registration limiter: 10 requests per hour per IP. */
+/** Registration limiter: configurable via RATE_LIMIT_REGISTER_MAX / RATE_LIMIT_REGISTER_WINDOW_MS. */
 const registerLimiter = rateLimit({
-  windowMs: REGISTER_WINDOW_MS,
-  max: 10,
+  windowMs: config.RATE_LIMIT_REGISTER_WINDOW_MS,
+  max: config.RATE_LIMIT_REGISTER_MAX,
   skip: () => config.NODE_ENV === 'development',
   standardHeaders: true,
   legacyHeaders: false,
-  store: buildStore(REGISTER_WINDOW_MS),
+  store: buildStore(config.RATE_LIMIT_REGISTER_WINDOW_MS),
   message: {
     code: 'RATE_LIMITED',
     message: 'Muitas tentativas de registro. Tente novamente em 1 hora.',
@@ -72,6 +68,7 @@ const registerLimiter = rateLimit({
 });
 
 /** Forgot-password limiter: 3 requests per hour, keyed by email (falls back to IP). */
+const FORGOT_PASSWORD_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 const forgotPasswordLimiter = rateLimit({
   windowMs: FORGOT_PASSWORD_WINDOW_MS,
   max: 3,

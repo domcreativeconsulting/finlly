@@ -9,6 +9,7 @@ import { jwtAuthMiddleware } from '../middleware/jwtAuth.js';
 import { requireAtivo } from '../middleware/requireAtivo.js';
 import { toValidationError } from '../errors/toValidationError.js';
 import { AppError } from '../errors/AppError.js';
+import { config } from '../config/env.js';
 import logger from '../logger.js';
 
 const router = Router();
@@ -17,10 +18,10 @@ const router = Router();
 // Rate Limiters
 // ============================================================
 
-/** Rate limiter for webhook endpoint: 100 req/min per IP */
+/** Rate limiter for webhook endpoint: configurable via RATE_LIMIT_WEBHOOK_MAX / RATE_LIMIT_WEBHOOK_WINDOW_MS */
 const webhookLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 100,
+  windowMs: config.RATE_LIMIT_WEBHOOK_WINDOW_MS,
+  max: config.RATE_LIMIT_WEBHOOK_MAX,
   standardHeaders: true,
   legacyHeaders: false,
   message: { code: 'RATE_LIMITED', message: 'Too many requests.' },

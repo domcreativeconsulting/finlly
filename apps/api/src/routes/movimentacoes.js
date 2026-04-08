@@ -16,13 +16,14 @@ import { requireAtivo } from '../middleware/requireAtivo.js';
 import { auditarAcao } from '../middleware/auditoria.js';
 import { AppError } from '../errors/AppError.js';
 import { toValidationError } from '../errors/toValidationError.js';
+import { config } from '../config/env.js';
 import logger from '../logger.js';
 
 const router = Router();
 
 const readLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 60,
+  windowMs: config.RATE_LIMIT_READ_WINDOW_MS,
+  max: config.RATE_LIMIT_READ_MAX,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: userOrIpKeyGenerator,
@@ -31,8 +32,8 @@ const readLimiter = rateLimit({
 });
 
 const writeLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 30,
+  windowMs: config.RATE_LIMIT_WRITE_WINDOW_MS,
+  max: config.RATE_LIMIT_WRITE_MAX,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: userOrIpKeyGenerator,
@@ -190,8 +191,8 @@ router.post('/movimentacoes', writeLimiter, jwtAuthMiddleware, requireAtivo, aud
 router.get('/movimentacoes/saldo', readLimiter, jwtAuthMiddleware, requireAtivo, handleGetSaldoConsolidado);
 router.get('/movimentacoes/saldo/:contaId', readLimiter, jwtAuthMiddleware, requireAtivo, handleGetSaldoConta);
 router.get('/movimentacoes/:id', readLimiter, jwtAuthMiddleware, requireAtivo, handleGet);
-router.put('/movimentacoes/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, handleUpdate);
-router.patch('/movimentacoes/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, handleUpdate);
+router.put('/movimentacoes/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('movimentacao_atualizada', (req) => ({ id: req.params.id })), handleUpdate);
+router.patch('/movimentacoes/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('movimentacao_atualizada', (req) => ({ id: req.params.id })), handleUpdate);
 router.delete('/movimentacoes/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('movimentacao_excluida', (req) => ({ id: req.params.id })), handleDelete);
 
 export default router;

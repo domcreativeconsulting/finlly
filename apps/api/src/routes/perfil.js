@@ -8,14 +8,15 @@ import { requireAtivo } from '../middleware/requireAtivo.js';
 import { auditarAcao } from '../middleware/auditoria.js';
 import { AppError } from '../errors/AppError.js';
 import { toValidationError } from '../errors/toValidationError.js';
+import { config } from '../config/env.js';
 import logger from '../logger.js';
 
 const router = Router();
 
-/** General limiter for profile endpoints: 30 requests per 15 minutes per user/IP. */
+/** General limiter for profile endpoints: configurable via RATE_LIMIT_WRITE_MAX / RATE_LIMIT_WRITE_WINDOW_MS. */
 const perfilLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 30,
+  windowMs: config.RATE_LIMIT_WRITE_WINDOW_MS,
+  max: config.RATE_LIMIT_WRITE_MAX,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: userOrIpKeyGenerator,

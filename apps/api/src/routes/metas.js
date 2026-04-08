@@ -7,6 +7,7 @@ import { requireAtivo } from '../middleware/requireAtivo.js';
 import { auditarAcao } from '../middleware/auditoria.js';
 import { AppError } from '../errors/AppError.js';
 import { toValidationError } from '../errors/toValidationError.js';
+import { config } from '../config/env.js';
 import logger from '../logger.js';
 import {
   listMetas,
@@ -23,8 +24,8 @@ import {
 const router = Router();
 
 const readLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 60,
+  windowMs: config.RATE_LIMIT_READ_WINDOW_MS,
+  max: config.RATE_LIMIT_READ_MAX,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: userOrIpKeyGenerator,
@@ -33,8 +34,8 @@ const readLimiter = rateLimit({
 });
 
 const writeLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 30,
+  windowMs: config.RATE_LIMIT_WRITE_WINDOW_MS,
+  max: config.RATE_LIMIT_WRITE_MAX,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: userOrIpKeyGenerator,
@@ -118,7 +119,7 @@ router.get('/goals/:id', readLimiter, jwtAuthMiddleware, requireAtivo, async (re
   }
 });
 
-router.patch('/goals/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, async (req, res, next) => {
+router.patch('/goals/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('meta_atualizada', (req) => ({ id: req.params.id })), async (req, res, next) => {
   try {
     const parsed = UpdateGoalSchema.safeParse(req.body);
     if (!parsed.success) return next(toValidationError(parsed.error));
@@ -160,7 +161,7 @@ router.get('/goals/:id/movements', readLimiter, jwtAuthMiddleware, requireAtivo,
   }
 });
 
-router.post('/goals/:id/movements', writeLimiter, jwtAuthMiddleware, requireAtivo, async (req, res, next) => {
+router.post('/goals/:id/movements', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('metaMovimento_criado', (req) => ({ metaId: req.params.id })), async (req, res, next) => {
   try {
     const parsed = CreateMovimentoSchema.safeParse(req.body);
     if (!parsed.success) return next(toValidationError(parsed.error));
@@ -172,7 +173,7 @@ router.post('/goals/:id/movements', writeLimiter, jwtAuthMiddleware, requireAtiv
   }
 });
 
-router.delete('/goals/:id/movements/:movId', writeLimiter, jwtAuthMiddleware, requireAtivo, async (req, res, next) => {
+router.delete('/goals/:id/movements/:movId', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('metaMovimento_excluido', (req) => ({ metaId: req.params.id, movId: req.params.movId })), async (req, res, next) => {
   try {
     const result = await deleteMovimento(req.user.sub, req.params.id, req.params.movId);
     logger.info({ msg: 'Movimento de meta excluído', userId: req.user.sub, metaId: req.params.id, movId: req.params.movId });

@@ -49,6 +49,34 @@ const envSchema = z.object({
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(500),        // global limiter: max requests per window
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(900000), // global limiter: 15 minutes
 
+  // Rate limiting — middleware limiters (authLimiter / sensitiveWriteLimiter / adminLimiter)
+  RATE_LIMIT_AUTH_MAX: z.coerce.number().int().positive().default(30),
+  RATE_LIMIT_AUTH_WINDOW_MS: z.coerce.number().int().positive().default(900000), // 15 min
+  RATE_LIMIT_SENSITIVE_MAX: z.coerce.number().int().positive().default(30),
+  RATE_LIMIT_SENSITIVE_WINDOW_MS: z.coerce.number().int().positive().default(60000), // 1 min
+  RATE_LIMIT_ADMIN_MAX: z.coerce.number().int().positive().default(20),
+  RATE_LIMIT_ADMIN_WINDOW_MS: z.coerce.number().int().positive().default(60000), // 1 min
+
+  // Rate limiting — rotas de leitura
+  RATE_LIMIT_READ_MAX: z.coerce.number().int().positive().default(60),
+  RATE_LIMIT_READ_WINDOW_MS: z.coerce.number().int().positive().default(900000), // 15 min
+
+  // Rate limiting — rotas de escrita
+  RATE_LIMIT_WRITE_MAX: z.coerce.number().int().positive().default(30),
+  RATE_LIMIT_WRITE_WINDOW_MS: z.coerce.number().int().positive().default(900000), // 15 min
+
+  // Rate limiting — auth específico (login)
+  RATE_LIMIT_LOGIN_MAX: z.coerce.number().int().positive().default(5),
+  RATE_LIMIT_LOGIN_WINDOW_MS: z.coerce.number().int().positive().default(900000), // 15 min
+
+  // Rate limiting — registro
+  RATE_LIMIT_REGISTER_MAX: z.coerce.number().int().positive().default(10),
+  RATE_LIMIT_REGISTER_WINDOW_MS: z.coerce.number().int().positive().default(3600000), // 1 hora
+
+  // Rate limiting — webhook
+  RATE_LIMIT_WEBHOOK_MAX: z.coerce.number().int().positive().default(100),
+  RATE_LIMIT_WEBHOOK_WINDOW_MS: z.coerce.number().int().positive().default(60000), // 1 min
+
   // Email (optional — emails are skipped when not configured)
   MAIL_HOST: z.string().optional(),
   MAIL_PORT: z.coerce.number().int().positive().default(587),
