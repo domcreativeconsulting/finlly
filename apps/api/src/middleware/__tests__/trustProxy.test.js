@@ -5,7 +5,6 @@
  * reflects the X-Forwarded-For header instead of the proxy's IP address,
  * which is required for per-IP rate limiting to work correctly in production.
  */
-import { jest } from '@jest/globals';
 import express from 'express';
 import http from 'node:http';
 
@@ -15,7 +14,7 @@ import http from 'node:http';
  */
 function makeApp({ trustProxy } = {}) {
   const app = express();
-  if (trustProxy !== undefined && trustProxy !== false && trustProxy > 0) {
+  if (trustProxy !== undefined && trustProxy > 0) {
     app.set('trust proxy', trustProxy);
   }
   app.get('/ip', (req, res) => {
@@ -140,32 +139,45 @@ describe('trust proxy — req.ip resolution', () => {
   });
 });
 
+/**
+ * Parses the TRUST_PROXY env string value (as index.js does) and returns
+ * the effective trust proxy value, or false when it should be disabled.
+ * @param {string} raw
+ * @returns {number|false}
+ */
+function parseTrustProxy(raw) {
+  return raw === 'false' ? false : Number(raw);
+}
+
+/**
+ * Returns whether app.set('trust proxy', N) would be called for the given
+ * TRUST_PROXY env string, mirroring the logic in index.js.
+ * @param {string} raw
+ * @returns {boolean}
+ */
+function wouldEnableTrustProxy(raw) {
+  const v = parseTrustProxy(raw);
+  return v !== false && v > 0;
+}
+
 describe('TRUST_PROXY env config parsing', () => {
-  test("TRUST_PROXY='false' resolves to boolean false (trust proxy disabled)", () => {
-    const raw = 'false';
-    const trustProxy = raw === 'false' ? false : Number(raw);
-    expect(trustProxy).toBe(false);
-    expect(trustProxy !== false && trustProxy > 0).toBe(false);
+  test("TRUST_PROXY='false' disables trust proxy", () => {
+    expect(parseTrustProxy('false')).toBe(false);
+    expect(wouldEnableTrustProxy('false')).toBe(false);
   });
 
-  test("TRUST_PROXY='0' resolves to 0 (trust proxy disabled)", () => {
-    const raw = '0';
-    const trustProxy = raw === 'false' ? false : Number(raw);
-    expect(trustProxy).toBe(0);
-    expect(trustProxy !== false && trustProxy > 0).toBe(false);
+  test("TRUST_PROXY='0' disables trust proxy", () => {
+    expect(parseTrustProxy('0')).toBe(0);
+    expect(wouldEnableTrustProxy('0')).toBe(false);
   });
 
-  test("TRUST_PROXY='1' (default) resolves to 1 (single proxy trusted)", () => {
-    const raw = '1';
-    const trustProxy = raw === 'false' ? false : Number(raw);
-    expect(trustProxy).toBe(1);
-    expect(trustProxy !== false && trustProxy > 0).toBe(true);
+  test("TRUST_PROXY='1' (default) enables trust proxy with value 1", () => {
+    expect(parseTrustProxy('1')).toBe(1);
+    expect(wouldEnableTrustProxy('1')).toBe(true);
   });
 
-  test("TRUST_PROXY='2' resolves to 2 (two proxies trusted)", () => {
-    const raw = '2';
-    const trustProxy = raw === 'false' ? false : Number(raw);
-    expect(trustProxy).toBe(2);
-    expect(trustProxy !== false && trustProxy > 0).toBe(true);
+  test("TRUST_PROXY='2' enables trust proxy with value 2", () => {
+    expect(parseTrustProxy('2')).toBe(2);
+    expect(wouldEnableTrustProxy('2')).toBe(true);
   });
 });
