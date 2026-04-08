@@ -6,7 +6,7 @@
  * Headers applied:
  *   - X-Content-Type-Options: nosniff                         — prevent MIME sniffing
  *   - X-Frame-Options: DENY                                   — prevent clickjacking
- *   - X-XSS-Protection: 0                                     — disable legacy filter (deprecated, can introduce vulns; CSP replaces it)
+ *   - X-XSS-Protection: 0                                     — disable legacy filter (deprecated, can introduce vulnerabilities; CSP replaces it)
  *   - Strict-Transport-Security: max-age=31536000; includeSubDomains; preload — force HTTPS
  *   - Content-Security-Policy: default-src 'self'             — minimal CSP
  *   - Referrer-Policy: strict-origin-when-cross-origin        — limit referrer leakage
