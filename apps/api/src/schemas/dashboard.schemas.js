@@ -1,8 +1,7 @@
 import { z } from 'zod';
-import { isoDateString } from './shared.schemas.js';
+import { isoDateString, optionalIsoDateString } from './shared.schemas.js';
 
-const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
-const optionalIsoDate = z.string().regex(ISO_DATE_REGEX).optional();
+const optionalIsoDate = optionalIsoDateString;
 
 export const kpisQuerySchema = z.object({
   dataInicio: isoDateString,

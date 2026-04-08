@@ -103,7 +103,7 @@ router.post(
  * POST /billing/subscribe
  * Creates or updates a subscription for the authenticated user.
  */
-router.post('/billing/subscribe', billingLimiter, jwtAuthMiddleware, requireAtivo, validate(subscribeSchema), async (req, res, next) => {
+router.post('/billing/subscribe', billingLimiter, jwtAuthMiddleware, requireAtivo, validate({ body: subscribeSchema }), async (req, res, next) => {
   try {
     const { assinante, paymentLink } = await criarAssinatura(req.user.sub, req.body);
     return res.status(201).json({
