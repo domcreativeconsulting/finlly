@@ -37,6 +37,16 @@ const app = express();
 
 app.disable('x-powered-by');
 
+// Trust the configured number of reverse proxies so req.ip reflects the real
+// client IP. Without this, all clients appear to share the proxy's IP address,
+// which breaks per-IP rate limiting.
+// Set TRUST_PROXY=0 to disable (direct connections only).
+// Set TRUST_PROXY=1 (default) for a single reverse proxy (nginx, Railway, Render, etc.).
+const trustProxy = config.TRUST_PROXY === 'false' ? false : Number(config.TRUST_PROXY);
+if (trustProxy !== false && trustProxy > 0) {
+  app.set('trust proxy', trustProxy);
+}
+
 /** Global safety-net rate limiter: configurable via RATE_LIMIT_MAX / RATE_LIMIT_WINDOW_MS. */
 const globalLimiter = rateLimit({
   windowMs: config.RATE_LIMIT_WINDOW_MS,
