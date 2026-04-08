@@ -15,6 +15,7 @@ import {
 } from '../services/contasPagarService.js';
 import { jwtAuthMiddleware } from '../middleware/jwtAuth.js';
 import { requireAtivo } from '../middleware/requireAtivo.js';
+import { auditarAcao } from '../middleware/auditoria.js';
 import { AppError } from '../errors/AppError.js';
 import { toValidationError } from '../errors/toValidationError.js';
 import logger from '../logger.js';
@@ -261,14 +262,14 @@ async function handleCancelarGrupo(req, res, next) {
 }
 
 router.get('/contas-pagar', readLimiter, jwtAuthMiddleware, requireAtivo, handleList);
-router.post('/contas-pagar', writeLimiter, jwtAuthMiddleware, requireAtivo, handleCreate);
+router.post('/contas-pagar', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('contaPagar_criada'), handleCreate);
 router.get('/contas-pagar/export', readLimiter, jwtAuthMiddleware, requireAtivo, handleExport);
 router.get('/contas-pagar/grupos/:grupoId', readLimiter, jwtAuthMiddleware, requireAtivo, handleGetGrupo);
 router.patch('/contas-pagar/grupos/:grupoId/cancelar', writeLimiter, jwtAuthMiddleware, requireAtivo, handleCancelarGrupo);
 router.get('/contas-pagar/:id', readLimiter, jwtAuthMiddleware, requireAtivo, handleGet);
 router.put('/contas-pagar/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, handleUpdate);
 router.patch('/contas-pagar/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, handleUpdate);
-router.delete('/contas-pagar/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, handleDelete);
+router.delete('/contas-pagar/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('contaPagar_excluida', (req) => ({ id: req.params.id })), handleDelete);
 router.post('/contas-pagar/:id/pagar', writeLimiter, jwtAuthMiddleware, requireAtivo, handlePagar);
 router.patch('/contas-pagar/:id/cancelar', writeLimiter, jwtAuthMiddleware, requireAtivo, handleCancelar);
 

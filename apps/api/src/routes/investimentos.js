@@ -4,6 +4,7 @@ import { userOrIpKeyGenerator } from '../utils/rateLimitStore.js';
 import { z } from 'zod';
 import { jwtAuthMiddleware } from '../middleware/jwtAuth.js';
 import { requireAtivo } from '../middleware/requireAtivo.js';
+import { auditarAcao } from '../middleware/auditoria.js';
 import { AppError } from '../errors/AppError.js';
 import { toValidationError } from '../errors/toValidationError.js';
 import logger from '../logger.js';
@@ -419,10 +420,10 @@ async function handleGetPosicao(req, res, next) {
 
 router.get('/investimentos/tipos', readLimiter, jwtAuthMiddleware, requireAtivo, handleListTipos);
 router.get('/investimentos', readLimiter, jwtAuthMiddleware, requireAtivo, handleList);
-router.post('/investimentos', writeLimiter, jwtAuthMiddleware, requireAtivo, handleCreate);
+router.post('/investimentos', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('investimento_criado'), handleCreate);
 router.get('/investimentos/:id', readLimiter, jwtAuthMiddleware, requireAtivo, handleGet);
 router.patch('/investimentos/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, handleUpdate);
-router.delete('/investimentos/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, handleDelete);
+router.delete('/investimentos/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('investimento_excluido', (req) => ({ id: req.params.id })), handleDelete);
 router.get('/investimentos/:id/eventos', readLimiter, jwtAuthMiddleware, requireAtivo, handleListEventos);
 router.post('/investimentos/:id/eventos', writeLimiter, jwtAuthMiddleware, requireAtivo, handleCreateEvento);
 router.delete('/investimentos/:id/eventos/:eventoId', writeLimiter, jwtAuthMiddleware, requireAtivo, handleDeleteEvento);

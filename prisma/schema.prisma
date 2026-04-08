@@ -160,6 +160,7 @@ model Usuario {
   eventos_auth          UsuarioEventoAuth[]
   resets_senha          UsuarioResetSenha[]
   verificacoes_email    UsuarioVerificacaoEmail[]
+  auditoria_eventos     AuditoriaEvento[]
 
   @@unique([email], map: "uq_usuarios_email")
   @@map("usuarios")
@@ -749,4 +750,27 @@ model Job {
 
   @@index([status, agendado_para], map: "idx_jobs_status_agendado")
   @@map("jobs")
+}
+
+// ============================================================
+// DOMAIN: AUDITORIA (EPIC 15)
+// ============================================================
+
+/// Auditoria geral de ações críticas do sistema.
+model AuditoriaEvento {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id  String?   @db.Uuid
+  tipo        String    @db.VarChar(100)
+  detalhes    Json?     @db.JsonB
+  ip_address  String?   @db.VarChar(45)
+  user_agent  String?   @db.VarChar(512)
+  sucesso     Boolean   @default(true)
+  data_evento DateTime  @default(now()) @db.Timestamptz(6)
+
+  usuario Usuario? @relation(fields: [usuario_id], references: [id], onDelete: SetNull, map: "fk_auditoria_usuario")
+
+  @@index([usuario_id], map: "idx_auditoria_usuario")
+  @@index([tipo], map: "idx_auditoria_tipo")
+  @@index([data_evento], map: "idx_auditoria_data")
+  @@map("auditoria_eventos")
 }
