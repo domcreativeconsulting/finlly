@@ -1,10 +1,23 @@
 import { jest } from '@jest/globals';
 
+jest.unstable_mockModule('../../config/env.js', () => ({
+  config: {
+    NODE_ENV: 'development',
+  },
+}));
+
 let securityHeaders;
+let configMock;
 
 beforeAll(async () => {
+  const envMod = await import('../../config/env.js');
+  configMock = envMod.config;
   const mod = await import('../securityHeaders.js');
   securityHeaders = mod.securityHeaders;
+});
+
+beforeEach(() => {
+  configMock.NODE_ENV = 'development';
 });
 
 function makeReq() {
@@ -47,7 +60,8 @@ describe('securityHeaders', () => {
     expect(res._headers['x-xss-protection']).toBe('0');
   });
 
-  test('sets Strict-Transport-Security with max-age=31536000, includeSubDomains and preload', () => {
+  test('sets Strict-Transport-Security in production (NODE_ENV === production)', () => {
+    configMock.NODE_ENV = 'production';
     const res = makeRes();
     const next = jest.fn();
     securityHeaders(makeReq(), res, next);
@@ -55,6 +69,14 @@ describe('securityHeaders', () => {
     expect(hsts).toContain('max-age=31536000');
     expect(hsts).toContain('includeSubDomains');
     expect(hsts).toContain('preload');
+  });
+
+  test('does not set Strict-Transport-Security in development (NODE_ENV === development)', () => {
+    configMock.NODE_ENV = 'development';
+    const res = makeRes();
+    const next = jest.fn();
+    securityHeaders(makeReq(), res, next);
+    expect(res._headers['strict-transport-security']).toBeUndefined();
   });
 
   test("sets Content-Security-Policy: default-src 'self'", () => {
@@ -117,10 +139,19 @@ describe('securityHeaders', () => {
     expect(next).toHaveBeenCalledTimes(1);
   });
 
-  test('sets all ten security headers in a single call', () => {
+  test('sets all ten security headers in a single call in production', () => {
+    configMock.NODE_ENV = 'production';
     const res = makeRes();
     const next = jest.fn();
     securityHeaders(makeReq(), res, next);
     expect(Object.keys(res._headers)).toHaveLength(10);
+  });
+
+  test('sets nine security headers (without HSTS) in a single call in development', () => {
+    configMock.NODE_ENV = 'development';
+    const res = makeRes();
+    const next = jest.fn();
+    securityHeaders(makeReq(), res, next);
+    expect(Object.keys(res._headers)).toHaveLength(9);
   });
 });
