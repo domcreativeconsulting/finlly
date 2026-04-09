@@ -23,6 +23,7 @@ yarn-error.log
 dist/
 build/
 .next/
+dev-dist/
 
 # Package manager lock files (generated)
 yarn.lock

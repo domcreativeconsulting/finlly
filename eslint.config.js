@@ -13,6 +13,7 @@ export default [
       '.git',
       'coverage',
       'build',
+      '**/dev-dist',
     ],
   },
   {
