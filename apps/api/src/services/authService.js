@@ -434,6 +434,17 @@ export async function refresh(refreshToken, meta = {}) {
   }
 
   const accessToken = generateAccessToken(usuario);
+
+  registrarEvento({
+    usuarioId: usuario.id,
+    actorType: 'USER',
+    eventType: 'auth',
+    eventAction: 'refresh_sucesso',
+    sucesso: true,
+    ip: meta.ip,
+    userAgent: meta.userAgent,
+  });
+
   return { accessToken };
 }
 
