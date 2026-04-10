@@ -98,6 +98,11 @@ app.get('/', (req, res) => {
   res.send('Hello World!');
 });
 
+// 404 handler — deve ficar APÓS todas as rotas e ANTES do errorHandler
+app.use((req, _res, next) => {
+  next(AppError.notFound(`Rota ${req.method} ${req.path} não encontrada`));
+});
+
 app.use(errorHandler);
 
 app.listen(config.API_PORT, () => {
