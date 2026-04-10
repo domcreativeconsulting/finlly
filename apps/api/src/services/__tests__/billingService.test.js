@@ -11,6 +11,7 @@ const mockPrisma = {
   assinante: {
     upsert: jest.fn(),
     findFirst: jest.fn(),
+    findUnique: jest.fn(),
     update: jest.fn(),
   },
   usuario: {
@@ -82,6 +83,7 @@ beforeEach(() => {
   mockRedis.set.mockResolvedValue('OK');
   mockRedis.del.mockResolvedValue(1);
   mockAuditoriaCreate.mockResolvedValue(undefined);
+  mockPrisma.assinante.findUnique.mockResolvedValue({ status: 'ativo' });
 });
 
 // ---------------------------------------------------------------------------

@@ -135,8 +135,9 @@ const RECORRENCIA_OFFSET = {
  * Create a new conta a receber. Supports parcelamento when total_parcelas is provided.
  * @param {string} userId
  * @param {{ descricao, valor, data_vencimento, categoria_id?, conta_id?, observacoes?, recorrente?, total_parcelas?, recorrencia? }} data
+ * @param {string} [requestId]
  */
-export async function createContaReceber(userId, data) {
+export async function createContaReceber(userId, data, requestId) {
   const { descricao, valor, data_vencimento, categoria_id, conta_id, observacoes, recorrente, total_parcelas, recorrencia } = data;
   const baseDate = new Date(data_vencimento + 'T00:00:00.000Z');
 
@@ -169,6 +170,7 @@ export async function createContaReceber(userId, data) {
       entityType: 'conta_receber',
       entityId: grupo_recorrencia_id,
       metadata: { total_parcelas, grupo_recorrencia_id },
+      requestId,
       sucesso: true,
     });
 
@@ -212,6 +214,7 @@ export async function createContaReceber(userId, data) {
     eventAction: 'conta_receber_criada',
     entityType: 'conta_receber',
     entityId: conta.id,
+    requestId,
     sucesso: true,
   });
 
@@ -223,8 +226,9 @@ export async function createContaReceber(userId, data) {
  * @param {string} id
  * @param {string} userId
  * @param {{ descricao?, valor?, data_vencimento?, categoria_id?, conta_id?, observacoes? }} data
+ * @param {string} [requestId]
  */
-export async function updateContaReceber(id, userId, data) {
+export async function updateContaReceber(id, userId, data, requestId) {
   const existing = await prisma.contaReceber.findFirst({
     where: { id, usuario_id: userId, deleted_at: null },
     select: { id: true, status: true },
@@ -257,6 +261,7 @@ export async function updateContaReceber(id, userId, data) {
     eventAction: 'conta_receber_atualizada',
     entityType: 'conta_receber',
     entityId: id,
+    requestId,
     sucesso: true,
   });
 
@@ -267,8 +272,9 @@ export async function updateContaReceber(id, userId, data) {
  * Soft-delete a conta a receber (only if not 'recebido').
  * @param {string} id
  * @param {string} userId
+ * @param {string} [requestId]
  */
-export async function deleteContaReceber(id, userId) {
+export async function deleteContaReceber(id, userId, requestId) {
   const existing = await prisma.contaReceber.findFirst({
     where: { id, usuario_id: userId, deleted_at: null },
     select: { id: true, status: true },
@@ -289,6 +295,7 @@ export async function deleteContaReceber(id, userId) {
     eventAction: 'conta_receber_excluida',
     entityType: 'conta_receber',
     entityId: id,
+    requestId,
     sucesso: true,
   });
 }
@@ -299,8 +306,9 @@ export async function deleteContaReceber(id, userId) {
  * @param {string} id
  * @param {string} userId
  * @param {{ data_recebimento?: string, conta_id?: string, observacoes?: string }} options
+ * @param {string} [requestId]
  */
-export async function receberContaReceber(id, userId, { data_recebimento, conta_id: contaIdOverride, observacoes } = {}) {
+export async function receberContaReceber(id, userId, { data_recebimento, conta_id: contaIdOverride, observacoes } = {}, requestId) {
   const existing = await prisma.contaReceber.findFirst({
     where: { id, usuario_id: userId, deleted_at: null },
     select: { id: true, status: true, valor: true, conta_id: true, categoria_id: true, descricao: true },
@@ -354,6 +362,7 @@ export async function receberContaReceber(id, userId, { data_recebimento, conta_
     entityType: 'conta_receber',
     entityId: id,
     metadata: { data_recebimento: dataRecebimento },
+    requestId,
     sucesso: true,
   });
 
@@ -364,8 +373,9 @@ export async function receberContaReceber(id, userId, { data_recebimento, conta_
  * Cancel a conta a receber.
  * @param {string} id
  * @param {string} userId
+ * @param {string} [requestId]
  */
-export async function cancelarContaReceber(id, userId) {
+export async function cancelarContaReceber(id, userId, requestId) {
   const existing = await prisma.contaReceber.findFirst({
     where: { id, usuario_id: userId, deleted_at: null },
     select: { id: true, status: true },
@@ -391,6 +401,7 @@ export async function cancelarContaReceber(id, userId) {
     eventAction: 'conta_receber_cancelada',
     entityType: 'conta_receber',
     entityId: id,
+    requestId,
     sucesso: true,
   });
 
@@ -419,8 +430,9 @@ export async function getGrupoParcelasReceber(grupoId, userId) {
  * Cancel only the 'pendente' parcelas in a grupo (recebido/cancelado are preserved).
  * @param {string} grupoId
  * @param {string} userId
+ * @param {string} [requestId]
  */
-export async function cancelarGrupoParcelasReceber(grupoId, userId) {
+export async function cancelarGrupoParcelasReceber(grupoId, userId, requestId) {
   const result = await prisma.contaReceber.updateMany({
     where: {
       grupo_recorrencia_id: grupoId,
@@ -446,6 +458,7 @@ export async function cancelarGrupoParcelasReceber(grupoId, userId) {
     entityType: 'conta_receber',
     entityId: grupoId,
     metadata: { canceladas: result.count },
+    requestId,
     sucesso: true,
   });
 

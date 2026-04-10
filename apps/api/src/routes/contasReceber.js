@@ -63,7 +63,7 @@ async function handleList(req, res, next) {
 
 async function handleCreate(req, res, next) {
   try {
-    const conta = await createContaReceber(req.user.sub, req.body);
+    const conta = await createContaReceber(req.user.sub, req.body, req.requestId);
     logger.info({ msg: 'Conta a receber criada', userId: req.user.sub, contaId: conta.id });
     return res.status(201).json(conta);
   } catch (err) {
@@ -82,7 +82,7 @@ async function handleGet(req, res, next) {
 
 async function handleUpdate(req, res, next) {
   try {
-    const conta = await updateContaReceber(req.params.id, req.user.sub, req.body);
+    const conta = await updateContaReceber(req.params.id, req.user.sub, req.body, req.requestId);
     logger.info({ msg: 'Conta a receber atualizada', userId: req.user.sub, contaId: req.params.id });
     return res.status(200).json(conta);
   } catch (err) {
@@ -92,7 +92,7 @@ async function handleUpdate(req, res, next) {
 
 async function handleDelete(req, res, next) {
   try {
-    await deleteContaReceber(req.params.id, req.user.sub);
+    await deleteContaReceber(req.params.id, req.user.sub, req.requestId);
     logger.info({ msg: 'Conta a receber excluída', userId: req.user.sub, contaId: req.params.id });
     return res.status(204).send();
   } catch (err) {
@@ -102,7 +102,7 @@ async function handleDelete(req, res, next) {
 
 async function handleReceber(req, res, next) {
   try {
-    const conta = await receberContaReceber(req.params.id, req.user.sub, req.body);
+    const conta = await receberContaReceber(req.params.id, req.user.sub, req.body, req.requestId);
     logger.info({ msg: 'Conta a receber registrada como recebida', userId: req.user.sub, contaId: req.params.id });
     return res.status(200).json(conta);
   } catch (err) {
@@ -112,7 +112,7 @@ async function handleReceber(req, res, next) {
 
 async function handleCancelar(req, res, next) {
   try {
-    const conta = await cancelarContaReceber(req.params.id, req.user.sub);
+    const conta = await cancelarContaReceber(req.params.id, req.user.sub, req.requestId);
     logger.info({ msg: 'Conta a receber cancelada', userId: req.user.sub, contaId: req.params.id });
     return res.status(200).json(conta);
   } catch (err) {
@@ -184,7 +184,7 @@ async function handleGetGrupo(req, res, next) {
 
 async function handleCancelarGrupo(req, res, next) {
   try {
-    const result = await cancelarGrupoParcelasReceber(req.params.grupoId, req.user.sub);
+    const result = await cancelarGrupoParcelasReceber(req.params.grupoId, req.user.sub, req.requestId);
     logger.info({ msg: 'Grupo de parcelas a receber cancelado', userId: req.user.sub, grupoId: req.params.grupoId });
     return res.status(200).json(result);
   } catch (err) {

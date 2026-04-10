@@ -66,8 +66,9 @@ export async function getConta(id, userId) {
  * Create a new conta for a user.
  * @param {string} userId
  * @param {{ nome, tipo, cor?, icone?, incluir_total?, instituicao_financeira_id? }} data
+ * @param {string} [requestId]
  */
-export async function createConta(userId, data) {
+export async function createConta(userId, data, requestId) {
   const { nome, tipo, cor, icone, incluir_total, instituicao_financeira_id } = data;
 
   const conta = await prisma.conta.create({
@@ -91,6 +92,7 @@ export async function createConta(userId, data) {
     eventAction: 'conta_criada',
     entityType: 'conta',
     entityId: conta.id,
+    requestId,
     sucesso: true,
   });
 
@@ -102,8 +104,9 @@ export async function createConta(userId, data) {
  * @param {string} id
  * @param {string} userId
  * @param {{ nome?, tipo?, cor?, icone?, incluir_total?, status? }} data
+ * @param {string} [requestId]
  */
-export async function updateConta(id, userId, data) {
+export async function updateConta(id, userId, data, requestId) {
   const existing = await prisma.conta.findFirst({
     where: { id, usuario_id: userId, deleted_at: null },
   });
@@ -139,6 +142,7 @@ export async function updateConta(id, userId, data) {
     eventAction: 'conta_atualizada',
     entityType: 'conta',
     entityId: id,
+    requestId,
     sucesso: true,
   });
 
@@ -149,8 +153,9 @@ export async function updateConta(id, userId, data) {
  * Soft-delete a conta (only if it has no movimentacoes not deleted).
  * @param {string} id
  * @param {string} userId
+ * @param {string} [requestId]
  */
-export async function deleteConta(id, userId) {
+export async function deleteConta(id, userId, requestId) {
   const existing = await prisma.conta.findFirst({
     where: { id, usuario_id: userId, deleted_at: null },
   });
@@ -177,6 +182,7 @@ export async function deleteConta(id, userId) {
     eventAction: 'conta_excluida',
     entityType: 'conta',
     entityId: id,
+    requestId,
     sucesso: true,
   });
 }

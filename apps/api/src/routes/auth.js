@@ -183,7 +183,7 @@ router.post('/auth/refresh', authLimiter, validate(refreshSchema), async (req, r
   if (!refreshToken) return next(AppError.badRequest('Refresh token ausente'));
 
   try {
-    const result = await refresh(refreshToken);
+    const result = await refresh(refreshToken, getRequestMeta(req));
     return res.status(200).json(result);
   } catch (err) {
     return next(err);

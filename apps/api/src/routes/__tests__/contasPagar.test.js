@@ -264,7 +264,7 @@ describe('POST /contas-pagar', () => {
 
     expect(res.status).toBe(201);
     expect(res.body).toEqual(contaBase);
-    expect(mockCreateContaPagar).toHaveBeenCalledWith('usuario-uuid-001', expect.objectContaining({ descricao: 'Aluguel', valor: 1500 }));
+    expect(mockCreateContaPagar).toHaveBeenCalledWith('usuario-uuid-001', expect.objectContaining({ descricao: 'Aluguel', valor: 1500 }), undefined);
   });
 
   test('retorna 422 quando descricao está ausente', async () => {
@@ -310,6 +310,7 @@ describe('POST /contas-pagar', () => {
     expect(mockCreateContaPagar).toHaveBeenCalledWith(
       'usuario-uuid-001',
       expect.objectContaining({ total_parcelas: 3, recorrencia: 'mensal' }),
+      undefined,
     );
   });
 
@@ -343,7 +344,7 @@ describe('PUT /contas-pagar/:id', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.descricao).toBe('Atualizado');
-    expect(mockUpdateContaPagar).toHaveBeenCalledWith('f47ac10b-58cc-4372-a567-0e02b2c3d479', 'usuario-uuid-001', expect.objectContaining({ descricao: 'Atualizado' }));
+    expect(mockUpdateContaPagar).toHaveBeenCalledWith('f47ac10b-58cc-4372-a567-0e02b2c3d479', 'usuario-uuid-001', expect.objectContaining({ descricao: 'Atualizado' }), undefined);
   });
 
   test('retorna 422 quando body está vazio', async () => {
@@ -390,7 +391,7 @@ describe('PATCH /contas-pagar/:id', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.valor).toBe(2000);
-    expect(mockUpdateContaPagar).toHaveBeenCalledWith('f47ac10b-58cc-4372-a567-0e02b2c3d479', 'usuario-uuid-001', expect.objectContaining({ valor: 2000 }));
+    expect(mockUpdateContaPagar).toHaveBeenCalledWith('f47ac10b-58cc-4372-a567-0e02b2c3d479', 'usuario-uuid-001', expect.objectContaining({ valor: 2000 }), undefined);
   });
 
   test('retorna 422 quando body está vazio', async () => {
@@ -416,7 +417,7 @@ describe('POST /contas-pagar/:id/pagar', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('pago');
-    expect(mockPagarContaPagar).toHaveBeenCalledWith('f47ac10b-58cc-4372-a567-0e02b2c3d479', 'usuario-uuid-001', expect.any(Object));
+    expect(mockPagarContaPagar).toHaveBeenCalledWith('f47ac10b-58cc-4372-a567-0e02b2c3d479', 'usuario-uuid-001', expect.any(Object), undefined);
   });
 
   test('retorna 200 com data_pagamento customizada', async () => {
@@ -433,6 +434,7 @@ describe('POST /contas-pagar/:id/pagar', () => {
       'f47ac10b-58cc-4372-a567-0e02b2c3d479',
       'usuario-uuid-001',
       expect.objectContaining({ data_pagamento: '2025-01-10' }),
+      undefined,
     );
   });
 
@@ -459,6 +461,7 @@ describe('POST /contas-pagar/:id/pagar', () => {
       'f47ac10b-58cc-4372-a567-0e02b2c3d479',
       'usuario-uuid-001',
       expect.objectContaining({ conta_id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479' }),
+      undefined,
     );
   });
 
@@ -508,7 +511,7 @@ describe('PATCH /contas-pagar/:id/cancelar', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('cancelado');
-    expect(mockCancelarContaPagar).toHaveBeenCalledWith('f47ac10b-58cc-4372-a567-0e02b2c3d479', 'usuario-uuid-001');
+    expect(mockCancelarContaPagar).toHaveBeenCalledWith('f47ac10b-58cc-4372-a567-0e02b2c3d479', 'usuario-uuid-001', undefined);
   });
 
   test('retorna 404 quando conta não encontrada', async () => {
@@ -559,7 +562,7 @@ describe('DELETE /contas-pagar/:id', () => {
     const res = await request(app, 'DELETE', '/contas-pagar/f47ac10b-58cc-4372-a567-0e02b2c3d479', null);
 
     expect(res.status).toBe(204);
-    expect(mockDeleteContaPagar).toHaveBeenCalledWith('f47ac10b-58cc-4372-a567-0e02b2c3d479', 'usuario-uuid-001');
+    expect(mockDeleteContaPagar).toHaveBeenCalledWith('f47ac10b-58cc-4372-a567-0e02b2c3d479', 'usuario-uuid-001', undefined);
   });
 
   test('retorna 404 quando conta não encontrada', async () => {

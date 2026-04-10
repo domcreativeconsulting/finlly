@@ -36,10 +36,10 @@ function calcularHash(buffer) {
 /**
  * Faz upload de um arquivo, persiste no banco e enfileira job de OCR.
  *
- * @param {{ usuarioId: string, file: { buffer: Buffer, originalname: string, mimetype: string, size: number } }} params
+ * @param {{ usuarioId: string, file: { buffer: Buffer, originalname: string, mimetype: string, size: number }, requestId?: string }} params
  * @returns {Promise<object>} Registro `Anexo` criado
  */
-export async function uploadAnexo({ usuarioId, file }) {
+export async function uploadAnexo({ usuarioId, file, requestId }) {
   const { buffer, originalname, mimetype, size } = file;
 
   if (!ALLOWED_MIMES.includes(mimetype)) {
@@ -91,6 +91,19 @@ export async function uploadAnexo({ usuarioId, file }) {
     });
 
     logger.info({ anexoId: uuid, usuarioId }, 'Anexo enviado e job BullMQ enfileirado.');
+
+    registrarEvento({
+      usuarioId,
+      actorType: 'USER',
+      eventType: 'create',
+      eventAction: 'anexo_enviado',
+      entityType: 'anexo',
+      entityId: uuid,
+      metadata: { mime_type: mimetype, tamanho_bytes: size },
+      requestId,
+      sucesso: true,
+    });
+
     return anexo;
   } catch (err) {
     await storageProvider.delete({ storagePath }).catch((delErr) =>
@@ -169,10 +182,10 @@ export async function buscarAnexoPorId({ usuarioId, anexoId }) {
 /**
  * Soft-delete de um anexo (não apaga o arquivo físico).
  *
- * @param {{ usuarioId: string, anexoId: string }} params
+ * @param {{ usuarioId: string, anexoId: string, requestId?: string }} params
  * @returns {Promise<object>}
  */
-export async function deletarAnexo({ usuarioId, anexoId }) {
+export async function deletarAnexo({ usuarioId, anexoId, requestId }) {
   const anexo = await prisma.anexo.findFirst({
     where: { id: anexoId, usuario_id: usuarioId, deleted_at: null },
   });
@@ -195,6 +208,7 @@ export async function deletarAnexo({ usuarioId, anexoId }) {
     eventAction: 'anexo_excluido',
     entityType: 'anexo',
     entityId: anexoId,
+    requestId,
     sucesso: true,
   });
 
@@ -204,10 +218,10 @@ export async function deletarAnexo({ usuarioId, anexoId }) {
 /**
  * Cria um vínculo entre anexo e entidade financeira.
  *
- * @param {{ usuarioId: string, anexoId: string, entidadeTipo: string, entidadeId: string }} params
+ * @param {{ usuarioId: string, anexoId: string, entidadeTipo: string, entidadeId: string, requestId?: string }} params
  * @returns {Promise<object>}
  */
-export async function vincularAnexo({ usuarioId, anexoId, entidadeTipo, entidadeId }) {
+export async function vincularAnexo({ usuarioId, anexoId, entidadeTipo, entidadeId, requestId }) {
   if (!ENTIDADE_TIPOS_VALIDOS.includes(entidadeTipo)) {
     throw AppError.badRequest(`Tipo de entidade inválido. Permitidos: ${ENTIDADE_TIPOS_VALIDOS.join(', ')}.`);
   }
@@ -229,6 +243,19 @@ export async function vincularAnexo({ usuarioId, anexoId, entidadeTipo, entidade
   });
 
   logger.info({ anexoId, entidadeTipo, entidadeId }, 'Vínculo de anexo criado.');
+
+  registrarEvento({
+    usuarioId,
+    actorType: 'USER',
+    eventType: 'create',
+    eventAction: 'anexo_vinculado',
+    entityType: 'anexo_vinculo',
+    entityId: anexoId,
+    metadata: { entidade_tipo: entidadeTipo, entidade_id: entidadeId },
+    requestId,
+    sucesso: true,
+  });
+
   return vinculo;
 }
 

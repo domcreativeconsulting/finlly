@@ -1,6 +1,7 @@
 import prisma from '../utils/database.js';
 import logger from '../logger.js';
 import { getRedisClient } from '../utils/redisClient.js';
+import { registrarEvento } from './auditoria.service.js';
 
 const BILLING_STATUS_CACHE_PREFIX = 'billing:status:';
 
@@ -39,6 +40,13 @@ export async function atualizarStatusAssinante(assinanteId, usuarioId, novoStatu
   const { tx, proxima_cobranca } = opts;
   const db = tx ?? prisma;
 
+  // Capture the current status before the update for audit purposes
+  const current = await db.assinante.findUnique({
+    where: { id: assinanteId },
+    select: { status: true },
+  });
+  const statusAnterior = current?.status ?? null;
+
   const assinanteData = { status: novoStatus, updated_at: new Date() };
   if (proxima_cobranca !== undefined) {
     assinanteData.proxima_cobranca = proxima_cobranca;
@@ -60,6 +68,17 @@ export async function atualizarStatusAssinante(assinanteId, usuarioId, novoStatu
     { assinanteId, usuarioId, novoStatus, novoStatusUsuario },
     'Status do assinante atualizado',
   );
+
+  registrarEvento({
+    usuarioId,
+    actorType: 'SYSTEM',
+    eventType: 'billing',
+    eventAction: 'assinante_status_atualizado',
+    entityType: 'assinante',
+    entityId: assinanteId,
+    metadata: { status_anterior: statusAnterior, novo_status: novoStatus },
+    sucesso: true,
+  });
 
   // Invalidate billing status cache (best-effort)
   try {

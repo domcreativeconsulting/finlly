@@ -155,6 +155,7 @@ async function handleCreate(req, res, next) {
       eventAction: 'investimento_criado',
       entityType: 'investimento',
       entityId: inv.id,
+      requestId: req.requestId,
       sucesso: true,
     });
 
@@ -243,6 +244,7 @@ async function handleUpdate(req, res, next) {
       eventAction: 'investimento_atualizado',
       entityType: 'investimento',
       entityId: id,
+      requestId: req.requestId,
       sucesso: true,
     });
 
@@ -277,6 +279,7 @@ async function handleDelete(req, res, next) {
       eventAction: 'investimento_excluido',
       entityType: 'investimento',
       entityId: id,
+      requestId: req.requestId,
       sucesso: true,
     });
 
@@ -360,6 +363,7 @@ async function handleCreateEvento(req, res, next) {
       entityType: 'investimento_evento',
       entityId: ev.id,
       metadata: { investimento_id: id },
+      requestId: req.requestId,
       sucesso: true,
     });
 
