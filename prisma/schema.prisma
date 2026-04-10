@@ -758,19 +758,29 @@ model Job {
 
 /// Auditoria geral de ações críticas do sistema.
 model AuditoriaEvento {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  usuario_id  String?   @db.Uuid
-  tipo        String    @db.VarChar(100)
-  detalhes    Json?     @db.JsonB
-  ip_address  String?   @db.VarChar(45)
-  user_agent  String?   @db.VarChar(512)
-  sucesso     Boolean   @default(true)
-  data_evento DateTime  @default(now()) @db.Timestamptz(6)
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id   String?   @db.Uuid
+  actor_type   String?   @db.VarChar(50)
+  tipo         String?   @db.VarChar(100)
+  event_type   String?   @db.VarChar(100)
+  event_action String?   @db.VarChar(100)
+  entity_type  String?   @db.VarChar(100)
+  entity_id    String?   @db.VarChar(255)
+  request_id   String?   @db.VarChar(255)
+  detalhes     Json?     @db.JsonB
+  metadata     Json?     @db.JsonB
+  ip_address   String?   @db.VarChar(45)
+  user_agent   String?   @db.VarChar(512)
+  sucesso      Boolean   @default(true)
+  data_evento  DateTime  @default(now()) @db.Timestamptz(6)
 
   usuario Usuario? @relation(fields: [usuario_id], references: [id], onDelete: SetNull, map: "fk_auditoria_usuario")
 
   @@index([usuario_id], map: "idx_auditoria_usuario")
   @@index([tipo], map: "idx_auditoria_tipo")
+  @@index([event_type], map: "idx_auditoria_event_type")
+  @@index([event_action], map: "idx_auditoria_event_action")
+  @@index([entity_type, entity_id], map: "idx_auditoria_entity")
   @@index([data_evento], map: "idx_auditoria_data")
   @@map("auditoria_eventos")
 }

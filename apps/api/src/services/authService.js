@@ -8,6 +8,7 @@ import { config } from '../config/env.js';
 import { AppError } from '../errors/AppError.js';
 import { createDefaultCategories } from './categoriaService.js';
 import logger from '../logger.js';
+import { registrarEvento } from './auditoria.service.js';
 
 const BCRYPT_ROUNDS = 12;
 const MAX_LOGIN_ATTEMPTS = 5; // Redis rate-limit: max attempts per window
@@ -167,14 +168,6 @@ async function resetRateLimit(email, ip = 'unknown') {
   }
 }
 
-/**
- * Creates an auth audit event.
- * @param {object} data
- */
-async function createAuthEvent(data) {
-  await prisma.usuarioEventoAuth.create({ data });
-}
-
 // ============================================================
 // Public API
 // ============================================================
@@ -214,6 +207,16 @@ export async function register({ nome, email, senha }, meta = {}) {
     return created;
   });
 
+  registrarEvento({
+    usuarioId: usuario.id,
+    actorType: 'USER',
+    eventType: 'auth',
+    eventAction: 'cadastro',
+    ip: meta.ip,
+    userAgent: meta.userAgent,
+    sucesso: true,
+  });
+
   return {
     usuario_id: usuario.id,
     email: usuario.email,
@@ -234,13 +237,14 @@ export async function login({ email, senha, device_info }, meta = {}) {
   const usuario = await prisma.usuario.findUnique({ where: { email } });
 
   if (!usuario) {
-    await createAuthEvent({
-      usuario_id: null,
-      tipo: 'login',
+    registrarEvento({
+      actorType: 'USER',
+      eventType: 'auth',
+      eventAction: 'login_falha',
+      ip: meta.ip,
+      userAgent: meta.userAgent,
+      metadata: { motivo: 'email_nao_encontrado' },
       sucesso: false,
-      erro_msg: 'Email não encontrado',
-      ip_address: meta.ip || null,
-      user_agent: meta.userAgent || null,
     });
     throw AppError.unauthorized('Credenciais inválidas');
   }
@@ -271,13 +275,15 @@ export async function login({ email, senha, device_info }, meta = {}) {
       },
     });
 
-    await createAuthEvent({
-      usuario_id: usuario.id,
-      tipo: 'login',
+    registrarEvento({
+      usuarioId: usuario.id,
+      actorType: 'USER',
+      eventType: 'auth',
+      eventAction: 'login_falha',
+      ip: meta.ip,
+      userAgent: meta.userAgent,
+      metadata: { motivo: 'senha_incorreta', tentativas: newAttempts },
       sucesso: false,
-      erro_msg: 'Senha incorreta',
-      ip_address: meta.ip || null,
-      user_agent: meta.userAgent || null,
     });
 
     if (lockDurationMs !== null) {
@@ -315,12 +321,14 @@ export async function login({ email, senha, device_info }, meta = {}) {
     });
   });
 
-  await createAuthEvent({
-    usuario_id: usuario.id,
-    tipo: 'login',
+  registrarEvento({
+    usuarioId: usuario.id,
+    actorType: 'USER',
+    eventType: 'auth',
+    eventAction: 'login_sucesso',
+    ip: meta.ip,
+    userAgent: meta.userAgent,
     sucesso: true,
-    ip_address: meta.ip || null,
-    user_agent: meta.userAgent || null,
   });
 
   return {
@@ -402,12 +410,15 @@ export async function logout(userId, { sessao_id, todas, sessionId } = {}, meta 
     sessoesRevogadas = 1;
   }
 
-  await createAuthEvent({
-    usuario_id: userId,
-    tipo: 'logout',
+  registrarEvento({
+    usuarioId: userId,
+    actorType: 'USER',
+    eventType: 'auth',
+    eventAction: 'logout',
+    ip: meta.ip,
+    userAgent: meta.userAgent,
+    metadata: { sessoes_revogadas: sessoesRevogadas },
     sucesso: true,
-    ip_address: meta.ip || null,
-    user_agent: meta.userAgent || null,
   });
 
   return { message: 'Logout realizado com sucesso', sessoes_revogadas: sessoesRevogadas };

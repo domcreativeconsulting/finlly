@@ -5,6 +5,7 @@ import { AppError } from '../errors/AppError.js';
 import { config } from '../config/env.js';
 import logger from '../logger.js';
 import { atualizarStatusAssinante, mapAsaasStatusToLocal } from './assinanteStatusService.js';
+import { registrarEvento } from './auditoria.service.js';
 
 /**
  * Calculates a SHA-256 hex digest of the given payload object.
@@ -287,6 +288,16 @@ export async function processarWebhookAsaas(payload, rawBody, signatureHeader) {
   const eventType = payload.event;
   const payment = payload.payment ?? payload.subscription ?? payload;
 
+  void registrarEvento({
+    actorType: 'WEBHOOK',
+    eventType: 'webhook',
+    eventAction: 'webhook_recebido',
+    entityType: 'webhook_event',
+    entityId: String(payload.id),
+    metadata: { provider: 'asaas', event_type: eventType, event_id: String(payload.id) },
+    sucesso: true,
+  });
+
   try {
     if (eventType === 'PAYMENT_CONFIRMED' || eventType === 'PAYMENT_RECEIVED') {
       await handlePaymentConfirmed(payment);
@@ -305,12 +316,33 @@ export async function processarWebhookAsaas(payload, rawBody, signatureHeader) {
       where: { provider: 'asaas', event_id: String(payload.id) },
       data: { processado: true, processado_em: new Date() },
     });
+
+    void registrarEvento({
+      actorType: 'WEBHOOK',
+      eventType: 'webhook',
+      eventAction: 'webhook_processado',
+      entityType: 'webhook_event',
+      entityId: String(payload.id),
+      metadata: { provider: 'asaas', event_type: eventType, event_id: String(payload.id) },
+      sucesso: true,
+    });
   } catch (err) {
     logger.error({ err, eventType }, 'Erro ao processar webhook Asaas');
     await prisma.webhookEvent.updateMany({
       where: { provider: 'asaas', event_id: String(payload.id) },
       data: { erro: err?.message ?? 'Erro desconhecido' },
     });
+
+    void registrarEvento({
+      actorType: 'WEBHOOK',
+      eventType: 'webhook',
+      eventAction: 'webhook_falhou',
+      entityType: 'webhook_event',
+      entityId: String(payload.id),
+      metadata: { provider: 'asaas', event_type: eventType, event_id: String(payload.id) },
+      sucesso: false,
+    });
+
     throw err;
   }
 

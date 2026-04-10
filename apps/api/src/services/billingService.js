@@ -5,21 +5,9 @@ import logger from '../logger.js';
 import { atualizarStatusAssinante } from './assinanteStatusService.js';
 import { getRedisClient } from '../utils/redisClient.js';
 import { config } from '../config/env.js';
+import { registrarEvento } from './auditoria.service.js';
 
 const BILLING_STATUS_CACHE_PREFIX = 'billing:status:';
-
-/**
- * Persists a billing audit event to usuario_eventos_auth.
- * Fire-and-forget: errors are logged but never re-thrown.
- * @param {object} data
- */
-async function createBillingEvent(data) {
-  try {
-    await prisma.usuarioEventoAuth.create({ data });
-  } catch (err) {
-    logger.error({ err, tipo: data.tipo }, 'Falha ao registrar evento de billing');
-  }
-}
 
 /** Base prices in BRL */
 const PRECOS = {
@@ -144,9 +132,14 @@ export async function criarAssinatura(usuarioId, { plano, ciclo, formaPagamento,
 
   logger.info({ usuarioId, subscriptionId: subscription.id, plano, ciclo }, 'Assinatura criada');
 
-  await createBillingEvent({
-    usuario_id: usuarioId,
-    tipo: 'assinatura_criada',
+  registrarEvento({
+    usuarioId,
+    actorType: 'USER',
+    eventType: 'billing',
+    eventAction: 'assinatura_criada',
+    entityType: 'assinante',
+    entityId: assinante.id,
+    metadata: { plano, ciclo, subscriptionId: subscription.id },
     sucesso: true,
   });
 
@@ -196,9 +189,14 @@ export async function cancelarAssinatura(usuarioId) {
 
   logger.info({ usuarioId }, 'Assinatura cancelada');
 
-  await createBillingEvent({
-    usuario_id: usuarioId,
-    tipo: 'assinatura_cancelada',
+  registrarEvento({
+    usuarioId,
+    actorType: 'USER',
+    eventType: 'billing',
+    eventAction: 'assinatura_cancelada',
+    entityType: 'assinante',
+    entityId: assinante.id,
+    metadata: { plano: assinante.plano },
     sucesso: true,
   });
 }

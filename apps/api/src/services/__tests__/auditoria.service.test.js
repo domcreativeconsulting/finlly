@@ -33,7 +33,7 @@ beforeEach(() => {
 });
 
 describe('registrarEvento', () => {
-  test('creates an auditoria event with all provided fields', async () => {
+  test('creates an auditoria event with legacy fields (tipo/detalhes)', async () => {
     mockCreate.mockResolvedValue({ id: 'uuid-1' });
 
     await registrarEvento({
@@ -46,15 +46,108 @@ describe('registrarEvento', () => {
     });
 
     expect(mockCreate).toHaveBeenCalledWith({
-      data: {
+      data: expect.objectContaining({
         usuario_id: 'user-uuid',
         tipo: 'login',
         detalhes: { email: 'user@test.com' },
         ip_address: '127.0.0.1',
         user_agent: 'Mozilla/5.0',
         sucesso: true,
-      },
+      }),
     });
+  });
+
+  test('creates an auditoria event with new structured fields', async () => {
+    mockCreate.mockResolvedValue({ id: 'uuid-new' });
+
+    await registrarEvento({
+      usuarioId: 'user-uuid',
+      actorType: 'USER',
+      eventType: 'auth',
+      eventAction: 'login_sucesso',
+      entityType: 'usuario',
+      entityId: 'user-uuid',
+      requestId: 'req-123',
+      metadata: { plano: 'mensal' },
+      ip: '10.0.0.1',
+      userAgent: 'TestAgent/1.0',
+      sucesso: true,
+    });
+
+    expect(mockCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        usuario_id: 'user-uuid',
+        actor_type: 'USER',
+        event_type: 'auth',
+        event_action: 'login_sucesso',
+        entity_type: 'usuario',
+        entity_id: 'user-uuid',
+        request_id: 'req-123',
+        metadata: { plano: 'mensal' },
+        sucesso: true,
+      }),
+    });
+  });
+
+  test('stores actorType as actor_type', async () => {
+    mockCreate.mockResolvedValue({ id: 'uuid-actor' });
+
+    await registrarEvento({ actorType: 'WEBHOOK', eventType: 'webhook', eventAction: 'webhook_recebido' });
+
+    const callData = mockCreate.mock.calls[0][0].data;
+    expect(callData.actor_type).toBe('WEBHOOK');
+  });
+
+  test('stores eventType as event_type and eventAction as event_action', async () => {
+    mockCreate.mockResolvedValue({ id: 'uuid-event' });
+
+    await registrarEvento({ eventType: 'billing', eventAction: 'assinatura_criada', usuarioId: 'u1' });
+
+    const callData = mockCreate.mock.calls[0][0].data;
+    expect(callData.event_type).toBe('billing');
+    expect(callData.event_action).toBe('assinatura_criada');
+  });
+
+  test('stores entityType and entityId', async () => {
+    mockCreate.mockResolvedValue({ id: 'uuid-entity' });
+
+    await registrarEvento({ eventType: 'delete', eventAction: 'conta_pagar_excluida', entityType: 'conta_pagar', entityId: 'cp-123' });
+
+    const callData = mockCreate.mock.calls[0][0].data;
+    expect(callData.entity_type).toBe('conta_pagar');
+    expect(callData.entity_id).toBe('cp-123');
+  });
+
+  test('stores requestId as request_id', async () => {
+    mockCreate.mockResolvedValue({ id: 'uuid-req' });
+
+    await registrarEvento({ tipo: 'login', requestId: 'req-abc-123' });
+
+    const callData = mockCreate.mock.calls[0][0].data;
+    expect(callData.request_id).toBe('req-abc-123');
+  });
+
+  test('stores metadata field', async () => {
+    mockCreate.mockResolvedValue({ id: 'uuid-meta' });
+
+    await registrarEvento({ eventType: 'billing', eventAction: 'assinatura_criada', metadata: { plano: 'anual', subscriptionId: 'sub_001' } });
+
+    const callData = mockCreate.mock.calls[0][0].data;
+    expect(callData.metadata).toEqual({ plano: 'anual', subscriptionId: 'sub_001' });
+  });
+
+  test('metadata does not contain sensitive fields', async () => {
+    mockCreate.mockResolvedValue({ id: 'uuid-safe' });
+
+    const metadata = { plano: 'mensal', subscriptionId: 'sub_001' };
+
+    await registrarEvento({ eventType: 'auth', eventAction: 'login_sucesso', metadata });
+
+    const callData = mockCreate.mock.calls[0][0].data;
+    expect(callData.metadata).not.toHaveProperty('senha');
+    expect(callData.metadata).not.toHaveProperty('token');
+    expect(callData.metadata).not.toHaveProperty('senha_hash');
+    expect(callData.metadata).not.toHaveProperty('refresh_token');
   });
 
   test('defaults sucesso to true when not provided', async () => {
@@ -101,6 +194,16 @@ describe('registrarEvento', () => {
     expect(callData.user_agent).toHaveLength(512);
   });
 
+  test('truncates actor_type to 50 characters', async () => {
+    mockCreate.mockResolvedValue({ id: 'uuid-trunc-actor' });
+    const longActorType = 'X'.repeat(100);
+
+    await registrarEvento({ actorType: longActorType, eventType: 'auth', eventAction: 'login' });
+
+    const callData = mockCreate.mock.calls[0][0].data;
+    expect(callData.actor_type).toHaveLength(50);
+  });
+
   test('does not throw when prisma.create fails (fail-safe)', async () => {
     mockCreate.mockRejectedValue(new Error('DB connection lost'));
 
@@ -125,5 +228,28 @@ describe('registrarEvento', () => {
 
     const callData = mockCreate.mock.calls[0][0].data;
     expect(callData.detalhes).toBeNull();
+  });
+
+  test('handles null metadata when not provided', async () => {
+    mockCreate.mockResolvedValue({ id: 'uuid-7' });
+
+    await registrarEvento({ eventType: 'auth', eventAction: 'login_sucesso' });
+
+    const callData = mockCreate.mock.calls[0][0].data;
+    expect(callData.metadata).toBeNull();
+  });
+
+  test('null for new fields when not provided', async () => {
+    mockCreate.mockResolvedValue({ id: 'uuid-8' });
+
+    await registrarEvento({ tipo: 'login' });
+
+    const callData = mockCreate.mock.calls[0][0].data;
+    expect(callData.actor_type).toBeNull();
+    expect(callData.event_type).toBeNull();
+    expect(callData.event_action).toBeNull();
+    expect(callData.entity_type).toBeNull();
+    expect(callData.entity_id).toBeNull();
+    expect(callData.request_id).toBeNull();
   });
 });
