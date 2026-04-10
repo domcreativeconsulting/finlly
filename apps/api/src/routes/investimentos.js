@@ -148,6 +148,16 @@ async function handleCreate(req, res, next) {
 
     logger.info({ msg: 'Investimento criado', userId, investimentoId: inv.id });
 
+    registrarEvento({
+      usuarioId: userId,
+      actorType: 'USER',
+      eventType: 'create',
+      eventAction: 'investimento_criado',
+      entityType: 'investimento',
+      entityId: inv.id,
+      sucesso: true,
+    });
+
     return res.status(201).json({ item: formatInvestimento(inv) });
   } catch (err) {
     return next(err);
@@ -225,6 +235,16 @@ async function handleUpdate(req, res, next) {
     });
 
     logger.info({ msg: 'Investimento atualizado', userId, investimentoId: id });
+
+    registrarEvento({
+      usuarioId: userId,
+      actorType: 'USER',
+      eventType: 'update',
+      eventAction: 'investimento_atualizado',
+      entityType: 'investimento',
+      entityId: id,
+      sucesso: true,
+    });
 
     return res.status(200).json({ item: formatInvestimento(updated) });
   } catch (err) {
@@ -331,6 +351,17 @@ async function handleCreateEvento(req, res, next) {
     });
 
     logger.info({ msg: 'Evento de investimento criado', userId, investimentoId: id, eventoId: ev.id });
+
+    registrarEvento({
+      usuarioId: userId,
+      actorType: 'USER',
+      eventType: 'create',
+      eventAction: 'investimento_evento_criado',
+      entityType: 'investimento_evento',
+      entityId: ev.id,
+      metadata: { investimento_id: id },
+      sucesso: true,
+    });
 
     return res.status(201).json({ item: formatEvento(ev) });
   } catch (err) {

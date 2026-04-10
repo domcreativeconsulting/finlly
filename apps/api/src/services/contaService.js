@@ -84,6 +84,16 @@ export async function createConta(userId, data) {
     include: { instituicao: { select: { nome: true } } },
   });
 
+  registrarEvento({
+    usuarioId: userId,
+    actorType: 'USER',
+    eventType: 'create',
+    eventAction: 'conta_criada',
+    entityType: 'conta',
+    entityId: conta.id,
+    sucesso: true,
+  });
+
   return { ...conta, saldo: 0 };
 }
 
@@ -121,6 +131,16 @@ export async function updateConta(id, userId, data) {
   });
   const entradas = Number(agg.find((a) => a.tipo === 'entrada')?._sum.valor ?? 0);
   const saidas = Number(agg.find((a) => a.tipo === 'saida')?._sum.valor ?? 0);
+
+  registrarEvento({
+    usuarioId: userId,
+    actorType: 'USER',
+    eventType: 'update',
+    eventAction: 'conta_atualizada',
+    entityType: 'conta',
+    entityId: id,
+    sucesso: true,
+  });
 
   return { ...conta, saldo: entradas - saidas };
 }
