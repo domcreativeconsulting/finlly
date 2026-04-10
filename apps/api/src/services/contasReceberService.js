@@ -161,6 +161,17 @@ export async function createContaReceber(userId, data) {
 
     await prisma.contaReceber.createMany({ data: parcelas });
 
+    registrarEvento({
+      usuarioId: userId,
+      actorType: 'USER',
+      eventType: 'create',
+      eventAction: 'conta_receber_parcelada_criada',
+      entityType: 'conta_receber',
+      entityId: grupo_recorrencia_id,
+      metadata: { total_parcelas, grupo_recorrencia_id },
+      sucesso: true,
+    });
+
     const primeira = await prisma.contaReceber.findFirst({
       where: { grupo_recorrencia_id, usuario_id: userId, parcela_atual: 1 },
       include: {
@@ -192,6 +203,16 @@ export async function createContaReceber(userId, data) {
       categoria: { select: { nome: true, cor: true, icone: true } },
       conta: { select: { nome: true } },
     },
+  });
+
+  registrarEvento({
+    usuarioId: userId,
+    actorType: 'USER',
+    eventType: 'create',
+    eventAction: 'conta_receber_criada',
+    entityType: 'conta_receber',
+    entityId: conta.id,
+    sucesso: true,
   });
 
   return { ...conta, valor: Number(conta.valor) };
@@ -227,6 +248,16 @@ export async function updateContaReceber(id, userId, data) {
       categoria: { select: { nome: true, cor: true, icone: true } },
       conta: { select: { nome: true } },
     },
+  });
+
+  registrarEvento({
+    usuarioId: userId,
+    actorType: 'USER',
+    eventType: 'update',
+    eventAction: 'conta_receber_atualizada',
+    entityType: 'conta_receber',
+    entityId: id,
+    sucesso: true,
   });
 
   return { ...conta, valor: Number(conta.valor) };
@@ -315,6 +346,17 @@ export async function receberContaReceber(id, userId, { data_recebimento, conta_
     return [contaAtualizada, movimentacao];
   });
 
+  registrarEvento({
+    usuarioId: userId,
+    actorType: 'USER',
+    eventType: 'update',
+    eventAction: 'conta_receber_recebida',
+    entityType: 'conta_receber',
+    entityId: id,
+    metadata: { data_recebimento: dataRecebimento },
+    sucesso: true,
+  });
+
   return { ...conta, valor: Number(conta.valor) };
 }
 
@@ -340,6 +382,16 @@ export async function cancelarContaReceber(id, userId) {
       categoria: { select: { nome: true, cor: true, icone: true } },
       conta: { select: { nome: true } },
     },
+  });
+
+  registrarEvento({
+    usuarioId: userId,
+    actorType: 'USER',
+    eventType: 'update',
+    eventAction: 'conta_receber_cancelada',
+    entityType: 'conta_receber',
+    entityId: id,
+    sucesso: true,
   });
 
   return { ...conta, valor: Number(conta.valor) };
@@ -385,6 +437,17 @@ export async function cancelarGrupoParcelasReceber(grupoId, userId) {
     });
     if (!existente) throw AppError.notFound('Grupo de parcelas não encontrado');
   }
+
+  registrarEvento({
+    usuarioId: userId,
+    actorType: 'USER',
+    eventType: 'update',
+    eventAction: 'conta_receber_grupo_cancelado',
+    entityType: 'conta_receber',
+    entityId: grupoId,
+    metadata: { canceladas: result.count },
+    sucesso: true,
+  });
 
   return { canceladas: result.count };
 }
