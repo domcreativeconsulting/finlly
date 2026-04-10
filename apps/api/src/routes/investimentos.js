@@ -9,6 +9,7 @@ import { AppError } from '../errors/AppError.js';
 import logger from '../logger.js';
 import prisma from '../utils/database.js';
 import { calcularPosicao } from '../services/investimentoService.js';
+import { registrarEvento } from '../services/auditoria.service.js';
 import {
   listInvestimentosQuerySchema,
   eventoQuerySchema,
@@ -248,6 +249,16 @@ async function handleDelete(req, res, next) {
     }
 
     await prisma.investimento.update({ where: { id }, data: { deleted_at: new Date() } });
+
+    registrarEvento({
+      usuarioId: userId,
+      actorType: 'USER',
+      eventType: 'delete',
+      eventAction: 'investimento_excluido',
+      entityType: 'investimento',
+      entityId: id,
+      sucesso: true,
+    });
 
     logger.info({ msg: 'Investimento removido', userId, investimentoId: id });
 

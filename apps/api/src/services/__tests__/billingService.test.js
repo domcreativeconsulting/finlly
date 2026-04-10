@@ -17,10 +17,9 @@ const mockPrisma = {
     findFirst: jest.fn(),
     update: jest.fn(),
   },
-  usuarioEventoAuth: {
-    create: jest.fn(),
-  },
 };
+
+const mockAuditoriaCreate = jest.fn();
 
 const mockAsaas = {
   getCustomerByEmail: jest.fn(),
@@ -58,6 +57,10 @@ jest.unstable_mockModule('../../config/env.js', () => ({
   config: { BILLING_STATUS_CACHE_TTL: 60 },
 }));
 
+jest.unstable_mockModule('../auditoria.service.js', () => ({
+  registrarEvento: mockAuditoriaCreate,
+}));
+
 // ---------------------------------------------------------------------------
 // Service under test
 // ---------------------------------------------------------------------------
@@ -78,7 +81,7 @@ beforeEach(() => {
   mockRedis.get.mockResolvedValue(null);
   mockRedis.set.mockResolvedValue('OK');
   mockRedis.del.mockResolvedValue(1);
-  mockPrisma.usuarioEventoAuth.create.mockResolvedValue({});
+  mockAuditoriaCreate.mockResolvedValue(undefined);
 });
 
 // ---------------------------------------------------------------------------
@@ -132,13 +135,12 @@ describe('criarAssinatura', () => {
       }),
     );
 
-    expect(mockPrisma.usuarioEventoAuth.create).toHaveBeenCalledWith(
+    expect(mockAuditoriaCreate).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
-          usuario_id: USUARIO_ID,
-          tipo: 'assinatura_criada',
-          sucesso: true,
-        }),
+        usuarioId: USUARIO_ID,
+        eventType: 'billing',
+        eventAction: 'assinatura_criada',
+        sucesso: true,
       }),
     );
   });
@@ -266,13 +268,12 @@ describe('cancelarAssinatura', () => {
     expect(mockPrisma.usuario.update).toHaveBeenCalledWith(
       expect.objectContaining({ data: { status: 'ativo' } }),
     );
-    expect(mockPrisma.usuarioEventoAuth.create).toHaveBeenCalledWith(
+    expect(mockAuditoriaCreate).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
-          usuario_id: USUARIO_ID,
-          tipo: 'assinatura_cancelada',
-          sucesso: true,
-        }),
+        usuarioId: USUARIO_ID,
+        eventType: 'billing',
+        eventAction: 'assinatura_cancelada',
+        sucesso: true,
       }),
     );
   });

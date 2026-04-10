@@ -5,6 +5,7 @@ import { config } from '../config/env.js';
 import logger from '../logger.js';
 import { getStorageProvider } from '../storage/index.js';
 import { addAttachmentJob } from '../queues/attachment.queue.js';
+import { registrarEvento } from './auditoria.service.js';
 
 const ALLOWED_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
 
@@ -186,6 +187,17 @@ export async function deletarAnexo({ usuarioId, anexoId }) {
   });
 
   logger.info({ anexoId, usuarioId }, 'Anexo removido (soft-delete).');
+
+  registrarEvento({
+    usuarioId,
+    actorType: 'USER',
+    eventType: 'delete',
+    eventAction: 'anexo_excluido',
+    entityType: 'anexo',
+    entityId: anexoId,
+    sucesso: true,
+  });
+
   return updated;
 }
 

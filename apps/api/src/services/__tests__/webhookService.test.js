@@ -25,6 +25,8 @@ const mockPrisma = {
   },
 };
 
+const mockRegistrarEvento = jest.fn();
+
 jest.unstable_mockModule('../../utils/database.js', () => ({
   default: mockPrisma,
 }));
@@ -35,6 +37,10 @@ jest.unstable_mockModule('../../logger.js', () => ({
 
 jest.unstable_mockModule('../../utils/redisClient.js', () => ({
   getRedisClient: jest.fn().mockResolvedValue({ del: jest.fn().mockResolvedValue(1) }),
+}));
+
+jest.unstable_mockModule('../auditoria.service.js', () => ({
+  registrarEvento: mockRegistrarEvento,
 }));
 
 const WEBHOOK_SECRET = 'test_webhook_secret_32_chars_min!';
@@ -57,6 +63,7 @@ beforeAll(async () => {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockRegistrarEvento.mockResolvedValue(undefined);
   // Default: evento não existe (novo)
   mockPrisma.webhookEvent.findFirst.mockResolvedValue(null);
   mockPrisma.webhookEvent.create.mockResolvedValue({ id: 1n });
@@ -563,5 +570,69 @@ describe('upsert de pagamento — idempotência', () => {
         update: expect.objectContaining({ status: 'pendente' }),
       }),
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Auditoria de webhook
+// ---------------------------------------------------------------------------
+
+describe('auditoria de webhook', () => {
+  test('registra webhook_recebido ao processar evento', async () => {
+    mockPrisma.assinante.findFirst.mockResolvedValue(ASSINANTE);
+
+    const payload = makePayload('PAYMENT_CONFIRMED');
+    const rawBody = Buffer.from(JSON.stringify(payload));
+    const sig = makeSignature(rawBody);
+
+    await processarWebhookAsaas(payload, rawBody, sig);
+
+    expect(mockRegistrarEvento).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorType: 'WEBHOOK',
+        eventType: 'webhook',
+        eventAction: 'webhook_recebido',
+        entityType: 'webhook_event',
+        entityId: String(payload.id),
+        sucesso: true,
+      }),
+    );
+  });
+
+  test('registra webhook_processado após processamento bem-sucedido', async () => {
+    mockPrisma.assinante.findFirst.mockResolvedValue(ASSINANTE);
+
+    const payload = makePayload('PAYMENT_CONFIRMED');
+    const rawBody = Buffer.from(JSON.stringify(payload));
+    const sig = makeSignature(rawBody);
+
+    await processarWebhookAsaas(payload, rawBody, sig);
+
+    expect(mockRegistrarEvento).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorType: 'WEBHOOK',
+        eventType: 'webhook',
+        eventAction: 'webhook_processado',
+        sucesso: true,
+      }),
+    );
+  });
+
+  test('metadata não contém payload bruto sensível', async () => {
+    mockPrisma.assinante.findFirst.mockResolvedValue(ASSINANTE);
+
+    const payload = makePayload('PAYMENT_CONFIRMED');
+    const rawBody = Buffer.from(JSON.stringify(payload));
+    const sig = makeSignature(rawBody);
+
+    await processarWebhookAsaas(payload, rawBody, sig);
+
+    const calls = mockRegistrarEvento.mock.calls;
+    for (const [args] of calls) {
+      if (args.metadata) {
+        expect(args.metadata).not.toHaveProperty('payment');
+        expect(args.metadata).not.toHaveProperty('payload');
+      }
+    }
   });
 });

@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import prisma from '../utils/database.js';
 import { AppError } from '../errors/AppError.js';
+import { registrarEvento } from './auditoria.service.js';
 
 const ALLOWED_SORT_FIELDS = new Set(['data_vencimento', 'valor', 'descricao', 'created_at', 'status']);
 
@@ -248,6 +249,16 @@ export async function deleteContaPagar(id, userId) {
   await prisma.contaPagar.update({
     where: { id },
     data: { deleted_at: new Date() },
+  });
+
+  registrarEvento({
+    usuarioId: userId,
+    actorType: 'USER',
+    eventType: 'delete',
+    eventAction: 'conta_pagar_excluida',
+    entityType: 'conta_pagar',
+    entityId: id,
+    sucesso: true,
   });
 }
 

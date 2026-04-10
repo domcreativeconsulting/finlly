@@ -1,5 +1,6 @@
 import prisma from '../utils/database.js';
 import { AppError } from '../errors/AppError.js';
+import { registrarEvento } from './auditoria.service.js';
 
 /**
  * List all contas for a user with computed saldo.
@@ -147,5 +148,15 @@ export async function deleteConta(id, userId) {
   await prisma.conta.update({
     where: { id },
     data: { deleted_at: new Date() },
+  });
+
+  registrarEvento({
+    usuarioId: userId,
+    actorType: 'USER',
+    eventType: 'delete',
+    eventAction: 'conta_excluida',
+    entityType: 'conta',
+    entityId: id,
+    sucesso: true,
   });
 }

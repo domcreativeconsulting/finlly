@@ -14,9 +14,10 @@ export function auditarAcao(tipo, getDetalhes) {
       const usuarioId = req.user?.sub || req.user?.id || undefined;
       const ip = req.ip || req.socket?.remoteAddress || undefined;
       const userAgent = req.headers['user-agent'] || undefined;
+      const requestId = req.id || req.requestId || res.locals?.requestId || undefined;
       const detalhes = typeof getDetalhes === 'function' ? getDetalhes(req, res) : undefined;
 
-      registrarEvento({ usuarioId, tipo, detalhes, ip, userAgent, sucesso });
+      registrarEvento({ usuarioId, tipo, detalhes, requestId, ip, userAgent, sucesso });
     });
     next();
   };
