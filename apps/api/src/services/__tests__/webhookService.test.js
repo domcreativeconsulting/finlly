@@ -14,6 +14,7 @@ const mockPrisma = {
   },
   assinante: {
     findFirst: jest.fn(),
+    findUnique: jest.fn(),
     update: jest.fn(),
   },
   assinantePagamento: {
@@ -69,6 +70,7 @@ beforeEach(() => {
   mockPrisma.webhookEvent.create.mockResolvedValue({ id: 1n });
   mockPrisma.webhookEvent.update.mockResolvedValue({});
   mockPrisma.webhookEvent.updateMany.mockResolvedValue({ count: 1 });
+  mockPrisma.assinante.findUnique.mockResolvedValue({ status: 'pendente' });
   mockPrisma.assinante.update.mockResolvedValue({});
   mockPrisma.assinantePagamento.create.mockResolvedValue({});
   mockPrisma.assinantePagamento.upsert.mockResolvedValue({});

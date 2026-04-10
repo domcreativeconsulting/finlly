@@ -59,7 +59,7 @@ async function handleGet(req, res, next) {
 
 async function handleCreate(req, res, next) {
   try {
-    const conta = await createConta(req.user.sub, req.body);
+    const conta = await createConta(req.user.sub, req.body, req.requestId);
     logger.info({ msg: 'Conta criada', userId: req.user.sub, contaId: conta.id });
     return res.status(201).json(conta);
   } catch (err) {
@@ -69,7 +69,7 @@ async function handleCreate(req, res, next) {
 
 async function handleUpdate(req, res, next) {
   try {
-    const conta = await updateConta(req.params.id, req.user.sub, req.body);
+    const conta = await updateConta(req.params.id, req.user.sub, req.body, req.requestId);
     logger.info({ msg: 'Conta atualizada', userId: req.user.sub, contaId: req.params.id });
     return res.status(200).json(conta);
   } catch (err) {
@@ -79,7 +79,7 @@ async function handleUpdate(req, res, next) {
 
 async function handleDelete(req, res, next) {
   try {
-    await deleteConta(req.params.id, req.user.sub);
+    await deleteConta(req.params.id, req.user.sub, req.requestId);
     logger.info({ msg: 'Conta excluída', userId: req.user.sub, contaId: req.params.id });
     return res.status(204).send();
   } catch (err) {

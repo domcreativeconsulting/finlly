@@ -50,6 +50,7 @@ async function handleUpload(req, res, next) {
     const anexo = await uploadAnexo({
       usuarioId: req.user.sub,
       file: req.uploadedFile,
+      requestId: req.requestId,
     });
     logger.info({ anexoId: anexo.id, userId: req.user.sub }, 'Anexo criado.');
     return res.status(201).json(anexo);
@@ -107,7 +108,7 @@ async function handleDownload(req, res, next) {
 // ---------------------------------------------------------------------------
 async function handleDelete(req, res, next) {
   try {
-    await deletarAnexo({ usuarioId: req.user.sub, anexoId: req.params.id });
+    await deletarAnexo({ usuarioId: req.user.sub, anexoId: req.params.id, requestId: req.requestId });
     logger.info({ anexoId: req.params.id, userId: req.user.sub }, 'Anexo removido.');
     return res.status(204).send();
   } catch (err) {
@@ -126,6 +127,7 @@ async function handleVincular(req, res, next) {
       anexoId: req.params.id,
       entidadeTipo: entidade_tipo,
       entidadeId: entidade_id,
+      requestId: req.requestId,
     });
     logger.info({ anexoId: req.params.id, userId: req.user.sub }, 'Vínculo criado.');
     return res.status(201).json(vinculo);

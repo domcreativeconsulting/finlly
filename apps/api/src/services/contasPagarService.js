@@ -135,8 +135,9 @@ const RECORRENCIA_OFFSET = {
  * Create a new conta a pagar. Supports parcelamento when total_parcelas is provided.
  * @param {string} userId
  * @param {{ descricao, valor, data_vencimento, categoria_id?, conta_id?, observacoes?, recorrente?, total_parcelas?, recorrencia? }} data
+ * @param {string} [requestId]
  */
-export async function createContaPagar(userId, data) {
+export async function createContaPagar(userId, data, requestId) {
   const { descricao, valor, data_vencimento, categoria_id, conta_id, observacoes, recorrente, total_parcelas, recorrencia } = data;
   const baseDate = new Date(data_vencimento + 'T00:00:00.000Z');
 
@@ -169,6 +170,7 @@ export async function createContaPagar(userId, data) {
       entityType: 'conta_pagar',
       entityId: grupo_recorrencia_id,
       metadata: { total_parcelas, grupo_recorrencia_id },
+      requestId,
       sucesso: true,
     });
 
@@ -212,6 +214,7 @@ export async function createContaPagar(userId, data) {
     eventAction: 'conta_pagar_criada',
     entityType: 'conta_pagar',
     entityId: conta.id,
+    requestId,
     sucesso: true,
   });
 
@@ -223,8 +226,9 @@ export async function createContaPagar(userId, data) {
  * @param {string} id
  * @param {string} userId
  * @param {{ descricao?, valor?, data_vencimento?, categoria_id?, conta_id?, observacoes? }} data
+ * @param {string} [requestId]
  */
-export async function updateContaPagar(id, userId, data) {
+export async function updateContaPagar(id, userId, data, requestId) {
   const existing = await prisma.contaPagar.findFirst({
     where: { id, usuario_id: userId, deleted_at: null },
     select: { id: true, status: true },
@@ -257,6 +261,7 @@ export async function updateContaPagar(id, userId, data) {
     eventAction: 'conta_pagar_atualizada',
     entityType: 'conta_pagar',
     entityId: id,
+    requestId,
     sucesso: true,
   });
 
@@ -267,8 +272,9 @@ export async function updateContaPagar(id, userId, data) {
  * Soft-delete a conta a pagar (only if not 'pago').
  * @param {string} id
  * @param {string} userId
+ * @param {string} [requestId]
  */
-export async function deleteContaPagar(id, userId) {
+export async function deleteContaPagar(id, userId, requestId) {
   const existing = await prisma.contaPagar.findFirst({
     where: { id, usuario_id: userId, deleted_at: null },
     select: { id: true, status: true },
@@ -289,6 +295,7 @@ export async function deleteContaPagar(id, userId) {
     eventAction: 'conta_pagar_excluida',
     entityType: 'conta_pagar',
     entityId: id,
+    requestId,
     sucesso: true,
   });
 }
@@ -299,8 +306,9 @@ export async function deleteContaPagar(id, userId) {
  * @param {string} id
  * @param {string} userId
  * @param {{ data_pagamento?: string, conta_id?: string, observacoes?: string }} options
+ * @param {string} [requestId]
  */
-export async function pagarContaPagar(id, userId, { data_pagamento, conta_id: contaIdOverride, observacoes } = {}) {
+export async function pagarContaPagar(id, userId, { data_pagamento, conta_id: contaIdOverride, observacoes } = {}, requestId) {
   const existing = await prisma.contaPagar.findFirst({
     where: { id, usuario_id: userId, deleted_at: null },
     select: { id: true, status: true, valor: true, conta_id: true, categoria_id: true, descricao: true },
@@ -354,6 +362,7 @@ export async function pagarContaPagar(id, userId, { data_pagamento, conta_id: co
     entityType: 'conta_pagar',
     entityId: id,
     metadata: { data_pagamento: dataPagamento },
+    requestId,
     sucesso: true,
   });
 
@@ -364,8 +373,9 @@ export async function pagarContaPagar(id, userId, { data_pagamento, conta_id: co
  * Cancel a conta a pagar.
  * @param {string} id
  * @param {string} userId
+ * @param {string} [requestId]
  */
-export async function cancelarContaPagar(id, userId) {
+export async function cancelarContaPagar(id, userId, requestId) {
   const existing = await prisma.contaPagar.findFirst({
     where: { id, usuario_id: userId, deleted_at: null },
     select: { id: true, status: true },
@@ -391,6 +401,7 @@ export async function cancelarContaPagar(id, userId) {
     eventAction: 'conta_pagar_cancelada',
     entityType: 'conta_pagar',
     entityId: id,
+    requestId,
     sucesso: true,
   });
 
@@ -419,8 +430,9 @@ export async function getGrupoParcelas(grupoId, userId) {
  * Cancel only the 'pendente' parcelas in a grupo (pago/cancelado are preserved).
  * @param {string} grupoId
  * @param {string} userId
+ * @param {string} [requestId]
  */
-export async function cancelarGrupoParcelas(grupoId, userId) {
+export async function cancelarGrupoParcelas(grupoId, userId, requestId) {
   const result = await prisma.contaPagar.updateMany({
     where: {
       grupo_recorrencia_id: grupoId,
@@ -446,6 +458,7 @@ export async function cancelarGrupoParcelas(grupoId, userId) {
     entityType: 'conta_pagar',
     entityId: grupoId,
     metadata: { canceladas: result.count },
+    requestId,
     sucesso: true,
   });
 

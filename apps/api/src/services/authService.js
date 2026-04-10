@@ -347,29 +347,91 @@ export async function login({ email, senha, device_info }, meta = {}) {
 /**
  * Refreshes the access token (POST /auth/refresh).
  * @param {string} refreshToken
+ * @param {{ ip?: string, userAgent?: string }} [meta]
  * @returns {Promise<{ accessToken: string }>}
  */
-export async function refresh(refreshToken) {
+export async function refresh(refreshToken, meta = {}) {
+  let payload = null;
   try {
-    jwt.verify(refreshToken, config.JWT_REFRESH_SECRET);
+    payload = jwt.verify(refreshToken, config.JWT_REFRESH_SECRET);
   } catch {
+    registrarEvento({
+      actorType: 'USER',
+      eventType: 'auth',
+      eventAction: 'refresh_falha',
+      metadata: { motivo: 'token_invalido' },
+      sucesso: false,
+      ip: meta.ip,
+      userAgent: meta.userAgent,
+    });
     throw AppError.unauthorized('Refresh token inválido ou expirado');
   }
 
   // Validate the session by matching the token hash in the DB
   const tokenHash = sha256(refreshToken);
+  const usuarioId = payload?.sub || null;
 
   const sessao = await prisma.usuarioSessao.findUnique({
     where: { refresh_token_hash: tokenHash },
     include: { usuario: true },
   });
 
-  if (!sessao) throw AppError.unauthorized('Sessão não encontrada');
-  if (sessao.data_revogacao) throw AppError.unauthorized('Sessão revogada');
-  if (sessao.data_expiracao < new Date()) throw AppError.unauthorized('Sessão expirada');
+  if (!sessao) {
+    registrarEvento({
+      usuarioId,
+      actorType: 'USER',
+      eventType: 'auth',
+      eventAction: 'refresh_falha',
+      metadata: { motivo: 'sessao_nao_encontrada' },
+      sucesso: false,
+      ip: meta.ip,
+      userAgent: meta.userAgent,
+    });
+    throw AppError.unauthorized('Sessão não encontrada');
+  }
+
+  if (sessao.data_revogacao) {
+    registrarEvento({
+      usuarioId,
+      actorType: 'USER',
+      eventType: 'auth',
+      eventAction: 'refresh_falha',
+      metadata: { motivo: 'sessao_revogada' },
+      sucesso: false,
+      ip: meta.ip,
+      userAgent: meta.userAgent,
+    });
+    throw AppError.unauthorized('Sessão revogada');
+  }
+
+  if (sessao.data_expiracao < new Date()) {
+    registrarEvento({
+      usuarioId,
+      actorType: 'USER',
+      eventType: 'auth',
+      eventAction: 'refresh_falha',
+      metadata: { motivo: 'sessao_expirada' },
+      sucesso: false,
+      ip: meta.ip,
+      userAgent: meta.userAgent,
+    });
+    throw AppError.unauthorized('Sessão expirada');
+  }
 
   const usuario = sessao.usuario;
-  if (usuario.status !== 'ativo') throw AppError.forbidden('Usuário bloqueado');
+  if (usuario.status !== 'ativo') {
+    registrarEvento({
+      usuarioId,
+      actorType: 'USER',
+      eventType: 'auth',
+      eventAction: 'refresh_falha',
+      metadata: { motivo: 'usuario_bloqueado' },
+      sucesso: false,
+      ip: meta.ip,
+      userAgent: meta.userAgent,
+    });
+    throw AppError.forbidden('Usuário bloqueado');
+  }
 
   const accessToken = generateAccessToken(usuario);
   return { accessToken };

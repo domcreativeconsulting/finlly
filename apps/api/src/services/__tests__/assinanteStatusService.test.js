@@ -1,7 +1,7 @@
 import { jest } from '@jest/globals';
 
 const mockPrisma = {
-  assinante: { update: jest.fn() },
+  assinante: { update: jest.fn(), findUnique: jest.fn() },
   usuario: { update: jest.fn() },
 };
 
@@ -10,10 +10,12 @@ const mockRedis = {
 };
 
 const mockGetRedisClient = jest.fn();
+const mockRegistrarEvento = jest.fn();
 
 jest.unstable_mockModule('../../utils/database.js', () => ({ default: mockPrisma }));
 jest.unstable_mockModule('../../logger.js', () => ({ default: { info: jest.fn() } }));
 jest.unstable_mockModule('../../utils/redisClient.js', () => ({ getRedisClient: mockGetRedisClient }));
+jest.unstable_mockModule('../auditoria.service.js', () => ({ registrarEvento: mockRegistrarEvento }));
 
 let atualizarStatusAssinante;
 let mapAsaasStatusToLocal;
@@ -29,6 +31,7 @@ const USUARIO_ID = 'usuario-uuid-001';
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockPrisma.assinante.findUnique.mockResolvedValue({ status: 'pendente' });
   mockPrisma.assinante.update.mockResolvedValue({});
   mockPrisma.usuario.update.mockResolvedValue({});
   mockGetRedisClient.mockResolvedValue(mockRedis);
@@ -128,7 +131,7 @@ describe('atualizarStatusAssinante', () => {
 
   test('usa transação (tx) quando fornecida em vez de prisma global', async () => {
     const mockTx = {
-      assinante: { update: jest.fn().mockResolvedValue({}) },
+      assinante: { update: jest.fn().mockResolvedValue({}), findUnique: jest.fn().mockResolvedValue({ status: 'pendente' }) },
       usuario: { update: jest.fn().mockResolvedValue({}) },
     };
 
