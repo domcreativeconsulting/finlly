@@ -288,7 +288,7 @@ export async function processarWebhookAsaas(payload, rawBody, signatureHeader) {
   const eventType = payload.event;
   const payment = payload.payment ?? payload.subscription ?? payload;
 
-  registrarEvento({
+  void registrarEvento({
     actorType: 'WEBHOOK',
     eventType: 'webhook',
     eventAction: 'webhook_recebido',
@@ -317,7 +317,7 @@ export async function processarWebhookAsaas(payload, rawBody, signatureHeader) {
       data: { processado: true, processado_em: new Date() },
     });
 
-    registrarEvento({
+    void registrarEvento({
       actorType: 'WEBHOOK',
       eventType: 'webhook',
       eventAction: 'webhook_processado',
@@ -333,13 +333,13 @@ export async function processarWebhookAsaas(payload, rawBody, signatureHeader) {
       data: { erro: err?.message ?? 'Erro desconhecido' },
     });
 
-    registrarEvento({
+    void registrarEvento({
       actorType: 'WEBHOOK',
       eventType: 'webhook',
       eventAction: 'webhook_falhou',
       entityType: 'webhook_event',
       entityId: String(payload.id),
-      metadata: { provider: 'asaas', event_type: eventType, event_id: String(payload.id), motivo: err?.message },
+      metadata: { provider: 'asaas', event_type: eventType, event_id: String(payload.id) },
       sucesso: false,
     });
 
