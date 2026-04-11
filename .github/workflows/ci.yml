@@ -116,8 +116,6 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
-    env:
-      NODE_ENV: test
     steps:
       - uses: actions/checkout@v4
 
@@ -140,15 +138,14 @@ jobs:
       - name: Prepare (setup husky)
         run: npm run prepare
 
+      - name: Create .env for Prisma
+        run: echo "DATABASE_URL=postgresql://test:test@localhost:5432/finlly_test" > .env
+
       - name: Apply migrations
-        run: |
-          echo "DATABASE_URL=postgresql://test:test@localhost:5432/finlly_test" > .env
-          npx prisma db push --schema=prisma/schema.prisma --skip-generate --accept-data-loss
+        run: npx prisma db push --schema=prisma/schema.prisma --skip-generate --accept-data-loss
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/finlly_test
 
-      - name: Run integration tests
-          
       - name: Run integration tests
         run: npm run test:integration --workspace=apps/api
         env:
