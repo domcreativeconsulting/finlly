@@ -84,6 +84,8 @@ beforeEach(() => {
   mockRedis.del.mockResolvedValue(1);
   mockAuditoriaCreate.mockResolvedValue(undefined);
   mockPrisma.assinante.findUnique.mockResolvedValue({ status: 'ativo' });
+  // Guard padrão: nenhuma assinatura ativa ou pendente encontrada
+  mockPrisma.assinante.findFirst.mockResolvedValue(null);
 });
 
 // ---------------------------------------------------------------------------
@@ -250,20 +252,43 @@ describe('criarAssinatura', () => {
     );
   });
 
-  // GAP 1 — O código de produção não possui guarda de conflito de assinatura ativa.
-  // Quando um usuário já possui assinatura, criarAssinatura executa upsert normalmente
-  // sem lançar erro. O código de produção precisa ser complementado com esse guarda.
-  test('permite criação mesmo quando usuário já possui assinatura ativa (sem guarda de conflito)', async () => {
+  // GAP 1 — Guard de conflito de assinatura ativa ou pendente
+  test('rejeita criação quando usuário já possui assinatura ativa', async () => {
     mockPrisma.usuario.findFirst.mockResolvedValue(USUARIO);
+    mockPrisma.assinante.findFirst.mockResolvedValue({ ...ASSINANTE, status: 'ativo' });
+
+    await expect(
+      criarAssinatura(USUARIO_ID, { plano: 'mensal', ciclo: 'mensal', formaPagamento: 'PIX' }),
+    ).rejects.toMatchObject({ status: 409 });
+
+    expect(mockAsaas.createSubscription).not.toHaveBeenCalled();
+    expect(mockPrisma.assinante.upsert).not.toHaveBeenCalled();
+  });
+
+  test('rejeita criação quando usuário já possui assinatura pendente', async () => {
+    mockPrisma.usuario.findFirst.mockResolvedValue(USUARIO);
+    mockPrisma.assinante.findFirst.mockResolvedValue({ ...ASSINANTE, status: 'pendente' });
+
+    await expect(
+      criarAssinatura(USUARIO_ID, { plano: 'mensal', ciclo: 'mensal', formaPagamento: 'PIX' }),
+    ).rejects.toMatchObject({ status: 409 });
+
+    expect(mockAsaas.createSubscription).not.toHaveBeenCalled();
+    expect(mockPrisma.assinante.upsert).not.toHaveBeenCalled();
+  });
+
+  test('permite criar assinatura quando a existente está cancelada', async () => {
+    mockPrisma.usuario.findFirst.mockResolvedValue(USUARIO);
+    // Guard retorna null: nenhuma assinatura ativa ou pendente
+    mockPrisma.assinante.findFirst.mockResolvedValue(null);
     mockAsaas.getCustomerByEmail.mockResolvedValue(CUSTOMER);
     mockAsaas.createSubscription.mockResolvedValue(SUBSCRIPTION);
-    mockPrisma.assinante.upsert.mockResolvedValue({ ...ASSINANTE, status: 'pendente' });
+    mockPrisma.assinante.upsert.mockResolvedValue(ASSINANTE);
 
     const result = await criarAssinatura(USUARIO_ID, { plano: 'mensal', ciclo: 'mensal', formaPagamento: 'PIX' });
 
-    expect(result).toMatchObject({ assinante: expect.objectContaining({ status: 'pendente' }) });
-    expect(mockAsaas.createSubscription).toHaveBeenCalledTimes(1);
-    expect(mockPrisma.assinante.upsert).toHaveBeenCalledTimes(1);
+    expect(result.assinante).toEqual(ASSINANTE);
+    expect(mockAsaas.createSubscription).toHaveBeenCalled();
   });
 
   // GAP 2 — Falha no provider Asaas: assinante não deve ser persistido no DB
