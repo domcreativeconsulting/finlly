@@ -1,0 +1,67 @@
+name: "🔧 Task"
+description: "Unidade de trabalho técnica que pode ser implementada de forma isolada"
+title: "[TASK] "
+labels: ["task"]
+body:
+  - type: dropdown
+    id: tipo
+    attributes:
+      label: "Tipo de mudança"
+      options:
+        - "🐛 Bug fix"
+        - "✨ Nova feature"
+        - "♻️ Refactoring"
+        - "📝 Documentação"
+        - "🧪 Testes"
+        - "🔧 Configuração / infra"
+    validations:
+      required: true
+
+  - type: textarea
+    id: descricao
+    attributes:
+      label: "Descrição"
+      description: "O que precisa ser feito? Seja específico e objetivo."
+      placeholder: "Implementar validação de CPF no endpoint de cadastro de usuário..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: criterios
+    attributes:
+      label: "Critérios de aceite"
+      description: "Como saberemos que esta task está concluída? Liste condições verificáveis."
+      placeholder: |
+        - [ ] Endpoint valida CPF antes de persistir
+        - [ ] Retorna 422 com mensagem clara para CPF inválido
+        - [ ] Testes unitários cobrindo cenário válido e inválido
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: modulos
+    attributes:
+      label: "Módulos impactados"
+      options:
+        - label: "💳 Billing / Assinaturas (Asaas)"
+        - label: "🔔 Webhooks (Asaas / Evolution)"
+        - label: "📱 WhatsApp Agent"
+        - label: "🔐 Autenticação / Autorização"
+        - label: "📊 Movimentações financeiras"
+        - label: "🗄️ Banco de dados (migrations)"
+
+  - type: checkboxes
+    id: dod
+    attributes:
+      label: "Definition of Done — checklist mínimo"
+      description: "Verifique antes de mover para revisão. Ver [DoD completo](../docs/DEFINITION-OF-DONE.md)."
+      options:
+        - label: "Código implementado e funcionando localmente"
+        - label: "Sem `console.log` ou código de debug"
+        - label: "Sem segredos ou credenciais hardcoded"
+        - label: "Linting passando (`npm run lint`)"
+        - label: "Build passando (`npm run build`)"
+        - label: "Input validado com Zod (quando aplicável)"
+        - label: "Erros tratados com `AppError` e status HTTP correto"
+        - label: "Testes unitários escritos para a funcionalidade"
+        - label: "Todos os testes existentes passando (`npm run test`)"

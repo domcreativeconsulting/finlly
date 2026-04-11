@@ -9,6 +9,7 @@
     "dev": "nodemon src/index.js",
     "build": "echo 'Building...'",
     "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js",
+    "test:coverage": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --coverage",
     "worker": "node src/workers/attachment.worker.js",
     "worker:dev": "nodemon src/workers/attachment.worker.js",
     "worker:whatsapp-diario": "node src/workers/whatsappDiario.worker.js",
@@ -19,7 +20,21 @@
     "moduleNameMapper": {
       "^(\\.{1,2}/.*)\\.js$": "$1"
     },
-    "transform": {}
+    "transform": {},
+    "coverageThresholds": {
+      "global": {
+        "branches": 60,
+        "functions": 60,
+        "lines": 60,
+        "statements": 60
+      }
+    },
+    "collectCoverageFrom": [
+      "src/**/*.js",
+      "!src/index.js",
+      "!src/**/__tests__/**"
+    ],
+    "coverageReporters": ["text", "lcov", "html"]
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1021.0",

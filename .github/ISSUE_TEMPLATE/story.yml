@@ -1,0 +1,92 @@
+name: "📖 Story"
+description: "Entrega de valor para o usuário composta por uma ou mais tasks"
+title: "[STORY] "
+labels: ["story"]
+body:
+  - type: textarea
+    id: objetivo
+    attributes:
+      label: "Objetivo"
+      description: "Qual o valor entregue para o usuário ou para o sistema com esta story?"
+      placeholder: "Como usuário, quero receber uma notificação no WhatsApp quando minha assinatura estiver prestes a vencer..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: escopo
+    attributes:
+      label: "Escopo"
+      description: "O que está incluído e o que não está incluído nesta story?"
+      placeholder: |
+        **Inclui:**
+        - Envio de notificação 3 dias antes do vencimento
+        - Template de mensagem configurável
+
+        **Não inclui:**
+        - Configuração de horário de envio pelo usuário
+    validations:
+      required: true
+
+  - type: textarea
+    id: criterios
+    attributes:
+      label: "Critérios de aceite"
+      description: "Liste as condições verificáveis que indicam que esta story está pronta."
+      placeholder: |
+        - [ ] Notificação enviada automaticamente 3 dias antes do vencimento
+        - [ ] Mensagem inclui nome do plano e data de vencimento
+        - [ ] Envio não duplicado em caso de reprocessamento
+    validations:
+      required: true
+
+  - type: textarea
+    id: testes
+    attributes:
+      label: "Testes necessários"
+      description: "Quais cenários precisam ser cobertos por testes?"
+      placeholder: |
+        - Unitário: lógica de identificação de assinaturas a vencer
+        - Unitário: formatação da mensagem
+        - Integração: envio via Evolution API (mock)
+    validations:
+      required: true
+
+  - type: textarea
+    id: dependencias
+    attributes:
+      label: "Dependências"
+      description: "Esta story depende de outras stories ou serviços externos?"
+      placeholder: "Depende da STORY X.X e do serviço Evolution API estar configurado."
+
+  - type: checkboxes
+    id: modulos
+    attributes:
+      label: "Módulos impactados"
+      options:
+        - label: "💳 Billing / Assinaturas (Asaas)"
+        - label: "🔔 Webhooks (Asaas / Evolution)"
+        - label: "📱 WhatsApp Agent"
+        - label: "🔐 Autenticação / Autorização"
+        - label: "📊 Movimentações financeiras"
+        - label: "🗄️ Banco de dados (migrations)"
+
+  - type: checkboxes
+    id: dod
+    attributes:
+      label: "Definition of Done — checklist de story"
+      description: "Verifique antes de mover para revisão. Ver [DoD completo](../docs/DEFINITION-OF-DONE.md)."
+      options:
+        - label: "Código implementado e funcionando localmente"
+        - label: "Sem `console.log` ou código de debug"
+        - label: "Sem segredos ou credenciais hardcoded"
+        - label: "Linting passando (`npm run lint`)"
+        - label: "Build passando (`npm run build`)"
+        - label: "Input validado com Zod (quando aplicável)"
+        - label: "Erros tratados com `AppError` e status HTTP correto"
+        - label: "Edge cases identificados e tratados"
+        - label: "Testes unitários escritos"
+        - label: "Testes de integração para fluxos críticos"
+        - label: "Todos os testes existentes passando (`npm run test`)"
+        - label: "Logs de auditoria para operações sensíveis (quando aplicável)"
+        - label: "Contrato de rota ou comportamento documentado (quando aplicável)"
+        - label: "PR revisado por ao menos 1 membro do time"
