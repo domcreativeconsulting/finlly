@@ -1,0 +1,74 @@
+name: "🐛 Bug"
+description: "Reportar um comportamento incorreto ou inesperado"
+title: "[BUG] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: descricao
+    attributes:
+      label: "Descrição do bug"
+      description: "Descreva o que está acontecendo de forma clara e objetiva."
+      placeholder: "Ao tentar criar uma movimentação via WhatsApp, o agente retorna erro 500 sem mensagem de erro..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: passos
+    attributes:
+      label: "Passos para reproduzir"
+      description: "Liste os passos necessários para reproduzir o bug."
+      placeholder: |
+        1. Enviar mensagem "registrar gasto de R$ 50 no supermercado" para o bot
+        2. Aguardar resposta
+        3. Verificar que o erro 500 é retornado nos logs
+    validations:
+      required: true
+
+  - type: textarea
+    id: comportamento_esperado
+    attributes:
+      label: "Comportamento esperado"
+      description: "O que deveria acontecer?"
+      placeholder: "O agente deveria registrar a movimentação e responder com confirmação."
+    validations:
+      required: true
+
+  - type: textarea
+    id: comportamento_atual
+    attributes:
+      label: "Comportamento atual"
+      description: "O que está acontecendo?"
+      placeholder: "O agente retorna erro 500 e a movimentação não é registrada."
+    validations:
+      required: true
+
+  - type: textarea
+    id: ambiente
+    attributes:
+      label: "Ambiente"
+      description: "Em qual ambiente o bug ocorre?"
+      placeholder: |
+        - Ambiente: produção / staging / local
+        - Node.js: 20.x
+        - Branch: main
+    validations:
+      required: true
+
+  - type: textarea
+    id: contexto
+    attributes:
+      label: "Contexto adicional"
+      description: "Logs, screenshots, IDs de request, ou qualquer informação adicional relevante."
+      placeholder: "requestId: abc-123, erro nos logs: ..."
+
+  - type: checkboxes
+    id: modulos
+    attributes:
+      label: "Módulo impactado"
+      options:
+        - label: "💳 Billing / Assinaturas (Asaas)"
+        - label: "🔔 Webhooks (Asaas / Evolution)"
+        - label: "📱 WhatsApp Agent"
+        - label: "🔐 Autenticação / Autorização"
+        - label: "📊 Movimentações financeiras"
+        - label: "🗄️ Banco de dados"

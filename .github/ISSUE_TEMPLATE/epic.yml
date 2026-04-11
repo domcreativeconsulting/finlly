@@ -1,0 +1,81 @@
+name: "🚀 Epic"
+description: "Capacidade completa do sistema composta por múltiplas stories"
+title: "[EPIC] "
+labels: ["epic"]
+body:
+  - type: textarea
+    id: objetivo
+    attributes:
+      label: "Objetivo"
+      description: "Qual capacidade do sistema este epic entrega? Qual o impacto no negócio?"
+      placeholder: "Estabelecer a camada de qualidade do Finlly com testes automatizados e critérios objetivos de pronto..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: escopo
+    attributes:
+      label: "Escopo"
+      description: "O que está incluído e o que não está incluído neste epic?"
+      placeholder: |
+        **Inclui:**
+        - Definition of Done para tasks, stories e epics
+        - Testes de billing e webhooks
+        - Cobertura mínima configurada no CI
+
+        **Não inclui:**
+        - Testes de carga
+        - Cobertura de 100%
+    validations:
+      required: true
+
+  - type: textarea
+    id: stories
+    attributes:
+      label: "Stories filhas"
+      description: "Liste as stories que compõem este epic."
+      placeholder: |
+        - [ ] STORY X.1 — ...
+        - [ ] STORY X.2 — ...
+        - [ ] STORY X.3 — ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: requisitos
+    attributes:
+      label: "Requisitos de negócio"
+      description: "Quais são os requisitos de negócio que este epic deve satisfazer?"
+      placeholder: |
+        - Fluxos de billing devem ter cobertura de testes
+        - Critérios de pronto devem ser objetivos e verificáveis
+    validations:
+      required: true
+
+  - type: textarea
+    id: criterios_sucesso
+    attributes:
+      label: "Critérios de sucesso"
+      description: "Como saberemos que este epic foi concluído com sucesso?"
+      placeholder: |
+        - [ ] DoD documentada e aplicada em todos os PRs
+        - [ ] CI passando com cobertura mínima de 60% nos módulos críticos
+        - [ ] Billing, webhooks e WhatsApp cobertos por testes
+    validations:
+      required: true
+
+  - type: textarea
+    id: riscos
+    attributes:
+      label: "Riscos"
+      description: "Quais são os principais riscos deste epic?"
+      placeholder: |
+        - Cobertura atual pode estar abaixo do threshold de 60%
+        - Dependências externas (Asaas, Evolution) podem dificultar testes
+
+  - type: textarea
+    id: dependencias
+    attributes:
+      label: "Dependências"
+      description: "Este epic depende de outros epics ou serviços externos?"
+      placeholder: "Depende do EPIC 04 (Billing) e EPIC 12 (WhatsApp Agent) estarem implementados."

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "📖 Definition of Done"
+    url: https://github.com/domcreativeconsulting/finlly/blob/main/docs/DEFINITION-OF-DONE.md
+    about: "Consulte os critérios de pronto antes de abrir uma issue."
+  - name: "🤝 Guia de contribuição"
+    url: https://github.com/domcreativeconsulting/finlly/blob/main/CONTRIBUTING.md
+    about: "Como contribuir com o projeto Finlly."
