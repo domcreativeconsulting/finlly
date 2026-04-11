@@ -48,6 +48,18 @@ export async function criarAssinatura(usuarioId, { plano, ciclo, formaPagamento,
   });
   if (!usuario) throw AppError.notFound('Usuário não encontrado');
 
+  // Guard: impede criação se já existe assinatura ativa ou pendente
+  const assinaturaExistente = await prisma.assinante.findFirst({
+    where: {
+      usuario_id: usuarioId,
+      deleted_at: null,
+      status: { in: ['ativo', 'pendente'] },
+    },
+  });
+  if (assinaturaExistente) {
+    throw AppError.conflict('Usuário já possui uma assinatura ativa ou pendente');
+  }
+
   let valor = PRECOS[ciclo] ?? PRECOS.mensal;
 
   // Apply coupon if provided
