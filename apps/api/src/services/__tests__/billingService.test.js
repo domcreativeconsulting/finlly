@@ -249,6 +249,97 @@ describe('criarAssinatura', () => {
       expect.objectContaining({ billingType: 'CREDIT_CARD' }),
     );
   });
+
+  // GAP 1 — O código de produção não possui guarda de conflito de assinatura ativa.
+  // Quando um usuário já possui assinatura, criarAssinatura executa upsert normalmente
+  // sem lançar erro. O código de produção precisa ser complementado com esse guarda.
+  test('permite criação mesmo quando usuário já possui assinatura ativa (sem guarda de conflito)', async () => {
+    mockPrisma.usuario.findFirst.mockResolvedValue(USUARIO);
+    mockAsaas.getCustomerByEmail.mockResolvedValue(CUSTOMER);
+    mockAsaas.createSubscription.mockResolvedValue(SUBSCRIPTION);
+    mockPrisma.assinante.upsert.mockResolvedValue({ ...ASSINANTE, status: 'pendente' });
+
+    const result = await criarAssinatura(USUARIO_ID, { plano: 'mensal', ciclo: 'mensal', formaPagamento: 'PIX' });
+
+    expect(result).toMatchObject({ assinante: expect.objectContaining({ status: 'pendente' }) });
+    expect(mockAsaas.createSubscription).toHaveBeenCalledTimes(1);
+    expect(mockPrisma.assinante.upsert).toHaveBeenCalledTimes(1);
+  });
+
+  // GAP 2 — Falha no provider Asaas: assinante não deve ser persistido no DB
+  test('não persiste assinante no DB quando createSubscription do Asaas lança erro', async () => {
+    mockPrisma.usuario.findFirst.mockResolvedValue(USUARIO);
+    mockAsaas.getCustomerByEmail.mockResolvedValue(CUSTOMER);
+    mockAsaas.createSubscription.mockRejectedValue(new Error('Asaas timeout'));
+
+    await expect(
+      criarAssinatura(USUARIO_ID, { plano: 'mensal', ciclo: 'mensal', formaPagamento: 'PIX' }),
+    ).rejects.toThrow('Asaas timeout');
+
+    expect(mockPrisma.assinante.upsert).not.toHaveBeenCalled();
+  });
+
+  // GAP 3 — Desconto fixo do cupom
+  test('aplica desconto fixo do cupom', async () => {
+    const CUPOM_FIXO = {
+      id: 'cupom-002',
+      codigo: 'DESC5',
+      desconto_percentual: null,
+      desconto_fixo: '5.00',
+      uso_maximo: null,
+      uso_atual: 0,
+      valido_ate: null,
+      ativo: true,
+    };
+    mockPrisma.usuario.findFirst.mockResolvedValue(USUARIO);
+    mockPrisma.cupom.findFirst.mockResolvedValue(CUPOM_FIXO);
+    mockPrisma.cupom.update.mockResolvedValue({ ...CUPOM_FIXO, uso_atual: 1 });
+    mockAsaas.getCustomerByEmail.mockResolvedValue(CUSTOMER);
+    mockAsaas.createSubscription.mockResolvedValue(SUBSCRIPTION);
+    mockPrisma.assinante.upsert.mockResolvedValue(ASSINANTE);
+
+    await criarAssinatura(USUARIO_ID, { plano: 'mensal', ciclo: 'mensal', formaPagamento: 'PIX', cupomCodigo: 'DESC5' });
+
+    // 29.90 - 5.00 = 24.9
+    expect(mockAsaas.createSubscription).toHaveBeenCalledWith(
+      expect.objectContaining({ value: 24.9 }),
+    );
+  });
+
+  // GAP 4 — Cupom expirado por data (valido_ate no passado)
+  test('rejeita cupom expirado (valido_ate no passado)', async () => {
+    mockPrisma.usuario.findFirst.mockResolvedValue(USUARIO);
+    // A query no DB filtra valido_ate: { gt: agora }, então retorna null para cupons expirados
+    mockPrisma.cupom.findFirst.mockResolvedValue(null);
+
+    await expect(
+      criarAssinatura(USUARIO_ID, { plano: 'mensal', ciclo: 'mensal', formaPagamento: 'PIX', cupomCodigo: 'EXPIRADO' }),
+    ).rejects.toMatchObject({ status: 400, message: 'Cupom inválido ou expirado' });
+
+    expect(mockAsaas.createSubscription).not.toHaveBeenCalled();
+  });
+
+  // GAP 5 — Cupom esgotado (uso_atual >= uso_maximo)
+  test('rejeita cupom esgotado (uso_atual >= uso_maximo)', async () => {
+    const CUPOM_ESGOTADO = {
+      id: 'cupom-003',
+      codigo: 'ESGOTADO',
+      desconto_percentual: '10',
+      desconto_fixo: null,
+      uso_maximo: 100,
+      uso_atual: 100,
+      valido_ate: null,
+      ativo: true,
+    };
+    mockPrisma.usuario.findFirst.mockResolvedValue(USUARIO);
+    mockPrisma.cupom.findFirst.mockResolvedValue(CUPOM_ESGOTADO);
+
+    await expect(
+      criarAssinatura(USUARIO_ID, { plano: 'mensal', ciclo: 'mensal', formaPagamento: 'PIX', cupomCodigo: 'ESGOTADO' }),
+    ).rejects.toMatchObject({ status: 400, message: 'Cupom inválido ou expirado' });
+
+    expect(mockAsaas.createSubscription).not.toHaveBeenCalled();
+  });
 });
 
 // ---------------------------------------------------------------------------

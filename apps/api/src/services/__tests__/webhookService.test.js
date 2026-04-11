@@ -638,3 +638,111 @@ describe('auditoria de webhook', () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// GAP 6 — Payload malformado (sem campo event)
+// ---------------------------------------------------------------------------
+
+describe('payload malformado', () => {
+  test('payload sem campo event → processa sem lançar erro', async () => {
+    const payload = { id: 'evt_no_event' };
+    const rawBody = Buffer.from(JSON.stringify(payload));
+    const sig = makeSignature(rawBody);
+
+    const result = await processarWebhookAsaas(payload, rawBody, sig);
+
+    expect(result).toEqual({ processed: true, event: undefined });
+    expect(mockPrisma.assinante.update).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// GAP 7 — Assinante não encontrado em eventos de pagamento
+// ---------------------------------------------------------------------------
+
+describe('assinante não encontrado em eventos de pagamento', () => {
+  test('PAYMENT_CONFIRMED sem assinante correspondente → não lança erro', async () => {
+    mockPrisma.assinante.findFirst.mockResolvedValue(null);
+
+    const payload = makePayload('PAYMENT_CONFIRMED');
+    const rawBody = Buffer.from(JSON.stringify(payload));
+    const sig = makeSignature(rawBody);
+
+    const result = await processarWebhookAsaas(payload, rawBody, sig);
+
+    expect(result).toEqual({ processed: true, event: 'PAYMENT_CONFIRMED' });
+    expect(mockPrisma.assinante.update).not.toHaveBeenCalled();
+  });
+
+  test('PAYMENT_OVERDUE sem assinante correspondente → não lança erro', async () => {
+    mockPrisma.assinante.findFirst.mockResolvedValue(null);
+
+    const payload = makePayload('PAYMENT_OVERDUE');
+    const rawBody = Buffer.from(JSON.stringify(payload));
+    const sig = makeSignature(rawBody);
+
+    const result = await processarWebhookAsaas(payload, rawBody, sig);
+
+    expect(result).toEqual({ processed: true, event: 'PAYMENT_OVERDUE' });
+    expect(mockPrisma.assinante.update).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// GAP 8 — Resiliência da auditoria
+// ---------------------------------------------------------------------------
+
+describe('resiliência da auditoria', () => {
+  test('erro em registrarEvento não impede processamento do webhook', async () => {
+    mockRegistrarEvento.mockImplementation(() => {
+      // Attach .catch() before returning so the rejection is handled and
+      // does not produce an unhandledRejection event in the test environment.
+      const p = Promise.reject(new Error('Audit DB down'));
+      p.catch(() => {});
+      return p;
+    });
+    mockPrisma.assinante.findFirst.mockResolvedValue(ASSINANTE);
+
+    const payload = makePayload('PAYMENT_CONFIRMED');
+    const rawBody = Buffer.from(JSON.stringify(payload));
+    const sig = makeSignature(rawBody);
+
+    const result = await processarWebhookAsaas(payload, rawBody, sig);
+
+    expect(result).toEqual({ processed: true, event: 'PAYMENT_CONFIRMED' });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// GAP 9 — Invalidação de cache Redis após eventos de pagamento
+// ---------------------------------------------------------------------------
+
+describe('invalidação de cache Redis', () => {
+  test('PAYMENT_CONFIRMED invalida cache billing:status:{userId}', async () => {
+    mockPrisma.assinante.findFirst.mockResolvedValue(ASSINANTE);
+
+    const payload = makePayload('PAYMENT_CONFIRMED');
+    const rawBody = Buffer.from(JSON.stringify(payload));
+    const sig = makeSignature(rawBody);
+
+    await processarWebhookAsaas(payload, rawBody, sig);
+
+    const { getRedisClient } = await import('../../utils/redisClient.js');
+    const redisClient = await getRedisClient();
+    expect(redisClient.del).toHaveBeenCalledWith(`billing:status:${ASSINANTE.usuario_id}`);
+  });
+
+  test('PAYMENT_OVERDUE invalida cache billing:status:{userId}', async () => {
+    mockPrisma.assinante.findFirst.mockResolvedValue(ASSINANTE);
+
+    const payload = makePayload('PAYMENT_OVERDUE');
+    const rawBody = Buffer.from(JSON.stringify(payload));
+    const sig = makeSignature(rawBody);
+
+    await processarWebhookAsaas(payload, rawBody, sig);
+
+    const { getRedisClient } = await import('../../utils/redisClient.js');
+    const redisClient = await getRedisClient();
+    expect(redisClient.del).toHaveBeenCalledWith(`billing:status:${ASSINANTE.usuario_id}`);
+  });
+});
