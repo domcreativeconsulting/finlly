@@ -8,7 +8,9 @@
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
     "build": "echo 'Building...'",
-    "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js",
+    "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --testPathIgnorePatterns='integration\\.test\\.js'",
+    "test:unit": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --testPathIgnorePatterns='integration\\.test\\.js'",
+    "test:integration": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --testPathPattern='integration\\.test\\.js'",
     "test:coverage": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --coverage",
     "worker": "node src/workers/attachment.worker.js",
     "worker:dev": "nodemon src/workers/attachment.worker.js",
@@ -21,6 +23,7 @@
       "^(\\.{1,2}/.*)\\.js$": "$1"
     },
     "transform": {},
+    "testTimeout": 30000,
     "coverageThresholds": {
       "global": {
         "branches": 60,
