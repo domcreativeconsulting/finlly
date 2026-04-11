@@ -329,6 +329,18 @@ describe('POST /billing/admin/reconciliar', () => {
     expect(res.body.code).toBe('FORBIDDEN');
     expect(mockReconciliarAssinaturas).not.toHaveBeenCalled();
   });
+
+  // GAP 13 — Reconciliação retorna { skipped: true } quando lock já adquirido
+  test('retorna 200 com { skipped: true } quando reconciliarAssinaturas retorna { skipped: true }', async () => {
+    mockReconciliarAssinaturas.mockResolvedValue({ skipped: true });
+
+    const app = makeApp({ role: 'admin' });
+    const res = await request(app, 'POST', '/billing/admin/reconciliar', {});
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ skipped: true });
+    expect(mockReconciliarAssinaturas).toHaveBeenCalledTimes(1);
+  });
 });
 
 // ============================================================
@@ -357,5 +369,17 @@ describe('POST /webhooks/asaas', () => {
     expect(res.status).toBe(401);
     expect(res.body.code).toBe('UNAUTHORIZED');
     expect(res.body.message).toBe('Assinatura inválida');
+  });
+
+  // GAP 12 — Rota de webhook retorna 200 com { received: true } quando processarWebhookAsaas retorna { skipped: true }
+  test('retorna 200 com { received: true } quando processarWebhookAsaas retorna { skipped: true }', async () => {
+    mockProcessarWebhookAsaas.mockResolvedValue({ skipped: true });
+
+    const app = makeApp();
+    const res = await request(app, 'POST', '/webhooks/asaas', { event: 'PAYMENT_RECEIVED', id: 'evt_dup_001' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ received: true });
+    expect(mockProcessarWebhookAsaas).toHaveBeenCalledTimes(1);
   });
 });

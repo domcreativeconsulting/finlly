@@ -65,4 +65,26 @@ describe('requireAtivo', () => {
     expect(next).toHaveBeenCalledTimes(1);
     expect(next).toHaveBeenCalledWith();
   });
+
+  // GAP 10 — status `cancelado` deve permitir acesso (somente bloqueado_inadimplencia bloqueia)
+  test('calls next() without error when user status is cancelado', () => {
+    const req = makeReq({ user: { sub: 'user-5', status: 'cancelado' } });
+    const next = jest.fn();
+
+    requireAtivo(req, {}, next);
+
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(next).toHaveBeenCalledWith();
+  });
+
+  // GAP 11 — req.user existe mas req.user.status é undefined
+  test('calls next() without error when req.user.status is undefined', () => {
+    const req = makeReq({ user: { sub: 'user-6' } });
+    const next = jest.fn();
+
+    requireAtivo(req, {}, next);
+
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(next).toHaveBeenCalledWith();
+  });
 });
