@@ -8,6 +8,7 @@ import { corsMiddleware } from './middleware/cors.js';
 import { securityHeaders } from './middleware/securityHeaders.js';
 import { sanitizeResponse } from './middleware/sanitizeResponse.js';
 import { requestIdMiddleware } from './middleware/requestId.js';
+import { requestContextMiddleware } from './middleware/requestContext.js';
 import { requestLogger } from './middleware/requestLogger.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { csrfProtection } from './middleware/csrfProtection.js';
@@ -75,6 +76,7 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(csrfProtection);
 app.use(requestIdMiddleware);
+app.use(requestContextMiddleware);
 app.use(requestLogger);
 
 app.use(healthRouter);
