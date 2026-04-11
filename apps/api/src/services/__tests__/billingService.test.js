@@ -277,9 +277,9 @@ describe('criarAssinatura', () => {
     expect(mockPrisma.assinante.upsert).not.toHaveBeenCalled();
   });
 
-  test('permite criar assinatura quando a existente está cancelada', async () => {
+  test('permite criar assinatura quando não existe assinatura ativa ou pendente (ex: existente cancelada)', async () => {
     mockPrisma.usuario.findFirst.mockResolvedValue(USUARIO);
-    // Guard retorna null: nenhuma assinatura ativa ou pendente
+    // Guard retorna null: nenhuma assinatura com status ativo/pendente encontrada
     mockPrisma.assinante.findFirst.mockResolvedValue(null);
     mockAsaas.getCustomerByEmail.mockResolvedValue(CUSTOMER);
     mockAsaas.createSubscription.mockResolvedValue(SUBSCRIPTION);
