@@ -144,10 +144,17 @@ jobs:
         run: npm run prepare
 
       - name: Apply migrations
-        run: npx prisma db push --schema=prisma/schema.prisma --skip-generate
+        run: npx prisma db push --schema=prisma/schema.prisma --skip-generate --accept-data-loss
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/finlly_test
 
       - name: Run integration tests
         run: npm run test:integration --workspace=apps/api
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/finlly_test
+          DATABASE_TEST_URL: postgresql://test:test@localhost:5432/finlly_test
+          ASAAS_WEBHOOK_SECRET: test_webhook_secret_32_chars_min!
+          NODE_ENV: test
 
   build:
     name: Build
