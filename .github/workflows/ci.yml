@@ -116,6 +116,11 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
+          env:
+      DATABASE_URL: postgresql://test:test@localhost:5432/finlly_test
+      DATABASE_TEST_URL: postgresql://test:test@localhost:5432/finlly_test
+      NODE_ENV: test
+          
     steps:
       - uses: actions/checkout@v4
 
@@ -142,9 +147,7 @@ jobs:
         run: echo "DATABASE_URL=postgresql://test:test@localhost:5432/finlly_test" > .env
 
       - name: Apply migrations
-        run: npx prisma db push --schema=prisma/schema.prisma --skip-generate --accept-data-loss --url="postgresql://test:test@localhost:5432/finlly_test"
-        env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/finlly_test
+        run: DATABASE_URL=postgresql://test:test@localhost:5432/finlly_test npx prisma db push --schema=prisma/schema.prisma --skip-generate --accept-data-loss     
 
       - name: Run integration tests
         run: npm run test:integration --workspace=apps/api
