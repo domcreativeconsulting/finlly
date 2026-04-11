@@ -116,11 +116,10 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
-          env:
+    env:
       DATABASE_URL: postgresql://test:test@localhost:5432/finlly_test
       DATABASE_TEST_URL: postgresql://test:test@localhost:5432/finlly_test
       NODE_ENV: test
-          
     steps:
       - uses: actions/checkout@v4
 
@@ -143,19 +142,13 @@ jobs:
       - name: Prepare (setup husky)
         run: npm run prepare
 
-      - name: Create .env for Prisma
-        run: echo "DATABASE_URL=postgresql://test:test@localhost:5432/finlly_test" > .env
-
       - name: Apply migrations
-        run: DATABASE_URL=postgresql://test:test@localhost:5432/finlly_test npx prisma db push --schema=prisma/schema.prisma --skip-generate --accept-data-loss     
+        run: DATABASE_URL=postgresql://test:test@localhost:5432/finlly_test npx prisma db push --schema=prisma/schema.prisma --skip-generate --accept-data-loss
 
       - name: Run integration tests
         run: npm run test:integration --workspace=apps/api
         env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/finlly_test
-          DATABASE_TEST_URL: postgresql://test:test@localhost:5432/finlly_test
           ASAAS_WEBHOOK_SECRET: test_webhook_secret_32_chars_min!
-          NODE_ENV: test
 
   build:
     name: Build
