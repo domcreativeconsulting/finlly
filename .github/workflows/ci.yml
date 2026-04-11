@@ -143,10 +143,7 @@ jobs:
         run: npm run prepare
 
       - name: Apply migrations
-        run: |
-          echo "DATABASE_URL=postgresql://test:test@localhost:5432/finlly_test" > .env
-          echo "DATABASE_URL=postgresql://test:test@localhost:5432/finlly_test" > prisma/.env
-          npx prisma db push --schema=prisma/schema.prisma --skip-generate --accept-data-loss
+        run: npx prisma db push --schema=prisma/schema.prisma --skip-generate --accept-data-loss --url="postgresql://test:test@localhost:5432/finlly_test"
 
       - name: Run integration tests
         run: npm run test:integration --workspace=apps/api
