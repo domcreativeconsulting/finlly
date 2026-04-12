@@ -87,6 +87,7 @@ export async function limparDados(prisma) {
 
   if (userIds.length > 0) {
     await prisma.movimentacaoCaixa.deleteMany({ where: { usuario_id: { in: userIds } } });
+    // Silently ignore if table is absent in test environment or no rows exist
     await prisma.contaPagar.deleteMany({ where: { usuario_id: { in: userIds } } }).catch(() => {});
     await prisma.conta.deleteMany({ where: { usuario_id: { in: userIds } } });
   }
