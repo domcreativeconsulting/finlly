@@ -1,0 +1,16 @@
+{
+  "event": "messages.upsert",
+  "instance": "finlly-prod",
+  "data": {
+    "key": {
+      "remoteJid": "5511999990002@s.whatsapp.net",
+      "fromMe": false,
+      "id": "FIXTURE_MSG_INCOME_001"
+    },
+    "messageTimestamp": 1700000000,
+    "pushName": "Maria Costa",
+    "message": {
+      "conversation": "recebi 2000 do cliente"
+    }
+  }
+}

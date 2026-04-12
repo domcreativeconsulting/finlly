@@ -1,0 +1,20 @@
+{
+  "event": "messages.upsert",
+  "instance": "finlly-prod",
+  "data": {
+    "key": {
+      "remoteJid": "5511999990009@s.whatsapp.net",
+      "fromMe": false,
+      "id": "FIXTURE_MSG_IMAGE_001"
+    },
+    "messageTimestamp": 1700000000,
+    "pushName": "Usuário Imagem",
+    "message": {
+      "imageMessage": {
+        "url": "https://mmg.whatsapp.net/v/fake-image-url",
+        "mimetype": "image/jpeg",
+        "caption": "nota fiscal"
+      }
+    }
+  }
+}

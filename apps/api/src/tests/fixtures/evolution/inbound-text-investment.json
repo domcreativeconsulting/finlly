@@ -1,0 +1,16 @@
+{
+  "event": "messages.upsert",
+  "instance": "finlly-prod",
+  "data": {
+    "key": {
+      "remoteJid": "5511999990005@s.whatsapp.net",
+      "fromMe": false,
+      "id": "FIXTURE_MSG_INVESTMENT_001"
+    },
+    "messageTimestamp": 1700000000,
+    "pushName": "Pedro Alves",
+    "message": {
+      "conversation": "investi 500 no tesouro direto"
+    }
+  }
+}

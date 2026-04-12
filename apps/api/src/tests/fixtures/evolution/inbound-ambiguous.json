@@ -1,0 +1,16 @@
+{
+  "event": "messages.upsert",
+  "instance": "finlly-prod",
+  "data": {
+    "key": {
+      "remoteJid": "5511999990007@s.whatsapp.net",
+      "fromMe": false,
+      "id": "FIXTURE_MSG_AMBIGUOUS_001"
+    },
+    "messageTimestamp": 1700000000,
+    "pushName": "Usuário Ambíguo",
+    "message": {
+      "conversation": "gastei ontem"
+    }
+  }
+}
