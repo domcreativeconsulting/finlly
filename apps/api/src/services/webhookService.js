@@ -277,7 +277,7 @@ export async function processarWebhookAsaas(payload, rawBody, signatureHeader) {
       data: {
         provider: 'asaas',
         event_id: String(payload.id),
-        event_type: payload.event,
+        event_type: payload.event ?? 'UNKNOWN',
         payload,
         payload_hash: payloadHash,
         processado: false,
