@@ -12,7 +12,6 @@ function makeReq() {
 }
 
 function makeRes() {
-  let lastBody = null;
   const res = {
     _sentBody: null,
     json(body) {
