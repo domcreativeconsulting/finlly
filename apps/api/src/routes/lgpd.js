@@ -45,7 +45,7 @@ router.delete(
   jwtAuthMiddleware,
   requireAtivo,
   validate(confirmDeleteSchema),
-  auditarAcao('conta_usuario_excluida', (req) => ({ motivo: 'solicitacao_lgpd' })),
+  auditarAcao('conta_usuario_excluida', (_req) => ({ motivo: 'solicitacao_lgpd' })),
   async (req, res, next) => {
     try {
       const usuarioId = req.user.sub;
