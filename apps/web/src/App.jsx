@@ -22,6 +22,7 @@ import MetasPage from './pages/MetasPage.jsx';
 import AnexosPage from './pages/AnexosPage.jsx';
 import RelatoriosPage from './pages/RelatoriosPage.jsx';
 import OfflineBanner from './components/OfflineBanner.jsx';
+import LandingPage from './pages/LandingPage.jsx';
 
 export default function App() {
   return (
@@ -96,7 +97,7 @@ export default function App() {
           path="/relatorios"
           element={<ProtectedRoute element={<RelatoriosPage />} />}
         />
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/" element={<LandingPage />} />
         <Route path="/logout" element={<Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
