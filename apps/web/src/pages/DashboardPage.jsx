@@ -445,7 +445,7 @@ export default function DashboardPage() {
 
         {/* Main content */}
         <InadimplenteGuard>
-          <main style={{ flex: 1, padding: '28px 28px 40px' }}>
+          <main style={{ flex: 1, padding: '28px 32px 40px' }}>
 
             {/* Cache notice when offline */}
             {!isOnline && cacheMensalInfo && (
@@ -458,8 +458,8 @@ export default function DashboardPage() {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-                gap: '16px',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: '20px',
                 marginBottom: '28px',
               }}
             >
@@ -492,7 +492,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Bottom sections */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(420px, 1fr))', gap: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
 
               {/* Evolução mensal */}
               <div
@@ -502,6 +502,7 @@ export default function DashboardPage() {
                   boxShadow: shadows.sm,
                   padding: '24px',
                   position: 'relative',
+                  minHeight: '280px',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
@@ -533,6 +534,7 @@ export default function DashboardPage() {
                   borderRadius: radius.lg,
                   boxShadow: shadows.sm,
                   padding: '24px',
+                  minHeight: '280px',
                 }}
               >
                 <h2 style={{ margin: '0 0 16px', fontSize: typography.sizes['2xl'], fontWeight: typography.weights.semibold, color: colors.neutral800 }}>
