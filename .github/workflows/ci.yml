@@ -143,10 +143,9 @@ jobs:
         run: npm run prepare
 
       - name: Apply migrations
-        run: |
-          mv prisma.config.ts prisma.config.ts.bak
-          DATABASE_URL=postgresql://test:test@localhost:5432/finlly_test npx prisma db push --schema=prisma/schema.prisma --skip-generate --accept-data-loss
-          mv prisma.config.ts.bak prisma.config.ts
+        run: npx prisma db push --accept-data-loss
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/finlly_test
 
       - name: Run integration tests
         run: npm run test:integration --workspace=apps/api
