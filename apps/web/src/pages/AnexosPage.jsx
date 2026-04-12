@@ -901,8 +901,10 @@ export default function AnexosPage() {
           </InadimplenteGuard>
 
           {/* Footer */}
-          <div style={s.footer}>
-            Finlly • painel financeiro pessoal — {new Date().getFullYear()}
+          <div style={{ padding: '0 28px 28px' }}>
+            <div style={s.footer}>
+              Finlly • painel financeiro pessoal — {new Date().getFullYear()}
+            </div>
           </div>
         </div>
       </div>
@@ -1052,7 +1054,6 @@ const s = {
     flex: 1,
   },
   footer: {
-    marginTop: '50px',
     backgroundColor: '#33528a',
     color: '#FFFFFF',
     textAlign: 'center',
