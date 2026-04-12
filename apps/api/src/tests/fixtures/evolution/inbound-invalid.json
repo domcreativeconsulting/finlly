@@ -1,0 +1,10 @@
+{
+  "event": "messages.upsert",
+  "instance": "finlly-prod",
+  "data": {
+    "key": {
+      "remoteJid": "",
+      "fromMe": false
+    }
+  }
+}

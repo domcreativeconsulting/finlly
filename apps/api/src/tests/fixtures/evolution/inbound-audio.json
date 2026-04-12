@@ -1,0 +1,20 @@
+{
+  "event": "messages.upsert",
+  "instance": "finlly-prod",
+  "data": {
+    "key": {
+      "remoteJid": "5511999990008@s.whatsapp.net",
+      "fromMe": false,
+      "id": "FIXTURE_MSG_AUDIO_001"
+    },
+    "messageTimestamp": 1700000000,
+    "pushName": "Usuário Áudio",
+    "message": {
+      "audioMessage": {
+        "url": "https://mmg.whatsapp.net/v/fake-audio-url",
+        "mimetype": "audio/ogg; codecs=opus",
+        "seconds": 5
+      }
+    }
+  }
+}

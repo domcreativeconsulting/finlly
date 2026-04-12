@@ -1,0 +1,16 @@
+{
+  "event": "messages.upsert",
+  "instance": "finlly-prod",
+  "data": {
+    "key": {
+      "remoteJid": "5511999990004@s.whatsapp.net",
+      "fromMe": false,
+      "id": "FIXTURE_MSG_BILL_001"
+    },
+    "messageTimestamp": 1700000000,
+    "pushName": "Ana Paula",
+    "message": {
+      "conversation": "tenho uma conta de luz de 150 vencendo dia 15"
+    }
+  }
+}

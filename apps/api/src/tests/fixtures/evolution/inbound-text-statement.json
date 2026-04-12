@@ -1,0 +1,16 @@
+{
+  "event": "messages.upsert",
+  "instance": "finlly-prod",
+  "data": {
+    "key": {
+      "remoteJid": "5511999990003@s.whatsapp.net",
+      "fromMe": false,
+      "id": "FIXTURE_MSG_STATEMENT_001"
+    },
+    "messageTimestamp": 1700000000,
+    "pushName": "Carlos Lima",
+    "message": {
+      "conversation": "extrato do mês"
+    }
+  }
+}

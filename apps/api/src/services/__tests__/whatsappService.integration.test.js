@@ -78,110 +78,16 @@ afterAll(async () => {
 });
 
 // ---------------------------------------------------------------------------
-// Fixtures & helpers
+// Harness & factory imports
 // ---------------------------------------------------------------------------
-
-const TEST_EMAIL_PREFIX = 'integration_wpp_test_';
-const TEST_WHATSAPP_PREFIX = '5511999990';
-
-/** Returns a unique string suffix to avoid collisions between parallel runs. */
-function uid(tag = '') {
-  return `${tag}${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-}
-
-/**
- * Builds an Evolution API webhook payload.
- *
- * @param {object} opts
- * @param {string} [opts.phone='5511999990001']
- * @param {string} [opts.text='']
- * @param {string|null} [opts.messageId]
- */
-function makeEvolutionPayload({ phone = '5511999990001', text = '', messageId = null } = {}) {
-  return {
-    event: 'messages.upsert',
-    instance: 'finlly-test',
-    data: {
-      key: {
-        remoteJid: `${phone}@s.whatsapp.net`,
-        fromMe: false,
-        id: messageId ?? `msg_wpp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-      },
-      messageTimestamp: Math.floor(Date.now() / 1000),
-      pushName: 'Teste Integration',
-      message: { conversation: text },
-    },
-  };
-}
-
-/**
- * Creates a Usuario row in the test database.
- *
- * @param {import('@prisma/client').PrismaClient} prisma
- * @param {object} [overrides]
- */
-async function criarUsuario(prisma, { whatsapp = '5511999990001', ...overrides } = {}) {
-  return prisma.usuario.create({
-    data: {
-      nome: 'Integration WPP Test User',
-      email: `${TEST_EMAIL_PREFIX}${uid()}@test.com`,
-      senha_hash: 'hash_test_not_real_integration',
-      status: 'ativo',
-      email_verificado: true,
-      whatsapp,
-      ...overrides,
-    },
-  });
-}
-
-/**
- * Creates a Conta (financial account) row linked to the given usuarioId.
- *
- * @param {import('@prisma/client').PrismaClient} prisma
- * @param {string} usuarioId
- * @param {object} [overrides]
- */
-async function criarConta(prisma, usuarioId, overrides = {}) {
-  return prisma.conta.create({
-    data: {
-      usuario_id: usuarioId,
-      nome: 'Conta Corrente Teste',
-      tipo: 'corrente',
-      status: 'ativa',
-      incluir_total: true,
-      ...overrides,
-    },
-  });
-}
-
-/**
- * Removes all rows created by integration tests, respecting FK constraints.
- * Runs before each test to guarantee a clean slate.
- *
- * @param {import('@prisma/client').PrismaClient} prisma
- */
-async function limparDados(prisma) {
-  const testUsers = await prisma.usuario.findMany({
-    where: { email: { startsWith: TEST_EMAIL_PREFIX } },
-    select: { id: true },
-  });
-  const userIds = testUsers.map((u) => u.id);
-
-  if (userIds.length > 0) {
-    // Delete in FK-safe order
-    await prisma.movimentacaoCaixa.deleteMany({ where: { usuario_id: { in: userIds } } });
-    await prisma.conta.deleteMany({ where: { usuario_id: { in: userIds } } });
-  }
-
-  // whatsapp_logs: may reference users but onDelete=SetNull — delete regardless
-  await prisma.whatsappLog.deleteMany({
-    where: { telefone: { startsWith: TEST_WHATSAPP_PREFIX } },
-  });
-
-  if (userIds.length > 0) {
-    await prisma.usuario.deleteMany({ where: { id: { in: userIds } } });
-  }
-}
+import {
+  criarUsuario,
+  criarConta,
+  limparDados,
+  runScenario,
+  assert,
+} from '../../tests/harness/whatsappFlowHarness.js';
+import { makeTextPayload } from '../../tests/factories/evolutionPayloadFactory.js';
 
 // Clean slate before every test
 beforeEach(async () => {
@@ -199,37 +105,17 @@ describe('Fluxo 1 — Despesa ponta a ponta (CREATE_EXPENSE)', () => {
     const usuario = await criarUsuario(testPrisma, { whatsapp: phone });
     await criarConta(testPrisma, usuario.id);
 
-    const payload = makeEvolutionPayload({ phone, text: 'gastei 50 no almoço' });
-    await processarMensagemRecebida(payload);
+    const payload = makeTextPayload({ phone, text: 'gastei 50 no almoço' });
+    const ctx = { prisma: testPrisma, processarMensagemRecebida, mockSendText };
+    const result = await runScenario(ctx, payload, { phone, userId: usuario.id });
 
-    // Movimentação criada no banco
-    const movs = await testPrisma.movimentacaoCaixa.findMany({
-      where: { usuario_id: usuario.id },
-    });
-    expect(movs).toHaveLength(1);
-    expect(movs[0].tipo).toBe('saida');
-    expect(Number(movs[0].valor)).toBe(50);
-    expect(movs[0].descricao).toBeTruthy();
-
-    // Log INBOUND criado
-    const logs = await testPrisma.whatsappLog.findMany({
-      where: { telefone: phone },
-      orderBy: { id: 'asc' },
-    });
-    const inbound = logs.find((l) => l.direcao === 'entrada');
-    expect(inbound).toBeDefined();
-    expect(inbound.usuario_id).toBe(usuario.id);
-
-    // Log OUTBOUND criado
-    const outbound = logs.find((l) => l.direcao === 'saida');
-    expect(outbound).toBeDefined();
-
-    // sendText chamado
-    expect(mockSendText).toHaveBeenCalled();
-
-    // Resposta não é vazia
-    const call = mockSendText.mock.calls[0];
-    expect(call[1]).toBeTruthy();
+    assert.oneMovimentacao(result.movs, 'saida', 50);
+    expect(result.movs[0].descricao).toBeTruthy();
+    assert.hasInboundLog(result.logs);
+    assert.inboundLogUserId(result.logs, usuario.id);
+    assert.hasOutboundLog(result.logs);
+    assert.sendTextCalled(result.sendTextCalls);
+    expect(result.sendTextCalls[0][1]).toBeTruthy();
   });
 });
 
@@ -243,24 +129,14 @@ describe('Fluxo 2 — Receita ponta a ponta (CREATE_INCOME)', () => {
     const usuario = await criarUsuario(testPrisma, { whatsapp: phone });
     await criarConta(testPrisma, usuario.id);
 
-    const payload = makeEvolutionPayload({ phone, text: 'recebi 2000 do cliente' });
-    await processarMensagemRecebida(payload);
+    const payload = makeTextPayload({ phone, text: 'recebi 2000 do cliente' });
+    const ctx = { prisma: testPrisma, processarMensagemRecebida, mockSendText };
+    const result = await runScenario(ctx, payload, { phone, userId: usuario.id });
 
-    // Movimentação criada com tipo 'entrada'
-    const movs = await testPrisma.movimentacaoCaixa.findMany({
-      where: { usuario_id: usuario.id },
-    });
-    expect(movs).toHaveLength(1);
-    expect(movs[0].tipo).toBe('entrada');
-    expect(Number(movs[0].valor)).toBe(2000);
-
-    // Logs INBOUND e OUTBOUND criados
-    const logs = await testPrisma.whatsappLog.findMany({ where: { telefone: phone } });
-    expect(logs.some((l) => l.direcao === 'entrada')).toBe(true);
-    expect(logs.some((l) => l.direcao === 'saida')).toBe(true);
-
-    // sendText chamado
-    expect(mockSendText).toHaveBeenCalled();
+    assert.oneMovimentacao(result.movs, 'entrada', 2000);
+    assert.hasInboundLog(result.logs);
+    assert.hasOutboundLog(result.logs);
+    assert.sendTextCalled(result.sendTextCalls);
   });
 });
 
@@ -274,21 +150,13 @@ describe('Fluxo 3 — Consulta de saldo (GET_BALANCE)', () => {
     const usuario = await criarUsuario(testPrisma, { whatsapp: phone });
     await criarConta(testPrisma, usuario.id);
 
-    const payload = makeEvolutionPayload({ phone, text: 'quanto tenho em caixa' });
-    await processarMensagemRecebida(payload);
+    const payload = makeTextPayload({ phone, text: 'quanto tenho em caixa' });
+    const ctx = { prisma: testPrisma, processarMensagemRecebida, mockSendText };
+    const result = await runScenario(ctx, payload, { phone, userId: usuario.id });
 
-    // NENHUMA movimentação criada
-    const movs = await testPrisma.movimentacaoCaixa.findMany({
-      where: { usuario_id: usuario.id },
-    });
-    expect(movs).toHaveLength(0);
-
-    // sendText chamado
-    expect(mockSendText).toHaveBeenCalled();
-
-    // Log INBOUND criado
-    const logs = await testPrisma.whatsappLog.findMany({ where: { telefone: phone } });
-    expect(logs.some((l) => l.direcao === 'entrada')).toBe(true);
+    assert.noMovimentacoes(result.movs);
+    assert.sendTextCalled(result.sendTextCalls);
+    assert.hasInboundLog(result.logs);
   });
 });
 
@@ -300,20 +168,18 @@ describe('Fluxo 4 — Intenção desconhecida (UNKNOWN)', () => {
   test('não cria movimentação, chama sendText com ajuda, e não lança erro', async () => {
     const phone = '5511999990004';
 
-    const payload = makeEvolutionPayload({ phone, text: 'oi tudo bem' });
+    const payload = makeTextPayload({ phone, text: 'oi tudo bem' });
+    const ctx = { prisma: testPrisma, processarMensagemRecebida, mockSendText };
 
-    // Não deve lançar erro
-    await expect(processarMensagemRecebida(payload)).resolves.not.toThrow();
+    // Não deve lançar erro — runScenario propagaria qualquer exceção
+    const result = await runScenario(ctx, payload, { phone });
 
-    // NENHUMA movimentação criada (sem usuário vinculado, sem conta)
-    const logs = await testPrisma.whatsappLog.findMany({ where: { telefone: phone } });
     // Log INBOUND criado com usuario_id=null — UNKNOWN never resolves a user
-    expect(logs.some((l) => l.direcao === 'entrada')).toBe(true);
-    const inbound = logs.find((l) => l.direcao === 'entrada');
-    expect(inbound.usuario_id).toBeNull();
+    assert.hasInboundLog(result.logs);
+    assert.inboundLogUserId(result.logs, null);
 
     // sendText chamado (resposta de ajuda)
-    expect(mockSendText).toHaveBeenCalled();
+    assert.sendTextCalled(result.sendTextCalls);
   });
 });
 
@@ -327,19 +193,14 @@ describe('Fluxo 5 — Mensagem ambígua / dados insuficientes', () => {
     const usuario = await criarUsuario(testPrisma, { whatsapp: phone });
     await criarConta(testPrisma, usuario.id);
 
-    const payload = makeEvolutionPayload({ phone, text: 'gastei ontem' });
+    const payload = makeTextPayload({ phone, text: 'gastei ontem' });
+    const ctx = { prisma: testPrisma, processarMensagemRecebida, mockSendText };
 
-    // Não deve lançar erro
-    await expect(processarMensagemRecebida(payload)).resolves.not.toThrow();
+    // Não deve lançar erro — runScenario propagaria qualquer exceção
+    const result = await runScenario(ctx, payload, { phone, userId: usuario.id });
 
-    // NENHUMA movimentação criada
-    const movs = await testPrisma.movimentacaoCaixa.findMany({
-      where: { usuario_id: usuario.id },
-    });
-    expect(movs).toHaveLength(0);
-
-    // sendText chamado (resposta de "valor não identificado")
-    expect(mockSendText).toHaveBeenCalled();
+    assert.noMovimentacoes(result.movs);
+    assert.sendTextCalled(result.sendTextCalls);
   });
 });
 
@@ -352,21 +213,14 @@ describe('Fluxo 6 — Telefone sem vínculo', () => {
     // Phone in the test prefix range but not linked to any user
     const phone = '5511999990099';
 
-    const payload = makeEvolutionPayload({ phone, text: 'gastei 50 no almoço' });
-    await processarMensagemRecebida(payload);
+    const payload = makeTextPayload({ phone, text: 'gastei 50 no almoço' });
+    const ctx = { prisma: testPrisma, processarMensagemRecebida, mockSendText };
+    const result = await runScenario(ctx, payload, { phone });
 
-    // NENHUMA movimentação criada (no user linked, so no movimentacaoCaixa)
-    const logs = await testPrisma.whatsappLog.findMany({ where: { telefone: phone } });
-    expect(logs.length).toBeGreaterThan(0);
-
-    // sendText chamado (resposta de número não vinculado)
-    expect(mockSendText).toHaveBeenCalled();
-
-    // Log INBOUND criado com usuario_id=null e status='sem_usuario'
-    const inbound = logs.find((l) => l.direcao === 'entrada');
-    expect(inbound).toBeDefined();
-    expect(inbound.usuario_id).toBeNull();
-    expect(inbound.status).toBe('sem_usuario');
+    expect(result.logs.length).toBeGreaterThan(0);
+    assert.sendTextCalled(result.sendTextCalls);
+    assert.inboundLogStatus(result.logs, 'sem_usuario');
+    assert.inboundLogUserId(result.logs, null);
   });
 });
 
@@ -378,20 +232,15 @@ describe('Fluxo 7 — Intent válida mas sem conta financeira', () => {
   test('usuário sem conta: não cria movimentação, chama sendText com erro, não lança erro', async () => {
     const phone = '5511999990007';
     // Criar usuário SEM conta financeira
-    await criarUsuario(testPrisma, { whatsapp: phone });
+    const usuario = await criarUsuario(testPrisma, { whatsapp: phone });
 
-    const payload = makeEvolutionPayload({ phone, text: 'gastei 50 no almoço' });
+    const payload = makeTextPayload({ phone, text: 'gastei 50 no almoço' });
+    const ctx = { prisma: testPrisma, processarMensagemRecebida, mockSendText };
 
-    // Não deve lançar erro
-    await expect(processarMensagemRecebida(payload)).resolves.not.toThrow();
+    // Não deve lançar erro — runScenario propagaria qualquer exceção
+    const result = await runScenario(ctx, payload, { phone, userId: usuario.id });
 
-    // NENHUMA movimentação criada
-    const movs = await testPrisma.movimentacaoCaixa.findMany({
-      where: { descricao: { contains: 'almo' } },
-    });
-    expect(movs).toHaveLength(0);
-
-    // sendText chamado (resposta de erro/sem conta)
-    expect(mockSendText).toHaveBeenCalled();
+    assert.noMovimentacoes(result.movs);
+    assert.sendTextCalled(result.sendTextCalls);
   });
 });

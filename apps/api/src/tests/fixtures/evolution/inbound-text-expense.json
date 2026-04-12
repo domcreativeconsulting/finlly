@@ -1,0 +1,16 @@
+{
+  "event": "messages.upsert",
+  "instance": "finlly-prod",
+  "data": {
+    "key": {
+      "remoteJid": "5511999990001@s.whatsapp.net",
+      "fromMe": false,
+      "id": "FIXTURE_MSG_EXPENSE_001"
+    },
+    "messageTimestamp": 1700000000,
+    "pushName": "João Silva",
+    "message": {
+      "conversation": "gastei 50 no almoço"
+    }
+  }
+}
