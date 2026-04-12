@@ -13,6 +13,8 @@
  * @module whatsappFlowHarness
  */
 
+import { expect } from '@jest/globals';
+
 const TEST_EMAIL_PREFIX = 'harness_wpp_';
 const TEST_WHATSAPP_PREFIX = '5511999990';
 
