@@ -1,5 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faBolt, faLock, faComment, faCreditCard, faBullseye, faPaperclip,
+  faClipboardList, faChartBar, faCircleCheck, faRocket, faBell, faShield,
+  faChartLine, faCheck, faQuoteLeft, faPlus, faMinus, faBars, faXmark, faArrowRight,
+} from '@fortawesome/free-solid-svg-icons';
+import logoImg from '../assets/logo.png';
 
 const colors = {
   bg: '#0d1117',
@@ -23,42 +30,42 @@ const tickerItems = [
 
 const features = [
   {
-    icon: '💳',
+    faIcon: faCreditCard,
     title: 'Contas e vencimentos',
     desc: 'Centralize despesas fixas e variáveis com linha do tempo para vencer no prazo certo.',
   },
   {
-    icon: '🎯',
+    faIcon: faBullseye,
     title: 'Metas e aportes',
     desc: 'Defina objetivo, valor e prazo. A Finlly te conduz em micro-ações executáveis.',
   },
   {
-    icon: '📎',
+    faIcon: faPaperclip,
     title: 'Anexos inteligentes',
     desc: 'Comprovantes e extratos organizados por contexto para consulta rápida e segura.',
   },
   {
-    icon: '💬',
+    faIcon: faComment,
     title: 'Entrada pelo WhatsApp',
     desc: 'Você fala naturalmente, a Finlly interpreta e transforma em execução concreta.',
   },
   {
-    icon: '📋',
+    faIcon: faClipboardList,
     title: 'CRM financeiro pessoal',
     desc: 'Histórico das decisões e tarefas para manter constância ao longo do ano.',
   },
   {
-    icon: '📊',
+    faIcon: faChartBar,
     title: 'Revisão mensal guiada',
     desc: 'Análise de desempenho com ajustes de rota para você continuar evoluindo.',
   },
 ];
 
 const metodoCards = [
-  { icon: '🚀', title: 'Onboarding rápido', desc: 'Primeiras contas e metas em menos de 10 minutos.' },
-  { icon: '🔔', title: 'Alertas acionáveis', desc: 'Notificação com ação prática, sem ruído.' },
-  { icon: '🔒', title: 'Privacidade', desc: 'Processos e camadas de segurança para dados pessoais.' },
-  { icon: '📈', title: 'Evolução contínua', desc: 'Ajustes táticos para bater metas sem sufoco.' },
+  { faIcon: faRocket, title: 'Onboarding rápido', desc: 'Primeiras contas e metas em menos de 10 minutos.' },
+  { faIcon: faBell, title: 'Alertas acionáveis', desc: 'Notificação com ação prática, sem ruído.' },
+  { faIcon: faShield, title: 'Privacidade', desc: 'Processos e camadas de segurança para dados pessoais.' },
+  { faIcon: faChartLine, title: 'Evolução contínua', desc: 'Ajustes táticos para bater metas sem sufoco.' },
 ];
 
 const testimonials = [
@@ -131,8 +138,7 @@ export default function LandingPage() {
         padding: '0 32px', height: '64px',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ fontSize: '22px' }}>⚡</span>
-          <span style={{ fontWeight: 800, fontSize: '20px', color: colors.white, letterSpacing: '-0.5px' }}>Finlly</span>
+          <img src={logoImg} alt="Finlly" style={{ height: '32px' }} />
         </div>
         <div className="nav-links-desktop" style={{ display: 'flex', gap: '28px' }}>
           {['Recursos', 'Método', 'Planos', 'Dúvidas'].map((label) => (
@@ -167,7 +173,7 @@ export default function LandingPage() {
           }}
           aria-label="Menu"
         >
-          {mobileMenuOpen ? '✕' : '☰'}
+          {mobileMenuOpen ? <FontAwesomeIcon icon={faXmark} /> : <FontAwesomeIcon icon={faBars} />}
         </button>
       </nav>
 
@@ -211,7 +217,7 @@ export default function LandingPage() {
               background: 'rgba(200,241,53,0.1)', border: `1px solid rgba(200,241,53,0.25)`,
               borderRadius: '100px', padding: '6px 14px', marginBottom: '28px',
             }}>
-              <span style={{ fontSize: '13px' }}>⚡</span>
+              <FontAwesomeIcon icon={faBolt} style={{ fontSize: '13px' }} />
               <span style={{ fontSize: '12px', fontWeight: 700, color: colors.accent, letterSpacing: '0.06em' }}>
                 NOVA GERAÇÃO DE ORGANIZAÇÃO FINANCEIRA PESSOAL
               </span>
@@ -232,7 +238,7 @@ export default function LandingPage() {
                 color: '#0d1117', textDecoration: 'none', fontSize: '15px', fontWeight: 700,
                 display: 'inline-flex', alignItems: 'center', gap: '6px',
               }} className="btn-accent">
-                Começar agora →
+                Começar agora <FontAwesomeIcon icon={faArrowRight} style={{ marginLeft: '6px' }} />
               </Link>
               <a href="#recursos" style={{
                 padding: '13px 26px', border: `1.5px solid rgba(255,255,255,0.25)`, borderRadius: '10px',
@@ -244,12 +250,12 @@ export default function LandingPage() {
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
               {[
-                { icon: '🔒', label: 'Políticas LGPD' },
-                { icon: '💬', label: 'Fluxo nativo no WhatsApp' },
-                { icon: '⚡', label: 'Ação em segundos' },
-              ].map(({ icon, label }) => (
+                { faIcon: faLock, label: 'Políticas LGPD' },
+                { faIcon: faComment, label: 'Fluxo nativo no WhatsApp' },
+                { faIcon: faBolt, label: 'Ação em segundos' },
+              ].map(({ faIcon, label }) => (
                 <span key={label} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: colors.muted }}>
-                  <span>{icon}</span>{label}
+                  <FontAwesomeIcon icon={faIcon} />{label}
                 </span>
               ))}
             </div>
@@ -355,7 +361,7 @@ export default function LandingPage() {
                 borderRadius: '16px', padding: '28px 24px', transition: 'all 0.2s',
               }}
             >
-              <div style={{ fontSize: '28px', marginBottom: '14px' }}>{f.icon}</div>
+              <div style={{ fontSize: '28px', marginBottom: '14px' }}><FontAwesomeIcon icon={f.faIcon} /></div>
               <h3 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 10px' }}>{f.title}</h3>
               <p style={{ fontSize: '14px', color: colors.muted, lineHeight: 1.6, margin: 0 }}>{f.desc}</p>
             </div>
@@ -385,7 +391,7 @@ export default function LandingPage() {
                 { step: 'Execução', desc: 'Lembretes e revisões te mantêm em movimento real.' },
               ].map(({ step, desc }) => (
                 <div key={step} style={{ display: 'flex', gap: '14px', marginBottom: '22px' }}>
-                  <span style={{ fontSize: '20px', marginTop: '2px' }}>✅</span>
+                  <FontAwesomeIcon icon={faCircleCheck} style={{ fontSize: '20px', marginTop: '2px', color: colors.accent }} />
                   <div>
                     <div style={{ fontWeight: 700, fontSize: '16px', marginBottom: '4px' }}>{step}</div>
                     <div style={{ fontSize: '14px', color: colors.muted, lineHeight: 1.55 }}>{desc}</div>
@@ -400,7 +406,7 @@ export default function LandingPage() {
                   background: colors.bgCardAlt, border: `1px solid ${colors.border}`,
                   borderRadius: '16px', padding: '24px 20px',
                 }}>
-                  <div style={{ fontSize: '28px', marginBottom: '12px' }}>{c.icon}</div>
+                  <div style={{ fontSize: '28px', marginBottom: '12px' }}><FontAwesomeIcon icon={c.faIcon} /></div>
                   <div style={{ fontWeight: 700, fontSize: '15px', marginBottom: '8px' }}>{c.title}</div>
                   <div style={{ fontSize: '13px', color: colors.muted, lineHeight: 1.55 }}>{c.desc}</div>
                 </div>
@@ -439,7 +445,7 @@ export default function LandingPage() {
               'Cancelamento quando quiser',
             ].map((item) => (
               <div key={item} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', marginBottom: '12px' }}>
-                <span style={{ color: colors.accent, fontSize: '16px', marginTop: '1px' }}>✅</span>
+                <FontAwesomeIcon icon={faCheck} style={{ color: colors.accent, fontSize: '16px', marginTop: '1px' }} />
                 <span style={{ fontSize: '14px', color: colors.muted }}>{item}</span>
               </div>
             ))}
@@ -476,7 +482,7 @@ export default function LandingPage() {
               'Acompanhamento prioritário',
             ].map((item) => (
               <div key={item} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', marginBottom: '12px' }}>
-                <span style={{ color: colors.accent, fontSize: '16px', marginTop: '1px' }}>✅</span>
+                <FontAwesomeIcon icon={faCheck} style={{ color: colors.accent, fontSize: '16px', marginTop: '1px' }} />
                 <span style={{ fontSize: '14px', color: colors.muted }}>{item}</span>
               </div>
             ))}
@@ -504,7 +510,7 @@ export default function LandingPage() {
                 flex: 1, background: colors.bgCardAlt, border: `1px solid ${colors.border}`,
                 borderRadius: '16px', padding: '28px 24px',
               }}>
-                <div style={{ fontSize: '24px', color: colors.accent, marginBottom: '14px' }}>&ldquo;</div>
+                <div style={{ fontSize: '24px', color: colors.accent, marginBottom: '14px' }}><FontAwesomeIcon icon={faQuoteLeft} /></div>
                 <p style={{ fontSize: '15px', color: colors.white, lineHeight: 1.65, margin: '0 0 20px', fontStyle: 'italic' }}>
                   {t.text}
                 </p>
@@ -528,7 +534,7 @@ export default function LandingPage() {
             <div key={idx} className="faq-item">
               <div className="faq-question" onClick={() => toggleFaq(idx)} role="button" aria-expanded={faqOpen === idx}>
                 <span>{item.q}</span>
-                <span style={{ color: colors.accent, fontSize: '20px', fontWeight: 400, transition: 'transform 0.2s', transform: faqOpen === idx ? 'rotate(45deg)' : 'none', display: 'inline-block' }}>+</span>
+                <FontAwesomeIcon icon={faqOpen === idx ? faMinus : faPlus} style={{ color: colors.accent, fontSize: '20px', transition: 'transform 0.2s' }} />
               </div>
               {faqOpen === idx && (
                 <div style={{ fontSize: '15px', color: colors.muted, lineHeight: 1.65, paddingBottom: '18px' }}>
@@ -560,7 +566,7 @@ export default function LandingPage() {
               borderRadius: '10px', color: '#0d1117', textDecoration: 'none',
               fontSize: '16px', fontWeight: 700, transition: 'background 0.15s',
             }} className="btn-accent">
-              Quero começar agora →
+              Quero começar agora <FontAwesomeIcon icon={faArrowRight} style={{ marginLeft: '6px' }} />
             </Link>
           </div>
         </div>
