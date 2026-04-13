@@ -47,6 +47,7 @@ export default [
         DragEvent: 'readonly',
         IntersectionObserver: 'readonly',
       },
+    },
     plugins: {
       react: reactPlugin,
       'react-hooks': reactHooksPlugin,
