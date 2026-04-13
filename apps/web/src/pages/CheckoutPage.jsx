@@ -2,6 +2,9 @@ import { useState, useMemo, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { billingService } from '../services/billing.service.js';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faShield, faArrowsRotate, faBullseye } from '@fortawesome/free-solid-svg-icons';
+import logoImg from '../assets/logo.png';
 
 const PLANS = {
   mensal: { label: 'MENSAL', price: 'R$ 39,90', ciclo: 'mensal' },
@@ -134,13 +137,7 @@ export default function CheckoutPage() {
       >
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '48px' }}>
-          <span style={{ fontSize: '28px' }}>🤖</span>
-          <div>
-            <div style={{ fontSize: '22px', fontWeight: '700', letterSpacing: '-0.3px' }}>Finlly</div>
-            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginTop: '1px' }}>
-              Gestão financeira pessoal
-            </div>
-          </div>
+          <img src={logoImg} alt="Finlly" style={{ height: '36px' }} />
         </div>
 
         {/* Main copy */}
@@ -170,12 +167,12 @@ export default function CheckoutPage() {
           {/* Features */}
           <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '18px' }}>
             {[
-              { icon: '🛡️', text: 'Bloqueio automático por inadimplência' },
-              { icon: '🔄', text: 'Recorrência via Asaas' },
-              { icon: '🎯', text: 'Metas + anexos (extratos/comprovantes)' },
-            ].map(({ icon, text }) => (
+              { faIcon: faShield, text: 'Bloqueio automático por inadimplência' },
+              { faIcon: faArrowsRotate, text: 'Recorrência via Asaas' },
+              { faIcon: faBullseye, text: 'Metas + anexos (extratos/comprovantes)' },
+            ].map(({ faIcon, text }) => (
               <li key={text} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '20px', flexShrink: 0 }}>{icon}</span>
+                <FontAwesomeIcon icon={faIcon} style={{ fontSize: '20px', flexShrink: 0 }} />
                 <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.85)' }}>{text}</span>
               </li>
             ))}
@@ -223,7 +220,7 @@ export default function CheckoutPage() {
             marginBottom: '40px',
           }}
         >
-          <span style={{ fontSize: '20px', marginRight: '8px' }}>🤖</span>
+          <img src={logoImg} alt="Finlly" style={{ height: '22px', marginRight: '8px' }} />
           <span style={{ fontSize: '18px', fontWeight: '600', color: '#111827' }}>Assinatura</span>
           <span
             style={{
