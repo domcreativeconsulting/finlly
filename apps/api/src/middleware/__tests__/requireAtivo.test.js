@@ -12,22 +12,20 @@ function makeReq(overrides = {}) {
 }
 
 describe('requireAtivo', () => {
-  test('calls next with AppError 403 INADIMPLENTE when user status is bloqueado_inadimplencia', () => {
-    const req = makeReq({ user: { sub: 'user-1', status: 'bloqueado_inadimplencia' } });
+  // --- Statuses that PASS (have an active subscription) ---
+
+  test('calls next() without error when user status is ativo', () => {
+    const req = makeReq({ user: { sub: 'user-1', status: 'ativo' } });
     const next = jest.fn();
 
     requireAtivo(req, {}, next);
 
     expect(next).toHaveBeenCalledTimes(1);
-    const err = next.mock.calls[0][0];
-    expect(err).toBeDefined();
-    expect(err.status).toBe(403);
-    expect(err.code).toBe('INADIMPLENTE');
-    expect(err.message).toMatch(/inadimplente/i);
+    expect(next).toHaveBeenCalledWith();
   });
 
-  test('calls next() without error when user status is ativo', () => {
-    const req = makeReq({ user: { sub: 'user-2', status: 'ativo' } });
+  test('calls next() without error when user status is trial', () => {
+    const req = makeReq({ user: { sub: 'user-2', status: 'trial' } });
     const next = jest.fn();
 
     requireAtivo(req, {}, next);
@@ -46,45 +44,83 @@ describe('requireAtivo', () => {
     expect(next).toHaveBeenCalledWith();
   });
 
-  test('calls next() without error when user status is trial', () => {
-    const req = makeReq({ user: { sub: 'user-4', status: 'trial' } });
+  // --- Statuses that are BLOCKED (no active subscription) ---
+
+  test('calls next with AppError 403 SEM_ASSINATURA when user status is bloqueado_inadimplencia', () => {
+    const req = makeReq({ user: { sub: 'user-4', status: 'bloqueado_inadimplencia' } });
     const next = jest.fn();
 
     requireAtivo(req, {}, next);
 
     expect(next).toHaveBeenCalledTimes(1);
-    expect(next).toHaveBeenCalledWith();
+    const err = next.mock.calls[0][0];
+    expect(err).toBeDefined();
+    expect(err.status).toBe(403);
+    expect(err.code).toBe('SEM_ASSINATURA');
   });
 
-  test('calls next() without error when req.user is absent', () => {
-    const req = makeReq({});
-    const next = jest.fn();
-
-    requireAtivo(req, {}, next);
-
-    expect(next).toHaveBeenCalledTimes(1);
-    expect(next).toHaveBeenCalledWith();
-  });
-
-  // GAP 10 — status `cancelado` deve permitir acesso (somente bloqueado_inadimplencia bloqueia)
-  test('calls next() without error when user status is cancelado', () => {
+  test('calls next with AppError 403 SEM_ASSINATURA when user status is cancelado', () => {
     const req = makeReq({ user: { sub: 'user-5', status: 'cancelado' } });
     const next = jest.fn();
 
     requireAtivo(req, {}, next);
 
     expect(next).toHaveBeenCalledTimes(1);
-    expect(next).toHaveBeenCalledWith();
+    const err = next.mock.calls[0][0];
+    expect(err).toBeDefined();
+    expect(err.status).toBe(403);
+    expect(err.code).toBe('SEM_ASSINATURA');
   });
 
-  // GAP 11 — req.user existe mas req.user.status é undefined
-  test('calls next() without error when req.user.status is undefined', () => {
-    const req = makeReq({ user: { sub: 'user-6' } });
+  test('calls next with AppError 403 SEM_ASSINATURA when user status is inativo', () => {
+    const req = makeReq({ user: { sub: 'user-6', status: 'inativo' } });
     const next = jest.fn();
 
     requireAtivo(req, {}, next);
 
     expect(next).toHaveBeenCalledTimes(1);
-    expect(next).toHaveBeenCalledWith();
+    const err = next.mock.calls[0][0];
+    expect(err).toBeDefined();
+    expect(err.status).toBe(403);
+    expect(err.code).toBe('SEM_ASSINATURA');
+  });
+
+  test('calls next with AppError 403 SEM_ASSINATURA when req.user.status is undefined', () => {
+    const req = makeReq({ user: { sub: 'user-7' } });
+    const next = jest.fn();
+
+    requireAtivo(req, {}, next);
+
+    expect(next).toHaveBeenCalledTimes(1);
+    const err = next.mock.calls[0][0];
+    expect(err).toBeDefined();
+    expect(err.status).toBe(403);
+    expect(err.code).toBe('SEM_ASSINATURA');
+  });
+
+  test('calls next with AppError 403 SEM_ASSINATURA when req.user is absent', () => {
+    const req = makeReq({});
+    const next = jest.fn();
+
+    requireAtivo(req, {}, next);
+
+    expect(next).toHaveBeenCalledTimes(1);
+    const err = next.mock.calls[0][0];
+    expect(err).toBeDefined();
+    expect(err.status).toBe(403);
+    expect(err.code).toBe('SEM_ASSINATURA');
+  });
+
+  test('calls next with AppError 403 SEM_ASSINATURA when req.user.status is null', () => {
+    const req = makeReq({ user: { sub: 'user-8', status: null } });
+    const next = jest.fn();
+
+    requireAtivo(req, {}, next);
+
+    expect(next).toHaveBeenCalledTimes(1);
+    const err = next.mock.calls[0][0];
+    expect(err).toBeDefined();
+    expect(err.status).toBe(403);
+    expect(err.code).toBe('SEM_ASSINATURA');
   });
 });

@@ -51,7 +51,7 @@ jest.unstable_mockModule('../../config/env.js', () => ({
 jest.unstable_mockModule('../../middleware/jwtAuth.js', () => ({
   jwtAuthMiddleware: (req, _res, next) => {
     if (!req.user) {
-      req.user = { sub: 'usuario-uuid-001', role: 'user' };
+      req.user = { sub: 'usuario-uuid-001', role: 'user', status: 'ativo' };
     }
     next();
   },
@@ -79,7 +79,7 @@ function makeApp({ role = 'user' } = {}) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
-    req.user = { sub: 'usuario-uuid-001', role };
+    req.user = { sub: 'usuario-uuid-001', role, status: 'ativo' };
     next();
   });
   app.use(billingRouter);
