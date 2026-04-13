@@ -1,85 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
-const LOGO_URL = 'https://projects.domlabs.com.br/finlly/assets/img/logo.png';
-
-const navLinks = [
-  { label: 'Recursos', href: '#recursos' },
-  { label: 'Método', href: '#metodo' },
-  { label: 'Planos', href: '#planos' },
-  { label: 'Dúvidas', href: '#faq' },
-];
-
-const marqueeItems = [
-  { icon: 'bi-lock-fill', label: 'Histórico rastreável' },
-  { icon: 'bi-journal-check', label: 'Rotina semanal automatizada' },
-  { icon: 'bi-calendar-check', label: 'Proteção de dados' },
-  { icon: 'bi-file-earmark-lock2', label: 'Monitoramento de metas' },
-  { icon: 'bi-graph-up-arrow', label: 'Método orientado à execução' },
-  { icon: 'bi-clipboard2-pulse', label: 'Criptografia em trânsito' },
-  { icon: 'bi-lock-fill', label: 'Histórico rastreável' },
-  { icon: 'bi-journal-check', label: 'Rotina semanal automatizada' },
-  { icon: 'bi-calendar-check', label: 'Proteção de dados' },
-  { icon: 'bi-file-earmark-lock2', label: 'Monitoramento de metas' },
-];
-
-const features = [
-  { icon: 'bi-wallet2', title: 'Contas e vencimentos', desc: 'Centralize despesas fixas e variáveis com linha do tempo para vencer no prazo certo.' },
-  { icon: 'bi-piggy-bank', title: 'Metas e aportes', desc: 'Defina objetivo, valor e prazo. A Finlly te conduz em micro-ações executáveis.' },
-  { icon: 'bi-paperclip', title: 'Anexos inteligentes', desc: 'Comprovantes e extratos organizados por contexto para consulta rápida e segura.' },
-  { icon: 'bi-whatsapp', title: 'Entrada pelo WhatsApp', desc: 'Você fala naturalmente, a Finlly interpreta e transforma em execução concreta.' },
-  { icon: 'bi-kanban', title: 'CRM financeiro pessoal', desc: 'Histórico das decisões e tarefas para manter constância ao longo do ano.' },
-  { icon: 'bi-bar-chart-line', title: 'Revisão mensal guiada', desc: 'Análise de desempenho com ajustes de rota para você continuar evoluindo.' },
-];
-
-const metodoSteps = [
-  { title: 'Captura', desc: 'Você manda mensagens simples e a plataforma registra automaticamente.' },
-  { title: 'Organização', desc: 'Vencimentos, metas e anexos entram em uma estrutura única.' },
-  { title: 'Execução', desc: 'Lembretes e revisões te mantêm em movimento real.' },
-];
-
-const metodoCards = [
-  { icon: 'bi-rocket-takeoff', title: 'Onboarding', desc: 'Primeiras contas e metas em menos de 10 minutos.' },
-  { icon: 'bi-bell', title: 'Alertas', desc: 'Notificação com ação prática, sem ruído.' },
-  { icon: 'bi-shield-lock', title: 'Privacidade', desc: 'Processos e camadas de segurança para dados pessoais.' },
-  { icon: 'bi-graph-up', title: 'Evolução', desc: 'Ajustes táticos para bater metas sem sufoco.' },
-];
-
-const mensal = [
-  'Contas, recebimentos e metas',
-  'Lembretes + anexos organizados',
-  'Atendimento no WhatsApp',
-  'Cancelamento quando quiser',
-];
-
-const anual = [
-  'Tudo do plano mensal',
-  'Economia para manter consistência',
-  'Foco em metas de médio e longo prazo',
-  'Acompanhamento prioritário',
-];
-
-const testimonials = [
-  { text: 'Saí da desorganização total. Hoje eu sei exatamente o que vence e quanto posso aportar sem estresse.', author: 'Mariana Alves', role: 'empreendedora' },
-  { text: 'O grande diferencial é a rotina. A Finlly me lembra, registra e me mantém em ação sem fricção.', author: 'Rafael Monteiro', role: 'consultor comercial' },
-  { text: 'Em poucos meses eu construo consistência que não consegui em anos com apps tradicionais.', author: 'Bianca Torres', role: 'gerente de projetos' },
-];
-
-const faqItems = [
-  { q: 'A Finlly é apenas um bot?', a: 'Não. A Finlly é uma plataforma completa de organização financeira que usa o WhatsApp como canal de entrada. Por trás, há um sistema estruturado com metas, contas, anexos, histórico e relatórios.' },
-  { q: 'Posso cancelar quando quiser?', a: 'Sim. Você pode cancelar sua assinatura a qualquer momento, sem multas ou taxas adicionais. Seu acesso continua até o fim do período pago.' },
-  { q: 'Quais áreas eu consigo controlar?', a: 'Contas a pagar, recebimentos, metas de poupança, anexos de comprovantes, extrato de movimentações, categorias e relatórios mensais — tudo integrado e acessível pelo WhatsApp ou pelo painel.' },
-];
-
-const chatMessages = [
-  { from: 'user', text: 'Paguei o aluguel hoje, R$ 1.800' },
-  { from: 'bot', text: '✅ Registrado! Aluguel R$ 1.800 — vencimento atualizado.' },
-  { from: 'user', text: 'Qual minha meta de reserva esse mês?' },
-  { from: 'bot', text: '🎯 Meta: R$ 500. Você já aportou R$ 320. Faltam R$ 180.' },
-  { from: 'user', text: 'Me lembra na sexta sobre o cartão' },
-];
-
 const CSS = `
+  html, body, #root {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    background:
+      radial-gradient(840px 480px at 3% -12%, rgba(196, 233, 31, 0.2), transparent 68%),
+      radial-gradient(820px 500px at 98% 3%, rgba(60, 92, 155, 0.3), transparent 70%),
+      linear-gradient(175deg, #070d1d, #0d1733 32%, #0b1a3c 76%, #070d1d);
+    background-attachment: fixed;
+    background-color: #070d1d;
+  }
+
   :root {
     --primary: #33528a;
     --secondary: #c4e91f;
@@ -95,566 +29,415 @@ const CSS = `
     --glow: 0 0 0 1px rgba(196, 233, 31, 0.24), 0 24px 55px rgba(4, 10, 24, 0.65);
   }
 
-  body {
-    background:
-      radial-gradient(840px 480px at 3% -12%, rgba(196, 233, 31, 0.2), transparent 68%),
-      radial-gradient(820px 500px at 98% 3%, rgba(60, 92, 155, 0.3), transparent 70%),
-      linear-gradient(175deg, #070d1d, #0d1733 32%, #0b1a3c 76%, #070d1d);
-    min-height: 100vh;
-  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
 
-  .lp-wrap {
+  body {
+    margin: 0;
+    font-family: "IBM Plex Sans", sans-serif;
     color: var(--ink);
-    font-family: 'IBM Plex Sans', 'Segoe UI', Arial, sans-serif;
-    min-height: 100vh;
     overflow-x: hidden;
   }
 
-  .lp-wrap h1, .lp-wrap h2, .lp-wrap h3, .lp-wrap h4 {
-    font-family: 'Sora', 'Segoe UI', Arial, sans-serif;
+  .container {
+    width: min(1180px, calc(100% - 2.4rem));
+    margin: 0 auto;
   }
 
-  /* Topbar */
+  .noise {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    opacity: .22;
+    z-index: 0;
+    background-image:
+      radial-gradient(rgba(255, 255, 255, 0.08) 0.5px, transparent 0.5px),
+      radial-gradient(rgba(255, 255, 255, 0.08) 0.5px, transparent 0.5px);
+    background-size: 3px 3px, 5px 5px;
+    background-position: 0 0, 2px 1px;
+    mix-blend-mode: soft-light;
+  }
+
+  .site { position: relative; z-index: 2; }
+
   .topbar {
     position: sticky;
     top: 0;
-    z-index: 100;
-    background: rgba(7, 13, 29, 0.85);
-    backdrop-filter: blur(16px);
-    border-bottom: 1px solid var(--line);
+    z-index: 40;
+    backdrop-filter: blur(10px);
+    background: rgba(7, 13, 29, 0.72);
+    border-bottom: 1px solid rgba(159, 178, 215, 0.14);
   }
   .topbar-inner {
-    max-width: 1160px;
-    margin: 0 auto;
-    padding: 0 32px;
-    height: 64px;
+    min-height: 82px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 24px;
+    gap: 14px;
   }
-  .topbar-logo img { height: 32px; display: block; }
-  .nav { display: flex; gap: 28px; }
-  .nav a {
-    color: var(--ink-soft);
+  .brand { display: inline-flex; align-items: center; text-decoration: none; gap: 10px; }
+  .brand img { height: 34px; width: auto; display: block; filter: drop-shadow(0 8px 20px rgba(0,0,0,0.4)); }
+  .nav { display: flex; gap: 18px; align-items: center; }
+  .nav a { text-decoration: none; color: #b6c9ef; font-size: 14px; font-weight: 600; letter-spacing: .2px; }
+  .nav a:hover { color: #f3f8ff; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 12px;
     text-decoration: none;
-    font-size: 15px;
-    font-weight: 500;
-    transition: color 0.15s;
-  }
-  .nav a:hover { color: var(--secondary); }
-  .topbar-ctas { display: flex; gap: 10px; align-items: center; }
-  .btn-ghost {
-    padding: 8px 18px;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    color: var(--ink);
-    text-decoration: none;
-    font-size: 14px;
-    font-weight: 600;
-    background: transparent;
-    cursor: pointer;
-    transition: background 0.15s, border-color 0.15s;
-  }
-  .btn-ghost:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.3); }
-  .btn-primary {
-    padding: 8px 18px;
-    background: var(--secondary);
-    border: none;
-    border-radius: 8px;
-    color: #0d1117;
-    text-decoration: none;
-    font-size: 14px;
     font-weight: 700;
-    cursor: pointer;
-    transition: filter 0.15s;
+    padding: 10px 15px;
+    border: 1px solid transparent;
+    transition: transform .2s ease, box-shadow .2s ease, background .2s ease;
   }
-  .btn-primary:hover { filter: brightness(1.08); }
-  .mobile-menu-btn {
-    display: none;
-    background: none;
-    border: none;
-    color: var(--ink);
-    font-size: 22px;
-    cursor: pointer;
-    padding: 4px;
+  .btn-primary {
+    color: #12203f;
+    background: linear-gradient(130deg, #c4e91f, #d6f35d);
+    box-shadow: 0 14px 30px rgba(196, 233, 31, 0.3);
   }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 20px 36px rgba(196, 233, 31, 0.34); }
+  .btn-ghost { color: #d4e2ff; border-color: rgba(171, 192, 231, 0.3); background: rgba(19, 34, 68, 0.42); }
+  .btn-ghost:hover { transform: translateY(-1px); background: rgba(31, 49, 90, 0.52); }
 
-  /* Mobile menu */
-  .mobile-menu {
-    position: fixed;
-    top: 64px;
-    left: 0; right: 0;
-    z-index: 99;
-    background: var(--dark-2);
-    border-bottom: 1px solid var(--line);
-    padding: 16px 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-  .mobile-menu a {
-    color: var(--ink-soft);
-    text-decoration: none;
-    font-size: 16px;
-    font-weight: 500;
-  }
-
-  /* Hero */
-  .hero { padding: 120px 32px 80px; max-width: 1160px; margin: 0 auto; }
-  .hero-grid {
+  .hero {
+    padding: 26px 0 34px;
+    min-height: calc(100vh - 82px);
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 48px;
     align-items: center;
   }
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1.12fr .88fr;
+    gap: 28px;
+    align-items: center;
+  }
+  .hero-copy { position: relative; }
   .kicker {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    background: rgba(196, 233, 31, 0.1);
-    border: 1px solid rgba(196, 233, 31, 0.25);
-    border-radius: 100px;
-    padding: 6px 14px;
-    margin-bottom: 28px;
+    gap: 7px;
     font-size: 12px;
     font-weight: 700;
-    color: var(--secondary);
-    letter-spacing: 0.06em;
+    letter-spacing: .4px;
+    text-transform: uppercase;
+    color: #e2edff;
+    border: 1px solid rgba(171, 192, 231, 0.3);
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: rgba(19, 34, 68, 0.48);
   }
-  .hero h1 {
-    font-size: clamp(28px, 5vw, 52px);
-    font-weight: 800;
-    line-height: 1.15;
-    margin: 0 0 20px;
-    letter-spacing: -1px;
-    color: var(--ink);
+  .kicker i { color: var(--secondary); }
+  h1, h2, h3 { margin: 0; font-family: "Sora", sans-serif; letter-spacing: -0.5px; }
+  h1 {
+    margin-top: 14px;
+    font-size: clamp(34px, 4.8vw, 66px);
+    line-height: 1.02;
+    color: #f4f8ff;
+    max-width: 12ch;
   }
-  .hero h1 span { color: var(--secondary); }
   .hero p {
-    font-size: 17px;
+    margin: 16px 0 22px;
     color: var(--ink-soft);
-    line-height: 1.65;
-    margin: 0 0 32px;
-    max-width: 520px;
+    max-width: 52ch;
+    font-size: 18px;
+    line-height: 1.56;
   }
-  .hero-ctas { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 28px; }
-  .btn-primary-lg {
-    padding: 13px 26px;
-    background: var(--secondary);
-    border-radius: 10px;
-    color: #0d1117;
-    text-decoration: none;
-    font-size: 15px;
-    font-weight: 700;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    border: none;
-    cursor: pointer;
-    transition: filter 0.15s;
-  }
-  .btn-primary-lg:hover { filter: brightness(1.08); }
-  .btn-ghost-lg {
-    padding: 13px 26px;
-    border: 1.5px solid var(--line);
-    border-radius: 10px;
-    color: var(--ink);
-    text-decoration: none;
-    font-size: 15px;
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: transparent;
-    cursor: pointer;
-    transition: background 0.15s;
-  }
-  .btn-ghost-lg:hover { background: rgba(255,255,255,0.06); }
-  .proof-badges { display: flex; flex-wrap: wrap; gap: 16px; }
-  .proof-badge {
+  .hero-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .inline-proof {
     display: flex;
     align-items: center;
-    gap: 6px;
+    flex-wrap: wrap;
+    gap: 12px;
+    color: #bfd0f2;
     font-size: 13px;
-    color: var(--ink-soft);
+    font-weight: 600;
   }
-  .proof-badge i { color: var(--secondary); }
+  .inline-proof span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(171, 192, 231, 0.2);
+    background: rgba(19, 34, 68, 0.35);
+  }
+  .inline-proof i { color: var(--secondary); }
 
-  /* Hero stage */
-  .hero-stage {
-    position: relative;
-    display: flex;
-    justify-content: center;
-  }
+  .hero-stage { position: relative; min-height: 560px; }
   .orb {
     position: absolute;
-    border-radius: 50%;
+    border-radius: 999px;
     pointer-events: none;
-    filter: blur(60px);
-    opacity: 0.35;
+    filter: blur(18px);
+    opacity: .7;
+    animation: drift 12s ease-in-out infinite;
   }
-  .orb-a {
-    width: 280px; height: 280px;
-    background: var(--secondary);
-    top: -60px; right: -40px;
-    animation: drift 8s ease-in-out infinite;
-  }
-  .orb-b {
-    width: 200px; height: 200px;
-    background: var(--primary);
-    bottom: -40px; left: -20px;
-    animation: drift 10s ease-in-out infinite 2s;
-  }
+  .orb.o1 { width: 240px; height: 240px; background: rgba(196, 233, 31, 0.32); top: 0; right: 14%; }
+  .orb.o2 { width: 320px; height: 320px; background: rgba(76, 113, 183, 0.35); bottom: 4%; left: -8%; animation-delay: -3s; animation-duration: 16s; }
   .glass-main {
-    position: relative;
-    z-index: 2;
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: var(--radius-lg);
-    width: 100%;
-    max-width: 360px;
-    overflow: hidden;
-    box-shadow: var(--glow);
-    backdrop-filter: blur(12px);
-  }
-  .chat-header {
-    background: rgba(7,13,29,0.8);
-    padding: 14px 18px;
-    border-bottom: 1px solid var(--line);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .chat-avatar {
-    width: 36px; height: 36px;
-    border-radius: 50%;
-    background: var(--secondary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    color: #0d1117;
-  }
-  .chat-name { font-weight: 700; font-size: 14px; color: var(--ink); }
-  .chat-status { font-size: 11px; color: #22c55e; }
-  .chat-body {
+    position: absolute;
+    right: 0;
+    top: 26px;
+    width: min(460px, 100%);
+    background: linear-gradient(150deg, rgba(18, 33, 67, 0.9), rgba(14, 24, 49, 0.84));
+    border: 1px solid rgba(171, 192, 231, 0.22);
+    border-radius: 26px;
     padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    min-height: 260px;
-  }
-  .msg { display: flex; }
-  .msg.user { justify-content: flex-end; }
-  .msg.bot { justify-content: flex-start; }
-  .bubble {
-    max-width: 82%;
-    padding: 9px 13px;
-    font-size: 13px;
-    line-height: 1.4;
-  }
-  .msg.user .bubble {
-    background: var(--secondary);
-    color: #0d1117;
-    border-radius: 14px 14px 4px 14px;
-    font-weight: 500;
-  }
-  .msg.bot .bubble {
-    background: rgba(30, 45, 69, 0.9);
-    color: var(--ink);
-    border-radius: 14px 14px 14px 4px;
-  }
-
-  /* Stack cards */
-  .stack-a, .stack-b, .stack-c {
-    position: absolute;
-    z-index: 3;
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: var(--radius-md);
-    padding: 10px 14px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-    backdrop-filter: blur(8px);
-  }
-  .stack-a { top: -16px; right: -20px; min-width: 140px; animation: floatAlt 3.5s ease-in-out infinite; }
-  .stack-b { bottom: 60px; right: -28px; min-width: 140px; animation: floatAlt 4s ease-in-out infinite 0.5s; }
-  .stack-c { bottom: -12px; left: -20px; min-width: 160px; animation: floatAlt 3s ease-in-out infinite 1s; }
-  .stack-label { font-size: 10px; color: var(--ink-soft); font-weight: 600; letter-spacing: 0.05em; margin-bottom: 4px; }
-  .stack-value { font-size: 20px; font-weight: 800; color: var(--secondary); }
-  .stack-value.neutral { color: var(--ink); }
-  .stack-value small { font-size: 13px; color: var(--ink-soft); }
-
-  /* Marquee */
-  .marquee-wrap {
+    box-shadow: var(--glow);
     overflow: hidden;
-    border-top: 1px solid var(--line);
-    border-bottom: 1px solid var(--line);
-    padding: 14px 0;
-    background: rgba(7,13,29,0.6);
+    animation: floatY 7s ease-in-out infinite;
   }
-  .marquee-track {
-    display: flex;
-    gap: 0;
-    animation: slide 28s linear infinite;
-    width: max-content;
-  }
-  .marquee-track:hover { animation-play-state: paused; }
-  .marquee-item {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    white-space: nowrap;
-    padding: 0 28px;
-    color: var(--ink-soft);
-    font-size: 14px;
-    font-weight: 500;
-  }
-  .marquee-item i { color: var(--secondary); }
-  .marquee-sep { color: var(--line); font-size: 18px; }
-
-  /* Section common */
-  .section { padding: 96px 32px; }
-  .section-inner { max-width: 1160px; margin: 0 auto; }
-  .section-header { text-align: center; margin-bottom: 56px; }
-  .section-header h2 {
-    font-size: clamp(24px, 4vw, 40px);
-    font-weight: 800;
-    margin: 0 0 16px;
-    letter-spacing: -0.5px;
-    color: var(--ink);
-  }
-  .section-header p {
-    font-size: 16px;
-    color: var(--ink-soft);
-    max-width: 540px;
-    margin: 0 auto;
-    line-height: 1.65;
-  }
-
-  /* Features */
-  .features {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-  }
-  .feat-card {
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: var(--radius-md);
-    padding: 28px 24px;
-    transition: transform 0.2s, border-color 0.2s;
-    backdrop-filter: blur(8px);
-  }
-  .feat-card:hover {
-    transform: translateY(-5px) rotate(-.3deg);
-    border-color: var(--secondary);
-  }
-  .feat-card i { font-size: 28px; color: var(--secondary); margin-bottom: 14px; display: block; }
-  .feat-card h3 { font-size: 16px; font-weight: 700; margin: 0 0 10px; color: var(--ink); }
-  .feat-card p { font-size: 14px; color: var(--ink-soft); line-height: 1.6; margin: 0; }
-
-  /* Método / Split */
-  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: stretch; }
-  .split-left {
-    background: linear-gradient(135deg, var(--dark-3), var(--dark-2));
-    border: 1px solid var(--line);
-    border-radius: var(--radius-lg);
-    padding: 36px 32px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-  }
-  .split-left h3 { font-size: 22px; font-weight: 800; margin: 0 0 28px; color: var(--secondary); }
-  .step-row { display: flex; gap: 14px; margin-bottom: 22px; }
-  .step-row i { font-size: 20px; margin-top: 2px; color: var(--secondary); }
-  .step-title { font-weight: 700; font-size: 16px; margin-bottom: 4px; color: var(--ink); }
-  .step-desc { font-size: 14px; color: var(--ink-soft); line-height: 1.55; }
-  .micro-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .micro-card {
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: var(--radius-md);
-    padding: 24px 20px;
-    backdrop-filter: blur(8px);
-  }
-  .micro-card i { font-size: 28px; color: var(--secondary); margin-bottom: 12px; display: block; }
-  .micro-card h4 { font-weight: 700; font-size: 15px; margin: 0 0 8px; color: var(--ink); }
-  .micro-card p { font-size: 13px; color: var(--ink-soft); line-height: 1.55; margin: 0; }
-
-  /* Planos */
-  .pricing { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 760px; margin: 0 auto; }
-  .plan {
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: var(--radius-lg);
-    padding: 36px 32px;
-    position: relative;
-    backdrop-filter: blur(8px);
-    transition: transform 0.2s;
-  }
-  .plan:hover { transform: translateY(-4px); }
-  .plan.best { border-color: var(--secondary); box-shadow: var(--glow); }
-  .plan-badge {
+  .glass-main::before {
+    content: "";
     position: absolute;
-    top: -14px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--secondary);
-    color: #0d1117;
-    font-size: 11px;
-    font-weight: 800;
-    padding: 5px 14px;
-    border-radius: 100px;
-    letter-spacing: 0.06em;
-    white-space: nowrap;
+    inset: 0;
+    background: linear-gradient(120deg, rgba(255,255,255,0.08), transparent 34%);
+    pointer-events: none;
   }
-  .plan-name { font-size: 18px; font-weight: 700; margin-bottom: 8px; color: var(--ink); }
-  .plan-price { margin-bottom: 24px; }
-  .plan-price big { font-size: 38px; font-weight: 800; color: var(--ink); font-family: 'Sora', sans-serif; }
-  .plan-price sup { font-size: 20px; font-weight: 700; }
-  .plan-price span { font-size: 15px; color: var(--ink-soft); }
-  .plan-items { list-style: none; padding: 0; margin: 0 0 28px; }
-  .plan-items li { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 12px; font-size: 14px; color: var(--ink-soft); }
-  .plan-items li i { color: var(--secondary); font-size: 16px; margin-top: 1px; }
-  .btn-plan-ghost {
-    display: block;
-    text-align: center;
-    padding: 13px;
-    border: 1.5px solid var(--line);
-    border-radius: 10px;
-    color: var(--ink);
-    text-decoration: none;
-    font-weight: 700;
-    font-size: 15px;
-    transition: background 0.15s;
-    cursor: pointer;
-  }
-  .btn-plan-ghost:hover { background: rgba(255,255,255,0.06); }
-  .btn-plan-primary {
-    display: block;
-    text-align: center;
-    padding: 13px;
-    background: var(--secondary);
-    border-radius: 10px;
-    color: #0d1117;
-    text-decoration: none;
-    font-weight: 700;
-    font-size: 15px;
-    transition: filter 0.15s;
-    border: none;
-    cursor: pointer;
-  }
-  .btn-plan-primary:hover { filter: brightness(1.08); }
-
-  /* Depoimentos */
-  .testimonials { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-  .quote-card {
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: var(--radius-md);
-    padding: 28px 24px;
-    backdrop-filter: blur(8px);
-  }
-  .quote-card i { font-size: 24px; color: var(--secondary); margin-bottom: 14px; display: block; }
-  .quote-card p { font-size: 15px; color: var(--ink); line-height: 1.65; margin: 0 0 20px; font-style: italic; }
-  .quote-author { font-weight: 700; font-size: 14px; color: var(--ink); }
-  .quote-role { font-size: 13px; color: var(--ink-soft); }
-
-  /* FAQ */
-  .faq-section { padding: 96px 32px; max-width: 760px; margin: 0 auto; }
-  .faq-section h2 { text-align: center; font-size: clamp(22px, 4vw, 36px); font-weight: 800; margin: 0 0 48px; letter-spacing: -0.5px; color: var(--ink); }
-  details { border-bottom: 1px solid var(--line); }
-  summary {
-    cursor: pointer;
-    padding: 18px 0;
+  .main-top {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 16px;
-    font-weight: 500;
-    color: var(--ink);
-    list-style: none;
-    transition: color 0.15s;
+    margin-bottom: 12px;
+    color: #dbe7ff;
+    font-size: 12px;
+    font-weight: 700;
   }
-  summary::-webkit-details-marker { display: none; }
-  summary:hover { color: var(--secondary); }
-  summary::after { content: '+'; color: var(--secondary); font-size: 20px; transition: transform 0.2s; }
-  details[open] summary::after { content: '-'; }
-  .faq-answer { font-size: 15px; color: var(--ink-soft); line-height: 1.65; padding-bottom: 18px; }
+  .status-dot {
+    width: 9px; height: 9px;
+    border-radius: 999px;
+    background: #33d06b;
+    box-shadow: 0 0 0 6px rgba(51, 208, 107, 0.2);
+    display: inline-block;
+    margin-right: 7px;
+    vertical-align: middle;
+  }
+  .chat { display: grid; gap: 8px; font-size: 13px; line-height: 1.45; }
+  .msg {
+    max-width: 86%;
+    border-radius: 14px;
+    border: 1px solid rgba(171, 192, 231, 0.2);
+    background: rgba(35, 56, 102, 0.38);
+    color: #e5efff;
+    padding: 10px 12px;
+    opacity: 0;
+    transform: translateY(6px);
+    animation: pop .5s ease forwards;
+  }
+  .msg:nth-child(1) { animation-delay: .15s; }
+  .msg:nth-child(2) { animation-delay: .4s; }
+  .msg:nth-child(3) { animation-delay: .7s; }
+  .msg:nth-child(4) { animation-delay: 1s; }
+  .msg:nth-child(5) { animation-delay: 1.2s; }
+  .msg.user {
+    margin-left: auto;
+    background: rgba(196, 233, 31, 0.14);
+    color: #f7ffe0;
+    border-color: rgba(196, 233, 31, 0.28);
+  }
+  .stack-card {
+    position: absolute;
+    border-radius: 18px;
+    border: 1px solid rgba(171, 192, 231, 0.2);
+    background: rgba(13, 23, 51, 0.78);
+    box-shadow: 0 16px 34px rgba(5, 11, 25, 0.6);
+    backdrop-filter: blur(10px);
+    padding: 12px;
+    animation: floatAlt 9s ease-in-out infinite;
+  }
+  .stack-card small { color: #9cb0d8; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; font-weight: 700; }
+  .stack-card strong { display: block; margin-top: 5px; color: #eef4ff; font-size: 20px; font-family: "Sora", sans-serif; }
+  .stack-card i { color: var(--secondary); margin-right: 7px; }
+  .stack-a { left: 0; top: 80px; width: 190px; }
+  .stack-b { left: 20px; bottom: 90px; width: 220px; animation-delay: -3s; }
+  .stack-c { right: 14px; bottom: 16px; width: 210px; animation-delay: -5s; }
 
-  /* CTA Final */
-  .cta { padding: 80px 32px; }
-  .cta-inner {
-    max-width: 1100px;
-    margin: 0 auto;
-    display: grid;
-    grid-template-columns: 1fr auto;
+  .marquee-wrap {
+    margin-top: 18px;
+    border-top: 1px solid rgba(171, 192, 231, 0.18);
+    border-bottom: 1px solid rgba(171, 192, 231, 0.18);
+    background: rgba(6, 12, 27, 0.5);
+    overflow: hidden;
+    padding: 12px 0;
+  }
+  .marquee { display: flex; gap: 14px; width: max-content; animation: slide 22s linear infinite; }
+  .marquee span {
+    display: inline-flex;
     align-items: center;
-    gap: 40px;
-    background: radial-gradient(ellipse at 20% 50%, rgba(196, 233, 31, 0.08), transparent 60%), linear-gradient(135deg, var(--dark-3), var(--dark-2));
-    border: 1px solid var(--line);
-    border-radius: var(--radius-lg);
-    padding: 56px 48px;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(171, 192, 231, 0.24);
+    color: #d6e3ff;
+    font-size: 12px;
+    font-weight: 700;
+    background: rgba(19, 34, 68, 0.52);
   }
-  .cta-inner h2 { font-size: clamp(22px, 4vw, 36px); font-weight: 800; margin: 0 0 16px; letter-spacing: -0.5px; color: var(--ink); }
-  .cta-inner p { font-size: 16px; color: var(--ink-soft); margin: 0; line-height: 1.65; }
+  .marquee i { color: var(--secondary); }
 
-  /* Footer */
-  .footer {
-    border-top: 1px solid var(--line);
-    padding: 24px 32px;
-    text-align: center;
-    color: var(--ink-soft);
-    font-size: 14px;
+  section.block { padding: 56px 0 6px; }
+  .section-head { max-width: 700px; margin-bottom: 22px; }
+  .section-head h2 { font-size: clamp(28px, 3.2vw, 44px); line-height: 1.06; color: #edf3ff; margin-bottom: 10px; }
+  .section-head p { margin: 0; color: #9eb2d8; font-size: 17px; line-height: 1.58; }
+
+  .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .feature {
+    border: 1px solid rgba(171, 192, 231, 0.22);
+    border-radius: 18px;
+    padding: 18px;
+    background: linear-gradient(165deg, rgba(19, 34, 68, 0.8), rgba(10, 18, 40, 0.84));
+    box-shadow: 0 14px 28px rgba(5, 10, 24, 0.44);
+    position: relative;
+    overflow: hidden;
+    transition: transform .25s ease, border-color .25s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
-  .footer p { margin: 4px 0; }
+  .feature:hover { transform: translateY(-5px) rotate(-.3deg); border-color: rgba(196, 233, 31, 0.4); }
+  .feature .icon {
+    width: 50px; height: 50px; border-radius: 14px;
+    display: grid; place-items: center;
+    font-size: 22px; color: #12203f;
+    background: linear-gradient(145deg, var(--secondary), #dbf76a);
+    box-shadow: 0 10px 24px rgba(196, 233, 31, 0.25);
+    flex-shrink: 0;
+  }
+  .feature h3 { font-size: 17px; margin: 0 0 5px; color: #f1f6ff; }
+  .feature p { margin: 0; color: #9db0d7; font-size: 14px; line-height: 1.52; }
 
-  /* Scroll reveal */
-  .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.55s ease, transform 0.55s ease; }
+  .split { display: grid; grid-template-columns: .95fr 1.05fr; gap: 14px; margin-top: 14px; }
+  .panel {
+    border-radius: 20px;
+    border: 1px solid rgba(171, 192, 231, 0.22);
+    background: linear-gradient(170deg, rgba(18, 33, 67, 0.82), rgba(8, 16, 35, 0.84));
+    padding: 20px;
+    box-shadow: 0 14px 30px rgba(4, 9, 21, 0.5);
+  }
+  .checklist { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+  .checklist li { display: flex; gap: 10px; color: #c8d7f4; font-weight: 600; line-height: 1.42; font-size: 15px; }
+  .checklist i { color: var(--secondary); margin-top: 2px; flex-shrink: 0; font-size: 18px; }
+  .micro-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .micro { border: 1px solid rgba(171, 192, 231, 0.2); border-radius: 14px; padding: 14px; background: rgba(19, 34, 68, 0.46); }
+  .micro strong { display: flex; align-items: center; gap: 6px; color: #f2f7ff; font-family: "Sora", sans-serif; margin-bottom: 6px; font-size: 15px; }
+  .micro strong i { color: var(--secondary); }
+  .micro span { color: #9db0d6; font-size: 13px; line-height: 1.5; }
+
+  .pricing { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 10px; }
+  .price {
+    border-radius: 22px;
+    border: 1px solid rgba(171, 192, 231, 0.23);
+    background: linear-gradient(170deg, rgba(19, 34, 68, 0.82), rgba(9, 17, 36, 0.86));
+    padding: 28px;
+    box-shadow: 0 16px 34px rgba(4, 9, 21, 0.5);
+    position: relative;
+  }
+  .price.best { border-color: rgba(196, 233, 31, 0.52); box-shadow: 0 0 0 1px rgba(196, 233, 31, 0.32), 0 20px 42px rgba(4, 9, 21, 0.54); }
+  .pill { position: absolute; right: 20px; top: -14px; background: #d7f45b; color: #16295a; border-radius: 999px; font-size: 11px; padding: 6px 14px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; }
+  .price h3 { color: #eff5ff; font-size: 20px; margin-bottom: 6px; }
+  .value { display: flex; align-items: flex-end; gap: 8px; margin-bottom: 18px; }
+  .value strong { font-family: "Sora", sans-serif; font-size: 48px; line-height: .95; color: #dff97d; font-weight: 800; }
+  .value span { color: #a4b6da; font-weight: 600; margin-bottom: 6px; font-size: 15px; }
+  .list { margin: 0 0 22px; padding: 0; list-style: none; display: grid; gap: 10px; }
+  .list li { color: #c9d8f5; font-size: 14px; display: flex; gap: 10px; align-items: flex-start; line-height: 1.4; }
+  .list i { color: var(--secondary); margin-top: 2px; flex-shrink: 0; }
+  .btn-plan {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 13px 20px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 15px;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    transition: filter .2s ease, transform .2s ease;
+    background: linear-gradient(130deg, #c4e91f, #d6f35d);
+    color: #12203f;
+    box-shadow: 0 10px 24px rgba(196, 233, 31, 0.28);
+  }
+  .btn-plan:hover { filter: brightness(1.08); transform: translateY(-2px); }
+
+  .testimonials { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 6px; }
+  .quote { border-radius: 16px; border: 1px solid rgba(171, 192, 231, 0.2); background: rgba(19, 34, 68, 0.56); padding: 20px; box-shadow: 0 12px 26px rgba(4, 9, 21, 0.42); }
+  .quote p { margin: 0 0 14px; color: #cad9f5; line-height: 1.6; font-size: 14px; }
+  .quote strong { display: block; color: #f2f7ff; font-size: 13px; font-weight: 700; letter-spacing: .2px; }
+
+  .faq-box { border: 1px solid rgba(171, 192, 231, 0.2); border-radius: 18px; background: rgba(19, 34, 68, 0.52); overflow: hidden; }
+  details { border-bottom: 1px solid rgba(171, 192, 231, 0.16); padding: 14px 16px; }
+  details:last-child { border-bottom: 0; }
+  summary { list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 8px; cursor: pointer; color: #eef4ff; font-weight: 700; font-size: 15px; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "+"; font-size: 22px; color: var(--secondary); }
+  details[open] summary::after { content: "-"; }
+  details p { margin: 10px 0 2px; color: #9cb0d8; line-height: 1.55; font-size: 14px; }
+
+  .cta {
+    margin-top: 38px;
+    border-radius: 24px;
+    border: 1px solid rgba(171, 192, 231, 0.26);
+    padding: 32px;
+    background:
+      radial-gradient(480px 260px at 16% 0%, rgba(196, 233, 31, 0.2), transparent 68%),
+      linear-gradient(130deg, #12224a, #1a3166 58%, #1f3a79);
+    display: grid;
+    grid-template-columns: 1.2fr .8fr;
+    gap: 12px;
+    align-items: center;
+    box-shadow: 0 16px 34px rgba(4, 9, 21, 0.55);
+  }
+  .cta h2 { font-size: clamp(22px, 3vw, 36px); color: #f4f9ff; margin-bottom: 8px; }
+  .cta p { margin: 0; color: #c7d7f4; font-size: 15px; line-height: 1.55; }
+  .cta-action { display: flex; justify-content: flex-end; }
+
+  footer {
+    padding: 28px 0 44px;
+    color: #90a6d1;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 13px;
+  }
+
+  .reveal { opacity: 0; transform: translateY(16px); transition: opacity .7s ease, transform .7s ease; }
   .reveal.in { opacity: 1; transform: translateY(0); }
 
-  /* Noise overlay */
-  .noise {
-    pointer-events: none;
-    position: fixed;
-    inset: 0;
-    z-index: 200;
-    opacity: 0.03;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  }
-
-  /* Animations */
   @keyframes slide { from { transform: translateX(0); } to { transform: translateX(-50%); } }
   @keyframes pop { to { opacity: 1; transform: translateY(0); } }
   @keyframes floatY { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
   @keyframes floatAlt { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
   @keyframes drift { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(22px, -16px) scale(1.04); } }
 
-  /* Responsive */
   @media (max-width: 1040px) {
-    .hero-grid, .split, .cta-inner { grid-template-columns: 1fr; }
-    .cta-inner { text-align: center; }
-    .cta-inner .btn-primary { justify-self: center; }
+    .hero-grid, .split, .cta { grid-template-columns: 1fr; }
+    .cta .cta-action { justify-content: flex-start; }
     .features, .pricing, .testimonials { grid-template-columns: repeat(2, 1fr); }
-    .pricing { max-width: 100%; }
+    .hero-stage { min-height: 620px; }
   }
+
   @media (max-width: 760px) {
     .nav { display: none; }
     .topbar-inner .btn-ghost { display: none; }
-    .mobile-menu-btn { display: flex; }
-    .glass-main { position: relative; width: 100%; }
-    .stack-a, .stack-b, .stack-c { position: relative; top: auto; right: auto; bottom: auto; left: auto; width: 100%; animation: none; margin-top: 8px; }
+    .hero { min-height: auto; padding: 22px 0 26px; }
+    h1 { max-width: none; }
+    .hero-stage { min-height: 680px; }
+    .glass-main { position: relative; width: 100%; top: auto; right: auto; }
+    .stack-a, .stack-b, .stack-c { position: relative; left: auto; right: auto; top: auto; bottom: auto; width: 100%; margin-top: 8px; animation: none; }
     .features, .pricing, .testimonials, .micro-grid { grid-template-columns: 1fr; }
-    .hero-stage { flex-direction: column; gap: 12px; }
+    .marquee { animation-duration: 28s; }
   }
+
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation: none !important; transition: none !important; }
   }
 `;
 
 export default function LandingPage() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const year = new Date().getFullYear();
 
   useEffect(() => {
@@ -673,273 +456,471 @@ export default function LandingPage() {
     return () => io.disconnect();
   }, []);
 
-  const doubleMarquee = [...marqueeItems, ...marqueeItems];
-
   return (
-    <div className="lp-wrap">
+    <>
       <style>{CSS}</style>
-      <div className="noise" aria-hidden="true" />
+      <div className="noise"></div>
 
-      {/* TOPBAR */}
-      <header className="topbar">
-        <div className="topbar-inner">
-          <div className="topbar-logo">
-            <a href="#"><img src={LOGO_URL} alt="Finlly" /></a>
-          </div>
-          <nav className="nav" aria-label="Principal">
-            {navLinks.map((l) => (
-              <a key={l.href} href={l.href}>{l.label}</a>
-            ))}
-          </nav>
-          <div className="topbar-ctas">
-            <a href="#planos" className="btn-ghost">Ver planos</a>
-            <Link to="/login" className="btn-primary">Acessar</Link>
-          </div>
-          <button
-            className="mobile-menu-btn"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Menu"
-          >
-            <i className={mobileMenuOpen ? 'bi bi-x-lg' : 'bi bi-list'} />
-          </button>
-        </div>
-      </header>
-
-      {/* MOBILE MENU */}
-      {mobileMenuOpen && (
-        <div className="mobile-menu">
-          {navLinks.map((l) => (
-            <a key={l.href} href={l.href} onClick={() => setMobileMenuOpen(false)}>{l.label}</a>
-          ))}
-          <div style={{ display: 'flex', gap: '10px', paddingTop: '8px' }}>
-            <a href="#planos" className="btn-ghost" onClick={() => setMobileMenuOpen(false)}>Ver planos</a>
-            <Link to="/login" className="btn-primary" onClick={() => setMobileMenuOpen(false)}>Acessar</Link>
-          </div>
-        </div>
-      )}
-
-      <main>
-        {/* HERO */}
-        <section className="hero">
-          <div className="hero-grid">
-            {/* Left */}
-            <div>
-              <div className="kicker">
-                <i className="bi bi-stars" />
-                Nova geração de organização financeira pessoal
-              </div>
-              <h1>
-                Uma experiência financeira que{' '}
-                <span>parece produto de banco premium.</span>
-              </h1>
-              <p>
-                A Finlly pega sua rotina no WhatsApp e transforma em sistema vivo: contas registradas, metas em trilha, lembretes no momento certo e acompanhamento contínuo.
-              </p>
-              <div className="hero-ctas">
-                <Link to="/checkout" className="btn-primary-lg">
-                  Começar agora <i className="bi bi-arrow-right" />
-                </Link>
-                <a href="#recursos" className="btn-ghost-lg">
-                  Ver demonstração ▶
-                </a>
-              </div>
-              <div className="proof-badges">
-                <span className="proof-badge"><i className="bi bi-shield-lock" /> Políticas LGPD</span>
-                <span className="proof-badge"><i className="bi bi-whatsapp" /> Fluxo nativo no WhatsApp</span>
-                <span className="proof-badge"><i className="bi bi-lightning-charge" /> Ação em segundos</span>
-              </div>
+      <div className="site">
+        <header className="topbar">
+          <div className="container topbar-inner">
+            <a className="brand" href="#">
+              <img
+                src="https://projects.domlabs.com.br/finlly/assets/img/logo.png"
+                alt="Finlly"
+              />
+            </a>
+            <nav className="nav">
+              <a href="#recursos">Recursos</a>
+              <a href="#metodo">Método</a>
+              <a href="#planos">Planos</a>
+              <a href="#faq">Dúvidas</a>
+            </nav>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <a className="btn btn-ghost" href="#planos">
+                Ver planos
+              </a>
+              <Link className="btn btn-primary" to="/login">
+                Acessar
+              </Link>
             </div>
+          </div>
+        </header>
 
-            {/* Right — Hero Stage */}
-            <div className="hero-stage">
-              <div className="orb orb-a" aria-hidden="true" />
-              <div className="orb orb-b" aria-hidden="true" />
-              <div className="glass-main">
-                <div className="chat-header">
-                  <div className="chat-avatar">⚡</div>
-                  <div>
-                    <div className="chat-name">Finlly</div>
-                    <div className="chat-status">● online</div>
+        <main className="container">
+          <section className="hero">
+            <div className="hero-grid">
+              <article className="hero-copy reveal">
+                <span className="kicker">
+                  <i className="bi bi-stars"></i> Nova geração de organização
+                  financeira pessoal
+                </span>
+                <h1>
+                  Uma experiência financeira que parece produto de banco
+                  premium.
+                </h1>
+                <p>
+                  A Finlly pega sua rotina no WhatsApp e transforma em sistema
+                  vivo: contas registradas, metas em trilha, lembretes no
+                  momento certo e acompanhamento contínuo.
+                </p>
+                <div className="hero-actions">
+                  <Link className="btn btn-primary" to="/checkout?plano=mensal">
+                    Começar agora <i className="bi bi-arrow-right"></i>
+                  </Link>
+                  <a className="btn btn-ghost" href="#recursos">
+                    Ver demonstração <i className="bi bi-play-circle"></i>
+                  </a>
+                </div>
+                <div className="inline-proof">
+                  <span>
+                    <i className="bi bi-shield-lock"></i> Políticas LGPD
+                  </span>
+                  <span>
+                    <i className="bi bi-whatsapp"></i> Fluxo nativo no WhatsApp
+                  </span>
+                  <span>
+                    <i className="bi bi-lightning-charge"></i> Ação em segundos
+                  </span>
+                </div>
+              </article>
+
+              <aside
+                className="hero-stage reveal"
+                aria-label="Painel visual da Finlly"
+              >
+                <div className="orb o1"></div>
+                <div className="orb o2"></div>
+                <div className="glass-main">
+                  <div className="main-top">
+                    <span>
+                      <span className="status-dot"></span>Finlly online
+                    </span>
+                    <span>Consultora no WhatsApp</span>
+                  </div>
+                  <div className="chat">
+                    <div className="msg">
+                      Me passe suas contas fixas e eu monto seu plano em 2
+                      minutos.
+                    </div>
+                    <div className="msg user">
+                      Aluguel dia 05, cartao dia 12, escola dia 10.
+                    </div>
+                    <div className="msg">
+                      Perfeito. Lembretes ativados e prioridades do mes
+                      definidas.
+                    </div>
+                    <div className="msg user">
+                      Meta de R$ 10 mil ate dezembro.
+                    </div>
+                    <div className="msg">
+                      Dividi em aportes semanais. Vou te lembrar e ajustar no
+                      caminho.
+                    </div>
                   </div>
                 </div>
-                <div className="chat-body">
-                  {chatMessages.map((msg, i) => (
-                    <div key={i} className={`msg ${msg.from}`}>
-                      <div className="bubble">{msg.text}</div>
-                    </div>
-                  ))}
+                <div className="stack-card stack-a">
+                  <small>
+                    <i className="bi bi-activity"></i>Consistência semanal
+                  </small>
+                  <strong>+31%</strong>
                 </div>
-              </div>
-              <div className="stack-a">
-                <div className="stack-label">CONSISTÊNCIA SEMANAL</div>
-                <div className="stack-value">+31%</div>
-              </div>
-              <div className="stack-b">
-                <div className="stack-label">TEMPO ECONOMIZADO</div>
-                <div className="stack-value neutral">4h<small>/sem</small></div>
-              </div>
-              <div className="stack-c">
-                <div className="stack-label">CONFIANÇA OPERACIONAL</div>
-                <div className="stack-value">98.2%</div>
-              </div>
+                <div className="stack-card stack-b">
+                  <small>
+                    <i className="bi bi-clock-history"></i>Tempo economizado
+                  </small>
+                  <strong>4h/sem</strong>
+                </div>
+                <div className="stack-card stack-c">
+                  <small>
+                    <i className="bi bi-shield-check"></i>Confiança operacional
+                  </small>
+                  <strong>98.2%</strong>
+                </div>
+              </aside>
             </div>
-          </div>
-        </section>
+          </section>
+        </main>
 
-        {/* MARQUEE */}
-        <div className="marquee-wrap" aria-hidden="true">
-          <div className="marquee-track">
-            {doubleMarquee.map((item, i) => (
-              <span key={i} className="marquee-item">
-                <i className={`bi ${item.icon}`} />
-                {item.label}
-                <span className="marquee-sep">|</span>
-              </span>
-            ))}
+        <div className="marquee-wrap">
+          <div className="marquee">
+            <span>
+              <i className="bi bi-lock-fill"></i> Criptografia em trânsito
+            </span>
+            <span>
+              <i className="bi bi-journal-check"></i> Histórico rastreável
+            </span>
+            <span>
+              <i className="bi bi-calendar-check"></i> Rotina semanal
+              automatizada
+            </span>
+            <span>
+              <i className="bi bi-file-earmark-lock2"></i> Proteção de dados
+            </span>
+            <span>
+              <i className="bi bi-graph-up-arrow"></i> Monitoramento de metas
+            </span>
+            <span>
+              <i className="bi bi-clipboard2-pulse"></i> Método orientado à
+              execução
+            </span>
+            <span>
+              <i className="bi bi-lock-fill"></i> Criptografia em trânsito
+            </span>
+            <span>
+              <i className="bi bi-journal-check"></i> Histórico rastreável
+            </span>
+            <span>
+              <i className="bi bi-calendar-check"></i> Rotina semanal
+              automatizada
+            </span>
+            <span>
+              <i className="bi bi-file-earmark-lock2"></i> Proteção de dados
+            </span>
           </div>
         </div>
 
-        {/* RECURSOS */}
-        <section id="recursos" className="section reveal">
-          <div className="section-inner">
-            <div className="section-header">
+        <main className="container">
+          <section id="recursos" className="block">
+            <div className="section-head reveal">
               <h2>Recursos desenhados para sair do caos e entrar em ritmo</h2>
-              <p>Nada de planilhas perdidas e decisão no improviso. A Finlly organiza, lembra e conduz seu plano financeiro de ponta a ponta.</p>
+              <p>
+                Nada de planilhas perdidas e decisão no improviso. A Finlly
+                organiza, lembra e conduz seu plano financeiro de ponta a ponta.
+              </p>
             </div>
             <div className="features">
-              {features.map((f) => (
-                <article key={f.title} className="feat-card reveal">
-                  <i className={`bi ${f.icon}`} />
-                  <h3>{f.title}</h3>
-                  <p>{f.desc}</p>
-                </article>
-              ))}
+              <article className="feature reveal">
+                <div className="icon">
+                  <i className="bi bi-wallet2"></i>
+                </div>
+                <div>
+                  <h3>Contas e vencimentos</h3>
+                  <p>
+                    Centralize despesas fixas e variáveis com linha do tempo
+                    para vencer no prazo certo.
+                  </p>
+                </div>
+              </article>
+              <article className="feature reveal">
+                <div className="icon">
+                  <i className="bi bi-piggy-bank"></i>
+                </div>
+                <div>
+                  <h3>Metas e aportes</h3>
+                  <p>
+                    Defina objetivo, valor e prazo. A Finlly te conduz em
+                    micro-ações executáveis.
+                  </p>
+                </div>
+              </article>
+              <article className="feature reveal">
+                <div className="icon">
+                  <i className="bi bi-paperclip"></i>
+                </div>
+                <div>
+                  <h3>Anexos inteligentes</h3>
+                  <p>
+                    Comprovantes e extratos organizados por contexto para
+                    consulta rápida e segura.
+                  </p>
+                </div>
+              </article>
+              <article className="feature reveal">
+                <div className="icon">
+                  <i className="bi bi-whatsapp"></i>
+                </div>
+                <div>
+                  <h3>Entrada pelo WhatsApp</h3>
+                  <p>
+                    Você fala naturalmente, a Finlly interpreta e transforma em
+                    execução concreta.
+                  </p>
+                </div>
+              </article>
+              <article className="feature reveal">
+                <div className="icon">
+                  <i className="bi bi-kanban"></i>
+                </div>
+                <div>
+                  <h3>CRM financeiro pessoal</h3>
+                  <p>
+                    Histórico das decisões e tarefas para manter constância ao
+                    longo do ano.
+                  </p>
+                </div>
+              </article>
+              <article className="feature reveal">
+                <div className="icon">
+                  <i className="bi bi-bar-chart-line"></i>
+                </div>
+                <div>
+                  <h3>Revisão mensal guiada</h3>
+                  <p>
+                    Análise de desempenho com ajustes de rota para você
+                    continuar evoluindo.
+                  </p>
+                </div>
+              </article>
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* MÉTODO */}
-        <section id="metodo" className="section reveal" style={{ background: 'rgba(7,13,29,0.5)' }}>
-          <div className="section-inner">
-            <div className="section-header">
-              <h2>Método Finlly em 3 passos</h2>
-            </div>
+          <section id="metodo" className="block">
             <div className="split">
-              <div className="split-left">
-                <h3>Método Finlly</h3>
-                {metodoSteps.map((s) => (
-                  <div key={s.title} className="step-row">
-                    <i className="bi bi-check2-circle" />
-                    <div>
-                      <div className="step-title">{s.title}</div>
-                      <div className="step-desc">{s.desc}</div>
-                    </div>
+              <article className="panel reveal">
+                <div className="section-head" style={{ marginBottom: '18px' }}>
+                  <h2 style={{ fontSize: 'clamp(24px, 2.6vw, 34px)' }}>
+                    Método Finlly em 3 passos
+                  </h2>
+                </div>
+                <ul className="checklist">
+                  <li>
+                    <i className="bi bi-check2-circle"></i>
+                    <span>
+                      <strong>Captura:</strong> você manda mensagens simples e a
+                      plataforma registra automaticamente.
+                    </span>
+                  </li>
+                  <li>
+                    <i className="bi bi-check2-circle"></i>
+                    <span>
+                      <strong>Organização:</strong> vencimentos, metas e anexos
+                      entram em uma estrutura única.
+                    </span>
+                  </li>
+                  <li>
+                    <i className="bi bi-check2-circle"></i>
+                    <span>
+                      <strong>Execução:</strong> lembretes e revisões te mantêm
+                      em movimento real.
+                    </span>
+                  </li>
+                </ul>
+              </article>
+              <article className="panel reveal">
+                <div className="micro-grid">
+                  <div className="micro">
+                    <strong>
+                      <i className="bi bi-rocket-takeoff"></i> Onboarding rápido
+                    </strong>
+                    <span>
+                      Primeiras contas e metas em menos de 10 minutos.
+                    </span>
                   </div>
-                ))}
-              </div>
-              <div className="micro-grid">
-                {metodoCards.map((c) => (
-                  <article key={c.title} className="micro-card reveal">
-                    <i className={`bi ${c.icon}`} />
-                    <h4>{c.title}</h4>
-                    <p>{c.desc}</p>
-                  </article>
-                ))}
-              </div>
+                  <div className="micro">
+                    <strong>
+                      <i className="bi bi-bell"></i> Alertas acionáveis
+                    </strong>
+                    <span>Notificação com ação prática, sem ruído.</span>
+                  </div>
+                  <div className="micro">
+                    <strong>
+                      <i className="bi bi-shield-lock"></i> Privacidade
+                    </strong>
+                    <span>
+                      Processos e camadas de segurança para dados pessoais.
+                    </span>
+                  </div>
+                  <div className="micro">
+                    <strong>
+                      <i className="bi bi-graph-up"></i> Evolução contínua
+                    </strong>
+                    <span>Ajustes táticos para bater metas sem sufoco.</span>
+                  </div>
+                </div>
+              </article>
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* PLANOS */}
-        <section id="planos" className="section reveal">
-          <div className="section-inner">
-            <div className="section-header">
+          <section id="planos" className="block">
+            <div className="section-head reveal">
               <h2>Planos para transformar intenção em resultado</h2>
-              <p>Escolha seu ritmo e comece hoje com acompanhamento direto no WhatsApp.</p>
+              <p>
+                Escolha seu ritmo e comece hoje com acompanhamento direto no
+                WhatsApp.
+              </p>
             </div>
             <div className="pricing">
-              {/* Mensal */}
-              <div className="plan reveal">
-                <div className="plan-name">Plano Mensal</div>
-                <div className="plan-price">
-                  <big>R$39,90</big>
-                  <span>/mês</span>
+              <article className="price reveal">
+                <h3>Plano Mensal</h3>
+                <div className="value">
+                  <strong>39,90</strong>
+                  <span>R$/mês</span>
                 </div>
-                <ul className="plan-items">
-                  {mensal.map((item) => (
-                    <li key={item}><i className="bi bi-check2" />{item}</li>
-                  ))}
+                <ul className="list">
+                  <li>
+                    <i className="bi bi-check2-circle"></i>Contas, recebimentos
+                    e metas
+                  </li>
+                  <li>
+                    <i className="bi bi-check2-circle"></i>Lembretes + anexos
+                    organizados
+                  </li>
+                  <li>
+                    <i className="bi bi-check2-circle"></i>Atendimento no
+                    WhatsApp
+                  </li>
+                  <li>
+                    <i className="bi bi-check2-circle"></i>Cancelamento quando
+                    quiser
+                  </li>
                 </ul>
-                <Link to="/checkout?plano=mensal" className="btn-plan-ghost">Assinar mensal</Link>
-              </div>
-              {/* Anual */}
-              <div className="plan best reveal">
-                <div className="plan-badge">Melhor custo</div>
-                <div className="plan-name">Plano Anual</div>
-                <div className="plan-price">
-                  <big>R$399</big>
-                  <span>/ano</span>
+                <Link className="btn-plan" to="/checkout?plano=mensal">
+                  Assinar mensal
+                </Link>
+              </article>
+              <article className="price best reveal">
+                <span className="pill">Melhor custo</span>
+                <h3>Plano Anual</h3>
+                <div className="value">
+                  <strong>399</strong>
+                  <span>R$/ano</span>
                 </div>
-                <ul className="plan-items">
-                  {anual.map((item) => (
-                    <li key={item}><i className="bi bi-check2" />{item}</li>
-                  ))}
+                <ul className="list">
+                  <li>
+                    <i className="bi bi-check2-circle"></i>Tudo do plano mensal
+                  </li>
+                  <li>
+                    <i className="bi bi-check2-circle"></i>Economia para manter
+                    consistência
+                  </li>
+                  <li>
+                    <i className="bi bi-check2-circle"></i>Foco em metas de
+                    médio e longo prazo
+                  </li>
+                  <li>
+                    <i className="bi bi-check2-circle"></i>Acompanhamento
+                    prioritário
+                  </li>
                 </ul>
-                <Link to="/checkout?plano=anual" className="btn-plan-primary">Assinar anual</Link>
-              </div>
+                <Link className="btn-plan" to="/checkout?plano=anual">
+                  Assinar anual
+                </Link>
+              </article>
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* DEPOIMENTOS */}
-        <section className="section reveal" style={{ background: 'rgba(7,13,29,0.5)' }}>
-          <div className="section-inner">
-            <div className="section-header">
+          <section className="block">
+            <div className="section-head reveal">
               <h2>Quem usa, percebe confiança e velocidade de execução</h2>
             </div>
             <div className="testimonials">
-              {testimonials.map((t) => (
-                <article key={t.author} className="quote-card reveal">
-                  <i className="bi bi-quote" />
-                  <p>{t.text}</p>
-                  <div className="quote-author">{t.author}</div>
-                  <div className="quote-role">{t.role}</div>
-                </article>
-              ))}
+              <article className="quote reveal">
+                <p>
+                  &ldquo;Saí da desorganização total. Hoje eu sei exatamente o
+                  que vence e quanto posso aportar sem estresse.&rdquo;
+                </p>
+                <strong>Mariana Alves, empreendedora</strong>
+              </article>
+              <article className="quote reveal">
+                <p>
+                  &ldquo;O grande diferencial é a rotina. A Finlly me lembra,
+                  registra e me mantém em ação sem fricção.&rdquo;
+                </p>
+                <strong>Rafael Monteiro, consultor comercial</strong>
+              </article>
+              <article className="quote reveal">
+                <p>
+                  &ldquo;Em poucos meses eu construo consistência que não
+                  consegui em anos com apps tradicionais.&rdquo;
+                </p>
+                <strong>Bianca Torres, gerente de projetos</strong>
+              </article>
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* FAQ */}
-        <section id="faq" className="faq-section reveal">
-          <h2>Perguntas frequentes</h2>
-          {faqItems.map((item, idx) => (
-            <details key={idx}>
-              <summary>{item.q}</summary>
-              <div className="faq-answer">{item.a}</div>
-            </details>
-          ))}
-        </section>
-
-        {/* CTA FINAL */}
-        <section className="cta reveal">
-          <div className="cta-inner">
-            <div>
-              <h2>Pronto para surpreender sua versão financeira?</h2>
-              <p>Comece hoje e receba um plano prático no WhatsApp para organizar, executar e evoluir sem improviso.</p>
+          <section id="faq" className="block">
+            <div className="section-head reveal">
+              <h2>Perguntas frequentes</h2>
             </div>
-            <Link to="/checkout" className="btn-primary">
-              Começar agora <i className="bi bi-arrow-right" />
-            </Link>
-          </div>
-        </section>
-      </main>
+            <div className="faq-box reveal">
+              <details>
+                <summary>A Finlly é apenas um bot?</summary>
+                <p>
+                  Não. É uma consultora digital de execução que estrutura sua
+                  rotina financeira e cria acompanhamento contínuo.
+                </p>
+              </details>
+              <details>
+                <summary>Posso cancelar quando quiser?</summary>
+                <p>
+                  Sim, no plano mensal você pode cancelar a qualquer momento. O
+                  plano anual segue o período contratado.
+                </p>
+              </details>
+              <details>
+                <summary>Quais áreas eu consigo controlar?</summary>
+                <p>
+                  Contas fixas e variáveis, metas, recebimentos, investimentos,
+                  anexos e histórico de tarefas.
+                </p>
+              </details>
+            </div>
 
-      {/* FOOTER */}
-      <footer className="footer">
-        <p>© {year} Finlly. Todos os direitos reservados.</p>
-        <p>Seus dados são protegidos conforme a LGPD. Finlly não compartilha informações pessoais com terceiros.</p>
-      </footer>
-    </div>
+            <div className="cta reveal">
+              <div>
+                <h2>Pronto para surpreender sua versão financeira?</h2>
+                <p>
+                  Comece hoje e receba um plano prático no WhatsApp para
+                  organizar, executar e evoluir sem improviso.
+                </p>
+              </div>
+              <div className="cta-action">
+                <Link className="btn btn-primary" to="/checkout?plano=mensal">
+                  Quero começar agora <i className="bi bi-arrow-right"></i>
+                </Link>
+              </div>
+            </div>
+          </section>
+
+          <footer>
+            <span>© {year} Finlly. Todos os direitos reservados.</span>
+            <span>
+              LGPD | Criptografia em trânsito | Atendimento via WhatsApp
+            </span>
+          </footer>
+        </main>
+      </div>
+    </>
   );
 }
