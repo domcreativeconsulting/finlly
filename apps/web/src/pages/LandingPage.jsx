@@ -5,9 +5,9 @@ const LOGO_URL = 'https://projects.domlabs.com.br/finlly/assets/img/logo.png';
 
 const navLinks = [
   { label: 'Recursos', href: '#recursos' },
-  { label: 'Metodo', href: '#metodo' },
+  { label: 'Método', href: '#metodo' },
   { label: 'Planos', href: '#planos' },
-  { label: 'Duvidas', href: '#faq' },
+  { label: 'Dúvidas', href: '#faq' },
 ];
 
 const marqueeItems = [
@@ -726,27 +726,27 @@ export default function LandingPage() {
             <div>
               <div className="kicker">
                 <i className="bi bi-stars" />
-                Nova geracao de organizacao financeira pessoal
+                Nova geração de organização financeira pessoal
               </div>
               <h1>
-                Uma experiencia financeira que{' '}
+                Uma experiência financeira que{' '}
                 <span>parece produto de banco premium.</span>
               </h1>
               <p>
-                A Finlly pega sua rotina no WhatsApp e transforma em sistema vivo: contas registradas, metas em trilha, lembretes no momento certo e acompanhamento continuo.
+                A Finlly pega sua rotina no WhatsApp e transforma em sistema vivo: contas registradas, metas em trilha, lembretes no momento certo e acompanhamento contínuo.
               </p>
               <div className="hero-ctas">
                 <Link to="/checkout" className="btn-primary-lg">
-                  Comecar agora <i className="bi bi-arrow-right" />
+                  Começar agora <i className="bi bi-arrow-right" />
                 </Link>
                 <a href="#recursos" className="btn-ghost-lg">
-                  Ver demostracao ▶
+                  Ver demonstração ▶
                 </a>
               </div>
               <div className="proof-badges">
-                <span className="proof-badge"><i className="bi bi-shield-lock" /> Politicas LGPD</span>
+                <span className="proof-badge"><i className="bi bi-shield-lock" /> Políticas LGPD</span>
                 <span className="proof-badge"><i className="bi bi-whatsapp" /> Fluxo nativo no WhatsApp</span>
-                <span className="proof-badge"><i className="bi bi-lightning-charge" /> Acao em segundos</span>
+                <span className="proof-badge"><i className="bi bi-lightning-charge" /> Ação em segundos</span>
               </div>
             </div>
 
@@ -804,7 +804,7 @@ export default function LandingPage() {
           <div className="section-inner">
             <div className="section-header">
               <h2>Recursos desenhados para sair do caos e entrar em ritmo</h2>
-              <p>Nada de planilhas perdidas e decisao no improviso. A Finlly organiza, lembra e conduz seu plano financeiro de ponta a ponta.</p>
+              <p>Nada de planilhas perdidas e decisão no improviso. A Finlly organiza, lembra e conduz seu plano financeiro de ponta a ponta.</p>
             </div>
             <div className="features">
               {features.map((f) => (
@@ -822,11 +822,11 @@ export default function LandingPage() {
         <section id="metodo" className="section reveal" style={{ background: 'rgba(7,13,29,0.5)' }}>
           <div className="section-inner">
             <div className="section-header">
-              <h2>Metodo Finlly em 3 passos</h2>
+              <h2>Método Finlly em 3 passos</h2>
             </div>
             <div className="split">
               <div className="split-left">
-                <h3>Metodo Finlly</h3>
+                <h3>Método Finlly</h3>
                 {metodoSteps.map((s) => (
                   <div key={s.title} className="step-row">
                     <i className="bi bi-check2-circle" />
@@ -854,7 +854,7 @@ export default function LandingPage() {
         <section id="planos" className="section reveal">
           <div className="section-inner">
             <div className="section-header">
-              <h2>Planos para transformar intencao em resultado</h2>
+              <h2>Planos para transformar intenção em resultado</h2>
               <p>Escolha seu ritmo e comece hoje com acompanhamento direto no WhatsApp.</p>
             </div>
             <div className="pricing">
@@ -925,11 +925,11 @@ export default function LandingPage() {
         <section className="cta reveal">
           <div className="cta-inner">
             <div>
-              <h2>Pronto para surpreender sua versao financeira?</h2>
-              <p>Comece hoje e receba um plano pratico no WhatsApp para organizar, executar e evoluir sem improviso.</p>
+              <h2>Pronto para surpreender sua versão financeira?</h2>
+              <p>Comece hoje e receba um plano prático no WhatsApp para organizar, executar e evoluir sem improviso.</p>
             </div>
             <Link to="/checkout" className="btn-primary">
-              Comecar agora <i className="bi bi-arrow-right" />
+              Começar agora <i className="bi bi-arrow-right" />
             </Link>
           </div>
         </section>
