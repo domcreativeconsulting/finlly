@@ -7,7 +7,7 @@ The Finlly API uses a three-tier access model to control which endpoints each cl
 All access rules are **declared centrally** in [`apps/api/src/config/accessPolicy.js`](../apps/api/src/config/accessPolicy.js). The enforcement is done by two Express middleware layers:
 
 1. **`jwtAuthMiddleware`** — validates the JWT and populates `req.user`. Required for all non-public routes.
-2. **`requireAtivo`** — rejects requests from users whose subscription status is blocked (see [Status de Usuário](#status-de-usuário)). Applied only to **Paid** routes.
+2. **`requireAtivo`** — rejects requests from users who do not have an active subscription (see [Status de Usuário](#status-de-usuário)). Applied only to **Paid** routes.
 
 ---
 
@@ -38,8 +38,8 @@ All access rules are **declared centrally** in [`apps/api/src/config/accessPolic
 | `GET` | `/auth/me` | Free | — |
 | `GET` | `/perfil` | Free | Leitura sempre permitida; apenas escrita é bloqueada |
 | `GET` | `/users/me` | Free | Alias de `GET /perfil` |
-| `GET` | `/billing/status` | Free | Inadimplente precisa poder ver seu status |
-| `POST` | `/billing/cancel` | Free | Inadimplente precisa poder cancelar |
+| `GET` | `/billing/status` | Free | Usuário sem plano precisa poder ver seu status |
+| `POST` | `/billing/cancel` | Free | Usuário sem plano precisa poder cancelar |
 | `POST` | `/billing/admin/reconciliar` | Free | Restrito por `role=admin`, não por plano |
 | `POST` | `/billing/subscribe` | Paid | — |
 | `PATCH` | `/perfil` | Paid | — |
@@ -57,15 +57,18 @@ O campo `status` em `req.user` (populado pelo `jwtAuthMiddleware`) determina se 
 | `trial` | Período de avaliação gratuita | ✅ Permitido |
 | `pendente` | Aguardando confirmação de pagamento | ✅ Permitido |
 | `bloqueado_inadimplencia` | Inadimplente — pagamento em atraso | ❌ **Bloqueado** (HTTP 403) |
+| `cancelado` | Assinatura cancelada | ❌ **Bloqueado** (HTTP 403) |
+| `inativo` | Sem assinatura ativa | ❌ **Bloqueado** (HTTP 403) |
+| `undefined` / ausente | Usuário recém-cadastrado sem plano | ❌ **Bloqueado** (HTTP 403) |
 
-A lista autoritativa de status bloqueados está em `BLOCKED_STATUSES` no arquivo [`accessPolicy.js`](../apps/api/src/config/accessPolicy.js). Qualquer alteração na regra deve ser feita **apenas** nesse arquivo.
+A lista autoritativa de status permitidos está em `ALLOWED_STATUSES` no arquivo [`accessPolicy.js`](../apps/api/src/config/accessPolicy.js). Qualquer alteração na regra deve ser feita **apenas** nesse arquivo.
 
-Quando um status bloqueado é detectado, o middleware `requireAtivo` retorna:
+Quando um status sem assinatura ativa é detectado, o middleware `requireAtivo` retorna:
 
 ```json
 {
-  "code": "INADIMPLENTE",
-  "message": "Sua assinatura está inadimplente. Regularize seu pagamento para continuar usando o serviço.",
+  "code": "SEM_ASSINATURA",
+  "message": "Você precisa de um plano ativo para acessar este recurso.",
   "statusCode": 403
 }
 ```
@@ -76,7 +79,7 @@ Quando um status bloqueado é detectado, o middleware `requireAtivo` retorna:
 
 ### Por que `/billing/cancel` é Free?
 
-Um usuário com status `bloqueado_inadimplencia` deve poder cancelar sua assinatura sem ser impedido pelo `requireAtivo`. Bloquear o cancelamento criaria um estado sem saída para o usuário. Por isso, `POST /billing/cancel` usa apenas `jwtAuthMiddleware`, sem `requireAtivo`.
+Um usuário sem assinatura ativa deve poder cancelar sua assinatura sem ser impedido pelo `requireAtivo`. Bloquear o cancelamento criaria um estado sem saída para o usuário. Por isso, `POST /billing/cancel` usa apenas `jwtAuthMiddleware`, sem `requireAtivo`.
 
 ### Por que `/billing/status` é Free?
 
@@ -84,7 +87,7 @@ O usuário precisa poder consultar seu próprio status de assinatura (inclusive 
 
 ### Por que `GET /perfil` e `GET /users/me` são Free?
 
-A regra de negócio é que **leitura** de dados próprios é sempre permitida; apenas **escrita** (`PATCH /perfil`, `PUT /users/me`) exige assinatura ativa. Isso garante que o usuário sempre consiga ver seus dados, mesmo em estado de inadimplência.
+A regra de negócio é que **leitura** de dados próprios é sempre permitida; apenas **escrita** (`PATCH /perfil`, `PUT /users/me`) exige assinatura ativa. Isso garante que o usuário sempre consiga ver seus dados, mesmo sem plano ativo.
 
 ### Por que `/billing/admin/reconciliar` é Free (sem `requireAtivo`)?
 

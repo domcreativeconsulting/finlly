@@ -47,19 +47,19 @@ export default function App() {
         />
         <Route
           path="/perfil"
-          element={<ProtectedRoute element={<PerfilPage />} />}
+          element={<ProtectedRoute element={<PerfilPage />} requiresSubscription={false} />}
         />
         <Route
           path="/checkout"
-          element={<ProtectedRoute element={<CheckoutPage />} />}
+          element={<ProtectedRoute element={<CheckoutPage />} requiresSubscription={false} />}
         />
         <Route
           path="/billing/status"
-          element={<ProtectedRoute element={<BillingStatusPage />} />}
+          element={<ProtectedRoute element={<BillingStatusPage />} requiresSubscription={false} />}
         />
         <Route
           path="/assinatura"
-          element={<ProtectedRoute element={<BillingStatusPage />} />}
+          element={<ProtectedRoute element={<BillingStatusPage />} requiresSubscription={false} />}
         />
         <Route
           path="/contas-pagar"

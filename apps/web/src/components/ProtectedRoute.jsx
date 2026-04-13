@@ -1,6 +1,8 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
 
+const ALLOWED_STATUSES = ['ativo', 'trial', 'pendente'];
+
 function LoadingScreen() {
   return (
     <div
@@ -19,7 +21,7 @@ function LoadingScreen() {
   );
 }
 
-export function ProtectedRoute({ element, requiredRole }) {
+export function ProtectedRoute({ element, requiredRole, requiresSubscription = true }) {
   const { isAuthenticated, usuario, isLoading } = useAuth();
 
   if (isLoading) {
@@ -32,6 +34,10 @@ export function ProtectedRoute({ element, requiredRole }) {
 
   if (requiredRole && usuario?.role !== requiredRole) {
     return <Navigate to="/dashboard" replace />;
+  }
+
+  if (requiresSubscription && !ALLOWED_STATUSES.includes(usuario?.status)) {
+    return <Navigate to="/checkout" replace />;
   }
 
   return element;

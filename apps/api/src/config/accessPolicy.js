@@ -5,7 +5,7 @@
  * them into three categories: public, free (authenticated) and paid (authenticated
  * with an active subscription). It also exports the utility function used by
  * {@link module:middleware/requireAtivo} to decide whether a user's subscription
- * status should be blocked from paid routes.
+ * status allows access to paid routes.
  *
  * @module config/accessPolicy
  */
@@ -15,10 +15,21 @@
 // ============================================================
 
 /**
- * User statuses that are **blocked** from accessing PAID_ROUTES.
+ * User statuses that are **allowed** to access PAID_ROUTES.
  *
- * Only statuses listed here will be rejected by {@link isStatusBlocked}.
- * All other statuses (including `ativo`, `trial` and `pendente`) are allowed.
+ * Only statuses listed here will be accepted by {@link hasActiveSubscription}.
+ * All other statuses (including `inativo`, `cancelado`, `bloqueado_inadimplencia`
+ * and absent/undefined statuses) are blocked.
+ *
+ * @type {readonly string[]}
+ */
+export const ALLOWED_STATUSES = Object.freeze(['ativo', 'trial', 'pendente']);
+
+/**
+ * @deprecated Use {@link ALLOWED_STATUSES} instead.
+ *
+ * Kept for backwards compatibility. Previously only `bloqueado_inadimplencia`
+ * was blocked; now all statuses not in {@link ALLOWED_STATUSES} are blocked.
  *
  * @type {readonly string[]}
  */
@@ -31,7 +42,7 @@ export const BLOCKED_STATUSES = Object.freeze(['bloqueado_inadimplencia']);
  * @type {string}
  */
 export const PAID_GUARD_DESCRIPTION =
-  'Acesso bloqueado para usuários com status de inadimplência. ' +
+  'Acesso restrito a usuários com assinatura ativa. ' +
   'Apenas usuários com status ativo, trial ou pendente podem acessar rotas pagas.';
 
 // ============================================================
@@ -108,7 +119,7 @@ export const FREE_ROUTES = Object.freeze([
 
 /**
  * Routes that require a valid JWT **and** an active subscription (i.e. a status
- * that is NOT in {@link BLOCKED_STATUSES}).
+ * that is in {@link ALLOWED_STATUSES}).
  *
  * These routes are protected by both `jwtAuthMiddleware` and `requireAtivo`.
  *
@@ -133,35 +144,47 @@ export const PAID_ROUTES = Object.freeze([
 ]);
 
 // ============================================================
-// Utility function
+// Utility functions
 // ============================================================
 
 /**
- * Returns `true` when the given user status should be **blocked** from
- * accessing PAID_ROUTES, or `false` when access should be allowed.
+ * Returns `true` when the given user status grants access to PAID_ROUTES,
+ * or `false` when the user should be blocked.
  *
- * This function encapsulates the authoritative blocked-status check and must
- * be used everywhere the check is needed (e.g. in {@link module:middleware/requireAtivo})
- * so that the rule is maintained in a single place.
+ * This is the authoritative check and must be used everywhere subscription
+ * access is evaluated (e.g. in {@link module:middleware/requireAtivo}).
  *
- * Statuses that are **not** blocked (allowed on paid routes):
+ * Statuses that are **allowed** (have an active subscription):
  * - `ativo`
  * - `trial`
  * - `pendente`
  *
- * Statuses that **are** blocked:
- * - `bloqueado_inadimplencia`
+ * All other statuses (including `inativo`, `cancelado`,
+ * `bloqueado_inadimplencia` and `undefined`/`null`) are **blocked**.
  *
- * @param {string | undefined} status - The user's subscription status from `req.user.status`.
- * @returns {boolean} `true` if the status is blocked, `false` otherwise.
+ * @param {string | undefined | null} status - The user's subscription status from `req.user.status`.
+ * @returns {boolean} `true` if the user has an active subscription, `false` otherwise.
  *
  * @example
- * import { isStatusBlocked } from '../config/accessPolicy.js';
+ * import { hasActiveSubscription } from '../config/accessPolicy.js';
  *
- * if (isStatusBlocked(req.user?.status)) {
+ * if (!hasActiveSubscription(req.user?.status)) {
  *   // deny access
  * }
  */
+export function hasActiveSubscription(status) {
+  return status != null && ALLOWED_STATUSES.includes(status);
+}
+
+/**
+ * @deprecated Use {@link hasActiveSubscription} instead.
+ *
+ * Returns `true` when the given user status should be **blocked** from
+ * accessing PAID_ROUTES. Kept for backwards compatibility only.
+ *
+ * @param {string | undefined} status - The user's subscription status from `req.user.status`.
+ * @returns {boolean} `true` if the status is blocked, `false` otherwise.
+ */
 export function isStatusBlocked(status) {
-  return status != null && BLOCKED_STATUSES.includes(status);
+  return !hasActiveSubscription(status);
 }
