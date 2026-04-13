@@ -1,104 +1,74 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-  faBolt, faLock, faComment, faCreditCard, faBullseye, faPaperclip,
-  faClipboardList, faChartBar, faCircleCheck, faRocket, faBell, faShield,
-  faChartLine, faCheck, faQuoteLeft, faPlus, faMinus, faBars, faXmark, faArrowRight,
-} from '@fortawesome/free-solid-svg-icons';
-import logoImg from '../assets/logo.png';
 
-const colors = {
-  bg: '#0d1117',
-  bgCard: '#111827',
-  bgCardAlt: '#1a2236',
-  accent: '#c8f135',
-  accentHover: '#b8e020',
-  white: '#ffffff',
-  muted: '#94a3b8',
-  border: '#1e293b',
-};
+const LOGO_URL = 'https://projects.domlabs.com.br/finlly/assets/img/logo.png';
 
-const tickerItems = [
-  'Histórico rastreável',
-  'Rotina semanal automatizada',
-  'Proteção de dados',
-  'Monitoramento de metas',
-  'Método orientado à execução',
-  'Criptografia em trânsito',
+const navLinks = [
+  { label: 'Recursos', href: '#recursos' },
+  { label: 'Metodo', href: '#metodo' },
+  { label: 'Planos', href: '#planos' },
+  { label: 'Duvidas', href: '#faq' },
+];
+
+const marqueeItems = [
+  { icon: 'bi-lock-fill', label: 'Histórico rastreável' },
+  { icon: 'bi-journal-check', label: 'Rotina semanal automatizada' },
+  { icon: 'bi-calendar-check', label: 'Proteção de dados' },
+  { icon: 'bi-file-earmark-lock2', label: 'Monitoramento de metas' },
+  { icon: 'bi-graph-up-arrow', label: 'Método orientado à execução' },
+  { icon: 'bi-clipboard2-pulse', label: 'Criptografia em trânsito' },
+  { icon: 'bi-lock-fill', label: 'Histórico rastreável' },
+  { icon: 'bi-journal-check', label: 'Rotina semanal automatizada' },
+  { icon: 'bi-calendar-check', label: 'Proteção de dados' },
+  { icon: 'bi-file-earmark-lock2', label: 'Monitoramento de metas' },
 ];
 
 const features = [
-  {
-    faIcon: faCreditCard,
-    title: 'Contas e vencimentos',
-    desc: 'Centralize despesas fixas e variáveis com linha do tempo para vencer no prazo certo.',
-  },
-  {
-    faIcon: faBullseye,
-    title: 'Metas e aportes',
-    desc: 'Defina objetivo, valor e prazo. A Finlly te conduz em micro-ações executáveis.',
-  },
-  {
-    faIcon: faPaperclip,
-    title: 'Anexos inteligentes',
-    desc: 'Comprovantes e extratos organizados por contexto para consulta rápida e segura.',
-  },
-  {
-    faIcon: faComment,
-    title: 'Entrada pelo WhatsApp',
-    desc: 'Você fala naturalmente, a Finlly interpreta e transforma em execução concreta.',
-  },
-  {
-    faIcon: faClipboardList,
-    title: 'CRM financeiro pessoal',
-    desc: 'Histórico das decisões e tarefas para manter constância ao longo do ano.',
-  },
-  {
-    faIcon: faChartBar,
-    title: 'Revisão mensal guiada',
-    desc: 'Análise de desempenho com ajustes de rota para você continuar evoluindo.',
-  },
+  { icon: 'bi-wallet2', title: 'Contas e vencimentos', desc: 'Centralize despesas fixas e variáveis com linha do tempo para vencer no prazo certo.' },
+  { icon: 'bi-piggy-bank', title: 'Metas e aportes', desc: 'Defina objetivo, valor e prazo. A Finlly te conduz em micro-ações executáveis.' },
+  { icon: 'bi-paperclip', title: 'Anexos inteligentes', desc: 'Comprovantes e extratos organizados por contexto para consulta rápida e segura.' },
+  { icon: 'bi-whatsapp', title: 'Entrada pelo WhatsApp', desc: 'Você fala naturalmente, a Finlly interpreta e transforma em execução concreta.' },
+  { icon: 'bi-kanban', title: 'CRM financeiro pessoal', desc: 'Histórico das decisões e tarefas para manter constância ao longo do ano.' },
+  { icon: 'bi-bar-chart-line', title: 'Revisão mensal guiada', desc: 'Análise de desempenho com ajustes de rota para você continuar evoluindo.' },
+];
+
+const metodoSteps = [
+  { title: 'Captura', desc: 'Você manda mensagens simples e a plataforma registra automaticamente.' },
+  { title: 'Organização', desc: 'Vencimentos, metas e anexos entram em uma estrutura única.' },
+  { title: 'Execução', desc: 'Lembretes e revisões te mantêm em movimento real.' },
 ];
 
 const metodoCards = [
-  { faIcon: faRocket, title: 'Onboarding rápido', desc: 'Primeiras contas e metas em menos de 10 minutos.' },
-  { faIcon: faBell, title: 'Alertas acionáveis', desc: 'Notificação com ação prática, sem ruído.' },
-  { faIcon: faShield, title: 'Privacidade', desc: 'Processos e camadas de segurança para dados pessoais.' },
-  { faIcon: faChartLine, title: 'Evolução contínua', desc: 'Ajustes táticos para bater metas sem sufoco.' },
+  { icon: 'bi-rocket-takeoff', title: 'Onboarding', desc: 'Primeiras contas e metas em menos de 10 minutos.' },
+  { icon: 'bi-bell', title: 'Alertas', desc: 'Notificação com ação prática, sem ruído.' },
+  { icon: 'bi-shield-lock', title: 'Privacidade', desc: 'Processos e camadas de segurança para dados pessoais.' },
+  { icon: 'bi-graph-up', title: 'Evolução', desc: 'Ajustes táticos para bater metas sem sufoco.' },
+];
+
+const mensal = [
+  'Contas, recebimentos e metas',
+  'Lembretes + anexos organizados',
+  'Atendimento no WhatsApp',
+  'Cancelamento quando quiser',
+];
+
+const anual = [
+  'Tudo do plano mensal',
+  'Economia para manter consistência',
+  'Foco em metas de médio e longo prazo',
+  'Acompanhamento prioritário',
 ];
 
 const testimonials = [
-  {
-    text: 'Saí da desorganização total. Hoje eu sei exatamente o que vence e quanto posso aportar sem estresse.',
-    author: 'Mariana Alves',
-    role: 'empreendedora',
-  },
-  {
-    text: 'O grande diferencial é a rotina. A Finlly me lembra, registra e me mantém em ação sem fricção.',
-    author: 'Rafael Monteiro',
-    role: 'consultor comercial',
-  },
-  {
-    text: 'Em poucos meses eu construo consistência que não consegui em anos com apps tradicionais.',
-    author: 'Bianca Torres',
-    role: 'gerente de projetos',
-  },
+  { text: 'Saí da desorganização total. Hoje eu sei exatamente o que vence e quanto posso aportar sem estresse.', author: 'Mariana Alves', role: 'empreendedora' },
+  { text: 'O grande diferencial é a rotina. A Finlly me lembra, registra e me mantém em ação sem fricção.', author: 'Rafael Monteiro', role: 'consultor comercial' },
+  { text: 'Em poucos meses eu construo consistência que não consegui em anos com apps tradicionais.', author: 'Bianca Torres', role: 'gerente de projetos' },
 ];
 
 const faqItems = [
-  {
-    q: 'A Finlly é apenas um bot?',
-    a: 'Não. A Finlly é uma plataforma completa de organização financeira que usa o WhatsApp como canal de entrada. Por trás, há um sistema estruturado com metas, contas, anexos, histórico e relatórios.',
-  },
-  {
-    q: 'Posso cancelar quando quiser?',
-    a: 'Sim. Você pode cancelar sua assinatura a qualquer momento, sem multas ou taxas adicionais. Seu acesso continua até o fim do período pago.',
-  },
-  {
-    q: 'Quais áreas eu consigo controlar?',
-    a: 'Contas a pagar, recebimentos, metas de poupança, anexos de comprovantes, extrato de movimentações, categorias e relatórios mensais — tudo integrado e acessível pelo WhatsApp ou pelo painel.',
-  },
+  { q: 'A Finlly é apenas um bot?', a: 'Não. A Finlly é uma plataforma completa de organização financeira que usa o WhatsApp como canal de entrada. Por trás, há um sistema estruturado com metas, contas, anexos, histórico e relatórios.' },
+  { q: 'Posso cancelar quando quiser?', a: 'Sim. Você pode cancelar sua assinatura a qualquer momento, sem multas ou taxas adicionais. Seu acesso continua até o fim do período pago.' },
+  { q: 'Quais áreas eu consigo controlar?', a: 'Contas a pagar, recebimentos, metas de poupança, anexos de comprovantes, extrato de movimentações, categorias e relatórios mensais — tudo integrado e acessível pelo WhatsApp ou pelo painel.' },
 ];
 
 const chatMessages = [
@@ -107,478 +77,868 @@ const chatMessages = [
   { from: 'user', text: 'Qual minha meta de reserva esse mês?' },
   { from: 'bot', text: '🎯 Meta: R$ 500. Você já aportou R$ 320. Faltam R$ 180.' },
   { from: 'user', text: 'Me lembra na sexta sobre o cartão' },
-  { from: 'bot', text: '🔔 Lembrete criado para sexta-feira — Cartão de crédito.' },
 ];
 
-function toAnchorId(label) {
-  return label
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
-}
-
-export default function LandingPage() {
-  const [faqOpen, setFaqOpen] = useState(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  function toggleFaq(idx) {
-    setFaqOpen(faqOpen === idx ? null : idx);
+const CSS = `
+  :root {
+    --primary: #33528a;
+    --secondary: #c4e91f;
+    --dark-1: #070d1d;
+    --dark-2: #0d1733;
+    --dark-3: #132449;
+    --ink: #dbe7ff;
+    --ink-soft: #9fb2d7;
+    --line: rgba(171, 192, 231, 0.24);
+    --card: rgba(19, 34, 68, 0.68);
+    --radius-lg: 24px;
+    --radius-md: 16px;
+    --glow: 0 0 0 1px rgba(196, 233, 31, 0.24), 0 24px 55px rgba(4, 10, 24, 0.65);
   }
 
-  return (
-    <div style={{ background: colors.bg, color: colors.white, fontFamily: "'Inter', 'Segoe UI', Arial, sans-serif", minHeight: '100vh', overflowX: 'hidden' }}>
-      <style>{`\n        @keyframes ticker {\n          0% { transform: translateX(0); }\n          100% { transform: translateX(-50%); }\n        }\n        @keyframes float1 {\n          0%, 100% { transform: translateY(0px); }\n          50% { transform: translateY(-8px); }\n        }\n        @keyframes float2 {\n          0%, 100% { transform: translateY(0px); }\n          50% { transform: translateY(-6px); }\n        }\n        .ticker-track {\n          display: flex;\n          gap: 0;\n          animation: ticker 28s linear infinite;\n          width: max-content;\n        }\n        .ticker-track:hover { animation-play-state: paused; }\n        .float-card-1 { animation: float1 3.5s ease-in-out infinite; }\n        .float-card-2 { animation: float2 4s ease-in-out infinite 0.5s; }\n        .float-card-3 { animation: float1 3s ease-in-out infinite 1s; }\n        .nav-link:hover { color: ${colors.accent} !important; }\n        .btn-outline:hover { background: rgba(255,255,255,0.08) !important; }\n        .btn-accent:hover { background: ${colors.accentHover} !important; }\n        .feature-card:hover { border-color: ${colors.accent} !important; transform: translateY(-3px); transition: all 0.2s; }\n        .plan-card:hover { transform: translateY(-4px); transition: all 0.25s; }\n        .faq-item { border-bottom: 1px solid ${colors.border}; }\n        .faq-question { cursor: pointer; padding: 18px 0; display: flex; justify-content: space-between; align-items: center; font-size: 16px; font-weight: 500; }\n        .faq-question:hover { color: ${colors.accent}; }\n        @media (max-width: 768px) {\n          .hero-grid { flex-direction: column !important; }\n          .features-grid { grid-template-columns: 1fr 1fr !important; }\n          .method-grid { flex-direction: column !important; }\n          .plans-grid { flex-direction: column !important; align-items: center !important; }\n          .testimonials-grid { flex-direction: column !important; }\n          .nav-links-desktop { display: none !important; }\n          .nav-ctas-desktop { display: none !important; }\n          .mobile-menu-btn { display: flex !important; }\n          .plan-card { width: 100% !important; max-width: 380px; }\n        }\n        @media (max-width: 520px) {\n          .features-grid { grid-template-columns: 1fr !important; }\n          .method-small-grid { grid-template-columns: 1fr !important; }\n        }\n      `}</style>
+  body {
+    background:
+      radial-gradient(840px 480px at 3% -12%, rgba(196, 233, 31, 0.2), transparent 68%),
+      radial-gradient(820px 500px at 98% 3%, rgba(60, 92, 155, 0.3), transparent 70%),
+      linear-gradient(175deg, #070d1d, #0d1733 32%, #0b1a3c 76%, #070d1d);
+    min-height: 100vh;
+  }
 
-      {/* NAVBAR */}
-      <nav style={{
-        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
-        background: 'rgba(13,17,23,0.92)', backdropFilter: 'blur(12px)',
-        borderBottom: `1px solid ${colors.border}`,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 32px', height: '64px',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <img src={logoImg} alt="Finlly" style={{ height: '32px' }} />
+  .lp-wrap {
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', 'Segoe UI', Arial, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .lp-wrap h1, .lp-wrap h2, .lp-wrap h3, .lp-wrap h4 {
+    font-family: 'Sora', 'Segoe UI', Arial, sans-serif;
+  }
+
+  /* Topbar */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(7, 13, 29, 0.85);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--line);
+  }
+  .topbar-inner {
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 0 32px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+  }
+  .topbar-logo img { height: 32px; display: block; }
+  .nav { display: flex; gap: 28px; }
+  .nav a {
+    color: var(--ink-soft);
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 500;
+    transition: color 0.15s;
+  }
+  .nav a:hover { color: var(--secondary); }
+  .topbar-ctas { display: flex; gap: 10px; align-items: center; }
+  .btn-ghost {
+    padding: 8px 18px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--ink);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    background: transparent;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .btn-ghost:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.3); }
+  .btn-primary {
+    padding: 8px 18px;
+    background: var(--secondary);
+    border: none;
+    border-radius: 8px;
+    color: #0d1117;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: filter 0.15s;
+  }
+  .btn-primary:hover { filter: brightness(1.08); }
+  .mobile-menu-btn {
+    display: none;
+    background: none;
+    border: none;
+    color: var(--ink);
+    font-size: 22px;
+    cursor: pointer;
+    padding: 4px;
+  }
+
+  /* Mobile menu */
+  .mobile-menu {
+    position: fixed;
+    top: 64px;
+    left: 0; right: 0;
+    z-index: 99;
+    background: var(--dark-2);
+    border-bottom: 1px solid var(--line);
+    padding: 16px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .mobile-menu a {
+    color: var(--ink-soft);
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 500;
+  }
+
+  /* Hero */
+  .hero { padding: 120px 32px 80px; max-width: 1160px; margin: 0 auto; }
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    align-items: center;
+  }
+  .kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(196, 233, 31, 0.1);
+    border: 1px solid rgba(196, 233, 31, 0.25);
+    border-radius: 100px;
+    padding: 6px 14px;
+    margin-bottom: 28px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--secondary);
+    letter-spacing: 0.06em;
+  }
+  .hero h1 {
+    font-size: clamp(28px, 5vw, 52px);
+    font-weight: 800;
+    line-height: 1.15;
+    margin: 0 0 20px;
+    letter-spacing: -1px;
+    color: var(--ink);
+  }
+  .hero h1 span { color: var(--secondary); }
+  .hero p {
+    font-size: 17px;
+    color: var(--ink-soft);
+    line-height: 1.65;
+    margin: 0 0 32px;
+    max-width: 520px;
+  }
+  .hero-ctas { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 28px; }
+  .btn-primary-lg {
+    padding: 13px 26px;
+    background: var(--secondary);
+    border-radius: 10px;
+    color: #0d1117;
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: none;
+    cursor: pointer;
+    transition: filter 0.15s;
+  }
+  .btn-primary-lg:hover { filter: brightness(1.08); }
+  .btn-ghost-lg {
+    padding: 13px 26px;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    color: var(--ink);
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-ghost-lg:hover { background: rgba(255,255,255,0.06); }
+  .proof-badges { display: flex; flex-wrap: wrap; gap: 16px; }
+  .proof-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+  .proof-badge i { color: var(--secondary); }
+
+  /* Hero stage */
+  .hero-stage {
+    position: relative;
+    display: flex;
+    justify-content: center;
+  }
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    filter: blur(60px);
+    opacity: 0.35;
+  }
+  .orb-a {
+    width: 280px; height: 280px;
+    background: var(--secondary);
+    top: -60px; right: -40px;
+    animation: drift 8s ease-in-out infinite;
+  }
+  .orb-b {
+    width: 200px; height: 200px;
+    background: var(--primary);
+    bottom: -40px; left: -20px;
+    animation: drift 10s ease-in-out infinite 2s;
+  }
+  .glass-main {
+    position: relative;
+    z-index: 2;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 360px;
+    overflow: hidden;
+    box-shadow: var(--glow);
+    backdrop-filter: blur(12px);
+  }
+  .chat-header {
+    background: rgba(7,13,29,0.8);
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .chat-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: #0d1117;
+  }
+  .chat-name { font-weight: 700; font-size: 14px; color: var(--ink); }
+  .chat-status { font-size: 11px; color: #22c55e; }
+  .chat-body {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 260px;
+  }
+  .msg { display: flex; }
+  .msg.user { justify-content: flex-end; }
+  .msg.bot { justify-content: flex-start; }
+  .bubble {
+    max-width: 82%;
+    padding: 9px 13px;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  .msg.user .bubble {
+    background: var(--secondary);
+    color: #0d1117;
+    border-radius: 14px 14px 4px 14px;
+    font-weight: 500;
+  }
+  .msg.bot .bubble {
+    background: rgba(30, 45, 69, 0.9);
+    color: var(--ink);
+    border-radius: 14px 14px 14px 4px;
+  }
+
+  /* Stack cards */
+  .stack-a, .stack-b, .stack-c {
+    position: absolute;
+    z-index: 3;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    backdrop-filter: blur(8px);
+  }
+  .stack-a { top: -16px; right: -20px; min-width: 140px; animation: floatAlt 3.5s ease-in-out infinite; }
+  .stack-b { bottom: 60px; right: -28px; min-width: 140px; animation: floatAlt 4s ease-in-out infinite 0.5s; }
+  .stack-c { bottom: -12px; left: -20px; min-width: 160px; animation: floatAlt 3s ease-in-out infinite 1s; }
+  .stack-label { font-size: 10px; color: var(--ink-soft); font-weight: 600; letter-spacing: 0.05em; margin-bottom: 4px; }
+  .stack-value { font-size: 20px; font-weight: 800; color: var(--secondary); }
+  .stack-value.neutral { color: var(--ink); }
+  .stack-value small { font-size: 13px; color: var(--ink-soft); }
+
+  /* Marquee */
+  .marquee-wrap {
+    overflow: hidden;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    padding: 14px 0;
+    background: rgba(7,13,29,0.6);
+  }
+  .marquee-track {
+    display: flex;
+    gap: 0;
+    animation: slide 28s linear infinite;
+    width: max-content;
+  }
+  .marquee-track:hover { animation-play-state: paused; }
+  .marquee-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+    padding: 0 28px;
+    color: var(--ink-soft);
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .marquee-item i { color: var(--secondary); }
+  .marquee-sep { color: var(--line); font-size: 18px; }
+
+  /* Section common */
+  .section { padding: 96px 32px; }
+  .section-inner { max-width: 1160px; margin: 0 auto; }
+  .section-header { text-align: center; margin-bottom: 56px; }
+  .section-header h2 {
+    font-size: clamp(24px, 4vw, 40px);
+    font-weight: 800;
+    margin: 0 0 16px;
+    letter-spacing: -0.5px;
+    color: var(--ink);
+  }
+  .section-header p {
+    font-size: 16px;
+    color: var(--ink-soft);
+    max-width: 540px;
+    margin: 0 auto;
+    line-height: 1.65;
+  }
+
+  /* Features */
+  .features {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  .feat-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: 28px 24px;
+    transition: transform 0.2s, border-color 0.2s;
+    backdrop-filter: blur(8px);
+  }
+  .feat-card:hover {
+    transform: translateY(-5px) rotate(-.3deg);
+    border-color: var(--secondary);
+  }
+  .feat-card i { font-size: 28px; color: var(--secondary); margin-bottom: 14px; display: block; }
+  .feat-card h3 { font-size: 16px; font-weight: 700; margin: 0 0 10px; color: var(--ink); }
+  .feat-card p { font-size: 14px; color: var(--ink-soft); line-height: 1.6; margin: 0; }
+
+  /* Método / Split */
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: stretch; }
+  .split-left {
+    background: linear-gradient(135deg, var(--dark-3), var(--dark-2));
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 36px 32px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .split-left h3 { font-size: 22px; font-weight: 800; margin: 0 0 28px; color: var(--secondary); }
+  .step-row { display: flex; gap: 14px; margin-bottom: 22px; }
+  .step-row i { font-size: 20px; margin-top: 2px; color: var(--secondary); }
+  .step-title { font-weight: 700; font-size: 16px; margin-bottom: 4px; color: var(--ink); }
+  .step-desc { font-size: 14px; color: var(--ink-soft); line-height: 1.55; }
+  .micro-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .micro-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: 24px 20px;
+    backdrop-filter: blur(8px);
+  }
+  .micro-card i { font-size: 28px; color: var(--secondary); margin-bottom: 12px; display: block; }
+  .micro-card h4 { font-weight: 700; font-size: 15px; margin: 0 0 8px; color: var(--ink); }
+  .micro-card p { font-size: 13px; color: var(--ink-soft); line-height: 1.55; margin: 0; }
+
+  /* Planos */
+  .pricing { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 760px; margin: 0 auto; }
+  .plan {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 36px 32px;
+    position: relative;
+    backdrop-filter: blur(8px);
+    transition: transform 0.2s;
+  }
+  .plan:hover { transform: translateY(-4px); }
+  .plan.best { border-color: var(--secondary); box-shadow: var(--glow); }
+  .plan-badge {
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--secondary);
+    color: #0d1117;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 5px 14px;
+    border-radius: 100px;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+  .plan-name { font-size: 18px; font-weight: 700; margin-bottom: 8px; color: var(--ink); }
+  .plan-price { margin-bottom: 24px; }
+  .plan-price big { font-size: 38px; font-weight: 800; color: var(--ink); font-family: 'Sora', sans-serif; }
+  .plan-price sup { font-size: 20px; font-weight: 700; }
+  .plan-price span { font-size: 15px; color: var(--ink-soft); }
+  .plan-items { list-style: none; padding: 0; margin: 0 0 28px; }
+  .plan-items li { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 12px; font-size: 14px; color: var(--ink-soft); }
+  .plan-items li i { color: var(--secondary); font-size: 16px; margin-top: 1px; }
+  .btn-plan-ghost {
+    display: block;
+    text-align: center;
+    padding: 13px;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    color: var(--ink);
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 15px;
+    transition: background 0.15s;
+    cursor: pointer;
+  }
+  .btn-plan-ghost:hover { background: rgba(255,255,255,0.06); }
+  .btn-plan-primary {
+    display: block;
+    text-align: center;
+    padding: 13px;
+    background: var(--secondary);
+    border-radius: 10px;
+    color: #0d1117;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 15px;
+    transition: filter 0.15s;
+    border: none;
+    cursor: pointer;
+  }
+  .btn-plan-primary:hover { filter: brightness(1.08); }
+
+  /* Depoimentos */
+  .testimonials { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .quote-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: 28px 24px;
+    backdrop-filter: blur(8px);
+  }
+  .quote-card i { font-size: 24px; color: var(--secondary); margin-bottom: 14px; display: block; }
+  .quote-card p { font-size: 15px; color: var(--ink); line-height: 1.65; margin: 0 0 20px; font-style: italic; }
+  .quote-author { font-weight: 700; font-size: 14px; color: var(--ink); }
+  .quote-role { font-size: 13px; color: var(--ink-soft); }
+
+  /* FAQ */
+  .faq-section { padding: 96px 32px; max-width: 760px; margin: 0 auto; }
+  .faq-section h2 { text-align: center; font-size: clamp(22px, 4vw, 36px); font-weight: 800; margin: 0 0 48px; letter-spacing: -0.5px; color: var(--ink); }
+  details { border-bottom: 1px solid var(--line); }
+  summary {
+    cursor: pointer;
+    padding: 18px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--ink);
+    list-style: none;
+    transition: color 0.15s;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary:hover { color: var(--secondary); }
+  summary::after { content: '+'; color: var(--secondary); font-size: 20px; transition: transform 0.2s; }
+  details[open] summary::after { content: '-'; }
+  .faq-answer { font-size: 15px; color: var(--ink-soft); line-height: 1.65; padding-bottom: 18px; }
+
+  /* CTA Final */
+  .cta { padding: 80px 32px; }
+  .cta-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 40px;
+    background: radial-gradient(ellipse at 20% 50%, rgba(196, 233, 31, 0.08), transparent 60%), linear-gradient(135deg, var(--dark-3), var(--dark-2));
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 56px 48px;
+  }
+  .cta-inner h2 { font-size: clamp(22px, 4vw, 36px); font-weight: 800; margin: 0 0 16px; letter-spacing: -0.5px; color: var(--ink); }
+  .cta-inner p { font-size: 16px; color: var(--ink-soft); margin: 0; line-height: 1.65; }
+
+  /* Footer */
+  .footer {
+    border-top: 1px solid var(--line);
+    padding: 24px 32px;
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 14px;
+  }
+  .footer p { margin: 4px 0; }
+
+  /* Scroll reveal */
+  .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.55s ease, transform 0.55s ease; }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+
+  /* Noise overlay */
+  .noise {
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* Animations */
+  @keyframes slide { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  @keyframes pop { to { opacity: 1; transform: translateY(0); } }
+  @keyframes floatY { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+  @keyframes floatAlt { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+  @keyframes drift { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(22px, -16px) scale(1.04); } }
+
+  /* Responsive */
+  @media (max-width: 1040px) {
+    .hero-grid, .split, .cta-inner { grid-template-columns: 1fr; }
+    .cta-inner { text-align: center; }
+    .cta-inner .btn-primary { justify-self: center; }
+    .features, .pricing, .testimonials { grid-template-columns: repeat(2, 1fr); }
+    .pricing { max-width: 100%; }
+  }
+  @media (max-width: 760px) {
+    .nav { display: none; }
+    .topbar-inner .btn-ghost { display: none; }
+    .mobile-menu-btn { display: flex; }
+    .glass-main { position: relative; width: 100%; }
+    .stack-a, .stack-b, .stack-c { position: relative; top: auto; right: auto; bottom: auto; left: auto; width: 100%; animation: none; margin-top: 8px; }
+    .features, .pricing, .testimonials, .micro-grid { grid-template-columns: 1fr; }
+    .hero-stage { flex-direction: column; gap: 12px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+`;
+
+export default function LandingPage() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const year = new Date().getFullYear();
+
+  useEffect(() => {
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('in');
+            io.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.12 }
+    );
+    document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, []);
+
+  const doubleMarquee = [...marqueeItems, ...marqueeItems];
+
+  return (
+    <div className="lp-wrap">
+      <style>{CSS}</style>
+      <div className="noise" aria-hidden="true" />
+
+      {/* TOPBAR */}
+      <header className="topbar">
+        <div className="topbar-inner">
+          <div className="topbar-logo">
+            <a href="#"><img src={LOGO_URL} alt="Finlly" /></a>
+          </div>
+          <nav className="nav" aria-label="Principal">
+            {navLinks.map((l) => (
+              <a key={l.href} href={l.href}>{l.label}</a>
+            ))}
+          </nav>
+          <div className="topbar-ctas">
+            <a href="#planos" className="btn-ghost">Ver planos</a>
+            <Link to="/login" className="btn-primary">Acessar</Link>
+          </div>
+          <button
+            className="mobile-menu-btn"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Menu"
+          >
+            <i className={mobileMenuOpen ? 'bi bi-x-lg' : 'bi bi-list'} />
+          </button>
         </div>
-        <div className="nav-links-desktop" style={{ display: 'flex', gap: '28px' }}>
-          {['Recursos', 'Método', 'Planos', 'Dúvidas'].map((label) => (
-            <a
-              key={label}
-              href={`#${toAnchorId(label)}`}
-              className="nav-link"
-              style={{ color: colors.muted, textDecoration: 'none', fontSize: '15px', fontWeight: 500, transition: 'color 0.15s' }}
-            >
-              {label}
-            </a>
-          ))}
-        </div>
-        <div className="nav-ctas-desktop" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <a href="#planos" style={{
-            padding: '8px 18px', border: `1px solid rgba(255,255,255,0.3)`, borderRadius: '8px',
-            color: colors.white, textDecoration: 'none', fontSize: '14px', fontWeight: 600,
-            transition: 'background 0.15s',
-          }} className="btn-outline">Ver planos</a>
-          <Link to="/login" style={{
-            padding: '8px 18px', background: colors.accent, borderRadius: '8px',
-            color: '#0d1117', textDecoration: 'none', fontSize: '14px', fontWeight: 700,
-            transition: 'background 0.15s',
-          }} className="btn-accent">Acessar</Link>
-        </div>
-        <button
-          className="mobile-menu-btn"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          style={{
-            display: 'none', background: 'none', border: 'none', color: colors.white,
-            fontSize: '22px', cursor: 'pointer', padding: '4px',
-          }}
-          aria-label="Menu"
-        >
-          {mobileMenuOpen ? <FontAwesomeIcon icon={faXmark} /> : <FontAwesomeIcon icon={faBars} />}
-        </button>
-      </nav>
+      </header>
 
       {/* MOBILE MENU */}
       {mobileMenuOpen && (
-        <div style={{
-          position: 'fixed', top: '64px', left: 0, right: 0, zIndex: 99,
-          background: colors.bgCard, borderBottom: `1px solid ${colors.border}`,
-          padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: '16px',
-        }}>
-          {['Recursos', 'Método', 'Planos', 'Dúvidas'].map((label) => (
-            <a
-              key={label}
-              href={`#${toAnchorId(label)}`}
-              onClick={() => setMobileMenuOpen(false)}
-              style={{ color: colors.muted, textDecoration: 'none', fontSize: '16px', fontWeight: 500 }}
-            >
-              {label}
-            </a>
+        <div className="mobile-menu">
+          {navLinks.map((l) => (
+            <a key={l.href} href={l.href} onClick={() => setMobileMenuOpen(false)}>{l.label}</a>
           ))}
           <div style={{ display: 'flex', gap: '10px', paddingTop: '8px' }}>
-            <a href="#planos" onClick={() => setMobileMenuOpen(false)} style={{
-              padding: '9px 18px', border: `1px solid rgba(255,255,255,0.3)`, borderRadius: '8px',
-              color: colors.white, textDecoration: 'none', fontSize: '14px', fontWeight: 600,
-            }}>Ver planos</a>
-            <Link to="/login" onClick={() => setMobileMenuOpen(false)} style={{
-              padding: '9px 18px', background: colors.accent, borderRadius: '8px',
-              color: '#0d1117', textDecoration: 'none', fontSize: '14px', fontWeight: 700,
-            }}>Acessar</Link>
+            <a href="#planos" className="btn-ghost" onClick={() => setMobileMenuOpen(false)}>Ver planos</a>
+            <Link to="/login" className="btn-primary" onClick={() => setMobileMenuOpen(false)}>Acessar</Link>
           </div>
         </div>
       )}
 
-      {/* HERO */}
-      <section style={{ padding: '120px 32px 80px', maxWidth: '1160px', margin: '0 auto' }}>
-        <div className="hero-grid" style={{ display: 'flex', gap: '48px', alignItems: 'center' }}>
-          {/* Left */}
-          <div style={{ flex: '1', minWidth: 0 }}>
-            <div style={{
-              display: 'inline-flex', alignItems: 'center', gap: '8px',
-              background: 'rgba(200,241,53,0.1)', border: `1px solid rgba(200,241,53,0.25)`,
-              borderRadius: '100px', padding: '6px 14px', marginBottom: '28px',
-            }}>
-              <FontAwesomeIcon icon={faBolt} style={{ fontSize: '13px' }} />
-              <span style={{ fontSize: '12px', fontWeight: 700, color: colors.accent, letterSpacing: '0.06em' }}>
-                NOVA GERAÇÃO DE ORGANIZAÇÃO FINANCEIRA PESSOAL
+      <main>
+        {/* HERO */}
+        <section className="hero">
+          <div className="hero-grid">
+            {/* Left */}
+            <div>
+              <div className="kicker">
+                <i className="bi bi-stars" />
+                Nova geracao de organizacao financeira pessoal
+              </div>
+              <h1>
+                Uma experiencia financeira que{' '}
+                <span>parece produto de banco premium.</span>
+              </h1>
+              <p>
+                A Finlly pega sua rotina no WhatsApp e transforma em sistema vivo: contas registradas, metas em trilha, lembretes no momento certo e acompanhamento continuo.
+              </p>
+              <div className="hero-ctas">
+                <Link to="/checkout" className="btn-primary-lg">
+                  Comecar agora <i className="bi bi-arrow-right" />
+                </Link>
+                <a href="#recursos" className="btn-ghost-lg">
+                  Ver demostracao ▶
+                </a>
+              </div>
+              <div className="proof-badges">
+                <span className="proof-badge"><i className="bi bi-shield-lock" /> Politicas LGPD</span>
+                <span className="proof-badge"><i className="bi bi-whatsapp" /> Fluxo nativo no WhatsApp</span>
+                <span className="proof-badge"><i className="bi bi-lightning-charge" /> Acao em segundos</span>
+              </div>
+            </div>
+
+            {/* Right — Hero Stage */}
+            <div className="hero-stage">
+              <div className="orb orb-a" aria-hidden="true" />
+              <div className="orb orb-b" aria-hidden="true" />
+              <div className="glass-main">
+                <div className="chat-header">
+                  <div className="chat-avatar">⚡</div>
+                  <div>
+                    <div className="chat-name">Finlly</div>
+                    <div className="chat-status">● online</div>
+                  </div>
+                </div>
+                <div className="chat-body">
+                  {chatMessages.map((msg, i) => (
+                    <div key={i} className={`msg ${msg.from}`}>
+                      <div className="bubble">{msg.text}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="stack-a">
+                <div className="stack-label">CONSISTÊNCIA SEMANAL</div>
+                <div className="stack-value">+31%</div>
+              </div>
+              <div className="stack-b">
+                <div className="stack-label">TEMPO ECONOMIZADO</div>
+                <div className="stack-value neutral">4h<small>/sem</small></div>
+              </div>
+              <div className="stack-c">
+                <div className="stack-label">CONFIANÇA OPERACIONAL</div>
+                <div className="stack-value">98.2%</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* MARQUEE */}
+        <div className="marquee-wrap" aria-hidden="true">
+          <div className="marquee-track">
+            {doubleMarquee.map((item, i) => (
+              <span key={i} className="marquee-item">
+                <i className={`bi ${item.icon}`} />
+                {item.label}
+                <span className="marquee-sep">|</span>
               </span>
+            ))}
+          </div>
+        </div>
+
+        {/* RECURSOS */}
+        <section id="recursos" className="section reveal">
+          <div className="section-inner">
+            <div className="section-header">
+              <h2>Recursos desenhados para sair do caos e entrar em ritmo</h2>
+              <p>Nada de planilhas perdidas e decisao no improviso. A Finlly organiza, lembra e conduz seu plano financeiro de ponta a ponta.</p>
             </div>
-            <h1 style={{
-              fontSize: 'clamp(28px, 5vw, 52px)', fontWeight: 800, lineHeight: 1.15,
-              margin: '0 0 20px', letterSpacing: '-1px',
-            }}>
-              Uma experiência financeira que{' '}
-              <span style={{ color: colors.accent }}>parece produto de banco premium.</span>
-            </h1>
-            <p style={{ fontSize: '17px', color: colors.muted, lineHeight: 1.65, margin: '0 0 32px', maxWidth: '520px' }}>
-              A Finlly pega sua rotina no WhatsApp e transforma em sistema vivo: contas registradas, metas em trilha, lembretes no momento certo e acompanhamento contínuo.
-            </p>
-            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '28px' }}>
-              <Link to="/checkout" style={{
-                padding: '13px 26px', background: colors.accent, borderRadius: '10px',
-                color: '#0d1117', textDecoration: 'none', fontSize: '15px', fontWeight: 700,
-                display: 'inline-flex', alignItems: 'center', gap: '6px',
-              }} className="btn-accent">
-                Começar agora <FontAwesomeIcon icon={faArrowRight} style={{ marginLeft: '6px' }} />
-              </Link>
-              <a href="#recursos" style={{
-                padding: '13px 26px', border: `1.5px solid rgba(255,255,255,0.25)`, borderRadius: '10px',
-                color: colors.white, textDecoration: 'none', fontSize: '15px', fontWeight: 600,
-                display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'transparent',
-              }} className="btn-outline">
-                Ver demonstração ▶
-              </a>
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
-              {[
-                { faIcon: faLock, label: 'Políticas LGPD' },
-                { faIcon: faComment, label: 'Fluxo nativo no WhatsApp' },
-                { faIcon: faBolt, label: 'Ação em segundos' },
-              ].map(({ faIcon, label }) => (
-                <span key={label} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: colors.muted }}>
-                  <FontAwesomeIcon icon={faIcon} />{label}
-                </span>
+            <div className="features">
+              {features.map((f) => (
+                <article key={f.title} className="feat-card reveal">
+                  <i className={`bi ${f.icon}`} />
+                  <h3>{f.title}</h3>
+                  <p>{f.desc}</p>
+                </article>
               ))}
             </div>
           </div>
+        </section>
 
-          {/* Right — chat mockup */}
-          <div style={{ flex: '1', minWidth: 0, position: 'relative', display: 'flex', justifyContent: 'center' }}>
-            <div style={{
-              background: colors.bgCardAlt, borderRadius: '20px', border: `1px solid ${colors.border}`,
-              width: '100%', maxWidth: '360px', padding: '0', overflow: 'hidden', boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
-            }}>
-              {/* Chat header */}
-              <div style={{
-                background: '#0f172a', padding: '14px 18px', borderBottom: `1px solid ${colors.border}`,
-                display: 'flex', alignItems: 'center', gap: '10px',
-              }}>
-                <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: colors.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>⚡</div>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: '14px' }}>Finlly</div>
-                  <div style={{ fontSize: '11px', color: '#22c55e' }}>● online</div>
-                </div>
-              </div>
-              {/* Messages */}
-              <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', minHeight: '280px' }}>
-                {chatMessages.map((msg, i) => (
-                  <div key={i} style={{
-                    display: 'flex', justifyContent: msg.from === 'user' ? 'flex-end' : 'flex-start',
-                  }}>
-                    <div style={{
-                      maxWidth: '82%', padding: '9px 13px', borderRadius: msg.from === 'user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
-                      background: msg.from === 'user' ? colors.accent : '#1e2d45',
-                      color: msg.from === 'user' ? '#0d1117' : colors.white,
-                      fontSize: '13px', lineHeight: 1.4, fontWeight: msg.from === 'user' ? 500 : 400,
-                    }}>
-                      {msg.text}
+        {/* MÉTODO */}
+        <section id="metodo" className="section reveal" style={{ background: 'rgba(7,13,29,0.5)' }}>
+          <div className="section-inner">
+            <div className="section-header">
+              <h2>Metodo Finlly em 3 passos</h2>
+            </div>
+            <div className="split">
+              <div className="split-left">
+                <h3>Metodo Finlly</h3>
+                {metodoSteps.map((s) => (
+                  <div key={s.title} className="step-row">
+                    <i className="bi bi-check2-circle" />
+                    <div>
+                      <div className="step-title">{s.title}</div>
+                      <div className="step-desc">{s.desc}</div>
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
-
-            {/* Floating metric cards */}
-            <div className="float-card-1" style={{
-              position: 'absolute', top: '-16px', right: '-12px',
-              background: colors.bgCard, border: `1px solid ${colors.border}`,
-              borderRadius: '12px', padding: '10px 14px', boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
-              minWidth: '140px',
-            }}>
-              <div style={{ fontSize: '10px', color: colors.muted, fontWeight: 600, letterSpacing: '0.05em', marginBottom: '4px' }}>CONSISTÊNCIA SEMANAL</div>
-              <div style={{ fontSize: '20px', fontWeight: 800, color: colors.accent }}>+31%</div>
-            </div>
-            <div className="float-card-2" style={{
-              position: 'absolute', bottom: '60px', right: '-20px',
-              background: colors.bgCard, border: `1px solid ${colors.border}`,
-              borderRadius: '12px', padding: '10px 14px', boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
-              minWidth: '140px',
-            }}>
-              <div style={{ fontSize: '10px', color: colors.muted, fontWeight: 600, letterSpacing: '0.05em', marginBottom: '4px' }}>TEMPO ECONOMIZADO</div>
-              <div style={{ fontSize: '20px', fontWeight: 800, color: colors.white }}>4h<span style={{ fontSize: '13px', color: colors.muted }}>/sem</span></div>
-            </div>
-            <div className="float-card-3" style={{
-              position: 'absolute', bottom: '-12px', left: '-12px',
-              background: colors.bgCard, border: `1px solid ${colors.border}`,
-              borderRadius: '12px', padding: '10px 14px', boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
-              minWidth: '160px',
-            }}>
-              <div style={{ fontSize: '10px', color: colors.muted, fontWeight: 600, letterSpacing: '0.05em', marginBottom: '4px' }}>CONFIANÇA OPERACIONAL</div>
-              <div style={{ fontSize: '20px', fontWeight: 800, color: colors.accent }}>98.2%</div>
+              <div className="micro-grid">
+                {metodoCards.map((c) => (
+                  <article key={c.title} className="micro-card reveal">
+                    <i className={`bi ${c.icon}`} />
+                    <h4>{c.title}</h4>
+                    <p>{c.desc}</p>
+                  </article>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* TICKER */}
-      <div style={{ background: '#0f172a', borderTop: `1px solid ${colors.border}`, borderBottom: `1px solid ${colors.border}`, overflow: 'hidden', padding: '14px 0' }}>
-        <div className="ticker-track">
-          {[...tickerItems, ...tickerItems].map((item, i) => (
-            <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '0', whiteSpace: 'nowrap' }}>
-              <span style={{ color: colors.muted, fontSize: '14px', fontWeight: 500, padding: '0 28px' }}>{item}</span>
-              <span style={{ color: colors.border, fontSize: '18px' }}>|</span>
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* RECURSOS */}
-      <section id="recursos" style={{ padding: '96px 32px', maxWidth: '1160px', margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: '56px' }}>
-          <h2 style={{ fontSize: 'clamp(24px, 4vw, 40px)', fontWeight: 800, margin: '0 0 16px', letterSpacing: '-0.5px' }}>
-            Recursos desenhados para sair do caos e entrar em ritmo
-          </h2>
-          <p style={{ fontSize: '16px', color: colors.muted, maxWidth: '540px', margin: '0 auto', lineHeight: 1.65 }}>
-            Nada de planilhas perdidas e decisão no improviso. A Finlly organiza, lembra e conduz seu plano financeiro de ponta a ponta.
-          </p>
-        </div>
-        <div className="features-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
-          {features.map((f) => (
-            <div
-              key={f.title}
-              className="feature-card"
-              style={{
-                background: colors.bgCardAlt, border: `1px solid ${colors.border}`,
-                borderRadius: '16px', padding: '28px 24px', transition: 'all 0.2s',
-              }}
-            >
-              <div style={{ fontSize: '28px', marginBottom: '14px' }}><FontAwesomeIcon icon={f.faIcon} /></div>
-              <h3 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 10px' }}>{f.title}</h3>
-              <p style={{ fontSize: '14px', color: colors.muted, lineHeight: 1.6, margin: 0 }}>{f.desc}</p>
+        {/* PLANOS */}
+        <section id="planos" className="section reveal">
+          <div className="section-inner">
+            <div className="section-header">
+              <h2>Planos para transformar intencao em resultado</h2>
+              <p>Escolha seu ritmo e comece hoje com acompanhamento direto no WhatsApp.</p>
             </div>
-          ))}
-        </div>
-      </section>
-
-      {/* MÉTODO */}
-      <section id="metodo" style={{ padding: '80px 32px', background: '#0a0f16' }}>
-        <div style={{ maxWidth: '1160px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-            <h2 style={{ fontSize: 'clamp(24px, 4vw, 40px)', fontWeight: 800, margin: '0 0 12px', letterSpacing: '-0.5px' }}>
-              Método Finlly em 3 passos
-            </h2>
+            <div className="pricing">
+              {/* Mensal */}
+              <div className="plan reveal">
+                <div className="plan-name">Plano Mensal</div>
+                <div className="plan-price">
+                  <big>R$39,90</big>
+                  <span>/mês</span>
+                </div>
+                <ul className="plan-items">
+                  {mensal.map((item) => (
+                    <li key={item}><i className="bi bi-check2" />{item}</li>
+                  ))}
+                </ul>
+                <Link to="/checkout?plano=mensal" className="btn-plan-ghost">Assinar mensal</Link>
+              </div>
+              {/* Anual */}
+              <div className="plan best reveal">
+                <div className="plan-badge">Melhor custo</div>
+                <div className="plan-name">Plano Anual</div>
+                <div className="plan-price">
+                  <big>R$399</big>
+                  <span>/ano</span>
+                </div>
+                <ul className="plan-items">
+                  {anual.map((item) => (
+                    <li key={item}><i className="bi bi-check2" />{item}</li>
+                  ))}
+                </ul>
+                <Link to="/checkout?plano=anual" className="btn-plan-primary">Assinar anual</Link>
+              </div>
+            </div>
           </div>
-          <div className="method-grid" style={{ display: 'flex', gap: '24px', alignItems: 'stretch' }}>
-            {/* Left large card */}
-            <div style={{
-              flex: '1', background: 'linear-gradient(135deg, #1a2236, #111827)',
-              border: `1px solid ${colors.border}`, borderRadius: '20px', padding: '36px 32px',
-              display: 'flex', flexDirection: 'column', justifyContent: 'center',
-            }}>
-              <h3 style={{ fontSize: '22px', fontWeight: 800, margin: '0 0 28px', color: colors.accent }}>Método Finlly</h3>
-              {[
-                { step: 'Captura', desc: 'Você manda mensagens simples e a plataforma registra automaticamente.' },
-                { step: 'Organização', desc: 'Vencimentos, metas e anexos entram em uma estrutura única.' },
-                { step: 'Execução', desc: 'Lembretes e revisões te mantêm em movimento real.' },
-              ].map(({ step, desc }) => (
-                <div key={step} style={{ display: 'flex', gap: '14px', marginBottom: '22px' }}>
-                  <FontAwesomeIcon icon={faCircleCheck} style={{ fontSize: '20px', marginTop: '2px', color: colors.accent }} />
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: '16px', marginBottom: '4px' }}>{step}</div>
-                    <div style={{ fontSize: '14px', color: colors.muted, lineHeight: 1.55 }}>{desc}</div>
-                  </div>
-                </div>
-              ))}
+        </section>
+
+        {/* DEPOIMENTOS */}
+        <section className="section reveal" style={{ background: 'rgba(7,13,29,0.5)' }}>
+          <div className="section-inner">
+            <div className="section-header">
+              <h2>Quem usa, percebe confiança e velocidade de execução</h2>
             </div>
-            {/* Right 2x2 grid */}
-            <div className="method-small-grid" style={{ flex: '1', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              {metodoCards.map((c) => (
-                <div key={c.title} style={{
-                  background: colors.bgCardAlt, border: `1px solid ${colors.border}`,
-                  borderRadius: '16px', padding: '24px 20px',
-                }}>
-                  <div style={{ fontSize: '28px', marginBottom: '12px' }}><FontAwesomeIcon icon={c.faIcon} /></div>
-                  <div style={{ fontWeight: 700, fontSize: '15px', marginBottom: '8px' }}>{c.title}</div>
-                  <div style={{ fontSize: '13px', color: colors.muted, lineHeight: 1.55 }}>{c.desc}</div>
-                </div>
+            <div className="testimonials">
+              {testimonials.map((t) => (
+                <article key={t.author} className="quote-card reveal">
+                  <i className="bi bi-quote" />
+                  <p>{t.text}</p>
+                  <div className="quote-author">{t.author}</div>
+                  <div className="quote-role">{t.role}</div>
+                </article>
               ))}
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* PLANOS */}
-      <section id="planos" style={{ padding: '96px 32px', maxWidth: '1160px', margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: '52px' }}>
-          <h2 style={{ fontSize: 'clamp(24px, 4vw, 40px)', fontWeight: 800, margin: '0 0 16px', letterSpacing: '-0.5px' }}>
-            Planos para transformar intenção em resultado
-          </h2>
-          <p style={{ fontSize: '16px', color: colors.muted, maxWidth: '480px', margin: '0 auto', lineHeight: 1.6 }}>
-            Escolha seu ritmo e comece hoje com acompanhamento direto no WhatsApp.
-          </p>
-        </div>
-        <div className="plans-grid" style={{ display: 'flex', gap: '24px', justifyContent: 'center', flexWrap: 'wrap' }}>
-          {/* Mensal */}
-          <div className="plan-card" style={{
-            background: colors.bgCardAlt, border: `1px solid ${colors.border}`,
-            borderRadius: '20px', padding: '36px 32px', width: '340px',
-          }}>
-            <div style={{ fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>Plano Mensal</div>
-            <div style={{ marginBottom: '24px' }}>
-              <span style={{ fontSize: '38px', fontWeight: 800 }}>R$ 39</span>
-              <span style={{ fontSize: '20px', fontWeight: 700 }}>,90</span>
-              <span style={{ fontSize: '15px', color: colors.muted }}>/mês</span>
-            </div>
-            {[
-              'Contas, recebimentos e metas',
-              'Lembretes + anexos organizados',
-              'Atendimento no WhatsApp',
-              'Cancelamento quando quiser',
-            ].map((item) => (
-              <div key={item} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', marginBottom: '12px' }}>
-                <FontAwesomeIcon icon={faCheck} style={{ color: colors.accent, fontSize: '16px', marginTop: '1px' }} />
-                <span style={{ fontSize: '14px', color: colors.muted }}>{item}</span>
-              </div>
-            ))}
-            <Link to="/checkout" style={{
-              display: 'block', marginTop: '28px', textAlign: 'center',
-              padding: '13px', border: `1.5px solid rgba(255,255,255,0.25)`, borderRadius: '10px',
-              color: colors.white, textDecoration: 'none', fontWeight: 700, fontSize: '15px',
-              transition: 'background 0.15s',
-            }} className="btn-outline">
-              Assinar mensal
-            </Link>
-          </div>
-          {/* Anual */}
-          <div className="plan-card" style={{
-            background: colors.bgCardAlt, border: `2px solid ${colors.accent}`,
-            borderRadius: '20px', padding: '36px 32px', width: '340px', position: 'relative',
-          }}>
-            <div style={{
-              position: 'absolute', top: '-14px', left: '50%', transform: 'translateX(-50%)',
-              background: colors.accent, color: '#0d1117', fontSize: '11px', fontWeight: 800,
-              padding: '5px 14px', borderRadius: '100px', letterSpacing: '0.06em', whiteSpace: 'nowrap',
-            }}>
-              MELHOR CUSTO
-            </div>
-            <div style={{ fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>Plano Anual</div>
-            <div style={{ marginBottom: '24px' }}>
-              <span style={{ fontSize: '38px', fontWeight: 800 }}>R$ 399</span>
-              <span style={{ fontSize: '15px', color: colors.muted }}>/ano</span>
-            </div>
-            {[
-              'Tudo do plano mensal',
-              'Economia para manter consistência',
-              'Foco em metas de médio e longo prazo',
-              'Acompanhamento prioritário',
-            ].map((item) => (
-              <div key={item} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', marginBottom: '12px' }}>
-                <FontAwesomeIcon icon={faCheck} style={{ color: colors.accent, fontSize: '16px', marginTop: '1px' }} />
-                <span style={{ fontSize: '14px', color: colors.muted }}>{item}</span>
-              </div>
-            ))}
-            <Link to="/checkout" style={{
-              display: 'block', marginTop: '28px', textAlign: 'center',
-              padding: '13px', background: colors.accent, borderRadius: '10px',
-              color: '#0d1117', textDecoration: 'none', fontWeight: 700, fontSize: '15px',
-              transition: 'background 0.15s',
-            }} className="btn-accent">
-              Assinar anual
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* DEPOIMENTOS */}
-      <section style={{ padding: '80px 32px', background: '#0a0f16' }}>
-        <div style={{ maxWidth: '1160px', margin: '0 auto' }}>
-          <h2 style={{ textAlign: 'center', fontSize: 'clamp(22px, 4vw, 36px)', fontWeight: 800, margin: '0 0 48px', letterSpacing: '-0.5px' }}>
-            Quem usa, percebe confiança e velocidade de execução
-          </h2>
-          <div className="testimonials-grid" style={{ display: 'flex', gap: '20px' }}>
-            {testimonials.map((t) => (
-              <div key={t.author} style={{
-                flex: 1, background: colors.bgCardAlt, border: `1px solid ${colors.border}`,
-                borderRadius: '16px', padding: '28px 24px',
-              }}>
-                <div style={{ fontSize: '24px', color: colors.accent, marginBottom: '14px' }}><FontAwesomeIcon icon={faQuoteLeft} /></div>
-                <p style={{ fontSize: '15px', color: colors.white, lineHeight: 1.65, margin: '0 0 20px', fontStyle: 'italic' }}>
-                  {t.text}
-                </p>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: '14px' }}>{t.author}</div>
-                  <div style={{ fontSize: '13px', color: colors.muted }}>{t.role}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section id="duvidas" style={{ padding: '96px 32px', maxWidth: '760px', margin: '0 auto' }}>
-        <h2 style={{ textAlign: 'center', fontSize: 'clamp(22px, 4vw, 36px)', fontWeight: 800, margin: '0 0 48px', letterSpacing: '-0.5px' }}>
-          Perguntas frequentes
-        </h2>
-        <div>
+        {/* FAQ */}
+        <section id="faq" className="faq-section reveal">
+          <h2>Perguntas frequentes</h2>
           {faqItems.map((item, idx) => (
-            <div key={idx} className="faq-item">
-              <div className="faq-question" onClick={() => toggleFaq(idx)} role="button" aria-expanded={faqOpen === idx}>
-                <span>{item.q}</span>
-                <FontAwesomeIcon icon={faqOpen === idx ? faMinus : faPlus} style={{ color: colors.accent, fontSize: '20px', transition: 'transform 0.2s' }} />
-              </div>
-              {faqOpen === idx && (
-                <div style={{ fontSize: '15px', color: colors.muted, lineHeight: 1.65, paddingBottom: '18px' }}>
-                  {item.a}
-                </div>
-              )}
-            </div>
+            <details key={idx}>
+              <summary>{item.q}</summary>
+              <div className="faq-answer">{item.a}</div>
+            </details>
           ))}
-        </div>
-      </section>
+        </section>
 
-      {/* CTA FINAL */}
-      <section style={{ padding: '80px 32px' }}>
-        <div style={{ maxWidth: '760px', margin: '0 auto' }}>
-          <div style={{
-            background: 'linear-gradient(135deg, #0f172a 0%, #1a2236 50%, #0f172a 100%)',
-            border: `1px solid ${colors.border}`, borderRadius: '24px',
-            padding: '56px 40px', textAlign: 'center',
-            boxShadow: '0 0 80px rgba(200,241,53,0.06)',
-          }}>
-            <h2 style={{ fontSize: 'clamp(22px, 4vw, 36px)', fontWeight: 800, margin: '0 0 16px', letterSpacing: '-0.5px' }}>
-              Pronto para surpreender sua versão financeira?
-            </h2>
-            <p style={{ fontSize: '16px', color: colors.muted, margin: '0 0 32px', lineHeight: 1.65 }}>
-              Comece hoje e receba um plano prático no WhatsApp para organizar, executar e evoluir sem improviso.
-            </p>
-            <Link to="/checkout" style={{
-              display: 'inline-block', padding: '14px 32px', background: colors.accent,
-              borderRadius: '10px', color: '#0d1117', textDecoration: 'none',
-              fontSize: '16px', fontWeight: 700, transition: 'background 0.15s',
-            }} className="btn-accent">
-              Quero começar agora <FontAwesomeIcon icon={faArrowRight} style={{ marginLeft: '6px' }} />
+        {/* CTA FINAL */}
+        <section className="cta reveal">
+          <div className="cta-inner">
+            <div>
+              <h2>Pronto para surpreender sua versao financeira?</h2>
+              <p>Comece hoje e receba um plano pratico no WhatsApp para organizar, executar e evoluir sem improviso.</p>
+            </div>
+            <Link to="/checkout" className="btn-primary">
+              Comecar agora <i className="bi bi-arrow-right" />
             </Link>
           </div>
-        </div>
-      </section>
+        </section>
+      </main>
 
       {/* FOOTER */}
-      <footer style={{
-        borderTop: `1px solid ${colors.border}`,
-        padding: '24px 32px', textAlign: 'center',
-        color: colors.muted, fontSize: '14px',
-      }}>
-        © 2026 Finlly. Todos os direitos reservados.
+      <footer className="footer">
+        <p>© {year} Finlly. Todos os direitos reservados.</p>
+        <p>Seus dados são protegidos conforme a LGPD. Finlly não compartilha informações pessoais com terceiros.</p>
       </footer>
     </div>
   );
