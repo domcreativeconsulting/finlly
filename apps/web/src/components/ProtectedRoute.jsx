@@ -1,7 +1,6 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
-
-const ALLOWED_STATUSES = ['ativo', 'trial', 'pendente'];
+import { hasActiveSubscription } from '../config/subscriptionPolicy.js';
 
 function LoadingScreen() {
   return (
@@ -36,7 +35,7 @@ export function ProtectedRoute({ element, requiredRole, requiresSubscription = t
     return <Navigate to="/dashboard" replace />;
   }
 
-  if (requiresSubscription && !ALLOWED_STATUSES.includes(usuario?.status)) {
+  if (requiresSubscription && !hasActiveSubscription(usuario?.status)) {
     return <Navigate to="/checkout" replace />;
   }
 

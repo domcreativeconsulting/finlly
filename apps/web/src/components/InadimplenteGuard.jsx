@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
-
-const ALLOWED_STATUSES = ['ativo', 'trial', 'pendente'];
+import { ALLOWED_STATUSES } from '../config/subscriptionPolicy.js';
 
 /**
  * Guard component that shows a subscription alert when the authenticated
