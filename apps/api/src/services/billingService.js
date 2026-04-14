@@ -35,10 +35,10 @@ function getNextDueDate() {
  * Creates or updates a subscription for the given user.
  *
  * @param {string} usuarioId
- * @param {{ plano: string, ciclo: string, formaPagamento: 'PIX'|'CREDIT_CARD', cupomCodigo?: string }} params
+ * @param {{ plano: string, ciclo: string, formaPagamento: 'PIX'|'CREDIT_CARD', cupomCodigo?: string, cpf?: string, telefone?: string }} params
  * @returns {Promise<{ assinante: object, paymentLink: string|null }>}
  */
-export async function criarAssinatura(usuarioId, { plano, ciclo, formaPagamento, cupomCodigo }) {
+export async function criarAssinatura(usuarioId, { plano, ciclo, formaPagamento, cupomCodigo, cpf, telefone }) {
   if (!CICLO_ASAAS[ciclo]) {
     throw AppError.badRequest(`Ciclo inválido: ${ciclo}. Use 'mensal' ou 'anual'`);
   }
@@ -97,8 +97,14 @@ export async function criarAssinatura(usuarioId, { plano, ciclo, formaPagamento,
     customer = await asaas.createCustomer({
       nome: usuario.nome,
       email: usuario.email,
-      telefone: usuario.telefone ?? undefined,
+      cpfCnpj: cpf ?? undefined,
+      telefone: telefone ?? usuario.telefone ?? undefined,
     });
+  }
+
+  // Guard: se customer ainda null, criação falhou no Asaas
+  if (!customer || !customer.id) {
+    throw AppError.internal('Não foi possível criar o cliente no provedor de pagamento');
   }
 
   const nextDueDate = getNextDueDate();
