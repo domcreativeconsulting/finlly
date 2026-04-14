@@ -8,7 +8,7 @@ const RETRY_JITTER_MS = 200;
 const RETRY_MAX_DELAY_MS = 10000;
 
 const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
-const NON_RETRYABLE_STATUSES = new Set([400, 401, 403, 404, 409, 422]);
+const NON_RETRYABLE_STATUSES = new Set([400, 401, 403, 409, 422]);
 
 const asaasCircuitBreaker = new CircuitBreaker({
   name: 'asaas',
@@ -81,6 +81,11 @@ async function _request(path, options = {}) {
       throw AppError.internal('Erro de conexão com o provedor de pagamento');
     } finally {
       clearTimeout(timer);
+    }
+
+    // 404 = resource not found — expected behaviour (e.g. customer not yet in Asaas)
+    if (response.status === 404) {
+      return null;
     }
 
     if (NON_RETRYABLE_STATUSES.has(response.status)) {
