@@ -5,7 +5,6 @@ import { criarAssinatura, cancelarAssinatura, getStatusAssinatura } from '../ser
 import { processarWebhookAsaas } from '../services/webhookService.js';
 import { reconciliarAssinaturas } from '../services/reconciliacaoService.js';
 import { jwtAuthMiddleware } from '../middleware/jwtAuth.js';
-import { requireAtivo } from '../middleware/requireAtivo.js';
 import { validate } from '../middleware/validate.js';
 import { AppError } from '../errors/AppError.js';
 import logger from '../logger.js';
@@ -48,10 +47,6 @@ const adminLimiter = rateLimit({
   message: { code: 'RATE_LIMITED', message: 'Muitas tentativas. Tente novamente mais tarde.' },
   handler: (req, res, next, options) => next(AppError.tooManyRequests(options.message.message)),
 });
-
-// ============================================================
-// Zod schema for subscribe — defined in billing.schemas.js
-// ============================================================
 
 // ============================================================
 // POST /webhooks/asaas
@@ -101,9 +96,11 @@ router.post(
 
 /**
  * POST /billing/subscribe
- * Creates or updates a subscription for the authenticated user.
+ * Creates a new subscription for the authenticated user.
+ * Does NOT require requireAtivo — new users (inativo/undefined) must be able to subscribe.
+ * Double-subscription is prevented inside criarAssinatura (throws CONFLICT if already active/pending).
  */
-router.post('/billing/subscribe', billingLimiter, jwtAuthMiddleware, requireAtivo, validate({ body: subscribeSchema }), async (req, res, next) => {
+router.post('/billing/subscribe', billingLimiter, jwtAuthMiddleware, validate({ body: subscribeSchema }), async (req, res, next) => {
   try {
     const { assinante, paymentLink } = await criarAssinatura(req.user.sub, req.body);
     return res.status(201).json({
