@@ -32,6 +32,17 @@ function getNextDueDate() {
 }
 
 /**
+ * Removes all non-digit characters from a string.
+ * @param {string|undefined|null} value
+ * @returns {string|undefined}
+ */
+function apenasDigitos(value) {
+  if (!value) return undefined;
+  const digits = value.replace(/\D/g, '');
+  return digits.length > 0 ? digits : undefined;
+}
+
+/**
  * Creates or updates a subscription for the given user.
  *
  * @param {string} usuarioId
@@ -92,13 +103,17 @@ export async function criarAssinatura(usuarioId, { plano, ciclo, formaPagamento,
   }
 
   // Find or create Asaas customer
+  // CPF e telefone são limpos (apenas dígitos) pois o Asaas não aceita formatação
   let customer = await asaas.getCustomerByEmail(usuario.email);
   if (!customer) {
+    const cpfLimpo      = apenasDigitos(cpf);
+    const telefoneLimpo = apenasDigitos(telefone ?? usuario.telefone);
+
     customer = await asaas.createCustomer({
-      nome: usuario.nome,
-      email: usuario.email,
-      cpfCnpj: cpf ?? undefined,
-      telefone: telefone ?? usuario.telefone ?? undefined,
+      nome:     usuario.nome,
+      email:    usuario.email,
+      cpfCnpj:  cpfLimpo,
+      telefone: telefoneLimpo,
     });
   }
 
@@ -109,33 +124,33 @@ export async function criarAssinatura(usuarioId, { plano, ciclo, formaPagamento,
 
   const nextDueDate = getNextDueDate();
   const subscription = await asaas.createSubscription({
-    customer: customer.id,
-    billingType: formaPagamento,
-    cycle: CICLO_ASAAS[ciclo],
-    value: valor,
+    customer:          customer.id,
+    billingType:       formaPagamento,
+    cycle:             CICLO_ASAAS[ciclo],
+    value:             valor,
     nextDueDate,
-    description: `Plano ${plano} — ${ciclo}`,
+    description:       `Plano ${plano} — ${ciclo}`,
     externalReference: usuarioId,
   });
 
   const assinante = await prisma.assinante.upsert({
     where: { usuario_id: usuarioId },
     create: {
-      usuario_id: usuarioId,
-      status: 'pendente',
+      usuario_id:               usuarioId,
+      status:                   'pendente',
       plano,
-      provider: 'asaas',
-      provider_customer_id: customer.id,
+      provider:                 'asaas',
+      provider_customer_id:     customer.id,
       provider_subscription_id: subscription.id,
       ...(cupomId ? { cupom_id: cupomId } : {}),
     },
     update: {
-      status: 'pendente',
+      status:                   'pendente',
       plano,
-      provider: 'asaas',
-      provider_customer_id: customer.id,
+      provider:                 'asaas',
+      provider_customer_id:     customer.id,
       provider_subscription_id: subscription.id,
-      deleted_at: null,
+      deleted_at:               null,
       ...(cupomId ? { cupom_id: cupomId } : {}),
     },
   });
@@ -144,7 +159,7 @@ export async function criarAssinatura(usuarioId, { plano, ciclo, formaPagamento,
   if (cupomId) {
     await prisma.cupom.update({
       where: { id: cupomId },
-      data: { uso_atual: { increment: 1 } },
+      data:  { uso_atual: { increment: 1 } },
     });
   }
 
@@ -152,13 +167,13 @@ export async function criarAssinatura(usuarioId, { plano, ciclo, formaPagamento,
 
   registrarEvento({
     usuarioId,
-    actorType: 'USER',
-    eventType: 'billing',
-    eventAction: 'assinatura_criada',
-    entityType: 'assinante',
-    entityId: assinante.id,
-    metadata: { plano, ciclo, subscriptionId: subscription.id },
-    sucesso: true,
+    actorType:    'USER',
+    eventType:    'billing',
+    eventAction:  'assinatura_criada',
+    entityType:   'assinante',
+    entityId:     assinante.id,
+    metadata:     { plano, ciclo, subscriptionId: subscription.id },
+    sucesso:      true,
   });
 
   return {
@@ -209,13 +224,13 @@ export async function cancelarAssinatura(usuarioId) {
 
   registrarEvento({
     usuarioId,
-    actorType: 'USER',
-    eventType: 'billing',
+    actorType:   'USER',
+    eventType:   'billing',
     eventAction: 'assinatura_cancelada',
-    entityType: 'assinante',
-    entityId: assinante.id,
-    metadata: { plano: assinante.plano },
-    sucesso: true,
+    entityType:  'assinante',
+    entityId:    assinante.id,
+    metadata:    { plano: assinante.plano },
+    sucesso:     true,
   });
 }
 
