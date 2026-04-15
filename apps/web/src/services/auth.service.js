@@ -31,15 +31,17 @@ export const authService = {
   },
 
   async resetPassword(token, nova_senha) {
-    const response = await api.post('/auth/reset-password', {
-      token,
-      nova_senha,
-    });
+    const response = await api.post('/auth/reset-password', { token, nova_senha });
     return response.data;
   },
 
   async verifyEmail(token) {
     const response = await api.post('/auth/verify-email', { token });
+    return response.data;
+  },
+
+  async resendVerificationEmail(email) {
+    const response = await api.post('/auth/resend-verification-email', { email });
     return response.data;
   },
 };
