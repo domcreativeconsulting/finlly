@@ -50,13 +50,8 @@ const adminLimiter = rateLimit({
 
 // ============================================================
 // POST /webhooks/asaas
-// Not authenticated — uses HMAC signature verification.
-// express.raw() is applied in index.js for this path before express.json().
 // ============================================================
 
-/**
- * Receives and processes Asaas webhook events.
- */
 router.post(
   '/webhooks/asaas',
   webhookLimiter,
@@ -95,13 +90,20 @@ router.post(
 
 /**
  * POST /billing/subscribe
- * Creates a new subscription for the authenticated user.
- * Does NOT require requireAtivo — new users (inativo/undefined) must be able to subscribe.
- * Double-subscription is prevented inside criarAssinatura (throws CONFLICT if already active/pending).
+ * Passes remoteIp for credit card transactions (required by Asaas).
  */
 router.post('/billing/subscribe', billingLimiter, jwtAuthMiddleware, validate({ body: subscribeSchema }), async (req, res, next) => {
   try {
-    const { assinante, paymentLink, pixQrCode, pixCopiaECola } = await criarAssinatura(req.user.sub, req.body);
+    const remoteIp =
+      req.headers['x-forwarded-for']?.split(',')[0]?.trim() ??
+      req.socket?.remoteAddress ??
+      '127.0.0.1';
+
+    const { assinante, paymentLink, pixQrCode, pixCopiaECola } = await criarAssinatura(req.user.sub, {
+      ...req.body,
+      remoteIp,
+    });
+
     return res.status(201).json({
       message: 'Assinatura criada com sucesso',
       assinante,
@@ -116,7 +118,6 @@ router.post('/billing/subscribe', billingLimiter, jwtAuthMiddleware, validate({ 
 
 /**
  * POST /billing/cancel
- * Cancels the subscription of the authenticated user.
  */
 router.post('/billing/cancel', billingLimiter, jwtAuthMiddleware, async (req, res, next) => {
   try {
@@ -129,7 +130,6 @@ router.post('/billing/cancel', billingLimiter, jwtAuthMiddleware, async (req, re
 
 /**
  * GET /billing/status
- * Returns the subscription status of the authenticated user.
  */
 router.get('/billing/status', billingLimiter, jwtAuthMiddleware, async (req, res, next) => {
   try {
@@ -144,10 +144,6 @@ router.get('/billing/status', billingLimiter, jwtAuthMiddleware, async (req, res
 // Admin routes
 // ============================================================
 
-/**
- * POST /billing/admin/reconciliar
- * Triggers a manual reconciliation. Restricted to admin users.
- */
 router.post('/billing/admin/reconciliar', adminLimiter, jwtAuthMiddleware, async (req, res, next) => {
   if (req.user.role !== 'admin') {
     return next(AppError.forbidden('Acesso restrito a administradores'));
