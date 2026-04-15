@@ -84,12 +84,12 @@ async function _request(path, options = {}) {
     }
 
     // 404 = resource not found — treated as non-retryable error
-if (response.status === 404) {
-  let body = null;
-  try { body = await response.json(); } catch { /* ignore */ }
-  logger.error({ status: 404, body, url }, 'Asaas HTTP error');
-  throw AppError.internal(`Erro no provedor de pagamento: 404`);
-}
+    if (response.status === 404) {
+      let body = null;
+      try { body = await response.json(); } catch { /* ignore */ }
+      logger.error({ status: 404, body, url }, 'Asaas HTTP error');
+      throw AppError.internal(`Erro no provedor de pagamento: 404`);
+    }
 
     if (NON_RETRYABLE_STATUSES.has(response.status)) {
       let body = null;
@@ -178,21 +178,8 @@ async function createCustomer({ nome, email, cpfCnpj, telefone }) {
  *   nextDueDate: string,
  *   description?: string,
  *   externalReference?: string,
- *   creditCard?: {
- *     holderName: string,
- *     number: string,
- *     expiryMonth: string,
- *     expiryYear: string,
- *     ccv: string,
- *   },
- *   creditCardHolderInfo?: {
- *     name: string,
- *     email: string,
- *     cpfCnpj: string,
- *     postalCode?: string,
- *     addressNumber?: string,
- *     phone?: string,
- *   },
+ *   creditCard?: object,
+ *   creditCardHolderInfo?: object,
  *   remoteIp?: string,
  * }} params
  * @returns {Promise<object>}
@@ -256,6 +243,15 @@ async function getPaymentsBySubscription(subscriptionId) {
   return request(`/payments?subscription=${encoded}`);
 }
 
+/**
+ * Returns the PIX QR Code data for a given payment ID.
+ * @param {string} paymentId
+ * @returns {Promise<{ encodedImage: string, payload: string, expirationDate: string }|null>}
+ */
+async function getPixQrCode(paymentId) {
+  return request(`/payments/${paymentId}/pixQrCode`);
+}
+
 export const asaas = {
   getCustomerByEmail,
   createCustomer,
@@ -263,6 +259,7 @@ export const asaas = {
   cancelSubscription,
   getSubscription,
   getPaymentsBySubscription,
+  getPixQrCode,
 };
 
 export { asaasCircuitBreaker };
