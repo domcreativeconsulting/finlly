@@ -177,7 +177,8 @@ export default function DashboardPage() {
       setDashboardMensal(data);
       saveCache('dashboard', { mensal: data, mes: mesSelecionado });
       setCacheMensalInfo(null);
-    } catch {
+    } catch (err) {
+      if (err?.response?.data?.code === 'SEM_ASSINATURA') return;
       if (!isOnline) {
         const cached = readCache('dashboard');
         if (cached) {
@@ -198,7 +199,8 @@ export default function DashboardPage() {
       const data = await dashboardService.getEvolucaoMensal(6);
       setEvolucao(data);
       saveCache('dashboard-evolucao', data);
-    } catch {
+    } catch (err) {
+      if (err?.response?.data?.code === 'SEM_ASSINATURA') return;
       if (!isOnline) {
         const cached = readCache('dashboard-evolucao');
         if (cached) {
@@ -218,7 +220,8 @@ export default function DashboardPage() {
       const data = await dashboardService.getSaldoPorConta();
       setContas(data);
       saveCache('dashboard-contas', data);
-    } catch {
+    } catch (err) {
+      if (err?.response?.data?.code === 'SEM_ASSINATURA') return;
       if (!isOnline) {
         const cached = readCache('dashboard-contas');
         if (cached) {
@@ -679,7 +682,7 @@ export default function DashboardPage() {
 
         {/* Footer */}
         <div style={{ padding: '0 28px 28px' }}>
-          <div style={{ backgroundColor: '#33528a', color: '#FFFFFF', textAlign: 'center', paddingTop: '18px', paddingBottom: '18px', paddingLeft: '32px', paddingRight: '32px', fontSize: '14px', fontWeight: '500', letterSpacing: '0.01em', borderRadius: radius.lg }}>
+          <div style={{ backgroundColor: '#33528a', color: '#FFFFFF', textAlign: 'center', paddingTop: '18px', paddingBottom: '18px', paddingLeft: '32px', paddingRight: '32px', fontSize: '14px', borderRadius: radius.lg }}>
             Finlly • painel financeiro pessoal — {new Date().getFullYear()}
           </div>
         </div>
@@ -687,4 +690,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
