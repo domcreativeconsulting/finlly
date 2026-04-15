@@ -96,24 +96,46 @@ export default function CheckoutPage() {
     setError('');
 
     if (method === 'CARTAO') {
-      if (!form.cardName.trim())                              return setError('Nome no cartão obrigatório.');
-      if (form.cardNumber.replace(/\D/g, '').length < 16)    return setError('Número do cartão inválido.');
-      if (form.cardExpiry.replace(/\D/g, '').length < 4)     return setError('Validade inválida.');
-      if (form.cardCvv.replace(/\D/g, '').length < 3)        return setError('CVV inválido.');
+      if (!form.cardName.trim())                           return setError('Nome no cartão obrigatório.');
+      if (form.cardNumber.replace(/\D/g, '').length < 16) return setError('Número do cartão inválido.');
+      if (form.cardExpiry.replace(/\D/g, '').length < 4)  return setError('Validade inválida.');
+      if (form.cardCvv.replace(/\D/g, '').length < 3)     return setError('CVV inválido.');
     }
 
     setLoading(true);
     try {
+      const expiryDigits = form.cardExpiry.replace(/\D/g, '');
+      const expiryMonth  = expiryDigits.slice(0, 2);
+      const expiryYear   = expiryDigits.length >= 4
+        ? `20${expiryDigits.slice(2, 4)}`
+        : '';
+
       const payload = {
-        plano:           form.plano,
-        ciclo:           plan.ciclo,
-        formaPagamento:  method === 'PIX' ? 'PIX' : 'CREDIT_CARD',
-        nome:            form.nome.trim(),
-        email:           form.email.trim(),
-        cpf:             form.cpf.replace(/\D/g, ''),
-        telefone:        form.telefone.replace(/\D/g, ''),
+        plano:          form.plano,
+        ciclo:          plan.ciclo,
+        formaPagamento: method === 'PIX' ? 'PIX' : 'CREDIT_CARD',
+        nome:           form.nome.trim(),
+        email:          form.email.trim(),
+        cpf:            form.cpf.replace(/\D/g, ''),
+        telefone:       form.telefone.replace(/\D/g, ''),
         ...(form.cupomCodigo.trim() ? { cupomCodigo: form.cupomCodigo.trim() } : {}),
+        ...(method === 'CARTAO' ? {
+          creditCard: {
+            holderName:  form.cardName.trim(),
+            number:      form.cardNumber.replace(/\D/g, ''),
+            expiryMonth,
+            expiryYear,
+            ccv:         form.cardCvv.trim(),
+          },
+          creditCardHolderInfo: {
+            name:    form.nome.trim(),
+            email:   form.email.trim(),
+            cpfCnpj: form.cpf.replace(/\D/g, ''),
+            phone:   form.telefone.replace(/\D/g, ''),
+          },
+        } : {}),
       };
+
       const res = await billingService.subscribe(payload);
       setPaymentLink(res.paymentLink ?? null);
       toast.success('Assinatura criada com sucesso!');

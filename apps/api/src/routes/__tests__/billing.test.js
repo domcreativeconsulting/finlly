@@ -166,6 +166,18 @@ describe('POST /billing/subscribe', () => {
       ciclo: 'anual',
       plano: 'anual',
       formaPagamento: 'CREDIT_CARD',
+      creditCard: {
+        holderName: 'João Silva',
+        number: '4111111111111111',
+        expiryMonth: '12',
+        expiryYear: '2028',
+        ccv: '123',
+      },
+      creditCardHolderInfo: {
+        name: 'João Silva',
+        email: 'joao@example.com',
+        cpfCnpj: '12345678901',
+      },
     };
     const app = makeApp();
     const res = await request(app, 'POST', '/billing/subscribe', bodyComCupom);
