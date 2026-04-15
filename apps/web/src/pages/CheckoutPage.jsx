@@ -27,8 +27,8 @@ function applyMaskExpiry(v) {
 }
 
 const PLANS = {
-  mensal: { label: 'Mensal — R$ 39,90', price: 'R$ 39,90', value: '39,90', ciclo: 'mensal', full: 'MENSAL — R$ 39,90' },
-  anual:  { label: 'Anual — R$ 399,00',  price: 'R$ 399,00', value: '399,00', ciclo: 'anual', full: 'ANUAL — R$ 399,00' },
+  mensal: { label: 'Mensal — R$ 29,90', price: 'R$ 29,90', value: '29,90', ciclo: 'mensal', full: 'MENSAL — R$ 29,90' },
+  anual:  { label: 'Anual — R$ 287,90', price: 'R$ 287,90', value: '287,90', ciclo: 'anual', full: 'ANUAL — R$ 287,90' },
 };
 
 const C = {
@@ -77,12 +77,15 @@ export default function CheckoutPage() {
   const { register: authRegister, login } = useAuth();
   const initialPlan    = PLANS[searchParams.get('plano')] ? searchParams.get('plano') : 'mensal';
 
+  // step: 1 = dados, 1.5 = aguardando verificação email, 2 = pagamento, 3 = confirmação
   const [step, setStep]               = useState(1);
   const [method, setMethod]           = useState('PIX');
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState('');
   const [paymentLink, setPaymentLink] = useState(null);
   const [isMobile, setIsMobile]       = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   const [form, setForm] = useState({
     plano: initialPlan,
@@ -99,6 +102,13 @@ export default function CheckoutPage() {
     window.addEventListener('resize', handleResize);
     return () => { clearTimeout(timer); window.removeEventListener('resize', handleResize); };
   }, []);
+
+  // Cooldown timer para reenvio de e-mail
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown(c => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
 
   const plan = PLANS[form.plano];
 
@@ -123,8 +133,9 @@ export default function CheckoutPage() {
     setLoading(true);
     try {
       await authRegister(form.nome.trim(), form.email.trim(), form.senha);
-      await login(form.email.trim(), form.senha);
-      setStep(2);
+      // Não faz login ainda — aguarda verificação do e-mail
+      setStep(1.5);
+      setResendCooldown(60);
     } catch (err) {
       const status = err?.response?.status;
       const msg = err?.response?.data?.message || err?.response?.data?.error || '';
@@ -135,6 +146,45 @@ export default function CheckoutPage() {
       }
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleEmailConfirmed() {
+    setError('');
+    setLoading(true);
+    try {
+      await login(form.email.trim(), form.senha);
+      setStep(2);
+    } catch (err) {
+      const msg = err?.response?.data?.message || err?.response?.data?.error || '';
+      if (msg.toLowerCase().includes('verif') || msg.toLowerCase().includes('email')) {
+        setError('E-mail ainda não confirmado. Verifique sua caixa de entrada e clique no link.');
+      } else {
+        setError(msg || 'Erro ao fazer login. Tente novamente.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleResendEmail() {
+    if (resendCooldown > 0 || resendLoading) return;
+    setResendLoading(true);
+    try {
+      const { authService } = await import('../services/auth.service.js');
+      await authService.resendVerificationEmail
+        ? authService.resendVerificationEmail(form.email.trim())
+        : fetch('/api/auth/resend-verification-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: form.email.trim() }),
+          });
+      toast.success('E-mail reenviado! Verifique sua caixa de entrada.');
+      setResendCooldown(60);
+    } catch {
+      toast.error('Erro ao reenviar. Tente novamente.');
+    } finally {
+      setResendLoading(false);
     }
   }
 
@@ -201,7 +251,6 @@ export default function CheckoutPage() {
           <div>
             <img src={logoImg} alt="Finlly" style={{ height: '40px' }} />
           </div>
-
           <div>
             <h2 style={{ fontSize: '28px', fontWeight: '700', color: '#ffffff', lineHeight: 1.35, margin: '0 0 12px' }}>
               Gestão financeira pessoal.
@@ -224,7 +273,6 @@ export default function CheckoutPage() {
               ))}
             </div>
           </div>
-
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.12)', paddingTop: '24px' }}>
             <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: '6px' }}>
               PLANO ATUAL
@@ -266,16 +314,31 @@ export default function CheckoutPage() {
               loading={loading}
             />
           )}
+
+          {step === 1.5 && (
+            <StepVerificacaoEmail
+              email={form.email}
+              onConfirmed={handleEmailConfirmed}
+              onResend={handleResendEmail}
+              onBack={() => { setStep(1); setError(''); }}
+              error={error}
+              loading={loading}
+              resendLoading={resendLoading}
+              resendCooldown={resendCooldown}
+            />
+          )}
+
           {step === 2 && (
             <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: '20px', padding: '28px', boxShadow: '0 20px 48px rgba(4,10,24,0.55)' }}>
               <StepPagamento
                 form={form} method={method} setMethod={setMethod}
                 handlePay={handlePay} error={error} loading={loading}
-                plan={plan} onBack={() => { setStep(1); setError(''); }}
+                plan={plan} onBack={() => { setStep(1.5); setError(''); }}
                 handleChange={handleChange}
               />
             </div>
           )}
+
           {step === 3 && (
             <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: '20px', padding: '28px', boxShadow: '0 20px 48px rgba(4,10,24,0.55)' }}>
               <StepConfirmacao paymentLink={paymentLink} method={method} plan={plan} navigate={navigate} />
@@ -313,8 +376,8 @@ function StepDados({ form, handleChange, handleNext, error, plan, loading }) {
             onChange={handleChange}
             style={{ ...inputCss, appearance: 'none', paddingRight: '36px', cursor: 'pointer' }}
           >
-            <option value="mensal">Mensal — R$ 39,90</option>
-            <option value="anual">Anual — R$ 399,00</option>
+            <option value="mensal">Mensal — R$ 29,90</option>
+            <option value="anual">Anual — R$ 287,90</option>
           </select>
           <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#6b7280', fontSize: '14px' }}>▾</span>
         </div>
@@ -365,7 +428,7 @@ function StepDados({ form, handleChange, handleNext, error, plan, loading }) {
           marginTop: '4px',
         }}
       >
-        {loading ? 'Criando conta...' : 'Assinar agora'}
+        {loading ? 'Criando conta...' : 'Assinar agora →'}
       </button>
 
       <button
@@ -385,6 +448,115 @@ function StepDados({ form, handleChange, handleNext, error, plan, loading }) {
         Sem cupom, o acesso é liberado após confirmação do pagamento.
       </p>
     </form>
+  );
+}
+
+// ─── Step 1.5: Verificação de E-mail ────────────────────────
+function StepVerificacaoEmail({ email, onConfirmed, onResend, onBack, error, loading, resendLoading, resendCooldown }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px', textAlign: 'center' }}>
+
+      {/* Ícone */}
+      <div style={{
+        width: '72px', height: '72px', borderRadius: '50%',
+        background: '#eff6ff', border: '2px solid #bfdbfe',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: '32px',
+      }}>
+        ✉️
+      </div>
+
+      {/* Título */}
+      <div>
+        <h2 style={{ margin: '0 0 8px', fontSize: '22px', fontWeight: '700', color: '#111827' }}>
+          Confirme seu e-mail
+        </h2>
+        <p style={{ margin: 0, fontSize: '15px', color: '#6b7280', lineHeight: 1.6 }}>
+          Enviamos um link de confirmação para
+        </p>
+        <p style={{ margin: '4px 0 0', fontSize: '15px', fontWeight: '600', color: '#1e3a5f' }}>
+          {email}
+        </p>
+      </div>
+
+      {/* Instruções */}
+      <div style={{
+        width: '100%', padding: '16px', background: '#f0fdf4',
+        border: '1px solid #bbf7d0', borderRadius: '10px',
+        fontSize: '14px', color: '#166534', lineHeight: 1.6, textAlign: 'left',
+      }}>
+        <strong>Como prosseguir:</strong>
+        <ol style={{ margin: '8px 0 0', paddingLeft: '20px' }}>
+          <li>Abra seu e-mail em outra aba</li>
+          <li>Clique no link de confirmação</li>
+          <li>Volte aqui e clique em <strong>"Já confirmei"</strong></li>
+        </ol>
+      </div>
+
+      {/* Erro */}
+      {error && (
+        <div style={{
+          width: '100%', padding: '12px 14px',
+          background: '#fef2f2', border: '1px solid #fecaca',
+          borderRadius: '8px', color: '#dc2626', fontSize: '14px', textAlign: 'left',
+        }}>
+          ⚠️ {error}
+        </div>
+      )}
+
+      {/* Botão principal */}
+      <button
+        onClick={onConfirmed}
+        disabled={loading}
+        style={{
+          width: '100%', padding: '14px', fontSize: '16px', fontWeight: '600',
+          color: '#ffffff',
+          background: loading ? '#93aad4' : '#1e3a5f',
+          border: 'none', borderRadius: '6px',
+          cursor: loading ? 'not-allowed' : 'pointer',
+          fontFamily: 'inherit',
+        }}
+      >
+        {loading ? 'Verificando...' : '✅ Já confirmei meu e-mail'}
+      </button>
+
+      {/* Reenviar */}
+      <button
+        onClick={onResend}
+        disabled={resendCooldown > 0 || resendLoading}
+        style={{
+          width: '100%', padding: '12px', fontSize: '14px', fontWeight: '500',
+          color: resendCooldown > 0 ? '#9ca3af' : '#1e3a5f',
+          background: '#ffffff',
+          border: `1.5px solid ${resendCooldown > 0 ? '#e5e7eb' : '#d1d5db'}`,
+          borderRadius: '6px',
+          cursor: resendCooldown > 0 ? 'not-allowed' : 'pointer',
+          fontFamily: 'inherit',
+        }}
+      >
+        {resendLoading
+          ? 'Reenviando...'
+          : resendCooldown > 0
+            ? `Reenviar e-mail (${resendCooldown}s)`
+            : '📧 Reenviar e-mail de confirmação'}
+      </button>
+
+      {/* Voltar */}
+      <button
+        onClick={onBack}
+        style={{
+          background: 'none', border: 'none',
+          color: '#9ca3af', cursor: 'pointer',
+          fontSize: '13px', fontFamily: 'inherit',
+        }}
+      >
+        ← Voltar e corrigir dados
+      </button>
+
+      <p style={{ fontSize: '12px', color: '#9ca3af', margin: 0 }}>
+        Não encontrou? Verifique a pasta de spam.
+      </p>
+    </div>
   );
 }
 
@@ -462,7 +634,7 @@ function StepPagamento({ form, method, setMethod, handlePay, error, loading, pla
   );
 }
 
-// ─── Step 3: Confirmação ────────────────────────────────────
+// ─── Step 3: Confirmação ────────��───────────────────────────
 function StepConfirmacao({ paymentLink, method, plan, navigate }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', textAlign: 'center' }}>
