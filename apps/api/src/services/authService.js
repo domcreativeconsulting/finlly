@@ -9,6 +9,8 @@ import { AppError } from '../errors/AppError.js';
 import { createDefaultCategories } from './categoriaService.js';
 import logger from '../logger.js';
 import { registrarEvento } from './auditoria.service.js';
+import { generateEmailVerificationToken } from './emailVerificationService.js';
+import { sendEmailVerification } from './emailService.js';
 
 const BCRYPT_ROUNDS = 12;
 const MAX_LOGIN_ATTEMPTS = 5; // Redis rate-limit: max attempts per window
@@ -216,6 +218,16 @@ export async function register({ nome, email, senha }, meta = {}) {
     userAgent: meta.userAgent,
     sucesso: true,
   });
+
+  // Enviar email de verificação — best-effort (não falha o cadastro)
+  try {
+    const token = await generateEmailVerificationToken(usuario.id);
+    const verifyLink = `${config.APP_URL}/verify-email?token=${token}`;
+    await sendEmailVerification({ to: usuario.email, verifyLink });
+    logger.info({ msg: 'Email de verificação enviado', email: usuario.email });
+  } catch (err) {
+    logger.error({ msg: 'Falha ao enviar email de verificação no cadastro', email: usuario.email, err: err.message });
+  }
 
   return {
     usuario_id: usuario.id,
