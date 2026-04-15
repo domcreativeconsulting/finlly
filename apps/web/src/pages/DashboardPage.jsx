@@ -1541,15 +1541,17 @@ export default function DashboardPage() {
           </div>{/* /page content */}
 
           {/* ── Footer ── */}
-          <div
-            style={{
-              background: colors.primary,
-              color: 'rgba(255,255,255,0.8)',
-              textAlign: 'center',
-              padding: '14px',
-              fontSize: typography.sizes.xs,
-            }}
-          >
+<div
+  style={{
+    background: colors.primary,
+    color: 'rgba(255,255,255,0.8)',
+    textAlign: 'center',
+    padding: '14px 32px',
+    fontSize: typography.sizes.xs,
+    borderRadius: radius.lg,
+    margin: '0 0 20px',
+  }}
+>
             Finlly • painel financeiro pessoal — {CURRENT_YEAR}
           </div>
         </main>
