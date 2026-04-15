@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -23,6 +23,8 @@ const LoginSchema = z.object({
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const plano = searchParams.get('plano');
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -55,7 +57,8 @@ export default function LoginPage() {
     try {
       await login(data.email, data.senha);
       toast.success('Login realizado com sucesso!');
-      navigate('/dashboard', { replace: true });
+      const dest = plano ? `/checkout?plano=${encodeURIComponent(plano)}` : '/dashboard';
+      navigate(dest, { replace: true });
     } catch (err) {
       const status = err.response?.status;
       if (status === 429) {
