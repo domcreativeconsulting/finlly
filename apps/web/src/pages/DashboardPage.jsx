@@ -67,6 +67,13 @@ function getTodayStr() {
   return toISODate(new Date());
 }
 
+function normalizeMeta(meta) {
+  const valorAlvo = meta.valorAlvo ?? meta.valor_alvo ?? 0;
+  const valorAtual = meta.valorAtual ?? meta.valor_atual ?? 0;
+  const dataFim = meta.dataFim ?? meta.data_fim ?? null;
+  return { valorAlvo, valorAtual, dataFim };
+}
+
 function getYesterdayStr() {
   const d = new Date();
   d.setDate(d.getDate() - 1);
@@ -667,8 +674,8 @@ export default function DashboardPage() {
   const rentMedia = totalAplicado > 0 ? ((ganhoEstimado / totalAplicado) * 100).toFixed(2) : '0.00';
 
   // ── Computed metas values ──────────────────────────────────────────────────
-  const metasTotalAlvo = metas.reduce((s, m) => s + (m.valorAlvo ?? m.valor_alvo ?? 0), 0);
-  const metasTotalAtual = metas.reduce((s, m) => s + (m.valorAtual ?? m.valor_atual ?? 0), 0);
+  const metasTotalAlvo = metas.reduce((s, m) => s + normalizeMeta(m).valorAlvo, 0);
+  const metasTotalAtual = metas.reduce((s, m) => s + normalizeMeta(m).valorAtual, 0);
 
   // ── Styles ─────────────────────────────────────────────────────────────────
   const cardStyle = {
@@ -752,10 +759,9 @@ export default function DashboardPage() {
     <InadimplenteGuard>
       <div style={{ display: 'flex', minHeight: '100vh', background: colors.bg }}>
         <AppSidebar
-          open={sidebarOpen}
-          onToggle={() => setSidebarOpen((v) => !v)}
-          expanded={sidebarExpanded}
-          onExpandedChange={setSidebarExpanded}
+          sidebarOpen={sidebarOpen}
+          isExpanded={sidebarExpanded}
+          onHoverChange={setSidebarExpanded}
           currentPath="/dashboard"
         />
 
@@ -895,7 +901,7 @@ export default function DashboardPage() {
                         icon: faCreditCard,
                         label: 'Assinatura',
                         onClick: () => {
-                          navigate('/billing');
+                          navigate('/assinatura');
                           setDropdownOpen(false);
                         },
                       },
@@ -1382,13 +1388,11 @@ export default function DashboardPage() {
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                       {metas.map((meta) => {
-                        const valorAlvo = meta.valorAlvo ?? meta.valor_alvo ?? 0;
-                        const valorAtual = meta.valorAtual ?? meta.valor_atual ?? 0;
+                        const { valorAlvo, valorAtual, dataFim } = normalizeMeta(meta);
                         const pct =
                           valorAlvo > 0
                             ? Math.min(100, (valorAtual / valorAlvo) * 100)
                             : 0;
-                        const dataFim = meta.dataFim ?? meta.data_fim;
                         return (
                           <div key={meta.id}>
                             <div
