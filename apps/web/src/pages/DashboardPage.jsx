@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import AppSidebar from '../components/AppSidebar.jsx';
@@ -89,6 +89,9 @@ function getDaysAheadStr(n) {
 function isSemAssinatura(err) {
   return err?.response?.data?.code === 'SEM_ASSINATURA';
 }
+
+// Current year extracted once at module load (stable value)
+const CURRENT_YEAR = new Date().getFullYear();
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 
@@ -569,9 +572,10 @@ export default function DashboardPage() {
           }),
       ]);
 
+      const today = new Date();
       const days = Array.from({ length: 7 }, (_, i) => {
-        const d = new Date();
-        d.setDate(d.getDate() + i);
+        const d = new Date(today);
+        d.setDate(today.getDate() + i);
         return toISODate(d);
       });
 
@@ -665,17 +669,31 @@ export default function DashboardPage() {
   }
 
   // ── Computed investimentos values ──────────────────────────────────────────
-  const totalAplicado = investimentos.reduce((s, inv) => s + (inv.valorInicial ?? inv.valor_aplicado ?? 0), 0);
-  const totalSaldoAtual = investimentos.reduce(
-    (s, inv) => s + (inv.saldo_atual ?? inv.saldoAtual ?? inv.valorInicial ?? 0),
-    0,
-  );
-  const ganhoEstimado = totalSaldoAtual - totalAplicado;
-  const rentMedia = totalAplicado > 0 ? ((ganhoEstimado / totalAplicado) * 100).toFixed(2) : '0.00';
+  const { totalAplicado, totalSaldoAtual, ganhoEstimado, rentMedia } = useMemo(() => {
+    const aplicado = investimentos.reduce(
+      (s, inv) => s + (inv.valorInicial ?? inv.valor_aplicado ?? 0),
+      0,
+    );
+    const saldoAtual = investimentos.reduce(
+      (s, inv) => s + (inv.saldo_atual ?? inv.saldoAtual ?? inv.valorInicial ?? 0),
+      0,
+    );
+    const ganho = saldoAtual - aplicado;
+    const rent = aplicado > 0 ? ((ganho / aplicado) * 100).toFixed(2) : '0.00';
+    return { totalAplicado: aplicado, totalSaldoAtual: saldoAtual, ganhoEstimado: ganho, rentMedia: rent };
+  }, [investimentos]);
 
   // ── Computed metas values ──────────────────────────────────────────────────
-  const metasTotalAlvo = metas.reduce((s, m) => s + normalizeMeta(m).valorAlvo, 0);
-  const metasTotalAtual = metas.reduce((s, m) => s + normalizeMeta(m).valorAtual, 0);
+  const { metasTotalAlvo, metasTotalAtual } = useMemo(() => {
+    let alvo = 0;
+    let atual = 0;
+    for (const m of metas) {
+      const nm = normalizeMeta(m);
+      alvo += nm.valorAlvo;
+      atual += nm.valorAtual;
+    }
+    return { metasTotalAlvo: alvo, metasTotalAtual: atual };
+  }, [metas]);
 
   // ── Styles ─────────────────────────────────────────────────────────────────
   const cardStyle = {
@@ -752,8 +770,6 @@ export default function DashboardPage() {
     gap: '20px',
     marginBottom: '20px',
   };
-
-  const year = new Date().getFullYear();
 
   return (
     <InadimplenteGuard>
@@ -1534,7 +1550,7 @@ export default function DashboardPage() {
               fontSize: typography.sizes.xs,
             }}
           >
-            Finlly • painel financeiro pessoal — {year}
+            Finlly • painel financeiro pessoal — {CURRENT_YEAR}
           </div>
         </main>
       </div>
