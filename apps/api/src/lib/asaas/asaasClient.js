@@ -83,10 +83,13 @@ async function _request(path, options = {}) {
       clearTimeout(timer);
     }
 
-    // 404 = resource not found — expected behaviour (e.g. customer not yet in Asaas)
-    if (response.status === 404) {
-      return null;
-    }
+    // 404 = resource not found — treated as non-retryable error
+if (response.status === 404) {
+  let body = null;
+  try { body = await response.json(); } catch { /* ignore */ }
+  logger.error({ status: 404, body, url }, 'Asaas HTTP error');
+  throw AppError.internal(`Erro no provedor de pagamento: 404`);
+}
 
     if (NON_RETRYABLE_STATUSES.has(response.status)) {
       let body = null;
