@@ -83,6 +83,12 @@ async function _request(path, options = {}) {
       clearTimeout(timer);
     }
 
+    // 🔍 DEBUG TEMPORÁRIO — remover após diagnóstico
+    let _debugBody;
+    try { _debugBody = await response.clone().json(); } catch {}
+    logger.info({ status: response.status, url, attempt }, '[DEBUG] Asaas raw response status');
+    logger.info({ body: _debugBody }, '[DEBUG] Asaas raw response body');
+
     // 404 = resource not found — expected behaviour (e.g. customer not yet in Asaas)
     if (response.status === 404) {
       return null;
