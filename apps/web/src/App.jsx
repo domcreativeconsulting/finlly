@@ -43,6 +43,7 @@ export default function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
         <Route
           path="/dashboard"
           element={<ProtectedRoute element={<DashboardPage />} />}
@@ -50,10 +51,6 @@ export default function App() {
         <Route
           path="/perfil"
           element={<ProtectedRoute element={<PerfilPage />} requiresSubscription={false} />}
-        />
-        <Route
-          path="/checkout"
-          element={<ProtectedRoute element={<CheckoutPage />} requiresSubscription={false} />}
         />
         <Route
           path="/billing/status"
