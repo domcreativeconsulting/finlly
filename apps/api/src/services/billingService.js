@@ -46,7 +46,7 @@ function apenasDigitos(value) {
  * Creates or updates a subscription for the given user.
  *
  * @param {string} usuarioId
- * @param {{ plano: string, ciclo: string, formaPagamento: 'PIX'|'CREDIT_CARD', cupomCodigo?: string, cpf?: string, telefone?: string, creditCard?: object, creditCardHolderInfo?: object, remoteIp?: string }} params
+ * @param {{ plano: string, ciclo: string, formaPagamento: 'PIX'|'CREDIT_CARD', cupomCodigo?: string, cpf?: string, telefone?: string, creditCard?: object, creditCardHolderInfo?: object, remoteIp?: string }} data
  * @returns {Promise<{ assinante: object, paymentLink: string|null }>}
  */
 export async function criarAssinatura(usuarioId, { plano, ciclo, formaPagamento, cupomCodigo, cpf, telefone, creditCard, creditCardHolderInfo, remoteIp }) {
@@ -179,9 +179,26 @@ export async function criarAssinatura(usuarioId, { plano, ciclo, formaPagamento,
     sucesso:      true,
   });
 
+  // Tenta obter o invoiceUrl direto da assinatura
+  let paymentLink = subscription.invoiceUrl ?? null;
+
+  // Se não veio na assinatura (comum no PIX), busca no primeiro payment gerado
+  if (!paymentLink && subscription.id) {
+    try {
+      const payments = await asaas.getPaymentsBySubscription(subscription.id);
+      const firstPayment = payments?.data?.[0];
+      paymentLink = firstPayment?.invoiceUrl ?? firstPayment?.bankSlipUrl ?? null;
+      if (paymentLink) {
+        logger.info({ subscriptionId: subscription.id, paymentLink }, 'invoiceUrl obtido via payment');
+      }
+    } catch (err) {
+      logger.warn({ err, subscriptionId: subscription.id }, 'Não foi possível buscar o invoiceUrl do payment');
+    }
+  }
+
   return {
     assinante,
-    paymentLink: subscription.invoiceUrl ?? null,
+    paymentLink,
   };
 }
 
