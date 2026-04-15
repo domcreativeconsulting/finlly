@@ -106,9 +106,7 @@ export default function CheckoutPage() {
     try {
       const expiryDigits = form.cardExpiry.replace(/\D/g, '');
       const expiryMonth  = expiryDigits.slice(0, 2);
-      const expiryYear   = expiryDigits.length >= 4
-        ? `20${expiryDigits.slice(2, 4)}`
-        : '';
+      const expiryYear   = `20${expiryDigits.slice(2, 4)}`;
 
       const payload = {
         plano:          form.plano,
