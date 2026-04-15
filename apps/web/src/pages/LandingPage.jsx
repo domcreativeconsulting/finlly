@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { Link } from 'react-router-dom';
 
 const CSS = `
   html, body, #root {
@@ -480,9 +479,9 @@ export default function LandingPage() {
               <a className="btn btn-ghost" href="#planos">
                 Ver planos
               </a>
-              <Link className="btn btn-primary" to="/login">
+              <a className="btn btn-primary" href="https://app.finlly.com.br/login">
                 Acessar
-              </Link>
+              </a>
             </div>
           </div>
         </header>
@@ -505,9 +504,9 @@ export default function LandingPage() {
                   momento certo e acompanhamento contínuo.
                 </p>
                 <div className="hero-actions">
-                  <Link className="btn btn-primary" to="/checkout?plano=mensal">
+                  <a className="btn btn-primary" href="https://app.finlly.com.br/checkout?plano=mensal">
                     Começar agora <i className="bi bi-arrow-right"></i>
-                  </Link>
+                  </a>
                   <a className="btn btn-ghost" href="#recursos">
                     Ver demonstração <i className="bi bi-play-circle"></i>
                   </a>
@@ -805,9 +804,9 @@ export default function LandingPage() {
                     quiser
                   </li>
                 </ul>
-                <Link className="btn-plan" to="/checkout?plano=mensal">
+                <a className="btn-plan" href="https://app.finlly.com.br/checkout?plano=mensal">
                   Assinar mensal
-                </Link>
+                </a>
               </article>
               <article className="price best reveal">
                 <span className="pill">Melhor custo</span>
@@ -833,9 +832,9 @@ export default function LandingPage() {
                     prioritário
                   </li>
                 </ul>
-                <Link className="btn-plan" to="/checkout?plano=anual">
+                <a className="btn-plan" href="https://app.finlly.com.br/checkout?plano=anual">
                   Assinar anual
-                </Link>
+                </a>
               </article>
             </div>
           </section>
@@ -906,9 +905,9 @@ export default function LandingPage() {
                 </p>
               </div>
               <div className="cta-action">
-                <Link className="btn btn-primary" to="/checkout?plano=mensal">
+                <a className="btn btn-primary" href="https://app.finlly.com.br/checkout?plano=mensal">
                   Quero começar agora <i className="bi bi-arrow-right"></i>
-                </Link>
+                </a>
               </div>
             </div>
           </section>
