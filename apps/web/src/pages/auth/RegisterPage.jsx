@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -58,6 +58,8 @@ const forcaConfig = {
 export default function RegisterPage() {
   const { register: authRegister } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const plano = searchParams.get('plano');
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [mostrarConfirmar, setMostrarConfirmar] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
@@ -85,11 +87,12 @@ export default function RegisterPage() {
   useEffect(() => {
     if (sucesso) {
       const timer = setTimeout(() => {
-        navigate('/login', { replace: true });
+        const dest = plano ? `/login?plano=${encodeURIComponent(plano)}` : '/login';
+        navigate(dest, { replace: true });
       }, 3000);
       return () => clearTimeout(timer);
     }
-  }, [sucesso, navigate]);
+  }, [sucesso, navigate, plano]);
 
   const onSubmit = async (data) => {
     setErrorMsg(null);
@@ -126,7 +129,7 @@ export default function RegisterPage() {
             <p style={{ color: '#9ca3af', fontSize: '13px' }}>
               Redirecionando para o login em 3 segundos...
             </p>
-            <Link to="/login" style={{ ...styles.link, display: 'block', marginTop: '20px' }}>
+            <Link to={plano ? `/login?plano=${encodeURIComponent(plano)}` : '/login'} style={{ ...styles.link, display: 'block', marginTop: '20px' }}>
               Ir para Login agora
             </Link>
           </div>
