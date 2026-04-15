@@ -24,16 +24,18 @@ import RelatoriosPage from './pages/RelatoriosPage.jsx';
 import OfflineBanner from './components/OfflineBanner.jsx';
 import LandingPage from './pages/LandingPage.jsx';
 
+const isAppSubdomain = window.location.hostname === 'app.finlly.com.br';
+
 export default function App() {
   return (
-    <> 
+    <>
       <OfflineBanner />
-      <style>{` 
-        @keyframes spin { 
-          to { transform: rotate(360deg); } 
-        } 
-        * { box-sizing: border-box; } 
-        body { margin: 0; } 
+      <style>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; }
       `}</style>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
@@ -97,7 +99,10 @@ export default function App() {
           path="/relatorios"
           element={<ProtectedRoute element={<RelatoriosPage />} />}
         />
-        <Route path="/" element={<LandingPage />} />
+        <Route
+          path="/"
+          element={isAppSubdomain ? <Navigate to="/login" replace /> : <LandingPage />}
+        />
         <Route path="/logout" element={<Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
