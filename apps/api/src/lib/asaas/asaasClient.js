@@ -23,8 +23,8 @@ const asaasCircuitBreaker = new CircuitBreaker({
 function getBaseUrl() {
   if (config.ASAAS_BASE_URL) return config.ASAAS_BASE_URL;
   return config.ASAAS_ENV === 'production'
-    ? 'https://api.asaas.com/api/v3'
-    : 'https://sandbox.asaas.com/api/v3';
+    ? 'https://api.asaas.com/v3'
+    : 'https://sandbox.asaas.com/v3';
 }
 
 /**
@@ -82,12 +82,6 @@ async function _request(path, options = {}) {
     } finally {
       clearTimeout(timer);
     }
-
-    // 🔍 DEBUG TEMPORÁRIO — remover após diagnóstico
-    let _debugBody;
-    try { _debugBody = await response.clone().json(); } catch {}
-    logger.info({ status: response.status, url, attempt }, '[DEBUG] Asaas raw response status');
-    logger.info({ body: _debugBody }, '[DEBUG] Asaas raw response body');
 
     // 404 = resource not found — expected behaviour (e.g. customer not yet in Asaas)
     if (response.status === 404) {
