@@ -71,7 +71,6 @@ router.post(
         return next(AppError.badRequest('Payload inválido'));
       }
     } else if (typeof rawBody === 'object' && rawBody !== null) {
-      // Body was pre-parsed (e.g. in test environment)
       payload = rawBody;
     } else {
       return next(AppError.badRequest('Payload inválido'));
@@ -102,11 +101,13 @@ router.post(
  */
 router.post('/billing/subscribe', billingLimiter, jwtAuthMiddleware, validate({ body: subscribeSchema }), async (req, res, next) => {
   try {
-    const { assinante, paymentLink } = await criarAssinatura(req.user.sub, req.body);
+    const { assinante, paymentLink, pixQrCode, pixCopiaECola } = await criarAssinatura(req.user.sub, req.body);
     return res.status(201).json({
       message: 'Assinatura criada com sucesso',
       assinante,
       paymentLink,
+      pixQrCode,
+      pixCopiaECola,
     });
   } catch (err) {
     return next(err);
