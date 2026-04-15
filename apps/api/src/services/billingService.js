@@ -47,7 +47,7 @@ function apenasDigitos(value) {
  *
  * @param {string} usuarioId
  * @param {{ plano: string, ciclo: string, formaPagamento: 'PIX'|'CREDIT_CARD', cupomCodigo?: string, cpf?: string, telefone?: string, creditCard?: object, creditCardHolderInfo?: object, remoteIp?: string }} data
- * @returns {Promise<{ assinante: object, paymentLink: string|null }>}
+ * @returns {Promise<{ assinante: object, paymentLink: string|null, pixQrCode: string|null, pixCopiaECola: string|null }>}
  */
 export async function criarAssinatura(usuarioId, { plano, ciclo, formaPagamento, cupomCodigo, cpf, telefone, creditCard, creditCardHolderInfo, remoteIp }) {
   if (!CICLO_ASAAS[ciclo]) {
@@ -103,7 +103,6 @@ export async function criarAssinatura(usuarioId, { plano, ciclo, formaPagamento,
   }
 
   // Find or create Asaas customer
-  // CPF e telefone são limpos (apenas dígitos) pois o Asaas não aceita formatação
   let customer = await asaas.getCustomerByEmail(usuario.email);
   if (!customer) {
     const cpfLimpo      = apenasDigitos(cpf);
@@ -117,7 +116,6 @@ export async function criarAssinatura(usuarioId, { plano, ciclo, formaPagamento,
     });
   }
 
-  // Guard: se customer ainda null, criação falhou no Asaas
   if (!customer || !customer.id) {
     throw AppError.internal('Não foi possível criar o cliente no provedor de pagamento');
   }
@@ -158,7 +156,6 @@ export async function criarAssinatura(usuarioId, { plano, ciclo, formaPagamento,
     },
   });
 
-  // Increment coupon usage after successful subscription creation
   if (cupomId) {
     await prisma.cupom.update({
       where: { id: cupomId },
@@ -179,34 +176,60 @@ export async function criarAssinatura(usuarioId, { plano, ciclo, formaPagamento,
     sucesso:      true,
   });
 
-  // Tenta obter o invoiceUrl direto da assinatura
-  let paymentLink = subscription.invoiceUrl ?? null;
+  let paymentLink   = subscription.invoiceUrl ?? null;
+  let pixQrCode     = null;
+  let pixCopiaECola = null;
+  let paymentId     = null;
 
-  // Se não veio na assinatura (comum no PIX), busca no primeiro payment gerado
-  if (!paymentLink && subscription.id) {
-    try {
-      const payments = await asaas.getPaymentsBySubscription(subscription.id);
-      const firstPayment = payments?.data?.[0];
-      paymentLink = firstPayment?.invoiceUrl ?? firstPayment?.bankSlipUrl ?? null;
-      if (paymentLink) {
-        logger.info({ subscriptionId: subscription.id, paymentLink }, 'invoiceUrl obtido via payment');
+  // Busca o primeiro payment da assinatura (com retry — Asaas gera de forma assíncrona)
+  if (subscription.id) {
+    for (let i = 0; i < 3; i++) {
+      try {
+        await new Promise(r => setTimeout(r, 1000)); // aguarda 1s entre tentativas
+        const payments = await asaas.getPaymentsBySubscription(subscription.id);
+        const firstPayment = payments?.data?.[0];
+        if (firstPayment?.id) {
+          paymentId = firstPayment.id;
+          if (!paymentLink) {
+            paymentLink = firstPayment.invoiceUrl ?? firstPayment.bankSlipUrl ?? null;
+          }
+          logger.info({ subscriptionId: subscription.id, paymentId, attempt: i + 1 }, 'Payment encontrado');
+          break;
+        }
+      } catch (err) {
+        logger.warn({ err, subscriptionId: subscription.id, attempt: i + 1 }, 'Tentativa de buscar payment falhou');
       }
-    } catch (err) {
-      logger.warn({ err, subscriptionId: subscription.id }, 'Não foi possível buscar o invoiceUrl do payment');
+    }
+  }
+
+  // Se for PIX, busca o QR Code (com retry)
+  if (formaPagamento === 'PIX' && paymentId) {
+    for (let i = 0; i < 3; i++) {
+      try {
+        await new Promise(r => setTimeout(r, 1000)); // aguarda 1s entre tentativas
+        const qrData = await asaas.getPixQrCode(paymentId);
+        if (qrData?.encodedImage) {
+          pixQrCode     = qrData.encodedImage;
+          pixCopiaECola = qrData.payload ?? null;
+          logger.info({ paymentId, attempt: i + 1 }, 'PIX QR Code obtido com sucesso');
+          break;
+        }
+      } catch (err) {
+        logger.warn({ err, paymentId, attempt: i + 1 }, 'Tentativa de buscar QR Code PIX falhou');
+      }
     }
   }
 
   return {
     assinante,
     paymentLink,
+    pixQrCode,
+    pixCopiaECola,
   };
 }
 
 /**
  * Cancels the subscription for the given user.
- *
- * @param {string} usuarioId
- * @returns {Promise<void>}
  */
 export async function cancelarAssinatura(usuarioId) {
   const assinante = await prisma.assinante.findFirst({
@@ -221,7 +244,6 @@ export async function cancelarAssinatura(usuarioId) {
     throw AppError.badRequest('Assinatura já cancelada');
   }
 
-  // Try to cancel on Asaas, but don't fail if it throws
   if (assinante.provider_subscription_id) {
     try {
       await asaas.cancelSubscription(assinante.provider_subscription_id);
@@ -232,7 +254,6 @@ export async function cancelarAssinatura(usuarioId) {
 
   await atualizarStatusAssinante(assinante.id, assinante.usuario_id, 'cancelado');
 
-  // Invalidate billing status cache (best-effort)
   try {
     const redis = await getRedisClient();
     await redis.del(`${BILLING_STATUS_CACHE_PREFIX}${usuarioId}`);
@@ -256,14 +277,10 @@ export async function cancelarAssinatura(usuarioId) {
 
 /**
  * Returns the subscription status for the given user.
- *
- * @param {string} usuarioId
- * @returns {Promise<object|null>}
  */
 export async function getStatusAssinatura(usuarioId) {
   const cacheKey = `${BILLING_STATUS_CACHE_PREFIX}${usuarioId}`;
 
-  // Try cache first
   try {
     const redis = await getRedisClient();
     const cached = await redis.get(cacheKey);
@@ -274,12 +291,10 @@ export async function getStatusAssinatura(usuarioId) {
     // Redis unavailable — fall through to DB
   }
 
-  // Fetch from DB
   const assinante = await prisma.assinante.findFirst({
     where: { usuario_id: usuarioId, deleted_at: null },
   });
 
-  // Save to cache (best-effort)
   try {
     const redis = await getRedisClient();
     const ttl = config.BILLING_STATUS_CACHE_TTL;
