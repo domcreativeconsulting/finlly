@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faShieldHalved, faArrowsRotate, faBullseye } from '@fortawesome/free-solid-svg-icons';
 import { billingService } from '../services/billing.service.js';
 import { useAuth } from '../hooks/useAuth.js';
 import logoImg from '../assets/logo.png';
 
-// ─── helpers ────────────────────────────────────��───────────
+// ─── helpers ────────────────────────────────────────────────
 function applyMaskCpf(v) {
   const d = v.replace(/\D/g, '').slice(0, 11);
   return d.replace(/(\d{3})(\d)/, '$1.$2')
@@ -53,7 +55,6 @@ const inputCssDark = {
   fontFamily: 'inherit',
 };
 
-// Light inputs — Step 1 white panel
 const inputCss = {
   width: '100%',
   padding: '11px 13px',
@@ -201,7 +202,7 @@ export default function CheckoutPage() {
             <img src={logoImg} alt="Finlly" style={{ height: '40px' }} />
           </div>
 
-          {/* Main content — left aligned */}
+          {/* Main content */}
           <div>
             <h2 style={{ fontSize: '28px', fontWeight: '700', color: '#ffffff', lineHeight: 1.35, margin: '0 0 12px' }}>
               Gestão financeira pessoal.
@@ -211,12 +212,14 @@ export default function CheckoutPage() {
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {[
-                { icon: '🛡️', text: 'Bloqueio automático por inadimplência' },
-                { icon: '🔄', text: 'Recorrência via Asaas' },
-                { icon: '🎯', text: 'Metas + anexos (extratos/comprovantes)' },
+                { icon: faShieldHalved, text: 'Bloqueio automático por inadimplência' },
+                { icon: faArrowsRotate, text: 'Recorrência via Asaas' },
+                { icon: faBullseye,     text: 'Metas + anexos (extratos/comprovantes)' },
               ].map(({ icon, text }) => (
                 <div key={text} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span style={{ fontSize: '18px', minWidth: '24px' }}>{icon}</span>
+                  <span style={{ minWidth: '24px', display: 'flex', alignItems: 'center', color: 'rgba(255,255,255,0.8)' }}>
+                    <FontAwesomeIcon icon={icon} style={{ fontSize: '18px' }} />
+                  </span>
                   <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)' }}>{text}</span>
                 </div>
               ))}
@@ -231,7 +234,6 @@ export default function CheckoutPage() {
             <div style={{ fontSize: '20px', fontWeight: '700', color: '#ffffff' }}>
               {plan.full}
             </div>
-            {/* mostra código de referência se existir no futuro */}
           </div>
         </div>
       )}
@@ -251,7 +253,7 @@ export default function CheckoutPage() {
           {/* Header */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontSize: '22px' }}>🤖</span>
+              <img src={logoImg} alt="Finlly" style={{ height: '28px' }} />
               <span style={{ fontSize: '22px', fontWeight: '700', color: '#111827' }}>Assinatura</span>
             </div>
             <span style={{ fontSize: '13px', color: '#9ca3af' }}>v5.2.2</span>
@@ -302,7 +304,7 @@ function StepDados({ form, handleChange, handleNext, error, plan, loading }) {
         <div style={{ padding: '12px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', color: '#dc2626', fontSize: '14px' }}>
           ⚠️{' '}
           {error === EMAIL_DUPLICADO
-            ? <><Link to="/login" style={{ color: '#dc2626', fontWeight: '600', textDecoration: 'underline' }}>E-mail já cadastrado. Faça login para assinar.</Link></>
+            ? <Link to="/login" style={{ color: '#dc2626', fontWeight: '600', textDecoration: 'underline' }}>E-mail já cadastrado. Faça login para assinar.</Link>
             : error}
         </div>
       )}
@@ -333,10 +335,12 @@ function StepDados({ form, handleChange, handleNext, error, plan, loading }) {
         <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="seu@email.com" style={inputCss} />
       </FieldLight>
 
-      {/* Senha + Confirmar Senha */}
+      {/* Senha */}
       <FieldLight label="Senha">
         <input name="senha" type="password" value={form.senha} onChange={handleChange} placeholder="Mínimo 8 caracteres" style={inputCss} />
       </FieldLight>
+
+      {/* Confirmar Senha */}
       <FieldLight label="Confirmar Senha">
         <input name="confirmarSenha" type="password" value={form.confirmarSenha} onChange={handleChange} placeholder="Repita sua senha" style={inputCss} />
       </FieldLight>
@@ -436,7 +440,11 @@ function StepPagamento({ form, method, setMethod, handlePay, error, loading, pla
           ))}
         </div>
       </div>
-      {error && <div style={{ padding: '12px 14px', background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.35)', borderRadius: '10px', color: '#fca5a5', fontSize: '13px' }}>⚠️ {error}</div>}
+      {error && (
+        <div style={{ padding: '12px 14px', background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.35)', borderRadius: '10px', color: '#fca5a5', fontSize: '13px' }}>
+          ⚠️ {error}
+        </div>
+      )}
       {method === 'CARTAO' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', padding: '16px', background: 'rgba(13,23,51,0.5)', borderRadius: '14px', border: `1px solid ${C.border}` }}>
           <Field label="Nome no cartão"><input name="cardName" type="text" value={form.cardName} onChange={handleChange} placeholder="Como está gravado no cartão" style={inputCssDark} /></Field>
@@ -485,11 +493,13 @@ function StepConfirmacao({ paymentLink, method, plan, navigate }) {
       </div>
       {method === 'PIX' && paymentLink && (
         <a href={paymentLink} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '14px 20px', borderRadius: '999px', background: `linear-gradient(130deg, ${C.accent}, #d6f35d)`, color: '#12203f', fontWeight: '700', fontSize: '15px', textDecoration: 'none', boxShadow: '0 10px 24px rgba(196,233,31,0.28)' }}>
-          🔒 Abrir página de pagamento PIX
+          ��� Abrir página de pagamento PIX
         </a>
       )}
       {method === 'PIX' && !paymentLink && (
-        <div style={{ fontSize: '13px', color: C.inkSoft, padding: '12px', background: 'rgba(196,233,31,0.06)', borderRadius: '12px', border: `1px solid rgba(196,233,31,0.2)` }}>⏳ Aguardando geração do link de pagamento...</div>
+        <div style={{ fontSize: '13px', color: C.inkSoft, padding: '12px', background: 'rgba(196,233,31,0.06)', borderRadius: '12px', border: `1px solid rgba(196,233,31,0.2)` }}>
+          ⏳ Aguardando geração do link de pagamento...
+        </div>
       )}
       <button onClick={() => navigate('/login')} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: '12px', padding: '12px 24px', color: C.inkSoft, cursor: 'pointer', fontSize: '13px', width: '100%' }}>
         Já paguei — Acessar minha conta
