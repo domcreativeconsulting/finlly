@@ -46,10 +46,10 @@ function apenasDigitos(value) {
  * Creates or updates a subscription for the given user.
  *
  * @param {string} usuarioId
- * @param {{ plano: string, ciclo: string, formaPagamento: 'PIX'|'CREDIT_CARD', cupomCodigo?: string, cpf?: string, telefone?: string }} params
+ * @param {{ plano: string, ciclo: string, formaPagamento: 'PIX'|'CREDIT_CARD', cupomCodigo?: string, cpf?: string, telefone?: string, creditCard?: object, creditCardHolderInfo?: object, remoteIp?: string }} params
  * @returns {Promise<{ assinante: object, paymentLink: string|null }>}
  */
-export async function criarAssinatura(usuarioId, { plano, ciclo, formaPagamento, cupomCodigo, cpf, telefone }) {
+export async function criarAssinatura(usuarioId, { plano, ciclo, formaPagamento, cupomCodigo, cpf, telefone, creditCard, creditCardHolderInfo, remoteIp }) {
   if (!CICLO_ASAAS[ciclo]) {
     throw AppError.badRequest(`Ciclo inválido: ${ciclo}. Use 'mensal' ou 'anual'`);
   }
@@ -131,6 +131,9 @@ export async function criarAssinatura(usuarioId, { plano, ciclo, formaPagamento,
     nextDueDate,
     description:       `Plano ${plano} — ${ciclo}`,
     externalReference: usuarioId,
+    ...(creditCard           ? { creditCard }           : {}),
+    ...(creditCardHolderInfo ? { creditCardHolderInfo } : {}),
+    ...(remoteIp             ? { remoteIp }             : {}),
   });
 
   const assinante = await prisma.assinante.upsert({

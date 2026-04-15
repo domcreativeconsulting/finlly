@@ -167,13 +167,64 @@ async function createCustomer({ nome, email, cpfCnpj, telefone }) {
 
 /**
  * Creates a new subscription in Asaas.
- * @param {{ customer: string, billingType: string, cycle: string, value: number, nextDueDate: string, description?: string, externalReference?: string }} params
+ * Supports PIX and CREDIT_CARD billing types.
+ * For CREDIT_CARD, pass creditCard and creditCardHolderInfo objects.
+ *
+ * @param {{
+ *   customer: string,
+ *   billingType: string,
+ *   cycle: string,
+ *   value: number,
+ *   nextDueDate: string,
+ *   description?: string,
+ *   externalReference?: string,
+ *   creditCard?: {
+ *     holderName: string,
+ *     number: string,
+ *     expiryMonth: string,
+ *     expiryYear: string,
+ *     ccv: string,
+ *   },
+ *   creditCardHolderInfo?: {
+ *     name: string,
+ *     email: string,
+ *     cpfCnpj: string,
+ *     postalCode?: string,
+ *     addressNumber?: string,
+ *     phone?: string,
+ *   },
+ *   remoteIp?: string,
+ * }} params
  * @returns {Promise<object>}
  */
-async function createSubscription({ customer, billingType, cycle, value, nextDueDate, description, externalReference }) {
+async function createSubscription({
+  customer,
+  billingType,
+  cycle,
+  value,
+  nextDueDate,
+  description,
+  externalReference,
+  creditCard,
+  creditCardHolderInfo,
+  remoteIp,
+}) {
+  const body = {
+    customer,
+    billingType,
+    cycle,
+    value,
+    nextDueDate,
+    description,
+    externalReference,
+    ...(creditCard           ? { creditCard }           : {}),
+    ...(creditCardHolderInfo ? { creditCardHolderInfo } : {}),
+    ...(remoteIp             ? { remoteIp }             : {}),
+  };
+
   return request('/subscriptions', {
     method: 'POST',
-    body: JSON.stringify({ customer, billingType, cycle, value, nextDueDate, description, externalReference }),
+    body: JSON.stringify(body),
   });
 }
 
