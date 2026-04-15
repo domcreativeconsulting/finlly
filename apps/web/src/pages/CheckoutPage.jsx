@@ -74,7 +74,7 @@ const SENHA_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/;
 export default function CheckoutPage() {
   const [searchParams] = useSearchParams();
   const navigate       = useNavigate();
-  const { register: authRegister } = useAuth();
+  const { register: authRegister, login } = useAuth();
   const initialPlan    = PLANS[searchParams.get('plano')] ? searchParams.get('plano') : 'mensal';
 
   const [step, setStep]               = useState(1);
@@ -123,6 +123,7 @@ export default function CheckoutPage() {
     setLoading(true);
     try {
       await authRegister(form.nome.trim(), form.email.trim(), form.senha);
+      await login(form.email.trim(), form.senha);
       setStep(2);
     } catch (err) {
       const status = err?.response?.status;
@@ -197,12 +198,10 @@ export default function CheckoutPage() {
           color: '#ffffff',
           overflowY: 'auto',
         }}>
-          {/* Logo top-left */}
           <div>
             <img src={logoImg} alt="Finlly" style={{ height: '40px' }} />
           </div>
 
-          {/* Main content */}
           <div>
             <h2 style={{ fontSize: '28px', fontWeight: '700', color: '#ffffff', lineHeight: 1.35, margin: '0 0 12px' }}>
               Gestão financeira pessoal.
@@ -226,7 +225,6 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          {/* Plan footer */}
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.12)', paddingTop: '24px' }}>
             <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: '6px' }}>
               PLANO ATUAL
@@ -250,7 +248,6 @@ export default function CheckoutPage() {
       }}>
         <div style={{ width: '100%', maxWidth: '520px' }}>
 
-          {/* Header */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <img src={logoImg} alt="Finlly" style={{ height: '28px' }} />
@@ -259,7 +256,6 @@ export default function CheckoutPage() {
             <span style={{ fontSize: '13px', color: '#9ca3af' }}>v5.2.2</span>
           </div>
 
-          {/* Steps */}
           {step === 1 && (
             <StepDados
               form={form}
@@ -309,7 +305,6 @@ function StepDados({ form, handleChange, handleNext, error, plan, loading }) {
         </div>
       )}
 
-      {/* Plano */}
       <FieldLight label="Plano">
         <div style={{ position: 'relative' }}>
           <select
@@ -325,27 +320,22 @@ function StepDados({ form, handleChange, handleNext, error, plan, loading }) {
         </div>
       </FieldLight>
 
-      {/* Nome */}
       <FieldLight label="Nome">
         <input name="nome" type="text" value={form.nome} onChange={handleChange} placeholder="Seu nome completo" style={inputCss} />
       </FieldLight>
 
-      {/* Email */}
       <FieldLight label="E-mail">
         <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="seu@email.com" style={inputCss} />
       </FieldLight>
 
-      {/* Senha */}
       <FieldLight label="Senha">
         <input name="senha" type="password" value={form.senha} onChange={handleChange} placeholder="Mínimo 8 caracteres" style={inputCss} />
       </FieldLight>
 
-      {/* Confirmar Senha */}
       <FieldLight label="Confirmar Senha">
         <input name="confirmarSenha" type="password" value={form.confirmarSenha} onChange={handleChange} placeholder="Repita sua senha" style={inputCss} />
       </FieldLight>
 
-      {/* CPF + Telefone */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
         <FieldLight label="CPF">
           <input name="cpf" type="text" inputMode="numeric" value={form.cpf} onChange={handleChange} placeholder="000.000.000-00" style={inputCss} />
@@ -355,7 +345,6 @@ function StepDados({ form, handleChange, handleNext, error, plan, loading }) {
         </FieldLight>
       </div>
 
-      {/* Cupom */}
       <FieldLight label="Cupom">
         <input name="cupomCodigo" type="text" value={form.cupomCodigo} onChange={handleChange} placeholder="Opcional" style={inputCss} />
         <span style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
@@ -363,7 +352,6 @@ function StepDados({ form, handleChange, handleNext, error, plan, loading }) {
         </span>
       </FieldLight>
 
-      {/* Assinar agora */}
       <button
         type="submit"
         disabled={loading}
@@ -380,7 +368,6 @@ function StepDados({ form, handleChange, handleNext, error, plan, loading }) {
         {loading ? 'Criando conta...' : 'Assinar agora'}
       </button>
 
-      {/* Já tenho acesso */}
       <button
         type="button"
         onClick={() => window.location.href = '/login'}
@@ -493,7 +480,7 @@ function StepConfirmacao({ paymentLink, method, plan, navigate }) {
       </div>
       {method === 'PIX' && paymentLink && (
         <a href={paymentLink} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '14px 20px', borderRadius: '999px', background: `linear-gradient(130deg, ${C.accent}, #d6f35d)`, color: '#12203f', fontWeight: '700', fontSize: '15px', textDecoration: 'none', boxShadow: '0 10px 24px rgba(196,233,31,0.28)' }}>
-          ��� Abrir página de pagamento PIX
+          🔒 Abrir página de pagamento PIX
         </a>
       )}
       {method === 'PIX' && !paymentLink && (
@@ -501,7 +488,7 @@ function StepConfirmacao({ paymentLink, method, plan, navigate }) {
           ⏳ Aguardando geração do link de pagamento...
         </div>
       )}
-      <button onClick={() => navigate('/login')} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: '12px', padding: '12px 24px', color: C.inkSoft, cursor: 'pointer', fontSize: '13px', width: '100%' }}>
+      <button onClick={() => navigate('/dashboard')} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: '12px', padding: '12px 24px', color: C.inkSoft, cursor: 'pointer', fontSize: '13px', width: '100%' }}>
         Já paguei — Acessar minha conta
       </button>
     </div>
