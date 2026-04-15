@@ -77,13 +77,14 @@ export default function CheckoutPage() {
   const { register: authRegister, login } = useAuth();
   const initialPlan    = PLANS[searchParams.get('plano')] ? searchParams.get('plano') : 'mensal';
 
-  // step: 1 = dados, 1.5 = aguardando verificação email, 2 = pagamento, 3 = confirmação
-  const [step, setStep]               = useState(1);
-  const [method, setMethod]           = useState('PIX');
-  const [loading, setLoading]         = useState(false);
-  const [error, setError]             = useState('');
-  const [paymentLink, setPaymentLink] = useState(null);
-  const [isMobile, setIsMobile]       = useState(false);
+  const [step, setStep]                   = useState(1);
+  const [method, setMethod]               = useState('PIX');
+  const [loading, setLoading]             = useState(false);
+  const [error, setError]                 = useState('');
+  const [paymentLink, setPaymentLink]     = useState(null);
+  const [pixQrCode, setPixQrCode]         = useState(null);
+  const [pixCopiaECola, setPixCopiaECola] = useState(null);
+  const [isMobile, setIsMobile]           = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
 
@@ -103,7 +104,6 @@ export default function CheckoutPage() {
     return () => { clearTimeout(timer); window.removeEventListener('resize', handleResize); };
   }, []);
 
-  // Cooldown timer para reenvio de e-mail
   useEffect(() => {
     if (resendCooldown <= 0) return;
     const t = setTimeout(() => setResendCooldown(c => c - 1), 1000);
@@ -133,7 +133,6 @@ export default function CheckoutPage() {
     setLoading(true);
     try {
       await authRegister(form.nome.trim(), form.email.trim(), form.senha);
-      // Não faz login ainda — aguarda verificação do e-mail
       setStep(1.5);
       setResendCooldown(60);
     } catch (err) {
@@ -172,13 +171,7 @@ export default function CheckoutPage() {
     setResendLoading(true);
     try {
       const { authService } = await import('../services/auth.service.js');
-      await authService.resendVerificationEmail
-        ? authService.resendVerificationEmail(form.email.trim())
-        : fetch('/api/auth/resend-verification-email', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: form.email.trim() }),
-          });
+      await authService.resendVerificationEmail(form.email.trim());
       toast.success('E-mail reenviado! Verifique sua caixa de entrada.');
       setResendCooldown(60);
     } catch {
@@ -222,6 +215,8 @@ export default function CheckoutPage() {
       };
       const res = await billingService.subscribe(payload);
       setPaymentLink(res.paymentLink ?? null);
+      setPixQrCode(res.pixQrCode ?? null);
+      setPixCopiaECola(res.pixCopiaECola ?? null);
       toast.success('Assinatura criada com sucesso!');
       setStep(3);
     } catch (err) {
@@ -341,7 +336,14 @@ export default function CheckoutPage() {
 
           {step === 3 && (
             <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: '20px', padding: '28px', boxShadow: '0 20px 48px rgba(4,10,24,0.55)' }}>
-              <StepConfirmacao paymentLink={paymentLink} method={method} plan={plan} navigate={navigate} />
+              <StepConfirmacao
+                paymentLink={paymentLink}
+                pixQrCode={pixQrCode}
+                pixCopiaECola={pixCopiaECola}
+                method={method}
+                plan={plan}
+                navigate={navigate}
+              />
             </div>
           )}
 
@@ -455,8 +457,6 @@ function StepDados({ form, handleChange, handleNext, error, plan, loading }) {
 function StepVerificacaoEmail({ email, onConfirmed, onResend, onBack, error, loading, resendLoading, resendCooldown }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px', textAlign: 'center' }}>
-
-      {/* Ícone */}
       <div style={{
         width: '72px', height: '72px', borderRadius: '50%',
         background: '#eff6ff', border: '2px solid #bfdbfe',
@@ -466,7 +466,6 @@ function StepVerificacaoEmail({ email, onConfirmed, onResend, onBack, error, loa
         ✉️
       </div>
 
-      {/* Título */}
       <div>
         <h2 style={{ margin: '0 0 8px', fontSize: '22px', fontWeight: '700', color: '#111827' }}>
           Confirme seu e-mail
@@ -479,7 +478,6 @@ function StepVerificacaoEmail({ email, onConfirmed, onResend, onBack, error, loa
         </p>
       </div>
 
-      {/* Instruções */}
       <div style={{
         width: '100%', padding: '16px', background: '#f0fdf4',
         border: '1px solid #bbf7d0', borderRadius: '10px',
@@ -493,7 +491,6 @@ function StepVerificacaoEmail({ email, onConfirmed, onResend, onBack, error, loa
         </ol>
       </div>
 
-      {/* Erro */}
       {error && (
         <div style={{
           width: '100%', padding: '12px 14px',
@@ -504,7 +501,6 @@ function StepVerificacaoEmail({ email, onConfirmed, onResend, onBack, error, loa
         </div>
       )}
 
-      {/* Botão principal */}
       <button
         onClick={onConfirmed}
         disabled={loading}
@@ -520,7 +516,6 @@ function StepVerificacaoEmail({ email, onConfirmed, onResend, onBack, error, loa
         {loading ? 'Verificando...' : '✅ Já confirmei meu e-mail'}
       </button>
 
-      {/* Reenviar */}
       <button
         onClick={onResend}
         disabled={resendCooldown > 0 || resendLoading}
@@ -541,7 +536,6 @@ function StepVerificacaoEmail({ email, onConfirmed, onResend, onBack, error, loa
             : '📧 Reenviar e-mail de confirmação'}
       </button>
 
-      {/* Voltar */}
       <button
         onClick={onBack}
         style={{
@@ -617,7 +611,7 @@ function StepPagamento({ form, method, setMethod, handlePay, error, loading, pla
       {method === 'PIX' && (
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '13px', color: C.inkSoft, padding: '12px 14px', background: 'rgba(196,233,31,0.06)', border: `1px solid rgba(196,233,31,0.15)`, borderRadius: '10px' }}>
           <span>ℹ️</span>
-          <span>Você receberá um QR Code para pagar pelo app do seu banco.</span>
+          <span>O QR Code PIX será gerado na próxima tela para você escanear ou copiar o código.</span>
         </div>
       )}
       <button type="submit" disabled={loading} style={{
@@ -628,38 +622,135 @@ function StepPagamento({ form, method, setMethod, handlePay, error, loading, pla
         boxShadow: loading ? 'none' : '0 10px 24px rgba(196,233,31,0.28)',
         fontFamily: 'inherit',
       }}>
-        {loading ? 'Processando...' : method === 'PIX' ? `🔒 Gerar QR Code PIX — ${plan.price}` : `🔒 Pagar ${plan.price} com cartão`}
+        {loading ? 'Gerando QR Code...' : method === 'PIX' ? `🔒 Gerar QR Code PIX — ${plan.price}` : `🔒 Pagar ${plan.price} com cartão`}
       </button>
     </form>
   );
 }
 
-// ─── Step 3: Confirmação ────────��───────────────────────────
-function StepConfirmacao({ paymentLink, method, plan, navigate }) {
+// ─── Step 3: Confirmação ────────────────────────────────────
+function StepConfirmacao({ paymentLink, pixQrCode, pixCopiaECola, method, plan, navigate }) {
+  const [copied, setCopied] = useState(false);
+
+  function handleCopy() {
+    if (!pixCopiaECola) return;
+    navigator.clipboard.writeText(pixCopiaECola).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+    });
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', textAlign: 'center' }}>
       <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(196,233,31,0.15)', border: `2px solid ${C.accent}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', color: C.accent }}>✓</div>
+
       <div>
-        <h2 style={{ margin: '0 0 6px', fontSize: '20px', fontWeight: '700', color: C.ink }}>{method === 'PIX' ? 'Quase lá! Pague via PIX' : 'Assinatura criada!'}</h2>
-        <p style={{ margin: 0, fontSize: '14px', color: C.inkSoft }}>{method === 'PIX' ? 'Clique no botão abaixo para abrir a página de pagamento PIX gerada pela Asaas.' : 'Seu pagamento foi enviado para processamento. Você receberá um e-mail de confirmação.'}</p>
+        <h2 style={{ margin: '0 0 6px', fontSize: '20px', fontWeight: '700', color: C.ink }}>
+          {method === 'PIX' ? 'Pague via PIX' : 'Assinatura criada!'}
+        </h2>
+        <p style={{ margin: 0, fontSize: '14px', color: C.inkSoft }}>
+          {method === 'PIX'
+            ? 'Escaneie o QR Code ou copie o código para pagar.'
+            : 'Seu pagamento foi enviado para processamento.'}
+        </p>
       </div>
+
+      {/* Resumo */}
       <div style={{ width: '100%', background: 'rgba(13,23,51,0.6)', border: `1px solid ${C.border}`, borderRadius: '14px', padding: '16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: '14px', color: C.inkSoft }}>{plan.label}</span>
           <span style={{ fontSize: '18px', fontWeight: '800', color: C.accent }}>{plan.price}</span>
         </div>
-        <div style={{ fontSize: '12px', color: C.inkSoft, marginTop: '4px' }}>Recorrência {plan.ciclo} · Via {method === 'PIX' ? 'PIX' : 'Cartão'}</div>
+        <div style={{ fontSize: '12px', color: C.inkSoft, marginTop: '4px' }}>
+          Recorrência {plan.ciclo} · Via {method === 'PIX' ? 'PIX' : 'Cartão'}
+        </div>
       </div>
-      {method === 'PIX' && paymentLink && (
+
+      {/* QR Code PIX */}
+      {method === 'PIX' && pixQrCode && (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', width: '100%' }}>
+          {/* Imagem QR Code */}
+          <div style={{ background: '#ffffff', padding: '12px', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
+            <img
+              src={`data:image/png;base64,${pixQrCode}`}
+              alt="QR Code PIX"
+              style={{ width: '200px', height: '200px', display: 'block' }}
+            />
+          </div>
+
+          {/* Copia e Cola */}
+          {pixCopiaECola && (
+            <div style={{ width: '100%' }}>
+              <div style={{
+                background: 'rgba(13,23,51,0.6)',
+                border: `1px solid ${C.border}`,
+                borderRadius: '10px',
+                padding: '10px 14px',
+                fontSize: '11px',
+                color: C.inkSoft,
+                wordBreak: 'break-all',
+                textAlign: 'left',
+                marginBottom: '8px',
+                maxHeight: '60px',
+                overflow: 'hidden',
+                userSelect: 'all',
+              }}>
+                {pixCopiaECola}
+              </div>
+              <button
+                onClick={handleCopy}
+                style={{
+                  width: '100%', padding: '13px 20px', borderRadius: '999px', border: 'none',
+                  cursor: 'pointer',
+                  background: copied
+                    ? 'rgba(196,233,31,0.3)'
+                    : `linear-gradient(130deg, ${C.accent}, #d6f35d)`,
+                  color: '#12203f', fontWeight: '700', fontSize: '15px',
+                  boxShadow: copied ? 'none' : '0 10px 24px rgba(196,233,31,0.28)',
+                  fontFamily: 'inherit',
+                  transition: 'all 0.2s',
+                }}
+              >
+                {copied ? '✅ Código copiado!' : '📋 Copiar código PIX'}
+              </button>
+            </div>
+          )}
+
+          {/* Link alternativo */}
+          {paymentLink && (
+            <a
+              href={paymentLink}
+              target="_blank"
+              rel="noreferrer"
+              style={{ fontSize: '13px', color: C.inkSoft, textDecoration: 'underline' }}
+            >
+              Prefere pagar pelo navegador? Clique aqui
+            </a>
+          )}
+        </div>
+      )}
+
+      {/* PIX sem QR Code (fallback) */}
+      {method === 'PIX' && !pixQrCode && !pixCopiaECola && paymentLink && (
         <a href={paymentLink} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '14px 20px', borderRadius: '999px', background: `linear-gradient(130deg, ${C.accent}, #d6f35d)`, color: '#12203f', fontWeight: '700', fontSize: '15px', textDecoration: 'none', boxShadow: '0 10px 24px rgba(196,233,31,0.28)' }}>
           🔒 Abrir página de pagamento PIX
         </a>
       )}
-      {method === 'PIX' && !paymentLink && (
-        <div style={{ fontSize: '13px', color: C.inkSoft, padding: '12px', background: 'rgba(196,233,31,0.06)', borderRadius: '12px', border: `1px solid rgba(196,233,31,0.2)` }}>
-          ⏳ Aguardando geração do link de pagamento...
+
+      {/* PIX sem nada (carregando) */}
+      {method === 'PIX' && !pixQrCode && !pixCopiaECola && !paymentLink && (
+        <div style={{ fontSize: '13px', color: C.inkSoft, padding: '12px', background: 'rgba(196,233,31,0.06)', borderRadius: '12px', border: `1px solid rgba(196,233,31,0.2)`, width: '100%' }}>
+          ⏳ Aguardando geração do QR Code...
         </div>
       )}
+
+      {/* Cartão */}
+      {method !== 'PIX' && (
+        <div style={{ fontSize: '13px', color: C.inkSoft, padding: '12px', background: 'rgba(196,233,31,0.06)', borderRadius: '12px', border: `1px solid rgba(196,233,31,0.2)`, width: '100%' }}>
+          ✅ Pagamento enviado para processamento. Você receberá um e-mail de confirmação.
+        </div>
+      )}
+
       <button onClick={() => navigate('/dashboard')} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: '12px', padding: '12px 24px', color: C.inkSoft, cursor: 'pointer', fontSize: '13px', width: '100%' }}>
         Já paguei — Acessar minha conta
       </button>
