@@ -110,6 +110,9 @@ const ASSINANTE = {
   provider: 'asaas',
   provider_customer_id: CUSTOMER.id,
   provider_subscription_id: SUBSCRIPTION.id,
+  asaasStatus: null,
+  dataProximoVencimento: null,
+  formaPagamento: null,
 };
 
 // ---------------------------------------------------------------------------

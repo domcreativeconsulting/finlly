@@ -152,7 +152,10 @@ describe('POST /billing/subscribe', () => {
       assinante,
       paymentLink,
     });
-    expect(mockCriarAssinatura).toHaveBeenCalledWith('usuario-uuid-001', bodyValido);
+    expect(mockCriarAssinatura).toHaveBeenCalledWith(
+      'usuario-uuid-001',
+      expect.objectContaining(bodyValido),
+    );
   });
 
   test('retorna 201 para body válido com cupomCodigo opcional', async () => {

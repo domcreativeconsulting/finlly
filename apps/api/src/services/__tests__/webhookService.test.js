@@ -314,7 +314,7 @@ describe('PAYMENT_OVERDUE', () => {
 // ---------------------------------------------------------------------------
 
 describe('PAYMENT_DELETED', () => {
-  test('atualiza assinante.status = cancelado e usuario.status = ativo', async () => {
+  test('atualiza assinante.status = cancelado e usuario.status = pendente_pagamento', async () => {
     mockPrisma.assinante.findFirst.mockResolvedValue(ASSINANTE);
     const payload = makePayload('PAYMENT_DELETED');
     const rawBody = Buffer.from(JSON.stringify(payload));
@@ -334,7 +334,7 @@ describe('PAYMENT_DELETED', () => {
     expect(mockPrisma.usuario.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: ASSINANTE.usuario_id },
-        data: { status: 'ativo' },
+        data: { status: 'pendente_pagamento' },
       }),
     );
   });

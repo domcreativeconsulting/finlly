@@ -158,9 +158,9 @@ describe('login', () => {
     ).rejects.toMatchObject({ status: 401 });
   });
 
-  test('lança AppError 403 com usuário de status bloqueado', async () => {
+  test('lança AppError 403 com usuário de status suspenso_seguranca', async () => {
     mockPrisma.usuario.findUnique.mockResolvedValue(
-      buildUsuario({ status: 'bloqueado', bloqueado_ate: null }),
+      buildUsuario({ status: 'suspenso_seguranca', bloqueado_ate: null }),
     );
 
     await expect(
@@ -168,14 +168,32 @@ describe('login', () => {
     ).rejects.toMatchObject({ status: 403 });
   });
 
-  test('lança AppError 403 com usuário de status inativo', async () => {
+  test('permite login com usuário de status pendente_pagamento (aguardando pagamento)', async () => {
     mockPrisma.usuario.findUnique.mockResolvedValue(
-      buildUsuario({ status: 'inativo', bloqueado_ate: null }),
+      buildUsuario({ status: 'pendente_pagamento', bloqueado_ate: null }),
     );
+    mockPrisma.usuarioSessao.create.mockResolvedValue({});
 
-    await expect(
-      login({ email: 'teste@finlly.com', senha: 'Senha@123' }),
-    ).rejects.toMatchObject({ status: 403 });
+    const result = await login({ email: 'teste@finlly.com', senha: 'Senha@123' });
+
+    expect(result).toMatchObject({
+      accessToken: expect.any(String),
+      refreshToken: expect.any(String),
+    });
+  });
+
+  test('permite login com usuário de status bloqueado_inadimplencia', async () => {
+    mockPrisma.usuario.findUnique.mockResolvedValue(
+      buildUsuario({ status: 'bloqueado_inadimplencia', bloqueado_ate: null }),
+    );
+    mockPrisma.usuarioSessao.create.mockResolvedValue({});
+
+    const result = await login({ email: 'teste@finlly.com', senha: 'Senha@123' });
+
+    expect(result).toMatchObject({
+      accessToken: expect.any(String),
+      refreshToken: expect.any(String),
+    });
   });
 
   test('lança AppError 423 com usuário temporariamente bloqueado por tentativas', async () => {

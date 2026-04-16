@@ -78,14 +78,14 @@ describe('atualizarStatusAssinante', () => {
     );
   });
 
-  test('pendente — atualiza assinante para pendente e usuario para ativo', async () => {
+  test('pendente — atualiza assinante para pendente e usuario para pendente_pagamento', async () => {
     await atualizarStatusAssinante(ASSINANTE_ID, USUARIO_ID, 'pendente');
 
     expect(mockPrisma.assinante.update).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ status: 'pendente' }) }),
     );
     expect(mockPrisma.usuario.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: { status: 'ativo' } }),
+      expect.objectContaining({ data: { status: 'pendente_pagamento' } }),
     );
   });
 
@@ -100,14 +100,14 @@ describe('atualizarStatusAssinante', () => {
     );
   });
 
-  test('cancelado — atualiza assinante para cancelado e usuario para ativo', async () => {
+  test('cancelado — atualiza assinante para cancelado e usuario para pendente_pagamento', async () => {
     await atualizarStatusAssinante(ASSINANTE_ID, USUARIO_ID, 'cancelado');
 
     expect(mockPrisma.assinante.update).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ status: 'cancelado' }) }),
     );
     expect(mockPrisma.usuario.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: { status: 'ativo' } }),
+      expect.objectContaining({ data: { status: 'pendente_pagamento' } }),
     );
   });
 
