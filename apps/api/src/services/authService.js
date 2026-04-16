@@ -54,8 +54,8 @@ function generateRefreshToken(usuarioId, sessionId) {
 }
 
 export function parseExpiresInSeconds(val) {
-  const match = String(val || '').match(/^(
-+)([smhd]?)$/);
+  const digits = /^\d+([smhd]?)/;
+  const match = String(val || '').match(digits);
   if (!match) return 30 * 24 * 60 * 60;
   const n = parseInt(match[1], 10);
   const unit = match[2] || 's';
@@ -87,14 +87,12 @@ async function verifyPassword(password, storedHash) {
 
 async function checkRateLimit(email, ip = 'unknown') {
   if (config.NODE_ENV === 'development') return;
-
   let redis;
   try {
     redis = await getRedisClient();
   } catch {
     return;
   }
-
   const emailNormalized = email.trim().toLowerCase();
   const key = `login:attempts:${sha256(emailNormalized)}:${ip}`;
   const attempts = await redis.incr(key);
@@ -131,9 +129,7 @@ export async function register({ nome, email, senha }, meta = {}) {
       data: { nome, email, senha_hash },
       select: { id: true, nome: true, email: true },
     });
-
     await createDefaultCategories(created.id, tx);
-
     await tx.usuarioEventoAuth.create({
       data: {
         usuario_id: created.id,
@@ -143,7 +139,6 @@ export async function register({ nome, email, senha }, meta = {}) {
         user_agent: meta.userAgent || null,
       },
     });
-
     return created;
   });
 
@@ -406,12 +401,10 @@ export async function logout(userId, { sessao_id, todas, sessionId } = {}, meta 
     if (!targetId) {
       throw AppError.badRequest('Sessão não identificada');
     }
-
     const sessao = await prisma.usuarioSessao.findFirst({
       where: { id: targetId, usuario_id: userId },
     });
     if (!sessao) throw AppError.notFound('Sessão não encontrada');
-
     await prisma.usuarioSessao.update({
       where: { id: targetId },
       data: { data_revogacao: agora },
