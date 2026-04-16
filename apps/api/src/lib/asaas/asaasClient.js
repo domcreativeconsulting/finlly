@@ -16,10 +16,6 @@ const asaasCircuitBreaker = new CircuitBreaker({
   resetTimeoutMs: config.ASAAS_CB_RESET_TIMEOUT_MS,
 });
 
-/**
- * Returns the Asaas base URL from config or derives it from ASAAS_ENV.
- * @returns {string}
- */
 function getBaseUrl() {
   if (config.ASAAS_BASE_URL) return config.ASAAS_BASE_URL;
   return config.ASAAS_ENV === 'production'
@@ -27,22 +23,10 @@ function getBaseUrl() {
     : 'https://sandbox.asaas.com/v3';
 }
 
-/**
- * Sleeps for the given number of milliseconds.
- * @param {number} ms
- * @returns {Promise<void>}
- */
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/**
- * Performs an authenticated HTTP request to the Asaas API with
- * automatic retry (exponential backoff + jitter) and per-attempt timeout.
- * @param {string} path - API path (e.g. '/customers')
- * @param {RequestInit} [options] - fetch options
- * @returns {Promise<object>}
- */
 async function _request(path, options = {}) {
   const url = `${getBaseUrl()}${path}`;
   const headers = {
@@ -83,7 +67,6 @@ async function _request(path, options = {}) {
       clearTimeout(timer);
     }
 
-    // 404 = resource not found — treated as non-retryable error
     if (response.status === 404) {
       let body = null;
       try { body = await response.json(); } catch { /* ignore */ }
@@ -93,12 +76,12 @@ async function _request(path, options = {}) {
 
     if (NON_RETRYABLE_STATUSES.has(response.status)) {
       let body = null;
-      try {
-        body = await response.json();
-      } catch {
-        // ignore parse errors
-      }
+      try { body = await response.json(); } catch { /* ignore */ }
       logger.error({ status: response.status, body, url }, 'Asaas HTTP error');
+
+      // Repassa a mensagem real da Asaas para o frontend
+      const asaasMsg = body?.errors?.[0]?.description ?? body?.message ?? null;
+      if (asaasMsg) throw AppError.badRequest(asaasMsg);
       throw AppError.internal(`Erro no provedor de pagamento: ${response.status}`);
     }
 
@@ -131,21 +114,10 @@ async function _request(path, options = {}) {
   }
 }
 
-/**
- * Public entry point — guarded by the circuit breaker.
- * @param {string} path
- * @param {RequestInit} [options]
- * @returns {Promise<object>}
- */
 function request(path, options = {}) {
   return asaasCircuitBreaker.execute(() => _request(path, options));
 }
 
-/**
- * Returns the first customer matching the given email, or null.
- * @param {string} email
- * @returns {Promise<object|null>}
- */
 async function getCustomerByEmail(email) {
   const encoded = encodeURIComponent(email);
   const data = await request(`/customers?email=${encoded}`);
@@ -153,11 +125,6 @@ async function getCustomerByEmail(email) {
   return data.data[0];
 }
 
-/**
- * Creates a new customer in Asaas.
- * @param {{ nome: string, email: string, cpfCnpj?: string, telefone?: string }} params
- * @returns {Promise<object>}
- */
 async function createCustomer({ nome, email, cpfCnpj, telefone }) {
   return request('/customers', {
     method: 'POST',
@@ -165,25 +132,6 @@ async function createCustomer({ nome, email, cpfCnpj, telefone }) {
   });
 }
 
-/**
- * Creates a new subscription in Asaas.
- * Supports PIX and CREDIT_CARD billing types.
- * For CREDIT_CARD, pass creditCard and creditCardHolderInfo objects.
- *
- * @param {{
- *   customer: string,
- *   billingType: string,
- *   cycle: string,
- *   value: number,
- *   nextDueDate: string,
- *   description?: string,
- *   externalReference?: string,
- *   creditCard?: object,
- *   creditCardHolderInfo?: object,
- *   remoteIp?: string,
- * }} params
- * @returns {Promise<object>}
- */
 async function createSubscription({
   customer,
   billingType,
@@ -215,39 +163,19 @@ async function createSubscription({
   });
 }
 
-/**
- * Cancels a subscription by ID.
- * @param {string} subscriptionId
- * @returns {Promise<object|null>}
- */
 async function cancelSubscription(subscriptionId) {
   return request(`/subscriptions/${subscriptionId}`, { method: 'DELETE' });
 }
 
-/**
- * Gets a subscription by ID.
- * @param {string} subscriptionId
- * @returns {Promise<object>}
- */
 async function getSubscription(subscriptionId) {
   return request(`/subscriptions/${subscriptionId}`);
 }
 
-/**
- * Gets all payments for a subscription.
- * @param {string} subscriptionId
- * @returns {Promise<object>}
- */
 async function getPaymentsBySubscription(subscriptionId) {
   const encoded = encodeURIComponent(subscriptionId);
   return request(`/payments?subscription=${encoded}`);
 }
 
-/**
- * Returns the PIX QR Code data for a given payment ID.
- * @param {string} paymentId
- * @returns {Promise<{ encodedImage: string, payload: string, expirationDate: string }|null>}
- */
 async function getPixQrCode(paymentId) {
   return request(`/payments/${paymentId}/pixQrCode`);
 }
