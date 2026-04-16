@@ -185,7 +185,7 @@ export default function LoginPage() {
                 <input type="checkbox" style={styles.checkbox} />
                 Lembrar-me
               </label>
-              <Link to="/register" style={styles.assinarLink}>
+              <Link to="/checkout" style={styles.assinarLink}>
                 Assinar agora
               </Link>
             </div>
