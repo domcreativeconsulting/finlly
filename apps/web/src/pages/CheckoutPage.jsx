@@ -77,9 +77,7 @@ export default function CheckoutPage() {
   const { register: authRegister, login } = useAuth();
   const initialPlan    = PLANS[searchParams.get('plano')] ? searchParams.get('plano') : 'mensal';
 
-  // Fluxo: 1 = Dados, 2 = Pagamento, 3 = Confirmação
-  // Step 1.5 (verificação de e-mail antes do pagamento) foi REMOVIDO.
-  // O e-mail é verificado pelo usuário após a confirmação de pagamento (step 3).
+  // Fluxo: 1 = Dados (só validação), 2 = Pagamento (cria conta + paga), 3 = Confirmação + verificação de e-mail
   const [step, setStep]                   = useState(1);
   const [method, setMethod]               = useState('PIX');
   const [loading, setLoading]             = useState(false);
@@ -113,13 +111,8 @@ export default function CheckoutPage() {
     setForm(p => ({ ...p, [name]: masks[name] ? masks[name](value) : value }));
   }
 
-  // ─── Step 1: valida, cria conta e faz login silencioso ──────
-  // Fluxo correto (doc técnico v1.0):
-  //   1. Criar conta (register)
-  //   2. Login silencioso para obter JWT (necessário para chamar billing/subscribe)
-  //   3. Avançar direto para o pagamento (step 2)
-  //   4. Verificação de e-mail é comunicada na tela de confirmação (step 3)
-  async function handleNextStep(e) {
+  // ─── Step 1: apenas valida os campos e avança ───────────────
+  function handleNextStep(e) {
     e.preventDefault();
     setError('');
     if (!form.nome.trim())                             return setError('Nome é obrigatório.');
@@ -130,29 +123,10 @@ export default function CheckoutPage() {
     if (!SENHA_REGEX.test(form.senha))                 return setError('Senha deve ter no mínimo 8 caracteres, 1 maiúscula, 1 minúscula, 1 número e 1 especial (!@#$%^&*).');
     if (!form.confirmarSenha)                          return setError('Confirme sua senha.');
     if (form.senha !== form.confirmarSenha)            return setError('As senhas não conferem.');
-
-    setLoading(true);
-    try {
-      // 1. Criar conta
-      await authRegister(form.nome.trim(), form.email.trim(), form.senha);
-      // 2. Login silencioso para obter JWT (sem exigir e-mail verificado ainda)
-      await login(form.email.trim(), form.senha);
-      // 3. Avança direto para pagamento
-      setStep(2);
-    } catch (err) {
-      const status = err?.response?.status;
-      const msg = err?.response?.data?.message || err?.response?.data?.error || '';
-      if (status === 409 || msg.toLowerCase().includes('já cadastrado') || msg.toLowerCase().includes('já existe')) {
-        setError(EMAIL_DUPLICADO);
-      } else {
-        setError(msg || 'Erro ao criar conta. Tente novamente.');
-      }
-    } finally {
-      setLoading(false);
-    }
+    setStep(2);
   }
 
-  // ─── Step 2: processa pagamento ─────────────────────────────
+  // ─── Step 2: cria conta, faz login silencioso e processa pagamento ─
   async function handlePay(e) {
     e.preventDefault();
     setError('');
@@ -164,6 +138,11 @@ export default function CheckoutPage() {
     }
     setLoading(true);
     try {
+      // 1. Criar conta
+      await authRegister(form.nome.trim(), form.email.trim(), form.senha);
+      // 2. Login silencioso para obter JWT
+      await login(form.email.trim(), form.senha);
+      // 3. Processar pagamento
       const expiryDigits = form.cardExpiry.replace(/\D/g, '');
       const payload = {
         plano: form.plano, ciclo: plan.ciclo,
@@ -192,9 +171,15 @@ export default function CheckoutPage() {
       toast.success('Assinatura criada com sucesso!');
       setStep(3);
     } catch (err) {
-      const msg = err?.response?.data?.message || err?.response?.data?.error || 'Erro ao processar pagamento. Verifique os dados do cartão e tente novamente.';
-      setError(msg);
-      toast.error(msg);
+      const status = err?.response?.status;
+      const msg = err?.response?.data?.message || err?.response?.data?.error || '';
+      if (status === 409 || msg.toLowerCase().includes('já cadastrado') || msg.toLowerCase().includes('já existe')) {
+        setError(EMAIL_DUPLICADO);
+      } else {
+        const fallback = 'Erro ao processar. Verifique os dados e tente novamente.';
+        setError(msg || fallback);
+        toast.error(msg || fallback);
+      }
     } finally {
       setLoading(false);
     }
@@ -290,7 +275,6 @@ export default function CheckoutPage() {
               handleNext={handleNextStep}
               error={error}
               plan={plan}
-              loading={loading}
             />
           )}
 
@@ -331,7 +315,7 @@ export default function CheckoutPage() {
 }
 
 // ─── Step 1: Dados ──────────────────────────────────────────
-function StepDados({ form, handleChange, handleNext, error, plan, loading }) {
+function StepDados({ form, handleChange, handleNext, error, plan }) {
   return (
     <form onSubmit={handleNext} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
 
@@ -393,18 +377,17 @@ function StepDados({ form, handleChange, handleNext, error, plan, loading }) {
 
       <button
         type="submit"
-        disabled={loading}
         style={{
           width: '100%', padding: '14px', fontSize: '16px', fontWeight: '600',
           color: '#ffffff',
-          background: loading ? '#93aad4' : '#1e3a5f',
+          background: '#1e3a5f',
           border: 'none', borderRadius: '6px',
-          cursor: loading ? 'not-allowed' : 'pointer',
+          cursor: 'pointer',
           fontFamily: 'inherit',
           marginTop: '4px',
         }}
       >
-        {loading ? 'Criando conta...' : 'Avançar para pagamento →'}
+        Assinar agora →
       </button>
 
       <button
@@ -468,7 +451,9 @@ function StepPagamento({ form, method, setMethod, handlePay, error, loading, pla
       </div>
       {error && (
         <div style={{ padding: '12px 14px', background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.35)', borderRadius: '10px', color: '#fca5a5', fontSize: '13px' }}>
-          ⚠️ {error}
+          ⚠️ {error === EMAIL_DUPLICADO
+            ? <Link to="/login" style={{ color: '#fca5a5', fontWeight: '600', textDecoration: 'underline' }}>E-mail já cadastrado. Faça login para assinar.</Link>
+            : error}
         </div>
       )}
       {method === 'CARTAO' && (
