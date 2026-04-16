@@ -371,7 +371,7 @@ export default function BillingStatusPage() {
                   Acesse o checkout para renovar o seu plano atual.
                 </p>
                 <Button onClick={() => navigate('/checkout')}>
-                  Ir para o checkout →
+                  Renovar assinatura →
                 </Button>
               </div>
             </div>
