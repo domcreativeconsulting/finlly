@@ -26,9 +26,10 @@ function applyMaskExpiry(v) {
   return v.replace(/\D/g, '').slice(0, 4).replace(/(\d{2})(\d{1,2})/, '$1/$2');
 }
 
+// ✅ CORREÇÃO: valores atualizados para 39,90 mensal e 399,00 anual
 const PLANS = {
-  mensal: { label: 'Mensal — R$ 29,90', price: 'R$ 29,90', value: '29,90', ciclo: 'mensal', full: 'MENSAL — R$ 29,90' },
-  anual:  { label: 'Anual — R$ 287,90', price: 'R$ 287,90', value: '287,90', ciclo: 'anual', full: 'ANUAL — R$ 287,90' },
+  mensal: { label: 'Mensal — R$ 39,90', price: 'R$ 39,90', value: '39,90', ciclo: 'mensal', full: 'MENSAL — R$ 39,90' },
+  anual:  { label: 'Anual — R$ 399,00', price: 'R$ 399,00', value: '399,00', ciclo: 'anual', full: 'ANUAL — R$ 399,00' },
 };
 
 const C = {
@@ -378,8 +379,9 @@ function StepDados({ form, handleChange, handleNext, error, plan, loading }) {
             onChange={handleChange}
             style={{ ...inputCss, appearance: 'none', paddingRight: '36px', cursor: 'pointer' }}
           >
-            <option value="mensal">Mensal — R$ 29,90</option>
-            <option value="anual">Anual — R$ 287,90</option>
+            {/* ✅ CORREÇÃO: valores atualizados */}
+            <option value="mensal">Mensal — R$ 39,90</option>
+            <option value="anual">Anual — R$ 399,00</option>
           </select>
           <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#6b7280', fontSize: '14px' }}>▾</span>
         </div>
@@ -558,7 +560,7 @@ function StepVerificacaoEmail({ email, onConfirmed, onResend, onBack, error, loa
 function StepPagamento({ form, method, setMethod, handlePay, error, loading, plan, onBack, handleChange }) {
   return (
     <form onSubmit={handlePay} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <button type="button" onClick={onBack} style={{ background: 'none', border: 'none', color: C.inkSoft, cursor: 'pointer', textAlign: 'left', padding: 0, fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+      <button type="button" onClick={onBack} style={{ background: 'none', border: 'none', color: C.inkSoft, cursor: 'pointer', textAlign: 'left', padding: 0, fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
         ← Voltar
       </button>
       <div>
@@ -609,7 +611,7 @@ function StepPagamento({ form, method, setMethod, handlePay, error, loading, pla
         </div>
       )}
       {method === 'PIX' && (
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '13px', color: C.inkSoft, padding: '12px 14px', background: 'rgba(196,233,31,0.06)', border: `1px solid rgba(196,233,31,0.15)`, borderRadius: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '13px', color: C.inkSoft, padding: '12px 14px', background: 'rgba(196,233,31,0.06)', border: `1px solid rgba(196,233,31,0.2)`, borderRadius: '10px' }}>
           <span>ℹ️</span>
           <span>O QR Code PIX será gerado na próxima tela para você escanear ou copiar o código.</span>
         </div>
@@ -644,7 +646,9 @@ function StepConfirmacao({ paymentLink, pixQrCode, pixCopiaECola, method, plan, 
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', textAlign: 'center' }}>
-      <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(196,233,31,0.15)', border: `2px solid ${C.accent}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', color: C.accent }}>✓</div>
+      <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(196,233,31,0.15)', border: `2px solid ${C.accent}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px' }}>
+        {method === 'PIX' ? '🔒' : '✅'}
+      </div>
 
       <div>
         <h2 style={{ margin: '0 0 6px', fontSize: '20px', fontWeight: '700', color: C.ink }}>
@@ -730,7 +734,7 @@ function StepConfirmacao({ paymentLink, pixQrCode, pixCopiaECola, method, plan, 
       )}
 
       {method === 'PIX' && !pixQrCode && !pixCopiaECola && paymentLink && (
-        <a href={paymentLink} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '14px 20px', borderRadius: '999px', background: `linear-gradient(130deg, ${C.accent}, #d6f35d)`, color: '#12203f', fontWeight: '700', fontSize: '15px', textDecoration: 'none', boxShadow: '0 10px 24px rgba(196,233,31,0.28)' }}>
+        <a href={paymentLink} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '14px 20px', borderRadius: '999px', border: 'none', cursor: 'pointer', background: `linear-gradient(130deg, ${C.accent}, #d6f35d)`, color: '#12203f', fontWeight: '700', fontSize: '15px', textDecoration: 'none' }}>
           🔒 Abrir página de pagamento PIX
         </a>
       )}
@@ -747,7 +751,7 @@ function StepConfirmacao({ paymentLink, pixQrCode, pixCopiaECola, method, plan, 
         </div>
       )}
 
-      <button onClick={() => navigate('/dashboard')} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: '12px', padding: '12px 24px', color: C.inkSoft, cursor: 'pointer', fontSize: '13px', width: '100%' }}>
+      <button onClick={() => navigate('/dashboard')} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: '12px', padding: '12px 24px', color: C.inkSoft, cursor: 'pointer', fontFamily: 'inherit', fontSize: '14px' }}>
         Já paguei — Acessar minha conta
       </button>
     </div>
