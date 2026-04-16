@@ -14,6 +14,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCreditCard, faCheck, faCircleUser, faDoorOpen } from '@fortawesome/free-solid-svg-icons';
 import { Button, Input, Select, Modal, Badge, Card } from '../design-system/index.js';
 import { colors, typography, radius } from '../design-system/tokens.js';
+import { getApiError } from '../utils/getApiError.js';
 
 function getInitials(name) {
   if (!name) return '?';
@@ -109,7 +110,7 @@ export default function ContasPage() {
           return;
         }
       }
-      const msg = err?.response?.data?.message || 'Erro ao carregar carteiras.';
+      const msg = getApiError(err, 'Erro ao carregar carteiras.');
       setError(msg);
     } finally {
       setLoading(false);
@@ -193,7 +194,7 @@ export default function ContasPage() {
       fecharModal();
       carregarLista();
     } catch (err) {
-      const msg = err?.response?.data?.message || 'Erro ao salvar carteira.';
+      const msg = getApiError(err, 'Erro ao salvar carteira.');
       toast.error(msg);
     } finally {
       setSalvando(false);
@@ -219,7 +220,7 @@ export default function ContasPage() {
       fecharModalExcluir();
       carregarLista();
     } catch (err) {
-      const msg = err?.response?.data?.message || 'Erro ao excluir carteira.';
+      const msg = getApiError(err, 'Erro ao excluir carteira.');
       toast.error(msg);
     } finally {
       setExcluindo(false);

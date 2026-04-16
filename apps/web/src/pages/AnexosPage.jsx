@@ -27,6 +27,7 @@ import {
   radius,
   shadows,
 } from '../design-system/tokens.js';
+import { getApiError } from '../utils/getApiError.js';
 
 const OCR_STATUS_LABELS = {
   UPLOADED: 'Pendente',
@@ -139,7 +140,7 @@ export default function AnexosPage() {
       setTotal(result.total ?? 0);
       setTotalPages(result.totalPages ?? result.pages ?? 1);
     } catch (err) {
-      setError(err?.response?.data?.message || 'Erro ao carregar anexos.');
+      setError(getApiError(err, 'Erro ao carregar anexos.'));
     } finally {
       setLoading(false);
     }
@@ -174,7 +175,7 @@ export default function AnexosPage() {
       setConfirmDelete(null);
       carregarAnexos();
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Erro ao excluir anexo.');
+      toast.error(getApiError(err, 'Erro ao excluir anexo.'));
     } finally {
       setDeleting(false);
     }
@@ -187,7 +188,7 @@ export default function AnexosPage() {
       const resultado = await anexosService.buscarOcr(anexo.id);
       setOcrModal({ anexo, resultado });
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Erro ao buscar resultado OCR.');
+      toast.error(getApiError(err, 'Erro ao buscar resultado OCR.'));
       setOcrModal(null);
     } finally {
       setLoadingOcr(false);

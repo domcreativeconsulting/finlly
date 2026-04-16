@@ -26,6 +26,7 @@ import {
   radius,
   shadows,
 } from '../design-system/tokens.js';
+import { getApiError } from '../utils/getApiError.js';
 
 const STATUS_META_LABELS = {
   ativa: 'Ativa',
@@ -287,7 +288,7 @@ export default function MetasPage() {
       setTotal(result.total ?? 0);
       setTotalPages(result.totalPages ?? 1);
     } catch (err) {
-      setError(err?.response?.data?.message || 'Erro ao carregar metas.');
+      setError(getApiError(err, 'Erro ao carregar metas.'));
     } finally {
       setLoading(false);
     }
@@ -390,7 +391,7 @@ export default function MetasPage() {
       fecharModal();
       carregarMetas();
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Erro ao salvar meta.');
+      toast.error(getApiError(err, 'Erro ao salvar meta.'));
     } finally {
       setSaving(false);
     }
@@ -403,7 +404,7 @@ export default function MetasPage() {
       setConfirmDelete(null);
       carregarMetas();
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Erro ao excluir meta.');
+      toast.error(getApiError(err, 'Erro ao excluir meta.'));
     }
   }
 
@@ -421,7 +422,7 @@ export default function MetasPage() {
       setMovimentosTotal(result.total ?? 0);
     } catch (err) {
       toast.error(
-        err?.response?.data?.message || 'Erro ao carregar histórico.'
+        getApiError(err, 'Erro ao carregar histórico.')
       );
     } finally {
       setLoadingHistorico(false);
@@ -444,7 +445,7 @@ export default function MetasPage() {
       setMetaMovimentos(result.item ?? result);
     } catch (err) {
       toast.error(
-        err?.response?.data?.message || 'Erro ao carregar movimentos.'
+        getApiError(err, 'Erro ao carregar movimentos.')
       );
     } finally {
       setLoadingMovimentos(false);
@@ -473,7 +474,7 @@ export default function MetasPage() {
       setMetaMovimentos(result.item ?? result);
     } catch (err) {
       toast.error(
-        err?.response?.data?.message || 'Erro ao atualizar movimentos.'
+        getApiError(err, 'Erro ao atualizar movimentos.')
       );
     } finally {
       setLoadingMovimentos(false);
@@ -510,7 +511,7 @@ export default function MetasPage() {
       await recarregarMovimentos(metaMovimentos.id);
     } catch (err) {
       toast.error(
-        err?.response?.data?.message || 'Erro ao registrar movimento.'
+        getApiError(err, 'Erro ao registrar movimento.')
       );
     } finally {
       setSavingMovimento(false);
@@ -524,7 +525,7 @@ export default function MetasPage() {
       setConfirmDeleteMov(null);
       await recarregarMovimentos(metaMovimentos.id);
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Erro ao excluir movimento.');
+      toast.error(getApiError(err, 'Erro ao excluir movimento.'));
     }
   }
 
@@ -554,7 +555,7 @@ export default function MetasPage() {
       setNovaMetaForm(EMPTY_NOVA_META_FORM);
       carregarMetas();
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Erro ao criar meta.');
+      toast.error(getApiError(err, 'Erro ao criar meta.'));
     } finally {
       setCriandoMeta(false);
     }
@@ -566,7 +567,7 @@ export default function MetasPage() {
       toast.success('Meta pausada.');
       carregarMetas();
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Erro ao pausar meta.');
+      toast.error(getApiError(err, 'Erro ao pausar meta.'));
     }
   }
 
@@ -576,7 +577,7 @@ export default function MetasPage() {
       toast.success('Meta reativada.');
       carregarMetas();
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Erro ao reativar meta.');
+      toast.error(getApiError(err, 'Erro ao reativar meta.'));
     }
   }
 
@@ -587,7 +588,7 @@ export default function MetasPage() {
       setConfirmCancelar(null);
       carregarMetas();
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Erro ao cancelar meta.');
+      toast.error(getApiError(err, 'Erro ao cancelar meta.'));
     }
   }
 
@@ -637,7 +638,7 @@ export default function MetasPage() {
       });
       carregarMetas();
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Erro ao registrar aporte.');
+      toast.error(getApiError(err, 'Erro ao registrar aporte.'));
     }
   }
 

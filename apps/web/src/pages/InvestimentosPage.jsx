@@ -31,6 +31,7 @@ import {
   radius,
   shadows,
 } from '../design-system/tokens.js';
+import { getApiError } from '../utils/getApiError.js';
 
 function getInitials(name) {
   if (!name) return '?';
@@ -192,7 +193,7 @@ export default function InvestimentosPage() {
       });
     } catch (err) {
       setError(
-        err?.response?.data?.message || 'Erro ao carregar investimentos.'
+        getApiError(err, 'Erro ao carregar investimentos.')
       );
     } finally {
       setLoading(false);
@@ -304,7 +305,7 @@ export default function InvestimentosPage() {
       carregarInvestimentos();
     } catch (err) {
       toast.error(
-        err?.response?.data?.message || 'Erro ao salvar investimento.'
+        getApiError(err, 'Erro ao salvar investimento.')
       );
     } finally {
       setSaving(false);
@@ -324,7 +325,7 @@ export default function InvestimentosPage() {
       carregarInvestimentos();
     } catch (err) {
       toast.error(
-        err?.response?.data?.message || 'Erro ao excluir investimento.'
+        getApiError(err, 'Erro ao excluir investimento.')
       );
     }
   }
@@ -335,7 +336,7 @@ export default function InvestimentosPage() {
       const result = await investimentosService.listarEventos(investimentoId);
       setEventos(result.items ?? []);
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Erro ao carregar eventos.');
+      toast.error(getApiError(err, 'Erro ao carregar eventos.'));
     } finally {
       setLoadingEventos(false);
     }
@@ -394,7 +395,7 @@ export default function InvestimentosPage() {
       setPosicao(result.posicao);
       carregarInvestimentos();
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Erro ao registrar evento.');
+      toast.error(getApiError(err, 'Erro ao registrar evento.'));
     } finally {
       setSavingEvento(false);
     }
@@ -415,7 +416,7 @@ export default function InvestimentosPage() {
       setPosicao(result.posicao);
       carregarInvestimentos();
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Erro ao excluir evento.');
+      toast.error(getApiError(err, 'Erro ao excluir evento.'));
     }
   }
 

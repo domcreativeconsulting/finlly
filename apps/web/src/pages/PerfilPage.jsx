@@ -19,6 +19,7 @@ import {
   faCheck,
 } from '@fortawesome/free-solid-svg-icons';
 import { colors, typography, radius } from '../design-system/tokens.js';
+import { getApiError } from '../utils/getApiError.js';
 
 const TIMEZONES = [
   'America/Sao_Paulo',
@@ -281,10 +282,7 @@ export default function PerfilPage() {
       toast.success('Perfil atualizado com sucesso!');
       setSuccessMsg('Perfil atualizado com sucesso!');
     } catch (err) {
-      const msg =
-        err?.response?.data?.message ||
-        'Erro ao atualizar perfil. Tente novamente.';
-      setErrorMsg(msg);
+      setErrorMsg(getApiError(err, 'Erro ao atualizar perfil. Tente novamente.'));
     }
   }
 
@@ -297,10 +295,7 @@ export default function PerfilPage() {
       toast.success('Senha alterada com sucesso!');
       resetSenha();
     } catch (err) {
-      const msg =
-        err?.response?.data?.message ||
-        'Erro ao alterar senha. Tente novamente.';
-      setSenhaRootError('root', { message: msg });
+      setSenhaRootError('root', { message: getApiError(err, 'Erro ao alterar senha. Tente novamente.') });
     }
   }
 

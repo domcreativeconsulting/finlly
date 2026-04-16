@@ -27,6 +27,7 @@ import { Button, Badge } from '../design-system/index.js';
 import { colors, typography, radius, shadows } from '../design-system/tokens.js';
 import { downloadBlob } from '../utils/downloadBlob.js';
 import { OfflineDataBadge } from '../components/OfflineDataBadge.jsx';
+import { getApiError } from '../utils/getApiError.js';
 
 function getInitials(name) {
   if (!name) return '?';
@@ -165,7 +166,7 @@ export default function ExtratoPage() {
           return;
         }
       }
-      setError(err?.response?.data?.message || 'Erro ao carregar extrato.');
+      setError(getApiError(err, 'Erro ao carregar extrato.'));
     } finally {
       setLoading(false);
     }
@@ -192,7 +193,7 @@ export default function ExtratoPage() {
       toast.success('Lançamento registrado com sucesso!');
       carregarExtrato();
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Erro ao criar lançamento.');
+      toast.error(getApiError(err, 'Erro ao criar lançamento.'));
     } finally {
       setSavingManual(false);
     }

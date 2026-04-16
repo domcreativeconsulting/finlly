@@ -47,6 +47,7 @@ import {
   shadows,
 } from '../design-system/tokens.js';
 import { downloadBlob } from '../utils/downloadBlob.js';
+import { getApiError } from '../utils/getApiError.js';
 import { OfflineDataBadge } from '../components/OfflineDataBadge.jsx';
 
 const TIPO_MODAL_CAT = 'saida';
@@ -255,9 +256,7 @@ export default function ContasPagarPage() {
           return;
         }
       }
-      const msg =
-        err?.response?.data?.message || 'Erro ao carregar contas a pagar.';
-      setError(msg);
+      setError(getApiError(err, 'Erro ao carregar contas a pagar.'));
     } finally {
       setLoading(false);
     }
@@ -494,8 +493,7 @@ export default function ContasPagarPage() {
       fecharModal();
       carregarLista();
     } catch (err) {
-      const msg = err?.response?.data?.message || 'Erro ao salvar conta.';
-      toast.error(msg);
+      toast.error(getApiError(err, 'Erro ao salvar conta.'));
     } finally {
       setSalvando(false);
     }
@@ -508,8 +506,7 @@ export default function ContasPagarPage() {
       toast.success('Conta excluída com sucesso!');
       carregarLista();
     } catch (err) {
-      const msg = err?.response?.data?.message || 'Erro ao excluir conta.';
-      toast.error(msg);
+      toast.error(getApiError(err, 'Erro ao excluir conta.'));
     }
   });
 
@@ -553,9 +550,7 @@ export default function ContasPagarPage() {
       fecharModalPagar();
       carregarLista();
     } catch (err) {
-      const msg =
-        err?.response?.data?.message || 'Erro ao registrar pagamento.';
-      toast.error(msg);
+      toast.error(getApiError(err, 'Erro ao registrar pagamento.'));
     } finally {
       setPagando(false);
     }
@@ -568,8 +563,7 @@ export default function ContasPagarPage() {
       toast.success('Conta cancelada!');
       carregarLista();
     } catch (err) {
-      const msg = err?.response?.data?.message || 'Erro ao cancelar conta.';
-      toast.error(msg);
+      toast.error(getApiError(err, 'Erro ao cancelar conta.'));
     }
   });
 
@@ -666,8 +660,7 @@ export default function ContasPagarPage() {
       toast.success(`${result.canceladas} parcela(s) cancelada(s)!`);
       carregarLista();
     } catch (err) {
-      const msg = err?.response?.data?.message || 'Erro ao cancelar grupo.';
-      toast.error(msg);
+      toast.error(getApiError(err, 'Erro ao cancelar grupo.'));
     }
   });
 
@@ -728,8 +721,7 @@ export default function ContasPagarPage() {
       fecharModalContaFinanceira();
       carregarSelects();
     } catch (err) {
-      const msg = err?.response?.data?.message || 'Erro ao criar conta financeira.';
-      toast.error(msg);
+      toast.error(getApiError(err, 'Erro ao criar conta financeira.'));
     } finally {
       setSalvandoContaFinanceira(false);
     }
@@ -765,7 +757,7 @@ export default function ContasPagarPage() {
       setCatEmEdicao(null);
       carregarCategoriasModal();
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Erro ao salvar categoria.');
+      toast.error(getApiError(err, 'Erro ao salvar categoria.'));
     } finally {
       setSalvandoCat(false);
     }
@@ -779,7 +771,7 @@ export default function ContasPagarPage() {
       toast.success('Categoria excluída!');
       carregarCategoriasModal();
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Erro ao excluir categoria.');
+      toast.error(getApiError(err, 'Erro ao excluir categoria.'));
     } finally {
       setExcluindoCatId(null);
     }

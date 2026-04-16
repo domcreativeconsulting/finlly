@@ -11,6 +11,7 @@ import { metasService } from '../services/metas.service.js';
 import { useAuth } from '../hooks/useAuth.js';
 import { useOnlineStatus } from '../hooks/useOnlineStatus.js';
 import { useContentLayout } from '../hooks/useContentLayout.js';
+import { getApiError } from '../utils/getApiError.js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faBars,
@@ -479,7 +480,7 @@ export default function DashboardPage() {
       }
       await Promise.all([loadKPIs(), loadProximosVencimentos(), loadFluxo()]);
     } catch (err) {
-      if (!isSemAssinatura(err)) toast.error(err?.response?.data?.message || 'Erro ao registrar pagamento.');
+      if (!isSemAssinatura(err)) toast.error(getApiError(err, 'Erro ao registrar pagamento.'));
     } finally {
       setPagandoId(null);
     }

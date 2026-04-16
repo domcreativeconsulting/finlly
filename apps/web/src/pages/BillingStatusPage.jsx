@@ -7,6 +7,7 @@ import AppSidebar from '../components/AppSidebar.jsx';
 import { InadimplenteGuard } from '../components/InadimplenteGuard.jsx';
 import { Button, Badge } from '../design-system/index.js';
 import { colors, typography, tokens, radius, shadows } from '../design-system/tokens.js';
+import { getApiError } from '../utils/getApiError.js';
 
 function formatDate(dateStr) {
   if (!dateStr) return '—';
@@ -31,11 +32,7 @@ export default function BillingStatusPage() {
       .getStatus()
       .then((data) => setAssinante(data.assinante ?? null))
       .catch((err) => {
-        const msg =
-          err?.response?.data?.message ||
-          err?.response?.data?.error ||
-          'Erro ao carregar status da assinatura.';
-        setError(msg);
+        setError(getApiError(err, 'Erro ao carregar status da assinatura.'));
       })
       .finally(() => setLoading(false));
   }, []);
@@ -54,11 +51,7 @@ export default function BillingStatusPage() {
       toast.success('Assinatura cancelada com sucesso.');
       navigate('/checkout');
     } catch (err) {
-      const msg =
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
-        'Erro ao cancelar assinatura.';
-      toast.error(msg);
+      toast.error(getApiError(err, 'Erro ao cancelar assinatura.'));
     } finally {
       setCancelling(false);
     }

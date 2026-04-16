@@ -14,6 +14,7 @@ import {
   faEye,
   faEyeSlash,
 } from '@fortawesome/free-solid-svg-icons';
+import { getApiError } from '../../utils/getApiError.js';
 
 const LoginSchema = z.object({
   email: z.string().email('E-mail inválido'),
@@ -73,9 +74,7 @@ export default function LoginPage() {
       } else if (status === 401 || status === 403) {
         setErrorMsg(err.response?.data?.message || 'E-mail ou senha incorretos.');
       } else {
-        setErrorMsg(
-          err.response?.data?.message || err.message || 'Erro ao realizar login. Tente novamente.'
-        );
+        setErrorMsg(getApiError(err, 'Erro ao realizar login. Tente novamente.'));
       }
     }
   };

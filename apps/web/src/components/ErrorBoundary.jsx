@@ -29,9 +29,9 @@ export default class ErrorBoundary extends Component {
             color: '#333',
           }}
         >
-          <h2>Something went wrong</h2>
+          <h2>Algo deu errado</h2>
           <p style={{ color: '#666' }}>
-            An unexpected error occurred. Please refresh the page or try again later.
+            Ocorreu um erro inesperado. Atualize a página ou tente novamente.
           </p>
           <button
             onClick={() => window.location.reload()}
@@ -45,7 +45,7 @@ export default class ErrorBoundary extends Component {
               borderRadius: '4px',
             }}
           >
-            Try again
+            Tentar novamente
           </button>
         </div>
       );

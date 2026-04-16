@@ -20,6 +20,7 @@ import {
 import { Button } from '../design-system/index.js';
 import { colors, typography, radius, shadows } from '../design-system/tokens.js';
 import { downloadBlob } from '../utils/downloadBlob.js';
+import { getApiError } from '../utils/getApiError.js';
 
 function getInitials(name) {
   if (!name) return '?';
@@ -115,8 +116,8 @@ export default function RelatoriosPage() {
         const result = await dashboardService.getRelatorio(params);
         setRelatorio(result);
         setPage(pageNum);
-      } catch {
-        toast.error('Erro ao buscar relatório');
+      } catch (err) {
+        toast.error(getApiError(err, 'Erro ao buscar relatório.'));
       } finally {
         setLoading(false);
       }
@@ -161,8 +162,8 @@ export default function RelatoriosPage() {
       const dateRef = dataInicio || new Date().toISOString().substring(0, 10);
       downloadBlob(blob, `relatorio-${dateRef}.csv`);
       toast.success('Relatório exportado com sucesso!');
-    } catch {
-      toast.error('Erro ao exportar relatório');
+    } catch (err) {
+      toast.error(getApiError(err, 'Erro ao exportar relatório.'));
     } finally {
       setExportando(false);
     }
@@ -182,8 +183,8 @@ export default function RelatoriosPage() {
       const dateRef = dataInicio || new Date().toISOString().substring(0, 10);
       downloadBlob(blob, `relatorio-${dateRef}.pdf`);
       toast.success('Relatório PDF exportado com sucesso!');
-    } catch {
-      toast.error('Erro ao exportar relatório PDF');
+    } catch (err) {
+      toast.error(getApiError(err, 'Erro ao exportar relatório PDF.'));
     } finally {
       setExportandoPDF(false);
     }

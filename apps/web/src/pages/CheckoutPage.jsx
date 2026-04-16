@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faShieldHalved, faArrowsRotate, faBullseye } from '@fortawesome/free-solid-svg-icons';
 import { billingService } from '../services/billing.service.js';
 import { useAuth } from '../hooks/useAuth.js';
+import { getApiError } from '../utils/getApiError.js';
 import logoImg from '../assets/logo.png';
 
 // ─── helpers ────────────────────────────────────────────────
@@ -141,7 +142,7 @@ export default function CheckoutPage() {
       if (status === 409 || msg.toLowerCase().includes('já cadastrado') || msg.toLowerCase().includes('já existe')) {
         setError(EMAIL_DUPLICADO);
       } else {
-        setError(msg || 'Erro ao criar conta. Tente novamente.');
+        setError(getApiError(err, 'Erro ao criar conta. Tente novamente.'));
       }
     } finally {
       setLoading(false);
@@ -159,7 +160,7 @@ export default function CheckoutPage() {
       if (msg.toLowerCase().includes('verif') || msg.toLowerCase().includes('email')) {
         setError('E-mail ainda não confirmado. Verifique sua caixa de entrada e clique no link.');
       } else {
-        setError(msg || 'Erro ao fazer login. Tente novamente.');
+        setError(getApiError(err, 'Erro ao fazer login. Tente novamente.'));
       }
     } finally {
       setLoading(false);
@@ -220,7 +221,7 @@ export default function CheckoutPage() {
       toast.success('Assinatura criada com sucesso!');
       setStep(3);
     } catch (err) {
-      const msg = err?.response?.data?.message || err?.response?.data?.error || 'Erro ao processar pagamento. Verifique os dados do cartão e tente novamente.';
+      const msg = getApiError(err, 'Erro ao processar pagamento. Verifique os dados do cartão e tente novamente.');
       setError(msg);
       toast.error(msg);
     } finally {
