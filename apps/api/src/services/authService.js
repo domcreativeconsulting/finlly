@@ -90,7 +90,8 @@ function generateRefreshToken(usuarioId, sessionId) {
  * @returns {number}
  */
 export function parseExpiresInSeconds(val) {
-  const match = String(val || '').match(/^(\d+)([smhd]?)$/);
+  const match = String(val || '').match(/^(
+*\d+)([smhd]?)$/);
   if (!match) return 30 * 24 * 60 * 60; // default 30 days
   const n = parseInt(match[1], 10);
   const unit = match[2] || 's';
@@ -142,14 +143,14 @@ async function verifyPassword(password, storedHash) {
  */
 async function checkRateLimit(email, ip = 'unknown') {
   if (config.NODE_ENV === 'development') return; // Skip Redis rate limit in dev
-
+  
   let redis;
   try {
     redis = await getRedisClient();
   } catch {
     return; // Redis unavailable — skip rate limiting gracefully
   }
-
+  
   const emailNormalized = email.trim().toLowerCase();
   const key = `login:attempts:${sha256(emailNormalized)}:${ip}`;
   const attempts = await redis.incr(key);
@@ -259,4 +260,309 @@ export async function register({ nome, email, senha }, meta = {}) {
  * @returns {Promise<{ accessToken: string, refreshToken: string, usuario: object }>}
  */
 export async function login({ email, senha, device_info }, meta = {}) {
-  await checkRateLimit(email, meta.ip ||*
+  await checkRateLimit(email, meta.ip || 'unknown');
+
+  const usuario = await prisma.usuario.findUnique({ where: { email } });
+
+  if (!usuario) {
+    registrarEvento({
+      actorType: 'USER',
+      eventType: 'auth',
+      eventAction: 'login_falha',
+      ip: meta.ip,
+      userAgent: meta.userAgent,
+      metadata: { motivo: 'email_nao_encontrado' },
+      sucesso: false,
+    });
+    throw AppError.unauthorized('Credenciais inválidas');
+  }
+
+  // Check for temporary lockout (progressive lockout por tentativas)
+  if (usuario.bloqueado_ate && usuario.bloqueado_ate > new Date()) {
+    throw AppError.locked('Conta bloqueada temporariamente. Tente novamente mais tarde.');
+  }
+
+  // Bloqueia apenas suspenso_seguranca no nível do login.
+  // Statuses de billing são tratados pelo middleware requireAtivo nas rotas pagas.
+  if (STATUSES_BLOQUEIAM_LOGIN.includes(usuario.status)) {
+    registrarEvento({
+      usuarioId: usuario.id,
+      actorType: 'USER',
+      eventType: 'auth',
+      eventAction: 'login_falha',
+      ip: meta.ip,
+      userAgent: meta.userAgent,
+      metadata: { motivo: 'conta_suspensa', status: usuario.status },
+      sucesso: false,
+    });
+    throw AppError.forbidden('Conta suspensa. Entre em contato com o suporte.');
+  }
+
+  const senhaValida = await verifyPassword(senha, usuario.senha_hash);
+
+  if (!senhaValida) {
+    const newAttempts = usuario.tentativas_login + 1;
+    const lockDurationMs = getLockoutDuration(newAttempts);
+
+    await prisma.usuario.update({
+      where: { id: usuario.id },
+      data: {
+        tentativas_login: newAttempts,
+        ...(lockDurationMs !== null && {
+          bloqueado_ate: new Date(Date.now() + lockDurationMs),
+        }),
+      },
+    });
+
+    registrarEvento({
+      usuarioId: usuario.id,
+      actorType: 'USER',
+      eventType: 'auth',
+      eventAction: 'login_falha',
+      ip: meta.ip,
+      userAgent: meta.userAgent,
+      metadata: { motivo: 'senha_incorreta', tentativas: newAttempts },
+      sucesso: false,
+    });
+
+    if (lockDurationMs !== null) {
+      throw AppError.locked('Conta bloqueada após múltiplas tentativas falhas.');
+    }
+    throw AppError.unauthorized('Credenciais inválidas');
+  }
+
+  // Successful login: reset attempts
+  await resetRateLimit(email, meta.ip || 'unknown');
+
+  const refreshExpiresInSeconds = parseExpiresInSeconds(config.JWT_REFRESH_EXPIRES_IN);
+  const dataExpiracao = new Date(Date.now() + refreshExpiresInSeconds * 1000);
+
+  // Pre-generate a session ID so the refresh token and DB row are created atomically
+  const sessaoId = randomUUID();
+  const accessToken = generateAccessToken(usuario);
+  const refreshToken = generateRefreshToken(usuario.id, sessaoId);
+  const refreshTokenHash = sha256(refreshToken);
+
+  await prisma.$transaction(async (tx) => {
+    await tx.usuarioSessao.create({
+      data: {
+        id: sessaoId,
+        usuario_id: usuario.id,
+        refresh_token_hash: refreshTokenHash,
+        device_info: device_info || meta.userAgent || null,
+        ip_address: meta.ip || null,
+        data_expiracao: dataExpiracao,
+      },
+    });
+    await tx.usuario.update({
+      where: { id: usuario.id },
+      data: { tentativas_login: 0, bloqueado_ate: null },
+    });
+  });
+
+  registrarEvento({
+    usuarioId: usuario.id,
+    actorType: 'USER',
+    eventType: 'auth',
+    eventAction: 'login_sucesso',
+    ip: meta.ip,
+    userAgent: meta.userAgent,
+    sucesso: true,
+  });
+
+  return {
+    accessToken,
+    refreshToken,
+    usuario: {
+      id: usuario.id,
+      nome: usuario.nome,
+      email: usuario.email,
+      role: usuario.role,
+      status: usuario.status,
+    },
+  };
+}
+
+/**
+ * Refreshes the access token (POST /auth/refresh).
+ * @param {string} refreshToken
+ * @param {{ ip?: string, userAgent?: string }} [meta]
+ * @returns {Promise<{ accessToken: string }>}
+ */
+export async function refresh(refreshToken, meta = {}) {
+  let payload = null;
+  try {
+    payload = jwt.verify(refreshToken, config.JWT_REFRESH_SECRET);
+  } catch {
+    registrarEvento({
+      actorType: 'USER',
+      eventType: 'auth',
+      eventAction: 'refresh_falha',
+      metadata: { motivo: 'token_invalido' },
+      sucesso: false,
+      ip: meta.ip,
+      userAgent: meta.userAgent,
+    });
+    throw AppError.unauthorized('Refresh token inválido ou expirado');
+  }
+
+  // Validate the session by matching the token hash in the DB
+  const tokenHash = sha256(refreshToken);
+  const usuarioId = payload?.sub || null;
+
+  const sessao = await prisma.usuarioSessao.findUnique({
+    where: { refresh_token_hash: tokenHash },
+    include: { usuario: true },
+  });
+
+  if (!sessao) {
+    registrarEvento({
+      usuarioId,
+      actorType: 'USER',
+      eventType: 'auth',
+      eventAction: 'refresh_falha',
+      metadata: { motivo: 'sessao_nao_encontrada' },
+      sucesso: false,
+      ip: meta.ip,
+      userAgent: meta.userAgent,
+    });
+    throw AppError.unauthorized('Sessão não encontrada');
+  }
+
+  if (sessao.data_revogacao) {
+    registrarEvento({
+      usuarioId,
+      actorType: 'USER',
+      eventType: 'auth',
+      eventAction: 'refresh_falha',
+      metadata: { motivo: 'sessao_revogada' },
+      sucesso: false,
+      ip: meta.ip,
+      userAgent: meta.userAgent,
+    });
+    throw AppError.unauthorized('Sessão revogada');
+  }
+
+  if (sessao.data_expiracao < new Date()) {
+    registrarEvento({
+      usuarioId,
+      actorType: 'USER',
+      eventType: 'auth',
+      eventAction: 'refresh_falha',
+      metadata: { motivo: 'sessao_expirada' },
+      sucesso: false,
+      ip: meta.ip,
+      userAgent: meta.userAgent,
+    });
+    throw AppError.unauthorized('Sessão expirada');
+  }
+
+  const usuario = sessao.usuario;
+
+  // Bloqueia refresh apenas para suspenso_seguranca.
+  // Statuses de billing não invalidam o refresh token.
+  if (STATUSES_BLOQUEIAM_LOGIN.includes(usuario.status)) {
+    registrarEvento({
+      usuarioId,
+      actorType: 'USER',
+      eventType: 'auth',
+      eventAction: 'refresh_falha',
+      metadata: { motivo: 'usuario_suspenso', status: usuario.status },
+      sucesso: false,
+      ip: meta.ip,
+      userAgent: meta.userAgent,
+    });
+    throw AppError.forbidden('Conta suspensa');
+  }
+
+  const accessToken = generateAccessToken(usuario);
+
+  registrarEvento({
+    usuarioId: usuario.id,
+    actorType: 'USER',
+    eventType: 'auth',
+    eventAction: 'refresh_sucesso',
+    sucesso: true,
+    ip: meta.ip,
+    userAgent: meta.userAgent,
+  });
+
+  return { accessToken };
+}
+
+/**
+ * Logs out user session(s) (POST /auth/logout).
+ * @param {string} userId - The authenticated user's ID.
+ * @param {{ sessao_id?: string, todas?: boolean, sessionId?: string }} [options]
+ * @param {{ ip?: string, userAgent?: string }} [meta]
+ * @returns {Promise<{ message: string, sessoes_revogadas: number }>}\n */
+export async function logout(userId, { sessao_id, todas, sessionId } = {}, meta = {}) {
+  const agora = new Date();
+  let sessoesRevogadas = 0;
+
+  if (todas) {
+    const result = await prisma.usuarioSessao.updateMany({
+      where: { usuario_id: userId, data_revogacao: null },
+      data: { data_revogacao: agora },
+    });
+    sessoesRevogadas = result.count;
+  } else {
+    const targetId = sessao_id || sessionId;
+    if (!targetId) {
+      throw AppError.badRequest('Sessão não identificada');
+    }
+
+    const sessao = await prisma.usuarioSessao.findFirst({
+      where: { id: targetId, usuario_id: userId },
+    });
+    if (!sessao) throw AppError.notFound('Sessão não encontrada');
+
+    await prisma.usuarioSessao.update({
+      where: { id: targetId },
+      data: { data_revogacao: agora },
+    });
+    sessoesRevogadas = 1;
+  }
+
+  registrarEvento({
+    usuarioId: userId,
+    actorType: 'USER',
+    eventType: 'auth',
+    eventAction: 'logout',
+    ip: meta.ip,
+    userAgent: meta.userAgent,
+    metadata: { sessoes_revogadas: sessoesRevogadas },
+    sucesso: true,
+  });
+
+  return { message: 'Logout realizado com sucesso', sessoes_revogadas: sessoesRevogadas };
+}
+
+/**
+ * Returns the authenticated user's data (GET /auth/me).
+ * @param {string} userId
+ * @returns {Promise<object>}
+ */
+export async function getMe(userId) {
+  const usuario = await prisma.usuario.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      nome: true,
+      email: true,
+      telefone: true,
+      avatar_url: true,
+      whatsapp: true,
+      timezone: true,
+      moeda: true,
+      role: true,
+      status: true,
+      email_verificado: true,
+      created_at: true,
+      updated_at: true,
+    },
+  });
+
+  if (!usuario) throw AppError.notFound('Usuário não encontrado');
+  return usuario;
+}
