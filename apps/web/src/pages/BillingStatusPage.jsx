@@ -359,7 +359,7 @@ export default function BillingStatusPage() {
                     color: colors.neutral800,
                   }}
                 >
-                  Renovar assinatura
+                  Manter Plano Ativo
                 </h2>
                 <p
                   style={{
@@ -368,7 +368,7 @@ export default function BillingStatusPage() {
                     color: colors.neutral500,
                   }}
                 >
-                  Acesse o checkout para renovar o seu plano atual.
+                  Sua gestão não pode parar. Clique abaixo para confirmar seu próximo ciclo.
                 </p>
                 <Button onClick={() => navigate('/checkout')}>
                   Renovar assinatura →
