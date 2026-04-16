@@ -91,7 +91,7 @@ function isSemAssinatura(err) {
 
 const CURRENT_YEAR = new Date().getFullYear();
 
-// ─── Skeleton ─────────────────────────────────���───────────────────────────────
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
 
 function Skeleton({ width = '100%', height = '18px', style = {} }) {
   return (
@@ -518,9 +518,23 @@ export default function DashboardPage() {
           {/* ── Top Bar ── */}
           <div style={{ background: colors.white, borderBottom: `1px solid ${colors.border}`, padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', position: 'sticky', top: 0, zIndex: 100, flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <button onClick={() => setSidebarOpen((v) => !v)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', color: colors.neutral600, fontSize: '16px' }} aria-label="Toggle sidebar">
+
+              {/* ✅ CORREÇÃO: lógica igual às outras páginas */}
+              <button
+                onClick={() => {
+                  if (!sidebarOpen) {
+                    setSidebarOpen(true);
+                    setSidebarExpanded(true);
+                  } else {
+                    setSidebarExpanded((v) => !v);
+                  }
+                }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', color: colors.neutral600, fontSize: '16px' }}
+                aria-label="Toggle sidebar"
+              >
                 <FontAwesomeIcon icon={faBars} />
               </button>
+
               <div>
                 <p style={{ margin: 0, fontSize: typography.sizes.xl, fontWeight: typography.weights.semibold, color: colors.neutral800 }}>Dashboard</p>
                 <p style={{ margin: 0, fontSize: typography.sizes.xs, color: colors.neutral500 }}>Gestão financeira pessoal</p>
