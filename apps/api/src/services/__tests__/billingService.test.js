@@ -134,7 +134,7 @@ describe('criarAssinatura', () => {
       expect.objectContaining({
         customer: CUSTOMER.id,
         cycle: 'MONTHLY',
-        value: 29.9,
+        value: 39.9,
         billingType: 'PIX',
       }),
     );
@@ -158,7 +158,7 @@ describe('criarAssinatura', () => {
     const result = await criarAssinatura(USUARIO_ID, { plano: 'anual', ciclo: 'anual', formaPagamento: 'CREDIT_CARD' });
 
     expect(mockAsaas.createSubscription).toHaveBeenCalledWith(
-      expect.objectContaining({ cycle: 'YEARLY', value: 287.9, billingType: 'CREDIT_CARD' }),
+      expect.objectContaining({ cycle: 'YEARLY', value: 399, billingType: 'CREDIT_CARD' }),
     );
     expect(result.paymentLink).toBeNull();
   });
@@ -211,9 +211,9 @@ describe('criarAssinatura', () => {
 
     await criarAssinatura(USUARIO_ID, { plano: 'mensal', ciclo: 'mensal', formaPagamento: 'PIX', cupomCodigo: 'DESC10' });
 
-    // 29.90 - 10% = 26.91
+    // 39.90 - 10% = 35.91
     expect(mockAsaas.createSubscription).toHaveBeenCalledWith(
-      expect.objectContaining({ value: 26.91 }),
+      expect.objectContaining({ value: 35.91 }),
     );
   });
 
@@ -325,9 +325,9 @@ describe('criarAssinatura', () => {
 
     await criarAssinatura(USUARIO_ID, { plano: 'mensal', ciclo: 'mensal', formaPagamento: 'PIX', cupomCodigo: 'DESC5' });
 
-    // 29.90 - 5.00 = 24.9
+    // 39.90 - 5.00 = 34.9
     expect(mockAsaas.createSubscription).toHaveBeenCalledWith(
-      expect.objectContaining({ value: 24.9 }),
+      expect.objectContaining({ value: 34.9 }),
     );
   });
 
@@ -384,7 +384,7 @@ describe('cancelarAssinatura', () => {
       expect.objectContaining({ data: expect.objectContaining({ status: 'cancelado' }) }),
     );
     expect(mockPrisma.usuario.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: { status: 'ativo' } }),
+      expect.objectContaining({ data: { status: 'pendente_pagamento' } }),
     );
     expect(mockAuditoriaCreate).toHaveBeenCalledWith(
       expect.objectContaining({
