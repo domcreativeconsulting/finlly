@@ -13,32 +13,17 @@ import { generateEmailVerificationToken } from './emailVerificationService.js';
 import { sendEmailVerification } from './emailService.js';
 
 const BCRYPT_ROUNDS = 12;
-const MAX_LOGIN_ATTEMPTS = 5; // Redis rate-limit: max attempts per window
-const RATE_LIMIT_WINDOW_SECONDS = 900; // 15 min
+const MAX_LOGIN_ATTEMPTS = 5;
+const RATE_LIMIT_WINDOW_SECONDS = 900;
 
-/**
- * Statuses that block login entirely (security suspension).
- * Billing-related statuses (pendente_pagamento, bloqueado_inadimplencia) do NOT
- * block login — access to paid routes is controlled by the requireAtivo middleware.
- * This allows users to log in and manage their subscription/billing.
- */
 const STATUSES_BLOQUEIAM_LOGIN = ['suspenso_seguranca'];
 
-/**
- * Progressive lockout levels: after N failed attempts, lock account for durationMs.
- * Applied in ascending order — the highest matching threshold wins.
- */
 const LOCKOUT_LEVELS = [
-  { attempts: 3, durationMs: 5 * 60 * 1000 },           // 5 minutes
-  { attempts: 5, durationMs: 30 * 60 * 1000 },          // 30 minutes
-  { attempts: 10, durationMs: 24 * 60 * 60 * 1000 },    // 24 hours
+  { attempts: 3, durationMs: 5 * 60 * 1000 },
+  { attempts: 5, durationMs: 30 * 60 * 1000 },
+  { attempts: 10, durationMs: 24 * 60 * 60 * 1000 },
 ];
 
-/**
- * Returns the lockout duration in ms for a given attempt count, or null if no lockout.
- * @param {number} attempts
- * @returns {number|null}
- */
 function getLockoutDuration(attempts) {
   for (let i = LOCKOUT_LEVELS.length - 1; i >= 0; i--) {
     if (attempts >= LOCKOUT_LEVELS[i].attempts) {
@@ -48,20 +33,10 @@ function getLockoutDuration(attempts) {
   return null;
 }
 
-/**
- * Hashes a string using SHA-256 (for storing refresh token hash in DB).
- * @param {string} value
- * @returns {string}
- */
 function sha256(value) {
   return createHash('sha256').update(value).digest('hex');
 }
 
-/**
- * Generates an access JWT.
- * @param {{ id: string, email: string, role: string }} usuario
- * @returns {string}
- */
 function generateAccessToken(usuario) {
   return jwt.sign(
     { sub: usuario.id, email: usuario.email, role: usuario.role },
@@ -70,12 +45,6 @@ function generateAccessToken(usuario) {
   );
 }
 
-/**
- * Generates a refresh JWT.
- * @param {string} usuarioId
- * @param {string} sessionId
- * @returns {string}
- */
 function generateRefreshToken(usuarioId, sessionId) {
   return jwt.sign(
     { sub: usuarioId, sessionId },
@@ -84,27 +53,16 @@ function generateRefreshToken(usuarioId, sessionId) {
   );
 }
 
-/**
- * Converts JWT expiry string (e.g. "30d", "15m") to seconds.
- * @param {string} val
- * @returns {number}
- */
 export function parseExpiresInSeconds(val) {
   const match = String(val || '').match(/^(
-*\d+)([smhd]?)$/);
-  if (!match) return 30 * 24 * 60 * 60; // default 30 days
++)([smhd]?)$/);
+  if (!match) return 30 * 24 * 60 * 60;
   const n = parseInt(match[1], 10);
   const unit = match[2] || 's';
   const multipliers = { s: 1, m: 60, h: 3600, d: 86400 };
   return n * (multipliers[unit] || 1);
 }
 
-/**
- * Verifies a scrypt-hashed password (legacy format: salt:hash).
- * @param {string} password
- * @param {string} storedHash
- * @returns {boolean}
- */
 function verifyScryptPassword(password, storedHash) {
   try {
     const parts = storedHash.split(':');
@@ -120,37 +78,23 @@ function verifyScryptPassword(password, storedHash) {
   }
 }
 
-/**
- * Verifies a password against a stored hash (supports both bcrypt and legacy scrypt).
- * @param {string} password
- * @param {string} storedHash
- * @returns {Promise<boolean>}
- */
 async function verifyPassword(password, storedHash) {
-  // bcrypt hashes start with $2b$ or $2a$
   if (storedHash.startsWith('$2')) {
     return bcrypt.compare(password, storedHash);
   }
-  // Legacy scrypt format: salt:hash
   return verifyScryptPassword(password, storedHash);
 }
 
-/**
- * Checks and increments the Redis-backed rate limit for login attempts.
- * Silently passes if Redis is unavailable.
- * @param {string} email
- * @param {string} [ip]
- */
 async function checkRateLimit(email, ip = 'unknown') {
-  if (config.NODE_ENV === 'development') return; // Skip Redis rate limit in dev
-  
+  if (config.NODE_ENV === 'development') return;
+
   let redis;
   try {
     redis = await getRedisClient();
   } catch {
-    return; // Redis unavailable — skip rate limiting gracefully
+    return;
   }
-  
+
   const emailNormalized = email.trim().toLowerCase();
   const key = `login:attempts:${sha256(emailNormalized)}:${ip}`;
   const attempts = await redis.incr(key);
@@ -163,11 +107,6 @@ async function checkRateLimit(email, ip = 'unknown') {
   }
 }
 
-/**
- * Resets the Redis rate limit counter for an email+ip after a successful login.
- * @param {string} email
- * @param {string} [ip]
- */
 async function resetRateLimit(email, ip = 'unknown') {
   let redis;
   try {
@@ -179,16 +118,6 @@ async function resetRateLimit(email, ip = 'unknown') {
   }
 }
 
-// ============================================================
-// Public API
-// ============================================================
-
-/**
- * Registers a new user (POST /auth/register).
- * @param {{ nome: string, email: string, senha: string }} data
- * @param {{ ip?: string, userAgent?: string }} [meta]
- * @returns {Promise<{ usuario_id: string, email: string, nome: string, message: string }>}
- */
 export async function register({ nome, email, senha }, meta = {}) {
   const existingUser = await prisma.usuario.findUnique({ where: { email } });
   if (existingUser) {
@@ -228,7 +157,6 @@ export async function register({ nome, email, senha }, meta = {}) {
     sucesso: true,
   });
 
-  // Enviar email de verificação — best-effort (não falha o cadastro)
   try {
     const token = await generateEmailVerificationToken(usuario.id);
     const verifyLink = `${config.APP_URL}/verify-email?token=${token}`;
@@ -246,19 +174,6 @@ export async function register({ nome, email, senha }, meta = {}) {
   };
 }
 
-/**
- * Logs in a user and returns access + refresh tokens (POST /auth/login).
- *
- * Regra de acesso (documento técnico v1.0):
- *   - Login permitido para qualquer status exceto `suspenso_seguranca`.
- *   - Statuses de billing (pendente_pagamento, bloqueado_inadimplencia) NÃO bloqueiam
- *     o login — o usuário pode entrar para gerenciar sua assinatura.
- *   - O controle de acesso a rotas pagas é responsabilidade do middleware requireAtivo.
- *
- * @param {{ email: string, senha: string, device_info?: string }} data
- * @param {{ ip?: string, userAgent?: string }} [meta]
- * @returns {Promise<{ accessToken: string, refreshToken: string, usuario: object }>}
- */
 export async function login({ email, senha, device_info }, meta = {}) {
   await checkRateLimit(email, meta.ip || 'unknown');
 
@@ -277,13 +192,10 @@ export async function login({ email, senha, device_info }, meta = {}) {
     throw AppError.unauthorized('Credenciais inválidas');
   }
 
-  // Check for temporary lockout (progressive lockout por tentativas)
   if (usuario.bloqueado_ate && usuario.bloqueado_ate > new Date()) {
     throw AppError.locked('Conta bloqueada temporariamente. Tente novamente mais tarde.');
   }
 
-  // Bloqueia apenas suspenso_seguranca no nível do login.
-  // Statuses de billing são tratados pelo middleware requireAtivo nas rotas pagas.
   if (STATUSES_BLOQUEIAM_LOGIN.includes(usuario.status)) {
     registrarEvento({
       usuarioId: usuario.id,
@@ -331,13 +243,11 @@ export async function login({ email, senha, device_info }, meta = {}) {
     throw AppError.unauthorized('Credenciais inválidas');
   }
 
-  // Successful login: reset attempts
   await resetRateLimit(email, meta.ip || 'unknown');
 
   const refreshExpiresInSeconds = parseExpiresInSeconds(config.JWT_REFRESH_EXPIRES_IN);
   const dataExpiracao = new Date(Date.now() + refreshExpiresInSeconds * 1000);
 
-  // Pre-generate a session ID so the refresh token and DB row are created atomically
   const sessaoId = randomUUID();
   const accessToken = generateAccessToken(usuario);
   const refreshToken = generateRefreshToken(usuario.id, sessaoId);
@@ -383,12 +293,6 @@ export async function login({ email, senha, device_info }, meta = {}) {
   };
 }
 
-/**
- * Refreshes the access token (POST /auth/refresh).
- * @param {string} refreshToken
- * @param {{ ip?: string, userAgent?: string }} [meta]
- * @returns {Promise<{ accessToken: string }>}
- */
 export async function refresh(refreshToken, meta = {}) {
   let payload = null;
   try {
@@ -406,7 +310,6 @@ export async function refresh(refreshToken, meta = {}) {
     throw AppError.unauthorized('Refresh token inválido ou expirado');
   }
 
-  // Validate the session by matching the token hash in the DB
   const tokenHash = sha256(refreshToken);
   const usuarioId = payload?.sub || null;
 
@@ -459,8 +362,6 @@ export async function refresh(refreshToken, meta = {}) {
 
   const usuario = sessao.usuario;
 
-  // Bloqueia refresh apenas para suspenso_seguranca.
-  // Statuses de billing não invalidam o refresh token.
   if (STATUSES_BLOQUEIAM_LOGIN.includes(usuario.status)) {
     registrarEvento({
       usuarioId,
@@ -490,12 +391,6 @@ export async function refresh(refreshToken, meta = {}) {
   return { accessToken };
 }
 
-/**
- * Logs out user session(s) (POST /auth/logout).
- * @param {string} userId - The authenticated user's ID.
- * @param {{ sessao_id?: string, todas?: boolean, sessionId?: string }} [options]
- * @param {{ ip?: string, userAgent?: string }} [meta]
- * @returns {Promise<{ message: string, sessoes_revogadas: number }>}\n */
 export async function logout(userId, { sessao_id, todas, sessionId } = {}, meta = {}) {
   const agora = new Date();
   let sessoesRevogadas = 0;
@@ -538,11 +433,6 @@ export async function logout(userId, { sessao_id, todas, sessionId } = {}, meta 
   return { message: 'Logout realizado com sucesso', sessoes_revogadas: sessoesRevogadas };
 }
 
-/**
- * Returns the authenticated user's data (GET /auth/me).
- * @param {string} userId
- * @returns {Promise<object>}
- */
 export async function getMe(userId) {
   const usuario = await prisma.usuario.findUnique({
     where: { id: userId },
