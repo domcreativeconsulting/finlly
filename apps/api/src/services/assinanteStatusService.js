@@ -7,6 +7,16 @@ const BILLING_STATUS_CACHE_PREFIX = 'billing:status:';
 
 /**
  * Maps assinante status to the corresponding usuario status.
+ *
+ * Regras do documento técnico v1.0:
+ *   - ativo        → ativo              (acesso liberado)
+ *   - trial        → ativo              (acesso liberado)
+ *   - pendente     → pendente_pagamento (sem acesso — aguardando pagamento)
+ *   - inadimplente → bloqueado_inadimplencia (sem acesso)
+ *   - cancelado    → pendente_pagamento (sem acesso — sem assinatura ativa)
+ *   - inativo      → pendente_pagamento (sem acesso — sem assinatura ativa)
+ *   - default      → pendente_pagamento (sem acesso)
+ *
  * @param {string} assinanteStatus
  * @returns {string} usuarioStatus
  */
@@ -14,15 +24,18 @@ function toUsuarioStatus(assinanteStatus) {
   switch (assinanteStatus) {
     case 'ativo':
       return 'ativo';
+    case 'trial':
+      return 'ativo';
     case 'pendente':
-      return 'ativo'; // Pendente ainda não bloqueia o usuário
+      // Aguardando confirmação de pagamento — bloqueia acesso até PAYMENT_CONFIRMED
+      return 'pendente_pagamento';
     case 'inadimplente':
       return 'bloqueado_inadimplencia';
     case 'cancelado':
     case 'inativo':
-    case 'trial':
     default:
-      return 'ativo';
+      // Sem assinatura ativa — sem acesso ao sistema
+      return 'pendente_pagamento';
   }
 }
 
