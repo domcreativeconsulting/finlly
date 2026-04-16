@@ -306,11 +306,10 @@ export default function CheckoutPage() {
               handleChange={handleChange}
               handleNext={handleNextStep}
               error={error}
-              plan={plan}
               loading={loading}
             />
           )}
-
+          
           {step === 1.5 && (
             <StepVerificacaoEmail
               email={form.email}
@@ -358,7 +357,7 @@ export default function CheckoutPage() {
 }
 
 // ─── Step 1: Dados ──────────────────────────────────────────
-function StepDados({ form, handleChange, handleNext, error, plan, loading }) {
+function StepDados({ form, handleChange, handleNext, error, loading }) {
   return (
     <form onSubmit={handleNext} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
 
@@ -488,7 +487,7 @@ function StepVerificacaoEmail({ email, onConfirmed, onResend, onBack, error, loa
         <ol style={{ margin: '8px 0 0', paddingLeft: '20px' }}>
           <li>Abra seu e-mail em outra aba</li>
           <li>Clique no link de confirmação</li>
-          <li>Volte aqui e clique em <strong>"Já confirmei"</strong></li>
+          <li>Volte aqui e clique em <strong>&quot;Já confirmei&quot;</strong></li>
         </ol>
       </div>
 
@@ -610,7 +609,7 @@ function StepPagamento({ form, method, setMethod, handlePay, error, loading, pla
         </div>
       )}
       {method === 'PIX' && (
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '13px', color: C.inkSoft, padding: '12px 14px', background: 'rgba(196,233,31,0.06)', border: `1px solid rgba(196,233,31,0.15)`, borderRadius: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '13px', color: C.inkSoft, padding: '12px 14px', background: 'rgba(196,233,31,0.06)', border: `1px solid rgba(196,233,31,0.2)`, borderRadius: '10px' }}>
           <span>ℹ️</span>
           <span>O QR Code PIX será gerado na próxima tela para você escanear ou copiar o código.</span>
         </div>
@@ -645,7 +644,9 @@ function StepConfirmacao({ paymentLink, pixQrCode, pixCopiaECola, method, plan, 
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', textAlign: 'center' }}>
-      <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(196,233,31,0.15)', border: `2px solid ${C.accent}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', color: C.accent }}>✓</div>
+      <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(196,233,31,0.15)', border: `2px solid ${C.accent}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px' }}>
+        ✅
+      </div>
 
       <div>
         <h2 style={{ margin: '0 0 6px', fontSize: '20px', fontWeight: '700', color: C.ink }}>
@@ -731,7 +732,7 @@ function StepConfirmacao({ paymentLink, pixQrCode, pixCopiaECola, method, plan, 
       )}
 
       {method === 'PIX' && !pixQrCode && !pixCopiaECola && paymentLink && (
-        <a href={paymentLink} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '14px 20px', borderRadius: '999px', background: `linear-gradient(130deg, ${C.accent}, #d6f35d)`, color: '#12203f', fontWeight: '700', fontSize: '15px', textDecoration: 'none', boxShadow: '0 10px 24px rgba(196,233,31,0.28)' }}>
+        <a href={paymentLink} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '14px 20px', borderRadius: '999px', background: `linear-gradient(130deg, ${C.accent}, #d6f35d)`, color: '#12203f', fontWeight: '700', fontSize: '15px', textDecoration: 'none' }}>
           🔒 Abrir página de pagamento PIX
         </a>
       )}
@@ -748,7 +749,7 @@ function StepConfirmacao({ paymentLink, pixQrCode, pixCopiaECola, method, plan, 
         </div>
       )}
 
-      <button onClick={() => navigate('/dashboard')} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: '12px', padding: '12px 24px', color: C.inkSoft, cursor: 'pointer', fontSize: '13px', width: '100%' }}>
+      <button onClick={() => navigate('/dashboard')} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: '12px', padding: '12px 24px', color: C.inkSoft, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}>
         Já paguei — Acessar minha conta
       </button>
     </div>
