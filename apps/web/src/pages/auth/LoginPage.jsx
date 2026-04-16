@@ -72,7 +72,7 @@ export default function LoginPage() {
           'Conta bloqueada por 30 minutos. Entre em contato com o suporte.'
         );
       } else if (status === 401 || status === 403) {
-        setErrorMsg(err.response?.data?.message || 'E-mail ou senha incorretos.');
+        setErrorMsg(getApiError(err, 'E-mail ou senha incorretos.'));
       } else {
         setErrorMsg(getApiError(err, 'Erro ao realizar login. Tente novamente.'));
       }

@@ -138,8 +138,8 @@ export default function CheckoutPage() {
       setResendCooldown(60);
     } catch (err) {
       const status = err?.response?.status;
-      const msg = err?.response?.data?.message || err?.response?.data?.error || '';
-      if (status === 409 || msg.toLowerCase().includes('já cadastrado') || msg.toLowerCase().includes('já existe')) {
+      const rawMsg = (err?.response?.data?.message || err?.response?.data?.error || '').toLowerCase();
+      if (status === 409 || rawMsg.includes('já cadastrado') || rawMsg.includes('já existe')) {
         setError(EMAIL_DUPLICADO);
       } else {
         setError(getApiError(err, 'Erro ao criar conta. Tente novamente.'));
@@ -156,8 +156,8 @@ export default function CheckoutPage() {
       await login(form.email.trim(), form.senha);
       setStep(2);
     } catch (err) {
-      const msg = err?.response?.data?.message || err?.response?.data?.error || '';
-      if (msg.toLowerCase().includes('verif') || msg.toLowerCase().includes('email')) {
+      const rawMsg = (err?.response?.data?.message || err?.response?.data?.error || '').toLowerCase();
+      if (rawMsg.includes('verif') || rawMsg.includes('email')) {
         setError('E-mail ainda não confirmado. Verifique sua caixa de entrada e clique no link.');
       } else {
         setError(getApiError(err, 'Erro ao fazer login. Tente novamente.'));
