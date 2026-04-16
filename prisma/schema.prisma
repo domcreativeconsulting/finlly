@@ -268,6 +268,8 @@ model Assinante {
   usuario_id               String          @db.Uuid
   status                   StatusAssinante @default(trial)
   plano                    String          @default("free") @db.VarChar(50)
+  ciclo                    String?         @db.VarChar(50)    // ✅ NOVO: mensal | anual
+  forma_pagamento          String?         @db.VarChar(50)    // ✅ NOVO: PIX | CREDIT_CARD
   provider                 String?         @db.VarChar(50)
   provider_customer_id     String?         @db.VarChar(100)
   provider_subscription_id String?         @db.VarChar(100)
