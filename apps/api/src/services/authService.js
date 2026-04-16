@@ -54,7 +54,7 @@ function generateRefreshToken(usuarioId, sessionId) {
 }
 
 export function parseExpiresInSeconds(val) {
-  const digits = /^\d+([smhd]?)/;
+  const digits = /^(\d+)([smhd]?)$/;
   const match = String(val || '').match(digits);
   if (!match) return 30 * 24 * 60 * 60;
   const n = parseInt(match[1], 10);
