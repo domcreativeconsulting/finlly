@@ -26,7 +26,6 @@ function applyMaskExpiry(v) {
   return v.replace(/\D/g, '').slice(0, 4).replace(/(\d{2})(\d{1,2})/, '$1/$2');
 }
 
-// ✅ CORREÇÃO: valores atualizados para 39,90 mensal e 399,00 anual
 const PLANS = {
   mensal: { label: 'Mensal — R$ 39,90', price: 'R$ 39,90', value: '39,90', ciclo: 'mensal', full: 'MENSAL — R$ 39,90' },
   anual:  { label: 'Anual — R$ 399,00', price: 'R$ 399,00', value: '399,00', ciclo: 'anual', full: 'ANUAL — R$ 399,00' },
@@ -78,6 +77,9 @@ export default function CheckoutPage() {
   const { register: authRegister, login } = useAuth();
   const initialPlan    = PLANS[searchParams.get('plano')] ? searchParams.get('plano') : 'mensal';
 
+  // Fluxo: 1 = Dados, 2 = Pagamento, 3 = Confirmação
+  // Step 1.5 (verificação de e-mail antes do pagamento) foi REMOVIDO.
+  // O e-mail é verificado pelo usuário após a confirmação de pagamento (step 3).
   const [step, setStep]                   = useState(1);
   const [method, setMethod]               = useState('PIX');
   const [loading, setLoading]             = useState(false);
@@ -86,8 +88,6 @@ export default function CheckoutPage() {
   const [pixQrCode, setPixQrCode]         = useState(null);
   const [pixCopiaECola, setPixCopiaECola] = useState(null);
   const [isMobile, setIsMobile]           = useState(false);
-  const [resendLoading, setResendLoading] = useState(false);
-  const [resendCooldown, setResendCooldown] = useState(0);
 
   const [form, setForm] = useState({
     plano: initialPlan,
@@ -105,12 +105,6 @@ export default function CheckoutPage() {
     return () => { clearTimeout(timer); window.removeEventListener('resize', handleResize); };
   }, []);
 
-  useEffect(() => {
-    if (resendCooldown <= 0) return;
-    const t = setTimeout(() => setResendCooldown(c => c - 1), 1000);
-    return () => clearTimeout(t);
-  }, [resendCooldown]);
-
   const plan = PLANS[form.plano];
 
   function handleChange(e) {
@@ -119,6 +113,12 @@ export default function CheckoutPage() {
     setForm(p => ({ ...p, [name]: masks[name] ? masks[name](value) : value }));
   }
 
+  // ─── Step 1: valida, cria conta e faz login silencioso ──────
+  // Fluxo correto (doc técnico v1.0):
+  //   1. Criar conta (register)
+  //   2. Login silencioso para obter JWT (necessário para chamar billing/subscribe)
+  //   3. Avançar direto para o pagamento (step 2)
+  //   4. Verificação de e-mail é comunicada na tela de confirmação (step 3)
   async function handleNextStep(e) {
     e.preventDefault();
     setError('');
@@ -133,9 +133,12 @@ export default function CheckoutPage() {
 
     setLoading(true);
     try {
+      // 1. Criar conta
       await authRegister(form.nome.trim(), form.email.trim(), form.senha);
-      setStep(1.5);
-      setResendCooldown(60);
+      // 2. Login silencioso para obter JWT (sem exigir e-mail verificado ainda)
+      await login(form.email.trim(), form.senha);
+      // 3. Avança direto para pagamento
+      setStep(2);
     } catch (err) {
       const status = err?.response?.status;
       const msg = err?.response?.data?.message || err?.response?.data?.error || '';
@@ -149,39 +152,7 @@ export default function CheckoutPage() {
     }
   }
 
-  async function handleEmailConfirmed() {
-    setError('');
-    setLoading(true);
-    try {
-      await login(form.email.trim(), form.senha);
-      setStep(2);
-    } catch (err) {
-      const msg = err?.response?.data?.message || err?.response?.data?.error || '';
-      if (msg.toLowerCase().includes('verif') || msg.toLowerCase().includes('email')) {
-        setError('E-mail ainda não confirmado. Verifique sua caixa de entrada e clique no link.');
-      } else {
-        setError(msg || 'Erro ao fazer login. Tente novamente.');
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleResendEmail() {
-    if (resendCooldown > 0 || resendLoading) return;
-    setResendLoading(true);
-    try {
-      const { authService } = await import('../services/auth.service.js');
-      await authService.resendVerificationEmail(form.email.trim());
-      toast.success('E-mail reenviado! Verifique sua caixa de entrada.');
-      setResendCooldown(60);
-    } catch {
-      toast.error('Erro ao reenviar. Tente novamente.');
-    } finally {
-      setResendLoading(false);
-    }
-  }
-
+  // ─── Step 2: processa pagamento ─────────────────────────────
   async function handlePay(e) {
     e.preventDefault();
     setError('');
@@ -297,9 +268,21 @@ export default function CheckoutPage() {
               <img src={logoImg} alt="Finlly" style={{ height: '28px' }} />
               <span style={{ fontSize: '22px', fontWeight: '700', color: '#111827' }}>Assinatura</span>
             </div>
-            <span style={{ fontSize: '13px', color: '#9ca3af' }}>v5.2.2</span>
+            {/* Indicador de etapa */}
+            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+              {[1, 2, 3].map(s => (
+                <div key={s} style={{
+                  width: s === step ? '24px' : '8px',
+                  height: '8px',
+                  borderRadius: '4px',
+                  background: s === step ? '#1e3a5f' : s < step ? '#c4e91f' : '#e5e7eb',
+                  transition: 'all 0.3s',
+                }} />
+              ))}
+            </div>
           </div>
 
+          {/* Step 1 — Dados */}
           {step === 1 && (
             <StepDados
               form={form}
@@ -311,30 +294,19 @@ export default function CheckoutPage() {
             />
           )}
 
-          {step === 1.5 && (
-            <StepVerificacaoEmail
-              email={form.email}
-              onConfirmed={handleEmailConfirmed}
-              onResend={handleResendEmail}
-              onBack={() => { setStep(1); setError(''); }}
-              error={error}
-              loading={loading}
-              resendLoading={resendLoading}
-              resendCooldown={resendCooldown}
-            />
-          )}
-
+          {/* Step 2 — Pagamento */}
           {step === 2 && (
             <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: '20px', padding: '28px', boxShadow: '0 20px 48px rgba(4,10,24,0.55)' }}>
               <StepPagamento
                 form={form} method={method} setMethod={setMethod}
                 handlePay={handlePay} error={error} loading={loading}
-                plan={plan} onBack={() => { setStep(1.5); setError(''); }}
+                plan={plan} onBack={() => { setStep(1); setError(''); }}
                 handleChange={handleChange}
               />
             </div>
           )}
 
+          {/* Step 3 — Confirmação */}
           {step === 3 && (
             <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: '20px', padding: '28px', boxShadow: '0 20px 48px rgba(4,10,24,0.55)' }}>
               <StepConfirmacao
@@ -343,6 +315,7 @@ export default function CheckoutPage() {
                 pixCopiaECola={pixCopiaECola}
                 method={method}
                 plan={plan}
+                email={form.email}
                 navigate={navigate}
               />
             </div>
@@ -379,7 +352,6 @@ function StepDados({ form, handleChange, handleNext, error, plan, loading }) {
             onChange={handleChange}
             style={{ ...inputCss, appearance: 'none', paddingRight: '36px', cursor: 'pointer' }}
           >
-            {/* ✅ CORREÇÃO: valores atualizados */}
             <option value="mensal">Mensal — R$ 39,90</option>
             <option value="anual">Anual — R$ 399,00</option>
           </select>
@@ -432,7 +404,7 @@ function StepDados({ form, handleChange, handleNext, error, plan, loading }) {
           marginTop: '4px',
         }}
       >
-        {loading ? 'Criando conta...' : 'Assinar agora →'}
+        {loading ? 'Criando conta...' : 'Avançar para pagamento →'}
       </button>
 
       <button
@@ -449,110 +421,9 @@ function StepDados({ form, handleChange, handleNext, error, plan, loading }) {
       </button>
 
       <p style={{ fontSize: '12px', color: '#9ca3af', textAlign: 'center', margin: 0 }}>
-        Sem cupom, o acesso é liberado após confirmação do pagamento.
+        O acesso é liberado após confirmação do pagamento.
       </p>
     </form>
-  );
-}
-
-// ─── Step 1.5: Verificação de E-mail ────────────────────────
-function StepVerificacaoEmail({ email, onConfirmed, onResend, onBack, error, loading, resendLoading, resendCooldown }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px', textAlign: 'center' }}>
-      <div style={{
-        width: '72px', height: '72px', borderRadius: '50%',
-        background: '#eff6ff', border: '2px solid #bfdbfe',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: '32px',
-      }}>
-        ✉️
-      </div>
-
-      <div>
-        <h2 style={{ margin: '0 0 8px', fontSize: '22px', fontWeight: '700', color: '#111827' }}>
-          Confirme seu e-mail
-        </h2>
-        <p style={{ margin: 0, fontSize: '15px', color: '#6b7280', lineHeight: 1.6 }}>
-          Enviamos um link de confirmação para
-        </p>
-        <p style={{ margin: '4px 0 0', fontSize: '15px', fontWeight: '600', color: '#1e3a5f' }}>
-          {email}
-        </p>
-      </div>
-
-      <div style={{
-        width: '100%', padding: '16px', background: '#f0fdf4',
-        border: '1px solid #bbf7d0', borderRadius: '10px',
-        fontSize: '14px', color: '#166534', lineHeight: 1.6, textAlign: 'left',
-      }}>
-        <strong>Como prosseguir:</strong>
-        <ol style={{ margin: '8px 0 0', paddingLeft: '20px' }}>
-          <li>Abra seu e-mail em outra aba</li>
-          <li>Clique no link de confirmação</li>
-          <li>Volte aqui e clique em <strong>"Já confirmei"</strong></li>
-        </ol>
-      </div>
-
-      {error && (
-        <div style={{
-          width: '100%', padding: '12px 14px',
-          background: '#fef2f2', border: '1px solid #fecaca',
-          borderRadius: '8px', color: '#dc2626', fontSize: '14px', textAlign: 'left',
-        }}>
-          ⚠️ {error}
-        </div>
-      )}
-
-      <button
-        onClick={onConfirmed}
-        disabled={loading}
-        style={{
-          width: '100%', padding: '14px', fontSize: '16px', fontWeight: '600',
-          color: '#ffffff',
-          background: loading ? '#93aad4' : '#1e3a5f',
-          border: 'none', borderRadius: '6px',
-          cursor: loading ? 'not-allowed' : 'pointer',
-          fontFamily: 'inherit',
-        }}
-      >
-        {loading ? 'Verificando...' : '✅ Já confirmei meu e-mail'}
-      </button>
-
-      <button
-        onClick={onResend}
-        disabled={resendCooldown > 0 || resendLoading}
-        style={{
-          width: '100%', padding: '12px', fontSize: '14px', fontWeight: '500',
-          color: resendCooldown > 0 ? '#9ca3af' : '#1e3a5f',
-          background: '#ffffff',
-          border: `1.5px solid ${resendCooldown > 0 ? '#e5e7eb' : '#d1d5db'}`,
-          borderRadius: '6px',
-          cursor: resendCooldown > 0 ? 'not-allowed' : 'pointer',
-          fontFamily: 'inherit',
-        }}
-      >
-        {resendLoading
-          ? 'Reenviando...'
-          : resendCooldown > 0
-            ? `Reenviar e-mail (${resendCooldown}s)`
-            : '📧 Reenviar e-mail de confirmação'}
-      </button>
-
-      <button
-        onClick={onBack}
-        style={{
-          background: 'none', border: 'none',
-          color: '#9ca3af', cursor: 'pointer',
-          fontSize: '13px', fontFamily: 'inherit',
-        }}
-      >
-        ← Voltar e corrigir dados
-      </button>
-
-      <p style={{ fontSize: '12px', color: '#9ca3af', margin: 0 }}>
-        Não encontrou? Verifique a pasta de spam.
-      </p>
-    </div>
   );
 }
 
@@ -633,7 +504,10 @@ function StepPagamento({ form, method, setMethod, handlePay, error, loading, pla
 }
 
 // ─── Step 3: Confirmação ────────────────────────────────────
-function StepConfirmacao({ paymentLink, pixQrCode, pixCopiaECola, method, plan, navigate }) {
+// ALTERAÇÃO: recebe `email` para exibir o aviso de verificação de e-mail.
+// Botão principal agora redireciona para /login (não mais /dashboard),
+// pois o acesso só é liberado após PAYMENT_CONFIRMED via webhook.
+function StepConfirmacao({ paymentLink, pixQrCode, pixCopiaECola, method, plan, email, navigate }) {
   const [copied, setCopied] = useState(false);
 
   function handleCopy() {
@@ -706,9 +580,7 @@ function StepConfirmacao({ paymentLink, pixQrCode, pixCopiaECola, method, plan, 
                 style={{
                   width: '100%', padding: '13px 20px', borderRadius: '999px', border: 'none',
                   cursor: 'pointer',
-                  background: copied
-                    ? 'rgba(196,233,31,0.3)'
-                    : `linear-gradient(130deg, ${C.accent}, #d6f35d)`,
+                  background: copied ? 'rgba(196,233,31,0.3)' : `linear-gradient(130deg, ${C.accent}, #d6f35d)`,
                   color: '#12203f', fontWeight: '700', fontSize: '15px',
                   boxShadow: copied ? 'none' : '0 10px 24px rgba(196,233,31,0.28)',
                   fontFamily: 'inherit',
@@ -751,9 +623,44 @@ function StepConfirmacao({ paymentLink, pixQrCode, pixCopiaECola, method, plan, 
         </div>
       )}
 
-      <button onClick={() => navigate('/dashboard')} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: '12px', padding: '12px 24px', color: C.inkSoft, cursor: 'pointer', fontFamily: 'inherit', fontSize: '14px' }}>
-        Já paguei — Acessar minha conta
+      {/* ── Aviso de verificação de e-mail ── */}
+      <div style={{
+        width: '100%',
+        padding: '16px',
+        background: 'rgba(255,255,255,0.06)',
+        border: `1px solid rgba(171,192,231,0.25)`,
+        borderRadius: '14px',
+        textAlign: 'left',
+      }}>
+        <p style={{ margin: '0 0 6px', fontSize: '13px', fontWeight: '700', color: C.ink }}>
+          ✉️ Verifique seu e-mail para ativar sua conta
+        </p>
+        <p style={{ margin: 0, fontSize: '12px', color: C.inkSoft, lineHeight: 1.6 }}>
+          Enviamos um link de confirmação para <strong style={{ color: C.ink }}>{email}</strong>.
+          Clique no link antes de fazer login. Verifique também a pasta de spam.
+        </p>
+      </div>
+
+      {/* ── Botão principal: ir para login ── */}
+      {/* ALTERAÇÃO: redireciona para /login (não /dashboard).
+          O acesso ao sistema só é liberado após PAYMENT_CONFIRMED via webhook Asaas. */}
+      <button
+        onClick={() => navigate('/login')}
+        style={{
+          width: '100%', padding: '14px 20px', borderRadius: '999px', border: 'none',
+          cursor: 'pointer',
+          background: `linear-gradient(130deg, ${C.accent}, #d6f35d)`,
+          color: '#12203f', fontWeight: '700', fontSize: '15px',
+          boxShadow: '0 10px 24px rgba(196,233,31,0.28)',
+          fontFamily: 'inherit',
+        }}
+      >
+        Ir para Login →
       </button>
+
+      <p style={{ fontSize: '11px', color: C.inkSoft, margin: 0 }}>
+        O acesso ao sistema é liberado após confirmação do pagamento.
+      </p>
     </div>
   );
 }
