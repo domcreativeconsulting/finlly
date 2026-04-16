@@ -359,7 +359,7 @@ export default function BillingStatusPage() {
                     color: colors.neutral800,
                   }}
                 >
-                  Criar / renovar assinatura
+                  Renovar assinatura
                 </h2>
                 <p
                   style={{
@@ -368,7 +368,7 @@ export default function BillingStatusPage() {
                     color: colors.neutral500,
                   }}
                 >
-                  Acesse o checkout para criar uma nova assinatura ou renovar o seu plano atual.
+                  Acesse o checkout para renovar o seu plano atual.
                 </p>
                 <Button onClick={() => navigate('/checkout')}>
                   Ir para o checkout →
