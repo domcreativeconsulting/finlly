@@ -220,7 +220,7 @@ export default function CheckoutPage() {
       toast.success('Assinatura criada com sucesso!');
       setStep(3);
     } catch (err) {
-      const msg = err?.response?.data?.message || err?.response?.data?.error || 'Erro ao processar assinatura.';
+      const msg = err?.response?.data?.message || err?.response?.data?.error || 'Erro ao processar pagamento. Verifique os dados do cartão e tente novamente.';
       setError(msg);
       toast.error(msg);
     } finally {
@@ -622,7 +622,9 @@ function StepPagamento({ form, method, setMethod, handlePay, error, loading, pla
         boxShadow: loading ? 'none' : '0 10px 24px rgba(196,233,31,0.28)',
         fontFamily: 'inherit',
       }}>
-        {loading ? 'Gerando QR Code...' : method === 'PIX' ? `🔒 Gerar QR Code PIX — ${plan.price}` : `🔒 Pagar ${plan.price} com cartão`}
+        {loading
+          ? method === 'PIX' ? 'Gerando QR Code...' : 'Processando pagamento...'
+          : method === 'PIX' ? `🔒 Gerar QR Code PIX — ${plan.price}` : `🔒 Pagar ${plan.price} com cartão`}
       </button>
     </form>
   );
@@ -669,7 +671,6 @@ function StepConfirmacao({ paymentLink, pixQrCode, pixCopiaECola, method, plan, 
       {/* QR Code PIX */}
       {method === 'PIX' && pixQrCode && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', width: '100%' }}>
-          {/* Imagem QR Code */}
           <div style={{ background: '#ffffff', padding: '12px', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
             <img
               src={`data:image/png;base64,${pixQrCode}`}
@@ -678,7 +679,6 @@ function StepConfirmacao({ paymentLink, pixQrCode, pixCopiaECola, method, plan, 
             />
           </div>
 
-          {/* Copia e Cola */}
           {pixCopiaECola && (
             <div style={{ width: '100%' }}>
               <div style={{
@@ -716,7 +716,6 @@ function StepConfirmacao({ paymentLink, pixQrCode, pixCopiaECola, method, plan, 
             </div>
           )}
 
-          {/* Link alternativo */}
           {paymentLink && (
             <a
               href={paymentLink}
@@ -730,21 +729,18 @@ function StepConfirmacao({ paymentLink, pixQrCode, pixCopiaECola, method, plan, 
         </div>
       )}
 
-      {/* PIX sem QR Code (fallback) */}
       {method === 'PIX' && !pixQrCode && !pixCopiaECola && paymentLink && (
         <a href={paymentLink} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '14px 20px', borderRadius: '999px', background: `linear-gradient(130deg, ${C.accent}, #d6f35d)`, color: '#12203f', fontWeight: '700', fontSize: '15px', textDecoration: 'none', boxShadow: '0 10px 24px rgba(196,233,31,0.28)' }}>
           🔒 Abrir página de pagamento PIX
         </a>
       )}
 
-      {/* PIX sem nada (carregando) */}
       {method === 'PIX' && !pixQrCode && !pixCopiaECola && !paymentLink && (
         <div style={{ fontSize: '13px', color: C.inkSoft, padding: '12px', background: 'rgba(196,233,31,0.06)', borderRadius: '12px', border: `1px solid rgba(196,233,31,0.2)`, width: '100%' }}>
           ⏳ Aguardando geração do QR Code...
         </div>
       )}
 
-      {/* Cartão */}
       {method !== 'PIX' && (
         <div style={{ fontSize: '13px', color: C.inkSoft, padding: '12px', background: 'rgba(196,233,31,0.06)', borderRadius: '12px', border: `1px solid rgba(196,233,31,0.2)`, width: '100%' }}>
           ✅ Pagamento enviado para processamento. Você receberá um e-mail de confirmação.
