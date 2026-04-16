@@ -10,9 +10,10 @@ import { registrarEvento } from './auditoria.service.js';
 const BILLING_STATUS_CACHE_PREFIX = 'billing:status:';
 
 /** Base prices in BRL */
+// ✅ CORREÇÃO: preços atualizados para 39.90 mensal e 399.00 anual
 const PRECOS = {
-  mensal: 29.9,
-  anual: 287.9,
+  mensal: 39.9,
+  anual: 399.0,
 };
 
 /** Cycle mapping to Asaas values */
@@ -43,10 +44,23 @@ function apenasDigitos(value) {
 }
 
 /**
+ * ✅ CORREÇÃO: mapeia campos snake_case do banco para camelCase esperado pelo frontend
+ */
+function mapAssinante(assinante) {
+  if (!assinante) return null;
+  return {
+    ...assinante,
+    formaPagamento:        assinante.forma_pagamento         ?? null,
+    dataProximoVencimento: assinante.data_proximo_vencimento ?? null,
+    asaasStatus:           assinante.asaas_status            ?? null,
+  };
+}
+
+/**
  * Creates or updates a subscription for the given user.
  *
  * @param {string} usuarioId
- * @param {{ plano: string, ciclo: string, formaPagamento: 'PIX'|'CREDIT_CARD', cupomCodigo?: string, cpf?: string, telefone?: string, creditCard?: object, creditCardHolderInfo?: object, remoteIp?: string }} data
+ * @param {{ plano: string, ciclo: string, formaPagamento: 'PIX'|'CREDIT_CARD', cupomCodigo?: string, cpf?: string, telefone?: string, creditCard?: object, creditCardHolderInfo?: object, remoteIp?: string }}
  * @returns {Promise<{ assinante: object, paymentLink: string|null, pixQrCode: string|null, pixCopiaECola: string|null }>}
  */
 export async function criarAssinatura(usuarioId, { plano, ciclo, formaPagamento, cupomCodigo, cpf, telefone, creditCard, creditCardHolderInfo, remoteIp }) {
@@ -221,7 +235,7 @@ export async function criarAssinatura(usuarioId, { plano, ciclo, formaPagamento,
   }
 
   return {
-    assinante,
+    assinante: mapAssinante(assinante),
     paymentLink,
     pixQrCode,
     pixCopiaECola,
@@ -295,13 +309,16 @@ export async function getStatusAssinatura(usuarioId) {
     where: { usuario_id: usuarioId, deleted_at: null },
   });
 
+  // ✅ CORREÇÃO: mapear snake_case → camelCase antes de cachear e retornar
+  const mapped = mapAssinante(assinante);
+
   try {
     const redis = await getRedisClient();
     const ttl = config.BILLING_STATUS_CACHE_TTL;
-    await redis.set(cacheKey, JSON.stringify(assinante), { EX: ttl });
+    await redis.set(cacheKey, JSON.stringify(mapped), { EX: ttl });
   } catch {
     // Redis unavailable — ignore
   }
 
-  return assinante ?? null;
+  return mapped;
 }
