@@ -39,7 +39,12 @@ function sha256(value) {
 
 function generateAccessToken(usuario) {
   return jwt.sign(
-    { sub: usuario.id, email: usuario.email, role: usuario.role },
+    {
+      sub: usuario.id,
+      email: usuario.email,
+      role: usuario.role,
+      status: usuario.status ?? null, // inclui o status do usuário
+    },
     config.JWT_SECRET,
     { expiresIn: config.JWT_EXPIRES_IN },
   );
