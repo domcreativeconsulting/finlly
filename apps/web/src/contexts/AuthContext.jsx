@@ -22,10 +22,21 @@ export function AuthProvider({ children }) {
     usuarioRef.current = usuario;
   }, [usuario]);
 
-  const storeToken = useCallback((token) => {
-    setAccessToken(token);
-    setAccessTokenState(token);
-  }, []);
+const storeToken = useCallback((token) => {
+  setAccessToken(token);
+  setAccessTokenState(token);
+
+  try {
+    if (token) {
+      localStorage.setItem('accessToken', token);
+    } else {
+      localStorage.removeItem('accessToken');
+    }
+  } catch (err) {
+    // ignorar erros de storage (ex: modo private browsing)
+    // opcional: logger.warn('localStorage inacessível', err)
+  }
+}, []);
 
   const logout = useCallback(async () => {
     // Clear offline cache for the current user before logging out
