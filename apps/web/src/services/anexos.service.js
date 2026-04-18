@@ -1,14 +1,16 @@
 import api from './api.js';
 
 export const anexosService = {
-  async upload(file) {
-    const formData = new FormData();
-    formData.append('file', file);
-    const response = await api.post('/anexos', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-    return response.data;
-  },
+async upload(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  // NÃO setar 'Content-Type' explicitamente — deixar o browser/axios preencher o boundary.
+  // Se você passar um objeto no lugar de FormData, axios enviará application/json — evite isso.
+  const response = await api.post('/anexos', formData);
+
+  return response.data;
+}
 
   async listar(params = {}) {
     const response = await api.get('/anexos', { params });
