@@ -130,15 +130,35 @@ async function handleExport(req, res, next) {
     const mesRef = periodo.substring(0, 7);
 
     const headers = ['descricao', 'valor', 'vencimento', 'status', 'categoria', 'conta', 'observacoes'];
-    const rows = data.map((c) => [
-      c.descricao || '',
-      Number(c.valor).toFixed(2),
-      c.data_vencimento ? c.data_vencimento.substring(0, 10).split('-').reverse().join('/') : '',
-      c.status || '',
-      c.categoria?.nome || '',
-      c.conta?.nome || '',
-      c.observacoes || '',
-    ]);
+function formatVencimento(val) {
+  if (!val) return '';
+  if (typeof val === 'string') {
+    const s = val.substring(0, 10); // assume 'YYYY-MM-DD...' ou ISO
+    const parts = s.split('-');
+    if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    return s;
+  }
+  if (val instanceof Date) {
+    const s = val.toISOString().substring(0, 10);
+    const parts = s.split('-');
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+  // fallback: coerce para string e tentar extrair
+  const s = String(val).substring(0, 10);
+  const parts = s.split('-');
+  if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  return s;
+}
+
+const rows = data.map((c) => [
+  c.descricao || '',
+  Number(c.valor).toFixed(2),
+  formatVencimento(c.data_vencimento),
+  c.status || '',
+  c.categoria?.nome || '',
+  c.conta?.nome || '',
+  c.observacoes || '',
+]);
 
     if (format === 'pdf') {
       const totalGeral = data.reduce((acc, c) => acc + Number(c.valor), 0);
