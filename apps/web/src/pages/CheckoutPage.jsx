@@ -604,7 +604,7 @@ function StepPagamento({ form, method, setMethod, handlePay, error, loading, pla
           <span>O QR Code PIX será gerado na próxima tela para você escanear ou copiar o código.</span>
         </div>
       )}
-      <button type="submit" disabled={loading || waitingPayment} style={{
+      <button type="submit" disabled={loading || (typeof waitingPayment !== 'undefined' && waitingPayment)} style={{
         width: '100%', padding: '14px 20px', borderRadius: '999px', border: 'none',
         cursor: loading ? 'not-allowed' : 'pointer',
         background: loading ? 'rgba(196,233,31,0.4)' : `linear-gradient(130deg, ${C.accent}, #d6f35d)`,
@@ -653,14 +653,14 @@ function StepConfirmacao({ paymentLink, pixQrCode, pixCopiaECola, method, plan, 
       </div>
 
       {/* Aguardando pagamento */}
-{waitingPayment && (
+{(typeof waitingPayment !== 'undefined' && waitingPayment) && (
   <div style={{ width: '100%', marginTop: 12, padding: '12px', background: 'rgba(255,245,235,0.9)', borderRadius: 12, border: '1px solid #f5c6a5', color: '#7a3b00', textAlign: 'center' }}>
     <strong>Aguardando pagamento...</strong>
     <div style={{ fontSize: 13, marginTop: 6 }}>Assim que o pagamento for confirmado, atualizaremos seu acesso automaticamente.</div>
   </div>
 )}
 
-{paymentPollingError && (
+{(typeof paymentPollingError !== 'undefined' && paymentPollingError) && (
   <div style={{ width: '100%', marginTop: 12, padding: '12px', background: 'rgba(254,226,226,0.9)', borderRadius: 12, border: '1px solid #fca5a5', color: '#991b1b', textAlign: 'center' }}>
     {paymentPollingError}
   </div>
