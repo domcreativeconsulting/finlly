@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -88,6 +88,14 @@ const [step, setStep] = useState(initialStep);
   const [pixQrCode, setPixQrCode]         = useState(null);
   const [pixCopiaECola, setPixCopiaECola] = useState(null);
   const [isMobile, setIsMobile]           = useState(false);
+  // Polling / waiting payment state
+const [waitingPayment, setWaitingPayment] = useState(false);
+const [paymentPollingError, setPaymentPollingError] = useState(null);
+const paymentPollRef = useRef(null);
+
+// polling constants (ajuste se quiser)
+const POLL_INTERVAL = 5000; // 5s
+const PAYMENT_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutos
 
   const [form, setForm] = useState({
     plano: initialPlan,
@@ -129,6 +137,15 @@ useEffect(() => {
     telefone: usuario.telefone ?? prev.telefone ?? '',
   }));
 }, [usuario]);
+
+  useEffect(() => {
+  return () => {
+    if (paymentPollRef.current) {
+      clearInterval(paymentPollRef.current);
+      paymentPollRef.current = null;
+    }
+  };
+}, []);
 
   const plan = PLANS[form.plano];
 
@@ -229,11 +246,66 @@ if (!payloadBase.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payloadBase.email))
 
     const res = await billingService.subscribe(payload);
 
-    setPaymentLink(res.paymentLink ?? null);
-    setPixQrCode(res.pixQrCode ?? null);
-    setPixCopiaECola(res.pixCopiaECola ?? null);
-    toast.success('Assinatura criada com sucesso!');
-    setStep(3);
+// salva links/QR na UI
+setPaymentLink(res.paymentLink ?? null);
+setPixQrCode(res.pixQrCode ?? null);
+setPixCopiaECola(res.pixCopiaECola ?? null);
+toast.success('Assinatura criada com sucesso!');
+
+// Ir para a tela de confirmação/QR
+setStep(3);
+
+// iniciar polling para aguardar confirmação do pagamento
+setWaitingPayment(true);
+setPaymentPollingError(null);
+
+// limpa qualquer polling anterior
+if (paymentPollRef.current) {
+  clearInterval(paymentPollRef.current);
+  paymentPollRef.current = null;
+}
+
+let elapsed = 0;
+paymentPollRef.current = setInterval(async () => {
+  try {
+    // Chame o endpoint de status da sua API. Aqui uso billingService.getStatus()
+    // Ajuste se sua API precisar de subscriptionId/paymentId (ex.: billingService.getStatus(res.id))
+    const statusRes = await billingService.getStatus();
+    const assinanteAtual = statusRes.assinante ?? null;
+
+    // ajuste condição conforme o formato real do backend
+    const isPaid = Boolean(
+      assinanteAtual &&
+      (
+        assinanteAtual.status === 'ativo' ||
+        String(assinanteAtual.asaasStatus || '').toLowerCase().includes('pago') ||
+        String(assinanteAtual.status || '').toLowerCase().includes('pago')
+      )
+    );
+
+    if (isPaid) {
+      clearInterval(paymentPollRef.current);
+      paymentPollRef.current = null;
+      setWaitingPayment(false);
+      toast.success('Pagamento confirmado — entrando no sistema...');
+      // redireciona para login (ou para a rota que preferir)
+      navigate('/login');
+      return;
+    }
+
+    elapsed += POLL_INTERVAL;
+    if (elapsed >= PAYMENT_TIMEOUT_MS) {
+      clearInterval(paymentPollRef.current);
+      paymentPollRef.current = null;
+      setWaitingPayment(false);
+      setPaymentPollingError('Não foi possível confirmar o pagamento automaticamente. Verifique após alguns minutos ou entre em contato com o suporte.');
+      toast.warn('Ainda sem confirmação de pagamento. Verifique seu e-mail ou tente novamente.');
+    }
+  } catch (err) {
+    console.error('Erro no polling de pagamento:', err);
+    // não cancela o polling em erros transitórios; opcionalmente marque paymentPollingError
+  }
+}, POLL_INTERVAL);
   } catch (err) {
     const msg = err?.response?.data?.message || err?.message || 'Erro ao processar. Verifique os dados e tente novamente.';
     setError(msg);
@@ -351,15 +423,17 @@ if (!payloadBase.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payloadBase.email))
           {/* Step 3 — Confirmação */}
           {step === 3 && (
             <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: '20px', padding: '28px', boxShadow: '0 20px 48px rgba(4,10,24,0.55)' }}>
-              <StepConfirmacao
-                paymentLink={paymentLink}
-                pixQrCode={pixQrCode}
-                pixCopiaECola={pixCopiaECola}
-                method={method}
-                plan={plan}
-                email={form.email}
-                navigate={navigate}
-              />
+<StepConfirmacao
+  paymentLink={paymentLink}
+  pixQrCode={pixQrCode}
+  pixCopiaECola={pixCopiaECola}
+  method={method}
+  plan={plan}
+  email={form.email}
+  navigate={navigate}
+  waitingPayment={waitingPayment}
+  paymentPollingError={paymentPollingError}
+/>
             </div>
           )}
 
@@ -530,7 +604,7 @@ function StepPagamento({ form, method, setMethod, handlePay, error, loading, pla
           <span>O QR Code PIX será gerado na próxima tela para você escanear ou copiar o código.</span>
         </div>
       )}
-      <button type="submit" disabled={loading} style={{
+      <button type="submit" disabled={loading || waitingPayment} style={{
         width: '100%', padding: '14px 20px', borderRadius: '999px', border: 'none',
         cursor: loading ? 'not-allowed' : 'pointer',
         background: loading ? 'rgba(196,233,31,0.4)' : `linear-gradient(130deg, ${C.accent}, #d6f35d)`,
@@ -550,7 +624,7 @@ function StepPagamento({ form, method, setMethod, handlePay, error, loading, pla
 // ALTERAÇÃO: recebe `email` para exibir o aviso de verificação de e-mail.
 // Botão principal agora redireciona para /login (não mais /dashboard),
 // pois o acesso só é liberado após PAYMENT_CONFIRMED via webhook.
-function StepConfirmacao({ paymentLink, pixQrCode, pixCopiaECola, method, plan, email, navigate }) {
+function StepConfirmacao({ paymentLink, pixQrCode, pixCopiaECola, method, plan, email, navigate, waitingPayment, paymentPollingError }) {
   const [copied, setCopied] = useState(false);
 
   function handleCopy() {
@@ -577,6 +651,20 @@ function StepConfirmacao({ paymentLink, pixQrCode, pixCopiaECola, method, plan, 
             : 'Seu pagamento foi enviado para processamento.'}
         </p>
       </div>
+
+      {/* Aguardando pagamento */}
+{waitingPayment && (
+  <div style={{ width: '100%', marginTop: 12, padding: '12px', background: 'rgba(255,245,235,0.9)', borderRadius: 12, border: '1px solid #f5c6a5', color: '#7a3b00', textAlign: 'center' }}>
+    <strong>Aguardando pagamento...</strong>
+    <div style={{ fontSize: 13, marginTop: 6 }}>Assim que o pagamento for confirmado, atualizaremos seu acesso automaticamente.</div>
+  </div>
+)}
+
+{paymentPollingError && (
+  <div style={{ width: '100%', marginTop: 12, padding: '12px', background: 'rgba(254,226,226,0.9)', borderRadius: 12, border: '1px solid #fca5a5', color: '#991b1b', textAlign: 'center' }}>
+    {paymentPollingError}
+  </div>
+)}
 
       {/* Resumo */}
       <div style={{ width: '100%', background: 'rgba(13,23,51,0.6)', border: `1px solid ${C.border}`, borderRadius: '14px', padding: '16px' }}>
