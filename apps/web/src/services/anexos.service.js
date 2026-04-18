@@ -10,7 +10,7 @@ async upload(file) {
   const response = await api.post('/anexos', formData);
 
   return response.data;
-}
+},
 
   async listar(params = {}) {
     const response = await api.get('/anexos', { params });
