@@ -119,6 +119,17 @@ useEffect(() => {
   }
 }, [searchParams, isAuthenticated, isLoading, navigate]);
 
+  useEffect(() => {
+  if (!usuario) return;
+  setForm(prev => ({
+    ...prev,
+    nome: usuario.nome ?? prev.nome,
+    email: usuario.email ?? prev.email,
+    cpf: usuario.cpf ?? prev.cpf ?? '',
+    telefone: usuario.telefone ?? prev.telefone ?? '',
+  }));
+}, [usuario]);
+
   const plan = PLANS[form.plano];
 
   function handleChange(e) {
@@ -179,16 +190,23 @@ try {
 
     // --- Processar pagamento (igual ao que você já tinha) ---
     const expiryDigits = (form.cardExpiry || '').replace(/\D/g, '');
-    const payloadBase = {
-      plano: form.plano,
-      ciclo: plan.ciclo,
-      formaPagamento: method === 'PIX' ? 'PIX' : 'CREDIT_CARD',
-      nome: form.nome.trim(),
-      email: form.email.trim(),
-      cpf: form.cpf.replace(/\D/g, ''),
-      telefone: form.telefone.replace(/\D/g, ''),
-      ...(form.cupomCodigo?.trim() ? { cupomCodigo: form.cupomCodigo.trim() } : {}),
-    };
+const payloadBase = {
+  plano: form.plano,
+  ciclo: plan.ciclo,
+  formaPagamento: method === 'PIX' ? 'PIX' : 'CREDIT_CARD',
+  nome: (form.nome || '').trim() || usuario?.nome || '',
+  email: (form.email || '').trim() || usuario?.email || '',
+  cpf: (form.cpf || '').replace(/\D/g, '') || usuario?.cpf || '',
+  telefone: (form.telefone || '').replace(/\D/g, '') || usuario?.telefone || '',
+  ...(form.cupomCodigo?.trim() ? { cupomCodigo: form.cupomCodigo.trim() } : {}),
+};
+
+  if (!payloadBase.nome || payloadBase.nome.length < 3) {
+  throw new Error('Nome inválido. Por favor complete seu nome no formulário.');
+}
+if (!payloadBase.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payloadBase.email)) {
+  throw new Error('E-mail inválido. Por favor verifique seu e-mail no formulário.');
+}
 
     let payload = { ...payloadBase };
 
