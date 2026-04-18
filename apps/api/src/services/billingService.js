@@ -12,7 +12,7 @@ const BILLING_STATUS_CACHE_PREFIX = 'billing:status:';
 /** Base prices in BRL */
 // ✅ CORREÇÃO: preços atualizados para 39.90 mensal e 399.00 anual
 const PRECOS = {
-  mensal: 39.9,
+  mensal: 5,00,
   anual: 399.0,
 };
 
