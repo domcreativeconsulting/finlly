@@ -147,7 +147,7 @@ useEffect(() => {
   };
 }, []);
 
-  const plan = PLANS[form.plano];
+  const plan = PLANS[form.plano] ?? PLANS.mensal;
 
   function handleChange(e) {
     const { name, value } = e.target;
