@@ -370,9 +370,9 @@ export default function DashboardPage() {
       const todayStr = getTodayStr();
       const yesterdayStr = getYesterdayStr();
       const [pagarHojeRes, receberHojeRes, atrasadasRes, contasRes] = await Promise.all([
-        contasPagarService.listar({ status: 'pendente', data_vencimento_de: todayStr, data_vencimento_ate: todayStr, limit: 200 }).catch((err) => { if (!isSemAssinatura(err)) toast.error('Erro ao carregar contas a pagar de hoje.'); return { data: [] }; }),
-        contasReceberService.listar({ status: 'pendente', data_vencimento_de: todayStr, data_vencimento_ate: todayStr, limit: 200 }).catch((err) => { if (!isSemAssinatura(err)) toast.error('Erro ao carregar contas a receber de hoje.'); return { data: [] }; }),
-        contasPagarService.listar({ status: 'pendente', data_vencimento_ate: yesterdayStr, limit: 200 }).catch((err) => { if (!isSemAssinatura(err)) toast.error('Erro ao carregar contas atrasadas.'); return { data: [] }; }),
+        contasPagarService.listar({ status: 'pendente', data_vencimento_de: todayStr, data_vencimento_ate: todayStr, limit: 100 }).catch((err) => { if (!isSemAssinatura(err)) toast.error('Erro ao carregar contas a pagar de hoje.'); return { data: [] }; }),
+        contasReceberService.listar({ status: 'pendente', data_vencimento_de: todayStr, data_vencimento_ate: todayStr, limit: 100 }).catch((err) => { if (!isSemAssinatura(err)) toast.error('Erro ao carregar contas a receber de hoje.'); return { data: [] }; }),
+        contasPagarService.listar({ status: 'pendente', data_vencimento_ate: yesterdayStr, limit: 100 }).catch((err) => { if (!isSemAssinatura(err)) toast.error('Erro ao carregar contas atrasadas.'); return { data: [] }; }),
         dashboardService.getSaldoPorConta().catch((err) => { if (!isSemAssinatura(err)) toast.error('Erro ao carregar saldo das contas.'); return []; }),
       ]);
       const pagarHojeData = pagarHojeRes?.data ?? [];
@@ -393,8 +393,10 @@ export default function DashboardPage() {
   const loadInvestimentos = useCallback(async () => {
     setLoadingInvestimentos(true);
     try {
-      const res = await investimentosService.listar({ limit: 200 });
-      setInvestimentos(Array.isArray(res) ? res : (res?.data ?? []));
+// pedir 100 itens (perPage) — limite do servidor é 100
+const res = await investimentosService.listar({ perPage: 100 });
+// response shape: { items, total, page, totalPages }
+setInvestimentos(Array.isArray(res) ? res : (res?.items ?? []));
     } catch (err) {
       if (!isSemAssinatura(err)) toast.error('Erro ao carregar investimentos.');
     } finally {
@@ -420,8 +422,8 @@ export default function DashboardPage() {
       const todayStr = getTodayStr();
       const endStr = getDaysAheadStr(6);
       const [pagarRes, receberRes] = await Promise.all([
-        contasPagarService.listar({ status: 'pendente', data_vencimento_de: todayStr, data_vencimento_ate: endStr, limit: 200 }).catch((err) => { if (!isSemAssinatura(err)) toast.error('Erro ao carregar fluxo de caixa.'); return { data: [] }; }),
-        contasReceberService.listar({ status: 'pendente', data_vencimento_de: todayStr, data_vencimento_ate: endStr, limit: 200 }).catch((err) => { if (!isSemAssinatura(err)) toast.error('Erro ao carregar fluxo de caixa.'); return { data: [] }; }),
+        contasPagarService.listar({ status: 'pendente', data_vencimento_de: todayStr, data_vencimento_ate: endStr, limit: 100 }).catch((err) => { if (!isSemAssinatura(err)) toast.error('Erro ao carregar fluxo de caixa.'); return { data: [] }; }),
+        contasReceberService.listar({ status: 'pendente', data_vencimento_de: todayStr, data_vencimento_ate: endStr, limit: 100 }).catch((err) => { if (!isSemAssinatura(err)) toast.error('Erro ao carregar fluxo de caixa.'); return { data: [] }; }),
       ]);
       const today = new Date();
       const days = Array.from({ length: 7 }, (_, i) => { const d = new Date(today); d.setDate(today.getDate() + i); return toISODate(d); });
