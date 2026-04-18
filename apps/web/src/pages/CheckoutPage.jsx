@@ -74,7 +74,7 @@ const SENHA_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/;
 export default function CheckoutPage() {
   const [searchParams] = useSearchParams();
   const navigate       = useNavigate();
-  const { register: authRegister, login, usuario } = useAuth();
+  const { register: authRegister, login, usuario, isAuthenticated, isLoading } = useAuth();
   const initialPlan    = PLANS[searchParams.get('plano')] ? searchParams.get('plano') : 'mensal';
 
   // Fluxo: 1 = Dados (só validação), 2 = Pagamento (cria conta + paga), 3 = Confirmação + verificação de e-mail
@@ -105,14 +105,19 @@ const [step, setStep] = useState(initialStep);
     return () => { clearTimeout(timer); window.removeEventListener('resize', handleResize); };
   }, []);
 
-  useEffect(() => {
+useEffect(() => {
   const stepParam = parseInt(searchParams.get('step') ?? '', 10);
   const wantsStep2 = Number.isInteger(stepParam) && stepParam === 2;
-  if (wantsStep2 && !usuario) {
+
+  // Se ainda estamos carregando info do auth, espere
+  if (wantsStep2 && isLoading) return;
+
+  // Se quer abrir o passo 2 e NÃO está autenticado -> manda pra login
+  if (wantsStep2 && !isAuthenticated) {
     const next = `/checkout${window.location.search || ''}`;
     navigate(`/login?next=${encodeURIComponent(next)}`, { replace: true });
   }
-}, [searchParams, usuario, navigate]);
+}, [searchParams, isAuthenticated, isLoading, navigate]);
 
   const plan = PLANS[form.plano];
 
@@ -138,63 +143,80 @@ const [step, setStep] = useState(initialStep);
   }
 
   // ─── Step 2: cria conta, faz login silencioso e processa pagamento ─
-  async function handlePay(e) {
-    e.preventDefault();
-    setError('');
-    if (method === 'CARTAO') {
-      if (!form.cardName.trim())                           return setError('Nome no cartão obrigatório.');
-      if (form.cardNumber.replace(/\D/g, '').length < 16) return setError('Número do cartão inválido.');
-      if (form.cardExpiry.replace(/\D/g, '').length < 4)  return setError('Validade inválida.');
-      if (form.cardCvv.replace(/\D/g, '').length < 3)     return setError('CVV inválido.');
-    }
-    setLoading(true);
-    try {
-      // 1. Criar conta
-      await authRegister(form.nome.trim(), form.email.trim(), form.senha);
-      // 2. Login silencioso para obter JWT
-      await login(form.email.trim(), form.senha);
-      // 3. Processar pagamento
-      const expiryDigits = form.cardExpiry.replace(/\D/g, '');
-      const payload = {
-        plano: form.plano, ciclo: plan.ciclo,
-        formaPagamento: method === 'PIX' ? 'PIX' : 'CREDIT_CARD',
-        nome: form.nome.trim(), email: form.email.trim(),
-        cpf: form.cpf.replace(/\D/g, ''), telefone: form.telefone.replace(/\D/g, ''),
-        ...(form.cupomCodigo.trim() ? { cupomCodigo: form.cupomCodigo.trim() } : {}),
-        ...(method === 'CARTAO' ? {
-          creditCard: {
-            holderName: form.cardName.trim(),
-            number: form.cardNumber.replace(/\D/g, ''),
-            expiryMonth: expiryDigits.slice(0, 2),
-            expiryYear: `20${expiryDigits.slice(2, 4)}`,
-            ccv: form.cardCvv.trim(),
-          },
-          creditCardHolderInfo: {
-            name: form.nome.trim(), email: form.email.trim(),
-            cpfCnpj: form.cpf.replace(/\D/g, ''), phone: form.telefone.replace(/\D/g, ''),
-          },
-        } : {}),
-      };
-      const res = await billingService.subscribe(payload);
-      setPaymentLink(res.paymentLink ?? null);
-      setPixQrCode(res.pixQrCode ?? null);
-      setPixCopiaECola(res.pixCopiaECola ?? null);
-      toast.success('Assinatura criada com sucesso!');
-      setStep(3);
-    } catch (err) {
-      const status = err?.response?.status;
-      const msg = err?.response?.data?.message || err?.response?.data?.error || '';
-      if (status === 409 || msg.toLowerCase().includes('já cadastrado') || msg.toLowerCase().includes('já existe')) {
-        setError(EMAIL_DUPLICADO);
-      } else {
-        const fallback = 'Erro ao processar. Verifique os dados e tente novamente.';
-        setError(msg || fallback);
-        toast.error(msg || fallback);
-      }
-    } finally {
-      setLoading(false);
-    }
+async function handlePay(e) {
+  e.preventDefault();
+  setError('');
+
+  // validações do formulário (ex.: cartão)
+  if (method === 'CARTAO') {
+    if (!form.cardName.trim()) return setError('Nome no cartão obrigatório.');
+    if (form.cardNumber.replace(/\D/g, '').length < 16) return setError('Número do cartão inválido.');
+    if (form.cardExpiry.replace(/\D/g, '').length < 4) return setError('Validade inválida.');
+    if (form.cardCvv.replace(/\D/g, '').length < 3) return setError('CVV inválido.');
   }
+
+  // evita submissão enquanto o AuthProvider ainda está resolvendo a sessão
+  if (isLoading) {
+    setError('Aguarde um momento enquanto verificamos sua sessão. Tente novamente em alguns segundos.');
+    return;
+  }
+
+  setLoading(true);
+  try {
+    // Se não está autenticado, cria conta e faz login (comportamento antigo)
+    // Se já estiver autenticado, pula essa etapa
+    if (!isAuthenticated) {
+      await authRegister(form.nome.trim(), form.email.trim(), form.senha);
+      await login(form.email.trim(), form.senha);
+    }
+
+    // --- Processar pagamento (igual ao que você já tinha) ---
+    const expiryDigits = (form.cardExpiry || '').replace(/\D/g, '');
+    const payloadBase = {
+      plano: form.plano,
+      ciclo: plan.ciclo,
+      formaPagamento: method === 'PIX' ? 'PIX' : 'CREDIT_CARD',
+      nome: form.nome.trim(),
+      email: form.email.trim(),
+      cpf: form.cpf.replace(/\D/g, ''),
+      telefone: form.telefone.replace(/\D/g, ''),
+      ...(form.cupomCodigo?.trim() ? { cupomCodigo: form.cupomCodigo.trim() } : {}),
+    };
+
+    let payload = { ...payloadBase };
+
+    if (method === 'CARTAO') {
+      const creditCard = {
+        holderName: form.cardName.trim(),
+        number: form.cardNumber.replace(/\D/g, ''),
+        expiryMonth: expiryDigits.slice(0, 2),
+        expiryYear: `20${expiryDigits.slice(2, 4)}`,
+        ccv: form.cardCvv.trim(),
+      };
+      const creditCardHolderInfo = {
+        name: form.nome.trim() || usuario?.nome || '',
+        email: form.email.trim() || usuario?.email || '',
+        cpfCnpj: form.cpf.replace(/\D/g, '') || usuario?.cpf || '',
+        phone: form.telefone.replace(/\D/g, '') || usuario?.telefone || '',
+      };
+      payload = { ...payload, creditCard, creditCardHolderInfo };
+    }
+
+    const res = await billingService.subscribe(payload);
+
+    setPaymentLink(res.paymentLink ?? null);
+    setPixQrCode(res.pixQrCode ?? null);
+    setPixCopiaECola(res.pixCopiaECola ?? null);
+    toast.success('Assinatura criada com sucesso!');
+    setStep(3);
+  } catch (err) {
+    const msg = err?.response?.data?.message || err?.message || 'Erro ao processar. Verifique os dados e tente novamente.';
+    setError(msg);
+    toast.error(msg);
+  } finally {
+    setLoading(false);
+  }
+}
 
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', fontFamily: '"Inter", "Helvetica Neue", sans-serif' }}>
