@@ -404,17 +404,18 @@ setInvestimentos(Array.isArray(res) ? res : (res?.items ?? []));
     }
   }, []);
 
-  const loadMetas = useCallback(async () => {
-    setLoadingMetas(true);
-    try {
-      const res = await metasService.listar({ status: 'ativa', limit: 3 });
-      setMetas(Array.isArray(res) ? res : (res?.data ?? []));
-    } catch (err) {
-      if (!isSemAssinatura(err)) toast.error('Erro ao carregar metas.');
-    } finally {
-      setLoadingMetas(false);
-    }
-  }, []);
+const loadMetas = useCallback(async () => {
+  setLoadingMetas(true);
+  try {
+    const res = await metasService.listar({ status: 'ativa', limit: 3 });
+    // endpoint retorna { items, page, total, ... }
+    setMetas(Array.isArray(res) ? res : (res?.items ?? res?.data ?? []));
+  } catch (err) {
+    if (!isSemAssinatura(err)) toast.error('Erro ao carregar metas.');
+  } finally {
+    setLoadingMetas(false);
+  }
+}, []);
 
   const loadFluxo = useCallback(async () => {
     setLoadingFluxo(true);
