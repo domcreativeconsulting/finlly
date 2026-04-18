@@ -104,6 +104,9 @@ export async function uploadAnexo({ usuarioId, file, requestId }) {
       sucesso: true,
     });
 
+    // Normaliza BigInt para Number antes do retorno (evita erro ao serializar JSON)
+    return { ...anexo, tamanho_bytes: Number(anexo.tamanho_bytes) };
+
     return anexo;
   } catch (err) {
     await storageProvider.delete({ storagePath }).catch((delErr) =>
@@ -154,6 +157,10 @@ export async function listarAnexos({ usuarioId, entidadeTipo, entidadeId, page =
     prisma.anexo.count({ where }),
   ]);
 
+  // Normaliza BigInt para Number para evitar erro ao serializar JSON
+  const dataNormalized = data.map((a) => ({ ...a, tamanho_bytes: Number(a.tamanho_bytes) }));
+  return { data: dataNormalized, total, page, limit };
+
   return { data, total, page, limit };
 }
 
@@ -172,11 +179,12 @@ export async function buscarAnexoPorId({ usuarioId, anexoId }) {
     },
   });
 
-  if (!anexo) {
+    if (!anexo) {
     throw AppError.notFound('Anexo não encontrado.');
   }
 
-  return anexo;
+  // Normaliza BigInt para Number antes de retornar
+  return { ...anexo, tamanho_bytes: Number(anexo.tamanho_bytes) };
 }
 
 /**
