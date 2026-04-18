@@ -1487,8 +1487,7 @@ const payload = {
 
           {/* Linha 5: Observações */}
           <div>
-            <label style={labelStyle}>Observações <span style={{ color: '#ef4444' }}>*</span>
-            </label>
+            <label style={labelStyle}>Observações </label>
             <textarea
               style={{ ...inputStyle, resize: 'vertical', minHeight: 72 }}
               maxLength={1000}
