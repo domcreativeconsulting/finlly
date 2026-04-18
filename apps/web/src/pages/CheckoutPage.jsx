@@ -147,6 +147,10 @@ async function handlePay(e) {
   e.preventDefault();
   setError('');
 
+  // DEBUG temporário (remova depois)
+  console.log('AUTH DEBUG before handlePay', { isLoading, isAuthenticated, usuario, form });
+
+
   // validações do formulário (ex.: cartão)
   if (method === 'CARTAO') {
     if (!form.cardName.trim()) return setError('Nome no cartão obrigatório.');
@@ -162,10 +166,13 @@ async function handlePay(e) {
   }
 
   setLoading(true);
-  try {
-    // Se não está autenticado, cria conta e faz login (comportamento antigo)
-    // Se já estiver autenticado, pula essa etapa
+try {
+    // Se não autenticado, criar conta e logar; caso contrário pular
     if (!isAuthenticated) {
+      // validação extra para evitar enviar campos vazios ao /auth/register
+      if (!form.nome.trim() || !form.email.trim() || !form.senha) {
+        throw new Error('Dados de cadastro incompletos. Preencha nome, e-mail e senha.');
+      }
       await authRegister(form.nome.trim(), form.email.trim(), form.senha);
       await login(form.email.trim(), form.senha);
     }
