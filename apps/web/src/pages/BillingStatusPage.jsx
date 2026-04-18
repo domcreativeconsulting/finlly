@@ -370,15 +370,9 @@ export default function BillingStatusPage() {
                 >
                   Sua gestão não pode parar. Clique abaixo para confirmar seu próximo ciclo.
                 </p>
-<Button
-  onClick={() =>
-    navigate(
-      `/checkout?renew=1&plano=${encodeURIComponent(assinante.plano ?? 'mensal')}&ciclo=${encodeURIComponent(assinante.ciclo ?? 'mensal')}`
-    )
-  }
->
-  Renovar assinatura →
-</Button>
+<Button onClick={() => navigate( /checkout?plano=${encodeURIComponent(assinante.plano ?? 'mensal')}&ciclo=${encodeURIComponent(         assinante.ciclo ?? 'mensal',       )}&step=2, ) }
+
+Renovar assinatura → </Button>
               </div>
             </div>
           )}
