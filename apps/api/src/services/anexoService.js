@@ -79,6 +79,8 @@ export async function uploadAnexo({ usuarioId, file, requestId }) {
       data: {
         anexo_id: uuid,
         status: 'UPLOADED',
+        // registra timestamp do upload como processed_at para satisfazer o schema
+        processed_at: new Date(),
       },
     });
 
