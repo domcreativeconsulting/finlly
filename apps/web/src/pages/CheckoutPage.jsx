@@ -105,6 +105,15 @@ const [step, setStep] = useState(initialStep);
     return () => { clearTimeout(timer); window.removeEventListener('resize', handleResize); };
   }, []);
 
+  useEffect(() => {
+  const stepParam = parseInt(searchParams.get('step') ?? '', 10);
+  const wantsStep2 = Number.isInteger(stepParam) && stepParam === 2;
+  if (wantsStep2 && !usuario) {
+    const next = `/checkout${window.location.search || ''}`;
+    navigate(`/login?next=${encodeURIComponent(next)}`, { replace: true });
+  }
+}, [searchParams, usuario, navigate]);
+
   const plan = PLANS[form.plano];
 
   function handleChange(e) {
