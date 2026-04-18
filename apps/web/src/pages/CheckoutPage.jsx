@@ -74,11 +74,13 @@ const SENHA_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/;
 export default function CheckoutPage() {
   const [searchParams] = useSearchParams();
   const navigate       = useNavigate();
-  const { register: authRegister, login } = useAuth();
+  const { register: authRegister, login, usuario } = useAuth();
   const initialPlan    = PLANS[searchParams.get('plano')] ? searchParams.get('plano') : 'mensal';
 
   // Fluxo: 1 = Dados (só validação), 2 = Pagamento (cria conta + paga), 3 = Confirmação + verificação de e-mail
-  const [step, setStep]                   = useState(1);
+  const stepParam = parseInt(searchParams.get('step') ?? '', 10);
+const initialStep = Number.isInteger(stepParam) && stepParam >= 1 ? stepParam : 1;
+const [step, setStep] = useState(initialStep);
   const [method, setMethod]               = useState('PIX');
   const [loading, setLoading]             = useState(false);
   const [error, setError]                 = useState('');
