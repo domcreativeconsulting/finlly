@@ -1358,7 +1358,7 @@ const payload = {
             style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}
           >
             <div>
-              <label style={labelStyle}>Produto / Descrição</label>
+              <label style={labelStyle}>Produto / Descrição <span style={{ color: '#ef4444' }}>*</span></label>
               <input
                 style={inputStyle}
                 type="text"
@@ -1399,7 +1399,8 @@ const payload = {
             }}
           >
             <div>
-              <label style={labelStyle}>Data de vencimento</label>
+              <label style={labelStyle}>Data de vencimento  <span style={{ color: '#ef4444' }}>*</span>
+              </label>
               <input
                 style={inputStyle}
                 type="date"
@@ -1434,7 +1435,8 @@ const payload = {
               </p>
             </div>
             <div>
-              <label style={labelStyle}>Taxa anual (% a.a.)</label>
+              <label style={labelStyle}>Taxa anual (% a.a.) <span style={{ color: '#ef4444' }}>*</span>
+              </label>
               <input
                 style={inputStyle}
                 type="number"
@@ -1459,7 +1461,8 @@ const payload = {
             style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}
           >
             <div>
-              <label style={labelStyle}>Modelo de rentabilidade</label>
+              <label style={labelStyle}>Modelo de rentabilidade <span style={{ color: '#ef4444' }}>*</span>
+              </label>
               <select
                 style={inputStyle}
                 value={form.modeloRentabilidade}
@@ -1484,7 +1487,8 @@ const payload = {
 
           {/* Linha 5: Observações */}
           <div>
-            <label style={labelStyle}>Observações</label>
+            <label style={labelStyle}>Observações <span style={{ color: '#ef4444' }}>*</span>
+            </label>
             <textarea
               style={{ ...inputStyle, resize: 'vertical', minHeight: 72 }}
               maxLength={1000}
