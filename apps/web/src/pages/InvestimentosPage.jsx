@@ -251,19 +251,18 @@ export default function InvestimentosPage() {
   function abrirModal(investimento = null) {
     setInvestimentoEmEdicao(investimento);
     if (investimento) {
-      setForm({
-        contaId: investimento.contaId || '',
-        tipoInvestimento:
-          investimento.tipoNome || investimento.tipoInvestimento || '',
-        produto: investimento.nome || '',
-        dataAplicacao: investimento.dataInicio || todayISO(),
-        dataVencimento: investimento.dataVencimento || '',
-        valorAplicado: String(investimento.valorInicial ?? ''),
-        taxaAnual: String(investimento.taxaAnual ?? ''),
-        modeloRentabilidade: investimento.modeloRentabilidade || '',
-        observacoes: investimento.observacoes || '',
-        status: investimento.status || 'ativa',
-      });
+setForm({
+  contaId: investimento.contaId || '',
+  tipoInvestimento: investimento.tipoId || '',
+  produto: investimento.nome || '',
+  dataAplicacao: investimento.dataInicio || todayISO(),
+  dataVencimento: investimento.dataVencimento || '',
+  valorAplicado: String(investimento.valorInicial ?? ''),
+  taxaAnual: String(investimento.taxaAnual ?? ''),
+  modeloRentabilidade: investimento.modeloRentabilidade || '',
+  observacoes: investimento.observacoes || '',
+  status: investimento.status || 'ativa',
+});
     } else {
       setForm(EMPTY_FORM);
     }
@@ -280,17 +279,14 @@ export default function InvestimentosPage() {
     e.preventDefault();
     setSaving(true);
     try {
-      const payload = {
-        nome: form.produto || form.tipoInvestimento,
-        tipoNome: form.tipoInvestimento,
-        contaId: form.contaId || undefined,
-        valorInicial: parseFloat(form.valorAplicado) || 0,
-        dataInicio: form.dataAplicacao,
-        dataVencimento: form.dataVencimento || undefined,
-        taxaAnual: parseFloat(form.taxaAnual) || undefined,
-        modeloRentabilidade: form.modeloRentabilidade || undefined,
-        observacoes: form.observacoes || undefined,
-      };
+const payload = {
+  nome: form.produto || '',                 // string
+  tipoId: form.tipoInvestimento || undefined, // UUID esperado pela API
+  valorInicial: parseFloat(form.valorAplicado) || 0,
+  dataInicio: form.dataAplicacao,
+  dataVencimento: form.dataVencimento || undefined,
+  observacoes: form.observacoes || undefined,
+};
 
       if (investimentoEmEdicao) {
         payload.status = form.status;
@@ -1339,11 +1335,20 @@ export default function InvestimentosPage() {
                 onBlur={handleInputBlur}
               >
                 <option value="">Selecione...</option>
-                {TIPOS_INVESTIMENTO.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
+{tipos && tipos.length > 0 ? (
+  tipos.map((t) => (
+    <option key={t.id} value={t.id}>
+      {t.nome}
+    </option>
+  ))
+) : (
+  // fallback visual (se por algum motivo tipos estiver vazio)
+  TIPOS_INVESTIMENTO.map((t) => (
+    <option key={t} value={t}>
+      {t}
+    </option>
+  ))
+)}
               </select>
             </div>
           </div>
