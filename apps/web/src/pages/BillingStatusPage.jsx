@@ -49,10 +49,15 @@ export default function BillingStatusPage() {
       return;
 
     setCancelling(true);
-    try {
-      await billingService.cancel();
-      toast.success('Assinatura cancelada com sucesso.');
-      navigate('/checkout');
+try {
+  await billingService.cancel();
+  toast.success('Assinatura cancelada com sucesso.');
+
+  // Opcional: atualizar o estado local para refletir que não há assinante
+  setAssinante(null);
+
+  // Redirecionar para checkout (com step=2 opcional)
+  navigate('/checkout?plano=mensal&ciclo=mensal&step=2', { replace: true });
     } catch (err) {
       const msg =
         err?.response?.data?.message ||
@@ -373,9 +378,7 @@ export default function BillingStatusPage() {
 <Button
   onClick={() =>
     navigate(
-      `/checkout?plano=${encodeURIComponent(assinante.plano ?? 'mensal')}&ciclo=${encodeURIComponent(
-        assinante.ciclo ?? 'mensal',
-      )}&step=2`,
+      `/checkout?plano=${encodeURIComponent(assinante?.plano ?? 'mensal')}&ciclo=${encodeURIComponent(assinante?.ciclo ?? 'mensal')}&step=2`,
     )
   }
 >
