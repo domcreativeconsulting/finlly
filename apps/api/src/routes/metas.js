@@ -52,7 +52,7 @@ const writeLimiter = rateLimit({
 
 // ─── Routes ──────────────────────────────────────────────────────────────────
 
-router.get('/goals', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ query: listGoalsQuerySchema }), async (req, res, next) => {
+router.get('/goals', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ query: listGoalsQuerySchema }), async (req, res, next) => {
   try {
     const result = await listMetas(req.user.sub, req.query);
     return res.json(result);
@@ -61,7 +61,7 @@ router.get('/goals', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ qu
   }
 });
 
-router.post('/goals', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('meta_criada'), validate(createGoalSchema), async (req, res, next) => {
+router.post('/goals', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, auditarAcao('meta_criada'), validate(createGoalSchema), async (req, res, next) => {
   try {
     const result = await createMeta(req.user.sub, req.body);
     logger.info({ msg: 'Meta criada', userId: req.user.sub });
@@ -71,7 +71,7 @@ router.post('/goals', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao
   }
 });
 
-router.get('/goals/:id', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ params: uuidParam }), async (req, res, next) => {
+router.get('/goals/:id', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ params: uuidParam }), async (req, res, next) => {
   try {
     const result = await getMeta(req.user.sub, req.params.id);
     return res.json(result);
@@ -80,7 +80,7 @@ router.get('/goals/:id', readLimiter, jwtAuthMiddleware, requireAtivo, validate(
   }
 });
 
-router.patch('/goals/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ body: updateGoalSchema, params: uuidParam }), async (req, res, next) => {
+router.patch('/goals/:id', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ body: updateGoalSchema, params: uuidParam }), async (req, res, next) => {
   try {
     const result = await updateMeta(req.user.sub, req.params.id, req.body);
     logger.info({ msg: 'Meta atualizada', userId: req.user.sub, metaId: req.params.id });
@@ -90,7 +90,7 @@ router.patch('/goals/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, valida
   }
 });
 
-router.delete('/goals/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('meta_excluida', (req) => ({ id: req.params.id })), validate({ params: uuidParam }), async (req, res, next) => {
+router.delete('/goals/:id', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, auditarAcao('meta_excluida', (req) => ({ id: req.params.id })), validate({ params: uuidParam }), async (req, res, next) => {
   try {
     const result = await deleteMeta(req.user.sub, req.params.id);
     logger.info({ msg: 'Meta excluída', userId: req.user.sub, metaId: req.params.id });
@@ -100,7 +100,7 @@ router.delete('/goals/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, audit
   }
 });
 
-router.get('/goals/:id/progress', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ params: uuidParam }), async (req, res, next) => {
+router.get('/goals/:id/progress', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ params: uuidParam }), async (req, res, next) => {
   try {
     const result = await getProgresso(req.user.sub, req.params.id);
     return res.json(result);
@@ -109,7 +109,7 @@ router.get('/goals/:id/progress', readLimiter, jwtAuthMiddleware, requireAtivo, 
   }
 });
 
-router.get('/goals/:id/movements', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ query: listMovimentosMetaQuerySchema, params: uuidParam }), async (req, res, next) => {
+router.get('/goals/:id/movements', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ query: listMovimentosMetaQuerySchema, params: uuidParam }), async (req, res, next) => {
   try {
     const result = await listMovimentos(req.user.sub, req.params.id, req.query);
     return res.json(result);
@@ -118,7 +118,7 @@ router.get('/goals/:id/movements', readLimiter, jwtAuthMiddleware, requireAtivo,
   }
 });
 
-router.post('/goals/:id/movements', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ body: createMovimentoMetaSchema, params: uuidParam }), async (req, res, next) => {
+router.post('/goals/:id/movements', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ body: createMovimentoMetaSchema, params: uuidParam }), async (req, res, next) => {
   try {
     const result = await createMovimento(req.user.sub, req.params.id, req.body);
     logger.info({ msg: 'Movimento de meta criado', userId: req.user.sub, metaId: req.params.id });
@@ -128,7 +128,7 @@ router.post('/goals/:id/movements', writeLimiter, jwtAuthMiddleware, requireAtiv
   }
 });
 
-router.delete('/goals/:id/movements/:movId', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ params: uuidDoubleParam('id', 'movId') }), async (req, res, next) => {
+router.delete('/goals/:id/movements/:movId', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ params: uuidDoubleParam('id', 'movId') }), async (req, res, next) => {
   try {
     const result = await deleteMovimento(req.user.sub, req.params.id, req.params.movId);
     logger.info({ msg: 'Movimento de meta excluído', userId: req.user.sub, metaId: req.params.id, movId: req.params.movId });
