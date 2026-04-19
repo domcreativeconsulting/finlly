@@ -148,8 +148,8 @@ async function handleCreateManual(req, res, next) {
   }
 }
 
-router.get('/cash-movements', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ query: extratoQuerySchema }), handleGetExtrato);
-router.get('/cash-movements/export', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ query: exportExtratoQuerySchema }), handleExportExtrato);
-router.post('/cash-movements/manual', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('movimentacao_criada'), validate(manualMovementSchema), handleCreateManual);
+router.get('/cash-movements', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ query: extratoQuerySchema }), handleGetExtrato);
+router.get('/cash-movements/export', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ query: exportExtratoQuerySchema }), handleExportExtrato);
+router.post('/cash-movements/manual', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, auditarAcao('movimentacao_criada'), validate(manualMovementSchema), handleCreateManual);
 
 export default router;
