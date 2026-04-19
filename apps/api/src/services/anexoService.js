@@ -109,7 +109,7 @@ export async function uploadAnexo({ usuarioId, file, requestId }) {
     // Normaliza BigInt para Number antes do retorno (evita erro ao serializar JSON)
     return { ...anexo, tamanho_bytes: Number(anexo.tamanho_bytes) };
 
-    return anexo;
+    
   } catch (err) {
     await storageProvider.delete({ storagePath }).catch((delErr) =>
       logger.warn({ delErr, storagePath }, 'Falha no rollback do arquivo físico.'),
