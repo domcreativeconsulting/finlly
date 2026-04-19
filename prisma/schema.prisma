@@ -115,6 +115,7 @@ enum StatusUsuario {
   bloqueado_inadimplencia
   suspenso_seguranca
   pendente_pagamento
+  ativo_restrito
 
   @@map("status_usuario")
 }
