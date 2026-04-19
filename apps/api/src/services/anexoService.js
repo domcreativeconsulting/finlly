@@ -163,7 +163,7 @@ export async function listarAnexos({ usuarioId, entidadeTipo, entidadeId, page =
   const dataNormalized = data.map((a) => ({ ...a, tamanho_bytes: Number(a.tamanho_bytes) }));
   return { data: dataNormalized, total, page, limit };
 
-  return { data, total, page, limit };
+  
 }
 
 /**
