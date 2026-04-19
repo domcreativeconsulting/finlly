@@ -29,14 +29,14 @@ export function ensureLoggedIn(req, res, next) {
  */
 export async function loadAssinante(req, res, next) {
   try {
-    // Se já foi carregado por outro middleware, apenas continue
     if (req.assinante) return next();
 
-    const usuarioId = req.user?.id;
+    const usuarioId = req.user?.sub; // usar sub (id do JWT), não .id
     if (!usuarioId) return res.status(401).json({ code: 'UNAUTHORIZED' });
 
-    const assinante = await prisma.assinantes.findUnique({
-      where: { usuario_id: usuarioId },
+    // usar o model correto e findFirst / findUnique conforme esquema
+    const assinante = await prisma.assinante.findFirst({
+      where: { usuario_id: usuarioId, deleted_at: null },
     });
 
     req.assinante = assinante ?? null;
