@@ -191,14 +191,14 @@ async function handleOcrConfirmar(req, res, next) {
 // ---------------------------------------------------------------------------
 // Routes
 // ---------------------------------------------------------------------------
-router.post('/anexos', writeLimiter, jwtAuthMiddleware, requireAtivo, uploadMiddleware, handleUpload);
-router.get('/anexos', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ query: listAnexosQuerySchema }), handleList);
-router.get('/anexos/:id/download', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ params: uuidParam }), handleDownload);
-router.get('/anexos/:id', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ params: uuidParam }), handleGet);
-router.delete('/anexos/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ params: uuidParam }), handleDelete);
-router.post('/anexos/:id/vinculos', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ body: vinculoSchema, params: uuidParam }), handleVincular);
-router.delete('/anexos/:id/vinculos', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ body: vinculoSchema, params: uuidParam }), handleDesvincular);
-router.get('/anexos/:id/ocr', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ params: uuidParam }), handleGetOcr);
-router.post('/anexos/:id/ocr/confirmar', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ body: ocrConfirmarSchema, params: uuidParam }), handleOcrConfirmar);
+router.post('/anexos', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, uploadMiddleware, handleUpload);
+router.get('/anexos', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ query: listAnexosQuerySchema }), handleList);
+router.get('/anexos/:id/download', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ params: uuidParam }), handleDownload);
+router.get('/anexos/:id', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ params: uuidParam }), handleGet);
+router.delete('/anexos/:id', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ params: uuidParam }), handleDelete);
+router.post('/anexos/:id/vinculos', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ body: vinculoSchema, params: uuidParam }), handleVincular);
+router.delete('/anexos/:id/vinculos', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ body: vinculoSchema, params: uuidParam }), handleDesvincular);
+router.get('/anexos/:id/ocr', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ params: uuidParam }), handleGetOcr);
+router.post('/anexos/:id/ocr/confirmar', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ body: ocrConfirmarSchema, params: uuidParam }), handleOcrConfirmar);
 
 export default router;
