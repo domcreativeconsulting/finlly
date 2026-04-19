@@ -213,16 +213,16 @@ async function handleCancelarGrupo(req, res, next) {
   }
 }
 
-router.get('/contas-receber', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ query: listContasReceberQuerySchema }), handleList);
-router.post('/contas-receber', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('contaReceber_criada'), validate(createContaReceberSchema), handleCreate);
-router.get('/contas-receber/export', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ query: exportContasReceberQuerySchema }), handleExport);
-router.get('/contas-receber/grupos/:grupoId', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ params: uuidParamNamed('grupoId') }), handleGetGrupo);
-router.patch('/contas-receber/grupos/:grupoId/cancelar', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ params: uuidParamNamed('grupoId') }), handleCancelarGrupo);
-router.get('/contas-receber/:id', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ params: uuidParam }), handleGet);
-router.put('/contas-receber/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ body: updateContaReceberSchema, params: uuidParam }), handleUpdate);
-router.patch('/contas-receber/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ body: updateContaReceberSchema, params: uuidParam }), handleUpdate);
-router.delete('/contas-receber/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('contaReceber_excluida', (req) => ({ id: req.params.id })), validate({ params: uuidParam }), handleDelete);
-router.post('/contas-receber/:id/receber', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ body: receberContaReceberSchema, params: uuidParam }), handleReceber);
-router.patch('/contas-receber/:id/cancelar', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ params: uuidParam }), handleCancelar);
+router.get('/contas-receber', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ query: listContasReceberQuerySchema }), handleList);
+router.post('/contas-receber', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, auditarAcao('contaReceber_criada'), validate(createContaReceberSchema), handleCreate);
+router.get('/contas-receber/export', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ query: exportContasReceberQuerySchema }), handleExport);
+router.get('/contas-receber/grupos/:grupoId', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ params: uuidParamNamed('grupoId') }), handleGetGrupo);
+router.patch('/contas-receber/grupos/:grupoId/cancelar', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ params: uuidParamNamed('grupoId') }), handleCancelarGrupo);
+router.get('/contas-receber/:id', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ params: uuidParam }), handleGet);
+router.put('/contas-receber/:id', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ body: updateContaReceberSchema, params: uuidParam }), handleUpdate);
+router.patch('/contas-receber/:id', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ body: updateContaReceberSchema, params: uuidParam }), handleUpdate);
+router.delete('/contas-receber/:id', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, auditarAcao('contaReceber_excluida', (req) => ({ id: req.params.id })), validate({ params: uuidParam }), handleDelete);
+router.post('/contas-receber/:id/receber', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ body: receberContaReceberSchema, params: uuidParam }), handleReceber);
+router.patch('/contas-receber/:id/cancelar', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ params: uuidParam }), handleCancelar);
 
 export default router;
