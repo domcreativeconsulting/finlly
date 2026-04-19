@@ -50,9 +50,11 @@ function mapAssinante(assinante) {
   if (!assinante) return null;
   return {
     ...assinante,
-    formaPagamento:        assinante.forma_pagamento         ?? null,
-    dataProximoVencimento: assinante.data_proximo_vencimento ?? null,
-    asaasStatus:           assinante.asaas_status            ?? null,
+    formaPagamento:        assinante.forma_pagamento ?? null,
+    dataProximoVencimento: assinante.proxima_cobranca ?? null, // ajuste correto
+    providerSubscriptionId: assinante.provider_subscription_id ?? null,
+    providerCustomerId: assinante.provider_customer_id ?? null,
+    // remove or add other mappings as needed
   };
 }
 
