@@ -23,20 +23,17 @@ const BILLING_STATUS_CACHE_PREFIX = 'billing:status:';
 function toUsuarioStatus(assinanteStatus) {
   switch (assinanteStatus) {
     case 'ativo':
-      return 'ativo';
     case 'trial':
       return 'ativo';
     case 'pendente':
-      // Aguardando confirmação de pagamento — bloqueia acesso até PAYMENT_CONFIRMED
       return 'pendente_pagamento';
     case 'inadimplente':
       return 'bloqueado_inadimplencia';
     case 'cancelado':
     case 'inativo':
-      // Assinatura finalizada: permitir login, porém com acesso restrito às funcionalidades pagas
+      // Permitir login, porém com acesso restrito às funcionalidades pagas
       return 'ativo_restrito';
     default:
-      // Estado inesperado → tratar de forma segura como acesso restrito
       return 'ativo_restrito';
   }
 }
