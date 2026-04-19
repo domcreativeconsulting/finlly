@@ -33,9 +33,11 @@ function toUsuarioStatus(assinanteStatus) {
       return 'bloqueado_inadimplencia';
     case 'cancelado':
     case 'inativo':
+      // Assinatura finalizada: permitir login, porém com acesso restrito às funcionalidades pagas
+      return 'ativo_restrito';
     default:
-      // Sem assinatura ativa — sem acesso ao sistema
-      return 'pendente_pagamento';
+      // Estado inesperado → tratar de forma segura como acesso restrito
+      return 'ativo_restrito';
   }
 }
 
