@@ -3,7 +3,7 @@
  * ...
  */
 
-export const ALLOWED_STATUSES = Object.freeze(['ativo', 'trial', 'pendente']);
+export const ALLOWED_STATUSES = Object.freeze(['ativo', 'trial', 'pendente', 'ativo_restrito']);
 
 /** @deprecated Use {@link ALLOWED_STATUSES} instead. */
 export const BLOCKED_STATUSES = Object.freeze(['bloqueado_inadimplencia']);
