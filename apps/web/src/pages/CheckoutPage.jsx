@@ -409,12 +409,13 @@ paymentPollRef.current =  window.setInterval(async () => {
           {/* Step 2 — Pagamento */}
           {step === 2 && (
             <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: '20px', padding: '28px', boxShadow: '0 20px 48px rgba(4,10,24,0.55)' }}>
-              <StepPagamento
-                form={form} method={method} setMethod={setMethod}
-                handlePay={handlePay} error={error} loading={loading}
-                plan={plan} onBack={() => { setStep(1); setError(''); }}
-                handleChange={handleChange}
-              />
+<StepPagamento
+  form={form} method={method} setMethod={setMethod}
+  handlePay={handlePay} error={error} loading={loading}
+  plan={plan} onBack={() => { setStep(1); setError(''); }}
+  handleChange={handleChange}
+  waitingPayment={waitingPayment}
+/>
             </div>
           )}
 
@@ -541,7 +542,7 @@ function StepDados({ form, handleChange, handleNext, error }) {
 }
 
 // ─── Step 2: Pagamento ──────────────────────────────────────
-function StepPagamento({ form, method, setMethod, handlePay, error, loading, plan, onBack, handleChange }) {
+function StepPagamento({ form, method, setMethod, handlePay, error, loading, plan, onBack, handleChange, waitingPayment }) {
   return (
     <form onSubmit={handlePay} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <button type="button" onClick={onBack} style={{ background: 'none', border: 'none', color: C.inkSoft, cursor: 'pointer', textAlign: 'left', padding: 0, fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
