@@ -4,7 +4,7 @@
  *
  * @type {readonly string[]}
  */
-export const ALLOWED_STATUSES = Object.freeze(['ativo', 'trial', 'pendente']);
+export const ALLOWED_STATUSES = Object.freeze(['ativo', 'trial', 'pendente', 'ativo_restrito']);
 
 /**
  * Returns `true` when the given user status indicates an active subscription.
