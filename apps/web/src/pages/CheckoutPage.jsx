@@ -141,7 +141,7 @@ useEffect(() => {
   useEffect(() => {
   return () => {
     if (paymentPollRef.current) {
-      clearInterval(paymentPollRef.current);
+      window.clearInterval(paymentPollRef.current);
       paymentPollRef.current = null;
     }
   };
@@ -175,9 +175,7 @@ async function handlePay(e) {
   e.preventDefault();
   setError('');
 
-  // DEBUG temporário (remova depois)
-  console.log('AUTH DEBUG before handlePay', { isLoading, isAuthenticated, usuario, form });
-
+  
 
   // validações do formulário (ex.: cartão)
   if (method === 'CARTAO') {
@@ -261,12 +259,12 @@ setPaymentPollingError(null);
 
 // limpa qualquer polling anterior
 if (paymentPollRef.current) {
-  clearInterval(paymentPollRef.current);
+  window.clearInterval(paymentPollRef.current);
   paymentPollRef.current = null;
 }
 
 let elapsed = 0;
-paymentPollRef.current = setInterval(async () => {
+paymentPollRef.current =  window.setInterval(async () => {
   try {
     // Chame o endpoint de status da sua API. Aqui uso billingService.getStatus()
     // Ajuste se sua API precisar de subscriptionId/paymentId (ex.: billingService.getStatus(res.id))
@@ -284,7 +282,7 @@ paymentPollRef.current = setInterval(async () => {
     );
 
     if (isPaid) {
-      clearInterval(paymentPollRef.current);
+      window.clearInterval(paymentPollRef.current);
       paymentPollRef.current = null;
       setWaitingPayment(false);
       toast.success('Pagamento confirmado — entrando no sistema...');
@@ -295,7 +293,7 @@ paymentPollRef.current = setInterval(async () => {
 
     elapsed += POLL_INTERVAL;
     if (elapsed >= PAYMENT_TIMEOUT_MS) {
-      clearInterval(paymentPollRef.current);
+      window.clearInterval(paymentPollRef.current);
       paymentPollRef.current = null;
       setWaitingPayment(false);
       setPaymentPollingError('Não foi possível confirmar o pagamento automaticamente. Verifique após alguns minutos ou entre em contato com o suporte.');
@@ -447,7 +445,7 @@ paymentPollRef.current = setInterval(async () => {
 }
 
 // ─── Step 1: Dados ──────────────────────────────────────────
-function StepDados({ form, handleChange, handleNext, error, plan }) {
+function StepDados({ form, handleChange, handleNext, error }) {
   return (
     <form onSubmit={handleNext} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
 
@@ -604,7 +602,7 @@ function StepPagamento({ form, method, setMethod, handlePay, error, loading, pla
           <span>O QR Code PIX será gerado na próxima tela para você escanear ou copiar o código.</span>
         </div>
       )}
-      <button type="submit" disabled={loading || (typeof waitingPayment !== 'undefined' && waitingPayment)} style={{
+      <button type="submit" disabled={loading || Boolean(waitingPayment)} style={{
         width: '100%', padding: '14px 20px', borderRadius: '999px', border: 'none',
         cursor: loading ? 'not-allowed' : 'pointer',
         background: loading ? 'rgba(196,233,31,0.4)' : `linear-gradient(130deg, ${C.accent}, #d6f35d)`,
@@ -653,14 +651,14 @@ function StepConfirmacao({ paymentLink, pixQrCode, pixCopiaECola, method, plan, 
       </div>
 
       {/* Aguardando pagamento */}
-{(typeof waitingPayment !== 'undefined' && waitingPayment) && (
+{waitingPayment && (
   <div style={{ width: '100%', marginTop: 12, padding: '12px', background: 'rgba(255,245,235,0.9)', borderRadius: 12, border: '1px solid #f5c6a5', color: '#7a3b00', textAlign: 'center' }}>
     <strong>Aguardando pagamento...</strong>
     <div style={{ fontSize: 13, marginTop: 6 }}>Assim que o pagamento for confirmado, atualizaremos seu acesso automaticamente.</div>
   </div>
 )}
 
-{(typeof paymentPollingError !== 'undefined' && paymentPollingError) && (
+{paymentPollingError && (
   <div style={{ width: '100%', marginTop: 12, padding: '12px', background: 'rgba(254,226,226,0.9)', borderRadius: 12, border: '1px solid #fca5a5', color: '#991b1b', textAlign: 'center' }}>
     {paymentPollingError}
   </div>
