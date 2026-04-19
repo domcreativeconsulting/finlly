@@ -120,13 +120,13 @@ async function handleDelete(req, res, next) {
   }
 }
 
-router.get('/movimentacoes', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ query: listMovimentacoesQuerySchema }), handleList);
-router.post('/movimentacoes', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('movimentacao_criada'), validate(createMovimentacaoSchema), handleCreate);
-router.get('/movimentacoes/saldo', readLimiter, jwtAuthMiddleware, requireAtivo, handleGetSaldoConsolidado);
-router.get('/movimentacoes/saldo/:contaId', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ params: uuidParamNamed('contaId') }), handleGetSaldoConta);
-router.get('/movimentacoes/:id', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ params: uuidParam }), handleGet);
-router.put('/movimentacoes/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ body: updateMovimentacaoSchema, params: uuidParam }), handleUpdate);
-router.patch('/movimentacoes/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ body: updateMovimentacaoSchema, params: uuidParam }), handleUpdate);
-router.delete('/movimentacoes/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('movimentacao_excluida', (req) => ({ id: req.params.id })), validate({ params: uuidParam }), handleDelete);
+router.get('/movimentacoes', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ query: listMovimentacoesQuerySchema }), handleList);
+router.post('/movimentacoes', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, auditarAcao('movimentacao_criada'), validate(createMovimentacaoSchema), handleCreate);
+router.get('/movimentacoes/saldo', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, handleGetSaldoConsolidado);
+router.get('/movimentacoes/saldo/:contaId', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ params: uuidParamNamed('contaId') }), handleGetSaldoConta);
+router.get('/movimentacoes/:id', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ params: uuidParam }), handleGet);
+router.put('/movimentacoes/:id', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ body: updateMovimentacaoSchema, params: uuidParam }), handleUpdate);
+router.patch('/movimentacoes/:id', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ body: updateMovimentacaoSchema, params: uuidParam }), handleUpdate);
+router.delete('/movimentacoes/:id', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, auditarAcao('movimentacao_excluida', (req) => ({ id: req.params.id })), validate({ params: uuidParam }), handleDelete);
 
 export default router;
