@@ -87,11 +87,11 @@ async function handleDelete(req, res, next) {
   }
 }
 
-router.get('/categorias', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ query: listCategoriasQuerySchema }), handleList);
-router.post('/categorias', writeLimiter, jwtAuthMiddleware, requireAtivo, validate(createCategoriaSchema), handleCreate);
-router.get('/categorias/:id', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ params: uuidParam }), handleGet);
-router.put('/categorias/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ body: updateCategoriaSchema, params: uuidParam }), handleUpdate);
-router.patch('/categorias/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ body: updateCategoriaSchema, params: uuidParam }), handleUpdate);
-router.delete('/categorias/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ params: uuidParam }), handleDelete);
+router.get('/categorias', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ query: listCategoriasQuerySchema }), handleList);
+router.post('/categorias', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate(createCategoriaSchema), handleCreate);
+router.get('/categorias/:id', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ params: uuidParam }), handleGet);
+router.put('/categorias/:id', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ body: updateCategoriaSchema, params: uuidParam }), handleUpdate);
+router.patch('/categorias/:id', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ body: updateCategoriaSchema, params: uuidParam }), handleUpdate);
+router.delete('/categorias/:id', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ params: uuidParam }), handleDelete);
 
 export default router;
