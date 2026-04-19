@@ -158,8 +158,8 @@ router.post('/auth/login', loginLimiter, auditarAcao('login', (req) => ({ email:
     res.cookie('refreshToken', result.refreshToken, {
       httpOnly: true,
       secure: config.NODE_ENV === 'production',
-      sameSite: 'strict',
-      path: '/auth/refresh',
+     sameSite: config.NODE_ENV === 'production' ? 'none' : 'lax',
+      path: '/',
       maxAge: refreshExpiresMs,
     });
 
