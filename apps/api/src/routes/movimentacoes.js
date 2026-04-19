@@ -12,6 +12,7 @@ import {
 } from '../services/movimentacoesService.js';
 import { jwtAuthMiddleware } from '../middleware/jwtAuth.js';
 import { requireAtivo } from '../middleware/requireAtivo.js';
+import { ensureLoggedIn, loadAssinante, ensureBillingActive } from '../middleware/authBilling.js';
 import { validate } from '../middleware/validate.js';
 import { auditarAcao } from '../middleware/auditoria.js';
 import { AppError } from '../errors/AppError.js';
