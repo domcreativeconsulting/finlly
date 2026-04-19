@@ -38,21 +38,27 @@ function verificarAssinatura(rawBody, signature) {
 
   const hmac = createHmac('sha256', secret);
   hmac.update(typeof rawBody === 'string' ? Buffer.from(rawBody) : rawBody);
-  const expected = hmac.digest('hex');
+  const expectedHex = hmac.digest('hex');
+  const expectedBuf = Buffer.from(expectedHex, 'hex');
 
-  let sigBuffer, expectedBuffer;
-  try {
-    sigBuffer = Buffer.from(signature, 'hex');
-    expectedBuffer = Buffer.from(expected, 'hex');
-  } catch {
-    throw AppError.unauthorized('Assinatura inválida');
-  }
+  // Normalize signature: remove common prefix like 'sha256='
+  const sigCandidate = typeof signature === 'string' ? signature.replace(/^sha256=/i, '') : signature;
 
-  if (sigBuffer.length !== expectedBuffer.length || !timingSafeEqual(sigBuffer, expectedBuffer)) {
-    throw AppError.unauthorized('Assinatura inválida');
-  }
+  const tryCompare = (s, encoding) => {
+    try {
+      const buf = Buffer.from(s, encoding);
+      if (buf.length === expectedBuf.length && timingSafeEqual(buf, expectedBuf)) return true;
+    } catch (e) { /* ignore */ }
+    return false;
+  };
+
+  if (tryCompare(sigCandidate, 'hex')) return;
+  if (tryCompare(sigCandidate, 'base64')) return;
+
+  // if not matched, log a hint (no secrets) and throw
+  logger.warn({ sigSample: String(signature).slice(0, 20) }, 'Webhook Asaas: assinatura inválida (formato inesperado)');
+  throw AppError.unauthorized('Assinatura inválida');
 }
-
 /**
  * Handles PAYMENT_CONFIRMED and PAYMENT_RECEIVED events.
  * @param {object} payment - payment object from Asaas payload
