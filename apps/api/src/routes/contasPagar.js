@@ -214,16 +214,16 @@ async function handleCancelarGrupo(req, res, next) {
   }
 }
 
-router.get('/contas-pagar', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ query: listContasPagarQuerySchema }), handleList);
-router.post('/contas-pagar', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('contaPagar_criada'), validate(createContaPagarSchema), handleCreate);
-router.get('/contas-pagar/export', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ query: exportContasPagarQuerySchema }), handleExport);
-router.get('/contas-pagar/grupos/:grupoId', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ params: uuidParamNamed('grupoId') }), handleGetGrupo);
-router.patch('/contas-pagar/grupos/:grupoId/cancelar', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ params: uuidParamNamed('grupoId') }), handleCancelarGrupo);
-router.get('/contas-pagar/:id', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ params: uuidParam }), handleGet);
-router.put('/contas-pagar/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ body: updateContaPagarSchema, params: uuidParam }), handleUpdate);
-router.patch('/contas-pagar/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ body: updateContaPagarSchema, params: uuidParam }), handleUpdate);
-router.delete('/contas-pagar/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('contaPagar_excluida', (req) => ({ id: req.params.id })), validate({ params: uuidParam }), handleDelete);
-router.post('/contas-pagar/:id/pagar', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ body: pagarContaPagarSchema, params: uuidParam }), handlePagar);
-router.patch('/contas-pagar/:id/cancelar', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ params: uuidParam }), handleCancelar);
+router.get('/contas-pagar', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ query: listContasPagarQuerySchema }), handleList);
+router.post('/contas-pagar', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, auditarAcao('contaPagar_criada'), validate(createContaPagarSchema), handleCreate);
+router.get('/contas-pagar/export', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ query: exportContasPagarQuerySchema }), handleExport);
+router.get('/contas-pagar/grupos/:grupoId', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ params: uuidParamNamed('grupoId') }), handleGetGrupo);
+router.patch('/contas-pagar/grupos/:grupoId/cancelar', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ params: uuidParamNamed('grupoId') }), handleCancelarGrupo);
+router.get('/contas-pagar/:id', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ params: uuidParam }), handleGet);
+router.put('/contas-pagar/:id', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ body: updateContaPagarSchema, params: uuidParam }), handleUpdate);
+router.patch('/contas-pagar/:id', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ body: updateContaPagarSchema, params: uuidParam }), handleUpdate);
+router.delete('/contas-pagar/:id', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, auditarAcao('contaPagar_excluida', (req) => ({ id: req.params.id })), validate({ params: uuidParam }), handleDelete);
+router.post('/contas-pagar/:id/pagar', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ body: pagarContaPagarSchema, params: uuidParam }), handlePagar);
+router.patch('/contas-pagar/:id/cancelar', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ params: uuidParam }), handleCancelar);
 
 export default router;
