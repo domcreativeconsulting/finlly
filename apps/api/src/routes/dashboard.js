@@ -37,7 +37,7 @@ const readLimiter = rateLimit({
 });
 
 // GET /dashboard/kpis?dataInicio=YYYY-MM-DD&dataFim=YYYY-MM-DD
-router.get('/dashboard/kpis', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ query: kpisQuerySchema }), async (req, res, next) => {
+router.get('/dashboard/kpis', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ query: kpisQuerySchema }), async (req, res, next) => {
   try {
     const usuarioId = req.user.sub;
     const { dataInicio, dataFim } = req.query;
@@ -51,7 +51,7 @@ router.get('/dashboard/kpis', readLimiter, jwtAuthMiddleware, requireAtivo, vali
 });
 
 // GET /dashboard/evolucao?meses=6
-router.get('/dashboard/evolucao', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ query: evolucaoQuerySchema }), async (req, res, next) => {
+router.get('/dashboard/evolucao', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ query: evolucaoQuerySchema }), async (req, res, next) => {
   try {
     const usuarioId = req.user.sub;
     const { meses } = req.query;
@@ -65,7 +65,7 @@ router.get('/dashboard/evolucao', readLimiter, jwtAuthMiddleware, requireAtivo, 
 });
 
 // GET /dashboard/categorias?dataInicio=&dataFim=&tipo=saida&limit=10
-router.get('/dashboard/categorias', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ query: categoriasQuerySchema }), async (req, res, next) => {
+router.get('/dashboard/categorias', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ query: categoriasQuerySchema }), async (req, res, next) => {
   try {
     const usuarioId = req.user.sub;
     const { dataInicio, dataFim, tipo, limit } = req.query;
@@ -79,7 +79,7 @@ router.get('/dashboard/categorias', readLimiter, jwtAuthMiddleware, requireAtivo
 });
 
 // GET /dashboard/contas
-router.get('/dashboard/contas', readLimiter, jwtAuthMiddleware, requireAtivo, async (req, res, next) => {
+router.get('/dashboard/contas', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, async (req, res, next) => {
   try {
     const usuarioId = req.user.sub;
     const result = await getSaldoPorConta(usuarioId);
@@ -91,7 +91,7 @@ router.get('/dashboard/contas', readLimiter, jwtAuthMiddleware, requireAtivo, as
 });
 
 // GET /relatorios?dataInicio=&dataFim=&categoriaId=&contaId=&tipo=&page=1&limit=50
-router.get('/relatorios', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ query: relatorioQuerySchema }), async (req, res, next) => {
+router.get('/relatorios', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ query: relatorioQuerySchema }), async (req, res, next) => {
   try {
     const usuarioId = req.user.sub;
     const { dataInicio, dataFim, categoriaId, contaId, tipo, page, limit } = req.query;
@@ -113,7 +113,7 @@ router.get('/relatorios', readLimiter, jwtAuthMiddleware, requireAtivo, validate
 });
 
 // GET /relatorios/exportar?dataInicio=&dataFim=&categoriaId=&contaId=&tipo=&format=csv|pdf
-router.get('/relatorios/exportar', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ query: exportarRelatorioQuerySchema }), async (req, res, next) => {
+router.get('/relatorios/exportar', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ query: exportarRelatorioQuerySchema }), async (req, res, next) => {
   try {
     const usuarioId = req.user.sub;
     const { dataInicio, dataFim, categoriaId, contaId, tipo, format } = req.query;
@@ -187,7 +187,7 @@ router.get('/relatorios/exportar', readLimiter, jwtAuthMiddleware, requireAtivo,
 });
 
 // GET /dashboard/monthly?year=2026&month=4
-router.get('/dashboard/monthly', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ query: monthlyQuerySchema }), async (req, res, next) => {
+router.get('/dashboard/monthly', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ query: monthlyQuerySchema }), async (req, res, next) => {
   try {
     const usuarioId = req.user.sub;
     const { year, month } = req.query;
