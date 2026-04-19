@@ -41,11 +41,8 @@ export const billingService = {
    */
   async getStatus() {
     // adiciona ts para evitar cache e força no-cache
-    const res = await api.get('/billing/status', {
-      params: { _ts: Date.now() },
-      headers: { 'Cache-Control': 'no-cache' },
-    });
-    return res.data;
+    const response = await api.get('/billing/status');
+    return response.data;
   },
 
   /**
