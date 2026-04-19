@@ -88,11 +88,11 @@ async function handleDelete(req, res, next) {
   }
 }
 
-router.get('/contas', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ query: listContasQuerySchema }), handleList);
-router.post('/contas', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('conta_criada'), validate(createContaSchema), handleCreate);
-router.get('/contas/:id', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ params: uuidParam }), handleGet);
-router.put('/contas/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ body: updateContaSchema, params: uuidParam }), handleUpdate);
-router.patch('/contas/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ body: updateContaSchema, params: uuidParam }), handleUpdate);
-router.delete('/contas/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('conta_excluida', (req) => ({ contaId: req.params.id })), validate({ params: uuidParam }), handleDelete);
+router.get('/contas', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ query: listContasQuerySchema }), handleList);
+router.post('/contas', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, auditarAcao('conta_criada'), validate(createContaSchema), handleCreate);
+router.get('/contas/:id', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ params: uuidParam }), handleGet);
+router.put('/contas/:id', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ body: updateContaSchema, params: uuidParam }), handleUpdate);
+router.patch('/contas/:id', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ body: updateContaSchema, params: uuidParam }), handleUpdate);
+router.delete('/contas/:id', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, auditarAcao('conta_excluida', (req) => ({ contaId: req.params.id })), validate({ params: uuidParam }), handleDelete);
 
 export default router;
