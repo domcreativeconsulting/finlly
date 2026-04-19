@@ -56,13 +56,13 @@ router.get('/perfil', perfilLimiter, jwtAuthMiddleware, handleGetPerfil);
  * PATCH /perfil
  * Atualiza parcialmente o perfil do usuário autenticado.
  */
-router.patch('/perfil', perfilLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('perfil_atualizado'), validate(updatePerfilSchema), handleUpdatePerfil);
+router.patch('/perfil', perfilLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, auditarAcao('perfil_atualizado'), validate(updatePerfilSchema), handleUpdatePerfil);
 
 /**
  * PUT /users/me  (alias para compatibilidade com a spec da task)
  * Delega para o mesmo handler de PATCH /perfil.
  */
-router.put('/users/me', perfilLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('perfil_atualizado'), validate(updatePerfilSchema), handleUpdatePerfil);
+router.put('/users/me', perfilLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, auditarAcao('perfil_atualizado'), validate(updatePerfilSchema), handleUpdatePerfil);
 
 /**
  * GET /users/me  (alias para compatibilidade com a spec da task)
