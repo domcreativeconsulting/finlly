@@ -416,15 +416,15 @@ async function handleGetPosicao(req, res, next) {
 
 // ─── Routes ──────────────────────────────────────────────────────────────────
 
-router.get('/investimentos/tipos', readLimiter, jwtAuthMiddleware, requireAtivo, handleListTipos);
-router.get('/investimentos', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ query: listInvestimentosQuerySchema }), handleList);
-router.post('/investimentos', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('investimento_criado'), validate(createInvestimentoSchema), handleCreate);
-router.get('/investimentos/:id', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ params: uuidParam }), handleGet);
-router.patch('/investimentos/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ body: updateInvestimentoSchema, params: uuidParam }), handleUpdate);
-router.delete('/investimentos/:id', writeLimiter, jwtAuthMiddleware, requireAtivo, auditarAcao('investimento_excluido', (req) => ({ id: req.params.id })), validate({ params: uuidParam }), handleDelete);
-router.get('/investimentos/:id/eventos', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ query: eventoQuerySchema, params: uuidParam }), handleListEventos);
-router.post('/investimentos/:id/eventos', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ body: createEventoSchema, params: uuidParam }), handleCreateEvento);
-router.delete('/investimentos/:id/eventos/:eventoId', writeLimiter, jwtAuthMiddleware, requireAtivo, validate({ params: uuidDoubleParam('id', 'eventoId') }), handleDeleteEvento);
-router.get('/investimentos/:id/posicao', readLimiter, jwtAuthMiddleware, requireAtivo, validate({ params: uuidParam }), handleGetPosicao);
+router.get('/investimentos/tipos', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, handleListTipos);
+router.get('/investimentos', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ query: listInvestimentosQuerySchema }), handleList);
+router.post('/investimentos', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, auditarAcao('investimento_criado'), validate(createInvestimentoSchema), handleCreate);
+router.get('/investimentos/:id', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ params: uuidParam }), handleGet);
+router.patch('/investimentos/:id', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ body: updateInvestimentoSchema, params: uuidParam }), handleUpdate);
+router.delete('/investimentos/:id', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, auditarAcao('investimento_excluido', (req) => ({ id: req.params.id })), validate({ params: uuidParam }), handleDelete);
+router.get('/investimentos/:id/eventos', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ query: eventoQuerySchema, params: uuidParam }), handleListEventos);
+router.post('/investimentos/:id/eventos', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ body: createEventoSchema, params: uuidParam }), handleCreateEvento);
+router.delete('/investimentos/:id/eventos/:eventoId', writeLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ params: uuidDoubleParam('id', 'eventoId') }), handleDeleteEvento);
+router.get('/investimentos/:id/posicao', readLimiter, jwtAuthMiddleware, ensureLoggedIn, loadAssinante, ensureBillingActive, validate({ params: uuidParam }), handleGetPosicao);
 
 export default router;
