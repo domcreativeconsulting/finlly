@@ -113,34 +113,6 @@ function formatDate(dateLike) {
   return '-';
 }
 
-  // Se vier um objeto com campos comuns
-  if (typeof dateLike === 'object') {
-    // tentativas de extrair string de propriedades comuns
-    const candidates = [dateLike.date, dateLike.data, dateLike.data_vencimento, dateLike.value, dateLike.iso, dateLike.toString && dateLike.toString()];
-    for (const c of candidates) {
-      if (!c) continue;
-      const s = String(c);
-      const m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
-      if (m) return `${m[3]}/${m[2]}/${m[1]}`;
-    }
-    // fallback: JSON string (cortado)
-    try {
-      const s = JSON.stringify(dateLike);
-      return s.length > 10 ? s.slice(0, 20) : s;
-    } catch (e) {
-      return '-';
-    }
-  }
-
-  // Se for string: procurar padrão YYYY-MM-DD
-  const s = String(dateLike);
-  const m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
-  if (m) return `${m[3]}/${m[2]}/${m[1]}`;
-
-  // fallback: retornar a parte inicial
-  return s.substring(0, 10);
-}
-
 function toISODate(date) {
   return date.toISOString().split('T')[0];
 }
@@ -476,10 +448,10 @@ export default function DashboardPage() {
   const loadInvestimentos = useCallback(async () => {
     setLoadingInvestimentos(true);
     try {
-// pedir 100 itens (perPage) — limite do servidor é 100
-const res = await investimentosService.listar({ perPage: 100 });
-// response shape: { items, total, page, totalPages }
-setInvestimentos(Array.isArray(res) ? res : (res?.items ?? []));
+      // pedir 100 itens (perPage) — limite do servidor é 100
+      const res = await investimentosService.listar({ perPage: 100 });
+      // response shape: { items, total, page, totalPages }
+      setInvestimentos(Array.isArray(res) ? res : (res?.items ?? []));
     } catch (err) {
       if (!isSemAssinatura(err)) toast.error('Erro ao carregar investimentos.');
     } finally {
@@ -487,18 +459,18 @@ setInvestimentos(Array.isArray(res) ? res : (res?.items ?? []));
     }
   }, []);
 
-const loadMetas = useCallback(async () => {
-  setLoadingMetas(true);
-  try {
-    const res = await metasService.listar({ status: 'ativa', limit: 3 });
-    // endpoint retorna { items, page, total, ... }
-    setMetas(Array.isArray(res) ? res : (res?.items ?? res?.data ?? []));
-  } catch (err) {
-    if (!isSemAssinatura(err)) toast.error('Erro ao carregar metas.');
-  } finally {
-    setLoadingMetas(false);
-  }
-}, []);
+  const loadMetas = useCallback(async () => {
+    setLoadingMetas(true);
+    try {
+      const res = await metasService.listar({ status: 'ativa', limit: 3 });
+      // endpoint retorna { items, page, total, ... }
+      setMetas(Array.isArray(res) ? res : (res?.items ?? res?.data ?? []));
+    } catch (err) {
+      if (!isSemAssinatura(err)) toast.error('Erro ao carregar metas.');
+    } finally {
+      setLoadingMetas(false);
+    }
+  }, []);
 
   const loadFluxo = useCallback(async () => {
     setLoadingFluxo(true);
@@ -534,6 +506,7 @@ const loadMetas = useCallback(async () => {
         contasPagarService.listar({ status: 'pendente', data_vencimento_de: todayStr, limit: 50 }).catch((err) => { if (!isSemAssinatura(err)) toast.error('Erro ao carregar próximos vencimentos.'); return { data: [] }; }),
         contasReceberService.listar({ status: 'pendente', data_vencimento_de: todayStr, limit: 50 }).catch((err) => { if (!isSemAssinatura(err)) toast.error('Erro ao carregar próximos vencimentos.'); return { data: [] }; }),
       ]);
+
       function normalizeDateField(c) {
         if (!c) return c;
         let v = c.data_vencimento ?? c.dataVencimento ?? c.data ?? null;
@@ -561,7 +534,7 @@ const loadMetas = useCallback(async () => {
         [...pagar, ...receber]
           .sort((a, b) => String(a.data_vencimento ?? '').localeCompare(String(b.data_vencimento ?? '')))
           .slice(0, 10)
-      ); //
+      );
     } catch (err) {
       if (!isSemAssinatura(err)) toast.error('Erro ao carregar próximos vencimentos.');
     } finally {
