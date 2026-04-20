@@ -70,17 +70,15 @@ function formatDate(dateLike) {
     // tentar parse com Date como fallback
     const parsed = new Date(s);
     if (!isNaN(parsed)) {
-      const y = parsed.getFullYear();
       const mm = String(parsed.getMonth() + 1).padStart(2, '0');
       const dd = String(parsed.getDate()).padStart(2, '0');
-      return `${dd}/${mm}/${y}`;
+      return `${dd}/${mm}/${parsed.getFullYear()}`;
     }
     return s.substring(0, 10);
   }
 
   // Se for object, tentar extrair propriedades comuns contendo data
   if (typeof dateLike === 'object') {
-    // propriedades comuns que podem conter a data
     const candidates = [
       dateLike.data_vencimento,
       dateLike.dataVencimento,
@@ -88,11 +86,10 @@ function formatDate(dateLike) {
       dateLike.date,
       dateLike.value,
       dateLike.iso,
-      dateLike.toString && dateLike.toString(),
     ];
+
     for (const c of candidates) {
       if (!c) continue;
-      // chame recursivamente para processar se for string/Date/objeto
       const result = formatDate(c);
       if (result && result !== '-') return result;
     }
@@ -102,7 +99,6 @@ function formatDate(dateLike) {
       const s = JSON.stringify(dateLike);
       const m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
       if (m) return `${m[3]}/${m[2]}/${m[1]}`;
-      // fallback visual: mostrar parte do JSON para debug (limite 20 chars)
       return (s.length > 20 ? s.slice(0, 20) + '...' : s);
     } catch (e) {
       return '-';
@@ -113,33 +109,6 @@ function formatDate(dateLike) {
   return '-';
 }
 
-  // Se vier um objeto com campos comuns
-  if (typeof dateLike === 'object') {
-    // tentativas de extrair string de propriedades comuns
-    const candidates = [dateLike.date, dateLike.data, dateLike.data_vencimento, dateLike.value, dateLike.iso, dateLike.toString && dateLike.toString()];
-    for (const c of candidates) {
-      if (!c) continue;
-      const s = String(c);
-      const m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
-      if (m) return `${m[3]}/${m[2]}/${m[1]}`;
-    }
-    // fallback: JSON string (cortado)
-    try {
-      const s = JSON.stringify(dateLike);
-      return s.length > 10 ? s.slice(0, 20) : s;
-    } catch (e) {
-      return '-';
-    }
-  }
-
-  // Se for string: procurar padrão YYYY-MM-DD
-  const s = String(dateLike);
-  const m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
-  if (m) return `${m[3]}/${m[2]}/${m[1]}`;
-
-  // fallback: retornar a parte inicial
-  return s.substring(0, 10);
-}
 
 function toISODate(date) {
   return date.toISOString().split('T')[0];
