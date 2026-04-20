@@ -54,13 +54,64 @@ function formatBRLShort(valor) {
 function formatDate(dateLike) {
   if (!dateLike) return '-';
 
-  // Se for Date real
+  // Se for uma instância Date
   if (dateLike instanceof Date) {
     const y = dateLike.getFullYear();
     const m = String(dateLike.getMonth() + 1).padStart(2, '0');
     const d = String(dateLike.getDate()).padStart(2, '0');
     return `${d}/${m}/${y}`;
   }
+
+  // Se for string, procurar padrão YYYY-MM-DD
+  if (typeof dateLike === 'string') {
+    const s = dateLike.trim();
+    const m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+    // tentar parse com Date como fallback
+    const parsed = new Date(s);
+    if (!isNaN(parsed)) {
+      const y = parsed.getFullYear();
+      const mm = String(parsed.getMonth() + 1).padStart(2, '0');
+      const dd = String(parsed.getDate()).padStart(2, '0');
+      return `${dd}/${mm}/${y}`;
+    }
+    return s.substring(0, 10);
+  }
+
+  // Se for object, tentar extrair propriedades comuns contendo data
+  if (typeof dateLike === 'object') {
+    // propriedades comuns que podem conter a data
+    const candidates = [
+      dateLike.data_vencimento,
+      dateLike.dataVencimento,
+      dateLike.data,
+      dateLike.date,
+      dateLike.value,
+      dateLike.iso,
+      dateLike.toString && dateLike.toString(),
+    ];
+    for (const c of candidates) {
+      if (!c) continue;
+      // chame recursivamente para processar se for string/Date/objeto
+      const result = formatDate(c);
+      if (result && result !== '-') return result;
+    }
+
+    // tentar extrair uma ISO do JSON stringificado
+    try {
+      const s = JSON.stringify(dateLike);
+      const m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+      if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+      // fallback visual: mostrar parte do JSON para debug (limite 20 chars)
+      return (s.length > 20 ? s.slice(0, 20) + '...' : s);
+    } catch (e) {
+      return '-';
+    }
+  }
+
+  // fallback genérico
+  return '-';
+}
 
   // Se vier um objeto com campos comuns
   if (typeof dateLike === 'object') {
