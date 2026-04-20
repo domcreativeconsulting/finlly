@@ -74,21 +74,7 @@ router.post(
     const signatureHeader =
       req.headers['asaas-signature'] ?? req.headers['x-asaas-hmac-sha256'];
 
-    // DEBUG temporário: registrar amostra do header e se o body é Buffer (remover após diagnóstico)
-try {
-  logger.info(
-    {
-      sigHeaderSample: signatureHeader ? String(signatureHeader).slice(0, 80) : null,
-      rawIsBuffer: Buffer.isBuffer(rawBody),
-      rawLength: Buffer.isBuffer(rawBody) ? rawBody.length : undefined,
-    },
-    'Webhook Asaas - debug incoming'
-  );
-} catch (e) {
-  // não interrompe o processamento se o logger falhar
-  // eslint-disable-next-line no-console
-  console.error('Webhook debug log falhou', e);
-}
+
 
     try {
       const result = await processarWebhookAsaas(payload, rawBody, signatureHeader);
