@@ -4,7 +4,7 @@ import prisma from '../utils/database.js';
 import { AppError } from '../errors/AppError.js';
 import { config } from '../config/env.js';
 import logger from '../logger.js';
-import { atualizarStatusAssinante, mapAsaasStatusToLocal } from './assinanteStatusService.js';
+import { atualizarStatusAssinante, mapAsaasStatusToLocal, invalidateBillingCache } from './assinanteStatusService.js';
 import { registrarEvento } from './auditoria.service.js';
 
 /**
@@ -86,6 +86,12 @@ async function handlePaymentConfirmed(payment) {
   const proximaCobranca = payment.dueDate ? new Date(payment.dueDate) : null;
 
   await atualizarStatusAssinante(assinante.id, assinante.usuario_id, 'ativo', { proxima_cobranca: proximaCobranca });
+  // Garantir invalidação de cache para o frontend (best-effort)
+try {
+  await invalidateBillingCache(assinante.usuario_id);
+} catch (err) {
+  logger.warn({ err, usuarioId: assinante.usuario_id }, 'Falha ao invalidar cache de billing após PAYMENT_CONFIRMED (continuando)');
+}
 
   await prisma.assinantePagamento.upsert({
     where: {
@@ -141,6 +147,12 @@ async function handlePaymentOverdue(payment) {
   }
 
   await atualizarStatusAssinante(assinante.id, assinante.usuario_id, 'inadimplente');
+
+  try {
+  await invalidateBillingCache(assinante.usuario_id);
+} catch (err) {
+  logger.warn({ err, usuarioId: assinante.usuario_id }, 'Falha ao invalidar cache de billing após PAYMENT_OVERDUE (continuando)');
+}
 
   await prisma.assinantePagamento.upsert({
     where: {
@@ -210,6 +222,11 @@ async function handleSubscriptionUpdated(subscription) {
       data: { proxima_cobranca },
     });
   }
+  try {
+  await invalidateBillingCache(assinante.usuario_id);
+} catch (err) {
+  logger.warn({ err, usuarioId: assinante.usuario_id }, 'Falha ao invalidar cache de billing após SUBSCRIPTION_UPDATED (continuando)');
+}
 
   logger.info({ usuarioId: assinante.usuario_id, novoStatus, proxima_cobranca }, 'Assinante atualizado por SUBSCRIPTION_UPDATED');
 }
@@ -238,6 +255,12 @@ async function handleDeleted(payment) {
   }
 
   await atualizarStatusAssinante(assinante.id, assinante.usuario_id, 'cancelado');
+
+  try {
+  await invalidateBillingCache(assinante.usuario_id);
+} catch (err) {
+  logger.warn({ err, usuarioId: assinante.usuario_id }, 'Falha ao invalidar cache de billing após evento de deleção (continuando)');
+}
 
   logger.info({ usuarioId: assinante.usuario_id }, 'Assinatura cancelada por evento de deleção');
 }
