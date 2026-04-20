@@ -51,11 +51,43 @@ function formatBRLShort(valor) {
   return `R$${valor.toFixed(0)}`;
 }
 
-function formatDate(dateStr) {
-  if (!dateStr) return '-';
-  const datePart = String(dateStr).substring(0, 10);
-  const [y, m, d] = datePart.split('-');
-  return `${d}/${m}/${y}`;
+function formatDate(dateLike) {
+  if (!dateLike) return '-';
+
+  // Se for Date real
+  if (dateLike instanceof Date) {
+    const y = dateLike.getFullYear();
+    const m = String(dateLike.getMonth() + 1).padStart(2, '0');
+    const d = String(dateLike.getDate()).padStart(2, '0');
+    return `${d}/${m}/${y}`;
+  }
+
+  // Se vier um objeto com campos comuns
+  if (typeof dateLike === 'object') {
+    // tentativas de extrair string de propriedades comuns
+    const candidates = [dateLike.date, dateLike.data, dateLike.data_vencimento, dateLike.value, dateLike.iso, dateLike.toString && dateLike.toString()];
+    for (const c of candidates) {
+      if (!c) continue;
+      const s = String(c);
+      const m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+      if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+    }
+    // fallback: JSON string (cortado)
+    try {
+      const s = JSON.stringify(dateLike);
+      return s.length > 10 ? s.slice(0, 20) : s;
+    } catch (e) {
+      return '-';
+    }
+  }
+
+  // Se for string: procurar padrão YYYY-MM-DD
+  const s = String(dateLike);
+  const m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+
+  // fallback: retornar a parte inicial
+  return s.substring(0, 10);
 }
 
 function toISODate(date) {
