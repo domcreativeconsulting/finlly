@@ -32,31 +32,32 @@ function computePayloadHash(payload) {
  * @param {string} signature
  * @throws {AppError} if the signature is invalid
  */
-function verificarAssinatura(rawBody, signature) {
+function verificarAssinatura(rawBody, signatureHeader) {
   const secret = config.ASAAS_WEBHOOK_SECRET;
-  if (!secret) return; // Skip verification if not configured
+  if (!secret) return; // verification disabled in env
 
-  const hmac = createHmac('sha256', secret);
-  hmac.update(typeof rawBody === 'string' ? Buffer.from(rawBody) : rawBody);
-  const expectedHex = hmac.digest('hex');
+  const payload = Buffer.isBuffer(rawBody) ? rawBody : Buffer.from(String(rawBody));
+  const expectedHex = createHmac('sha256', secret).update(payload).digest('hex');
   const expectedBuf = Buffer.from(expectedHex, 'hex');
 
-  // Normalize signature: remove common prefix like 'sha256='
-  const sigCandidate = typeof signature === 'string' ? signature.replace(/^sha256=/i, '') : signature;
+  // Normalize header: remove common prefix 'sha256=' and whitespace
+  const sigCandidate = String(signatureHeader || '').trim().replace(/^sha256=/i, '');
 
   const tryCompare = (s, encoding) => {
     try {
       const buf = Buffer.from(s, encoding);
       if (buf.length === expectedBuf.length && timingSafeEqual(buf, expectedBuf)) return true;
-    } catch (e) { /* ignore */ }
+    } catch (e) {
+      // ignore parse error
+    }
     return false;
   };
 
   if (tryCompare(sigCandidate, 'hex')) return;
   if (tryCompare(sigCandidate, 'base64')) return;
 
-  // if not matched, log a hint (no secrets) and throw
-  logger.warn({ sigSample: String(signature).slice(0, 20) }, 'Webhook Asaas: assinatura inválida (formato inesperado)');
+  // Log a short sample to help debugging (no secret)
+  logger.warn({ sigSample: String(signatureHeader).slice(0, 24) }, 'Webhook Asaas: assinatura inválida (formato inesperado)');
   throw AppError.unauthorized('Assinatura inválida');
 }
 /**
