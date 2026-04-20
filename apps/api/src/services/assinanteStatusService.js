@@ -5,6 +5,19 @@ import { registrarEvento } from './auditoria.service.js';
 
 const BILLING_STATUS_CACHE_PREFIX = 'billing:status:';
 
+// Helper para invalidar cache de billing com logs (não lança erro)
+export async function invalidateBillingCache(usuarioId) {
+  const key = `${BILLING_STATUS_CACHE_PREFIX}${usuarioId}`;
+  try {
+    const redis = await getRedisClient();
+    const removed = await redis.del(key);
+    logger.info({ usuarioId, key, removed }, 'Tentativa de invalidar cache de billing');
+  } catch (err) {
+    logger.error({ err, usuarioId, key }, 'Erro ao invalidar cache de billing (continuando)');
+    // não propaga o erro - falha no cache não deve interromper fluxo de billing
+  }
+}
+
 /**
  * Maps assinante status to the corresponding usuario status.
  *
@@ -92,13 +105,8 @@ export async function atualizarStatusAssinante(assinanteId, usuarioId, novoStatu
     sucesso: true,
   });
 
-  // Invalidate billing status cache (best-effort)
-  try {
-    const redis = await getRedisClient();
-    await redis.del(`${BILLING_STATUS_CACHE_PREFIX}${usuarioId}`);
-  } catch {
-    // Redis unavailable — ignore
-  }
+  // Invalidate billing status cache (best-effort) via helper
+  await invalidateBillingCache(usuarioId);
 }
 
 /**
