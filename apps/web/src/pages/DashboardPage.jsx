@@ -483,9 +483,34 @@ const loadMetas = useCallback(async () => {
         contasPagarService.listar({ status: 'pendente', data_vencimento_de: todayStr, limit: 50 }).catch((err) => { if (!isSemAssinatura(err)) toast.error('Erro ao carregar próximos vencimentos.'); return { data: [] }; }),
         contasReceberService.listar({ status: 'pendente', data_vencimento_de: todayStr, limit: 50 }).catch((err) => { if (!isSemAssinatura(err)) toast.error('Erro ao carregar próximos vencimentos.'); return { data: [] }; }),
       ]);
-      const pagar = (pagarRes?.data ?? []).map((c) => ({ ...c, tipo: 'pagar' }));
-      const receber = (receberRes?.data ?? []).map((c) => ({ ...c, tipo: 'receber' }));
-      setProximosVencimentos([...pagar, ...receber].sort((a, b) => String(a.data_vencimento).localeCompare(String(b.data_vencimento))).slice(0, 10));
+      function normalizeDateField(c) {
+        if (!c) return c;
+        let v = c.data_vencimento ?? c.dataVencimento ?? c.data ?? null;
+        if (!v) return c;
+        if (typeof v === 'object') {
+          v = v.date || v.data || v.value || v.iso || (v.toString ? v.toString() : null);
+        }
+        // Se ainda for objeto, tentar extrair string JSON com uma data ISO interna
+        if (typeof v === 'object') {
+          try {
+            const s = JSON.stringify(v);
+            const m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+            if (m) v = `${m[1]}-${m[2]}-${m[3]}`;
+            else v = null;
+          } catch {
+            v = null;
+          }
+        }
+        return { ...c, data_vencimento: v };
+      }
+
+      const pagar = (pagarRes?.data ?? []).map((c) => ({ ...normalizeDateField(c), tipo: 'pagar' }));
+      const receber = (receberRes?.data ?? []).map((c) => ({ ...normalizeDateField(c), tipo: 'receber' }));
+      setProximosVencimentos(
+        [...pagar, ...receber]
+          .sort((a, b) => String(a.data_vencimento ?? '').localeCompare(String(b.data_vencimento ?? '')))
+          .slice(0, 10)
+      ); //
     } catch (err) {
       if (!isSemAssinatura(err)) toast.error('Erro ao carregar próximos vencimentos.');
     } finally {
