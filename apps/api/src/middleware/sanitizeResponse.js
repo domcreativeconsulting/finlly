@@ -27,6 +27,10 @@ function stripSensitiveFields(value) {
   if (Array.isArray(value)) {
     return value.map(stripSensitiveFields);
   }
+  // Preserva Date objects — Object.entries(date) retorna [] e viraria {}
+  if (value instanceof Date) {
+    return value;
+  }
   if (value !== null && typeof value === 'object') {
     const result = {};
     for (const [k, v] of Object.entries(value)) {
