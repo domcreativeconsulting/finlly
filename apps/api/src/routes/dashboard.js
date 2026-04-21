@@ -133,7 +133,7 @@ router.get('/relatorios/exportar', readLimiter, jwtAuthMiddleware, ensureLoggedI
 
     const headers = ['data', 'tipo', 'valor', 'descricao', 'categoria', 'conta'];
     const rows = data.map((m) => [
-      m.data ? m.data.substring(0, 10).split('-').reverse().join('/') : '',
+     m.data ? String(m.data instanceof Date ? m.data.toISOString() : m.data).substring(0, 10).split('-').reverse().join('/') : '',
       m.tipo || '',
       Number(m.valor).toFixed(2),
       m.descricao || '',
