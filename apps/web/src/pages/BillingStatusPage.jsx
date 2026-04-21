@@ -8,6 +8,8 @@ import { PageHeader } from '../components/PageHeader.jsx';
 import { InadimplenteGuard } from '../components/InadimplenteGuard.jsx';
 import { Button, Badge } from '../design-system/index.js';
 import { colors, typography, tokens, radius, shadows } from '../design-system/tokens.js';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faBolt, faCreditCard, faFileInvoice, faCalendarDays, faRotate } from '@fortawesome/free-solid-svg-icons';
 
 function formatDate(dateStr) {
   if (!dateStr) return '—';
@@ -34,13 +36,14 @@ function VencimentoBadge({ dateStr }) {
 function PagamentoBadge({ forma }) {
   if (!forma) return <span style={{ fontWeight: 600, color: colors.neutral400 }}>—</span>;
   const map = {
-    PIX: { bg: '#dcfce7', color: '#16a34a', label: '⚡ PIX' },
-    CREDIT_CARD: { bg: '#eff6ff', color: '#2563eb', label: '💳 Cartão de crédito' },
-    BOLETO: { bg: '#fef9c3', color: '#ca8a04', label: '📄 Boleto' },
+    PIX: { bg: '#dcfce7', color: '#16a34a', label: 'PIX', icon: faBolt },
+    CREDIT_CARD: { bg: '#eff6ff', color: '#2563eb', label: 'Cartão de crédito', icon: faCreditCard },
+    BOLETO: { bg: '#fef9c3', color: '#ca8a04', label: 'Boleto', icon: faFileInvoice },
   };
-  const style = map[forma.toUpperCase()] || { bg: colors.neutral100, color: colors.neutral600, label: forma };
+  const style = map[forma.toUpperCase()] || { bg: colors.neutral100, color: colors.neutral600, label: forma, icon: faCreditCard };
   return (
-    <span style={{ padding: '3px 10px', borderRadius: 99, fontSize: 13, fontWeight: 600, background: style.bg, color: style.color }}>
+    <span style={{ padding: '3px 10px', borderRadius: 99, fontSize: 13, fontWeight: 600, background: style.bg, color: style.color, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+      <FontAwesomeIcon icon={style.icon} style={{ fontSize: 11 }} />
       {style.label}
     </span>
   );
@@ -49,12 +52,13 @@ function PagamentoBadge({ forma }) {
 function CicloBadge({ ciclo }) {
   if (!ciclo) return <span style={{ fontWeight: 600, color: colors.neutral400 }}>—</span>;
   const map = {
-    mensal: { bg: '#eff6ff', color: '#2563eb', label: '📅 Mensal' },
-    anual: { bg: '#f0fdf4', color: '#16a34a', label: '📅 Anual' },
+    mensal: { bg: '#eff6ff', color: '#2563eb', label: 'Mensal' },
+    anual: { bg: '#f0fdf4', color: '#16a34a', label: 'Anual' },
   };
   const style = map[ciclo.toLowerCase()] || { bg: colors.neutral100, color: colors.neutral600, label: ciclo };
   return (
-    <span style={{ padding: '3px 10px', borderRadius: 99, fontSize: 13, fontWeight: 600, background: style.bg, color: style.color }}>
+    <span style={{ padding: '3px 10px', borderRadius: 99, fontSize: 13, fontWeight: 600, background: style.bg, color: style.color, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+      <FontAwesomeIcon icon={faCalendarDays} style={{ fontSize: 11 }} />
       {style.label}
     </span>
   );
@@ -181,32 +185,21 @@ export default function BillingStatusPage() {
                     ))}
                   </dl>
 
-                  {/* Botão cancelar discreto */}
                   <div style={{ marginTop: '24px' }}>
                     {confirmCancel ? (
                       <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: radius.md, padding: '14px 16px' }}>
                         <p style={{ margin: '0 0 12px', fontSize: 14, color: '#991b1b', fontWeight: 600 }}>Tem certeza? Esta ação não pode ser desfeita.</p>
                         <div style={{ display: 'flex', gap: 8 }}>
-                          <button
-                            onClick={handleCancel}
-                            disabled={cancelling}
-                            style={{ padding: '7px 16px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: radius.sm, fontSize: 14, fontWeight: 600, cursor: cancelling ? 'not-allowed' : 'pointer', opacity: cancelling ? 0.7 : 1 }}
-                          >
+                          <button onClick={handleCancel} disabled={cancelling} style={{ padding: '7px 16px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: radius.sm, fontSize: 14, fontWeight: 600, cursor: cancelling ? 'not-allowed' : 'pointer', opacity: cancelling ? 0.7 : 1 }}>
                             {cancelling ? 'Cancelando...' : 'Sim, cancelar'}
                           </button>
-                          <button
-                            onClick={() => setConfirmCancel(false)}
-                            style={{ padding: '7px 16px', background: 'transparent', color: colors.neutral600, border: `1px solid ${colors.neutral300}`, borderRadius: radius.sm, fontSize: 14, cursor: 'pointer' }}
-                          >
+                          <button onClick={() => setConfirmCancel(false)} style={{ padding: '7px 16px', background: 'transparent', color: colors.neutral600, border: `1px solid ${colors.neutral300}`, borderRadius: radius.sm, fontSize: 14, cursor: 'pointer' }}>
                             Voltar
                           </button>
                         </div>
                       </div>
                     ) : (
-                      <button
-                        onClick={() => setConfirmCancel(true)}
-                        style={{ background: 'none', border: 'none', color: '#dc2626', fontSize: 14, cursor: 'pointer', padding: 0, textDecoration: 'underline', opacity: 0.8 }}
-                      >
+                      <button onClick={() => setConfirmCancel(true)} style={{ background: 'none', border: 'none', color: '#dc2626', fontSize: 14, cursor: 'pointer', padding: 0, textDecoration: 'underline', opacity: 0.8 }}>
                         Cancelar assinatura
                       </button>
                     )}
@@ -220,18 +213,18 @@ export default function BillingStatusPage() {
                     Sua gestão não pode parar. Clique abaixo para confirmar seu próximo ciclo.
                   </p>
 
-                  {/* Valor do próximo ciclo */}
                   <div style={{ margin: '0 0 24px', padding: '12px 16px', background: colors.neutral50, borderRadius: radius.md, border: `1px solid ${colors.neutral200}` }}>
                     <span style={{ fontSize: 13, color: colors.neutral500 }}>Próximo ciclo</span>
                     <div style={{ fontSize: 22, fontWeight: 700, color: colors.neutral800, marginTop: 2 }}>
                       {PRECOS[assinante.ciclo?.toLowerCase()] ?? 'R$ 39,90/mês'}
                     </div>
-                    <span style={{ fontSize: 12, color: colors.neutral400 }}>Recorrência {assinante.ciclo ?? 'mensal'} via {assinante.formaPagamento ?? 'PIX'}</span>
+                    <span style={{ fontSize: 12, color: colors.neutral400, display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                      <FontAwesomeIcon icon={faRotate} style={{ fontSize: 11 }} />
+                      Recorrência {assinante.ciclo ?? 'mensal'} via {assinante.formaPagamento ?? 'PIX'}
+                    </span>
                   </div>
 
-                  <Button
-                    onClick={() => navigate(`/checkout?plano=${encodeURIComponent(assinante?.plano ?? 'mensal')}&ciclo=${encodeURIComponent(assinante?.ciclo ?? 'mensal')}&step=2`)}
-                  >
+                  <Button onClick={() => navigate(`/checkout?plano=${encodeURIComponent(assinante?.plano ?? 'mensal')}&ciclo=${encodeURIComponent(assinante?.ciclo ?? 'mensal')}&step=2`)}>
                     Renovar assinatura →
                   </Button>
                 </div>
