@@ -72,8 +72,9 @@ router.post(
     }
 
     const signatureHeader =
-      req.headers['asaas-signature'] ?? req.headers['x-asaas-hmac-sha256'];
-
+  req.headers['asaas-access-token'] ??
+  req.headers['asaas-signature'] ??
+  req.headers['x-asaas-hmac-sha256'];
 
 
     try {
