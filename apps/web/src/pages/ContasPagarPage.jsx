@@ -140,6 +140,285 @@ function SortableTh({ field, label, sortField, sortDir, onSort, style }) {
   );
 }
 
+function ContaMobileCard({
+  conta,
+  isOnline,
+  hoje,
+  menuAbertoId,
+  setMenuAbertoId,
+  abrirModalEdicao,
+  abrirModalPagar,
+  handleCancelar,
+  handleExcluir,
+}) {
+  const venc = parseVencDate(conta.data_vencimento);
+  const isAtrasada = conta.status === 'pendente' && venc && venc < hoje;
+  return (
+    <div
+      style={{
+        background: isAtrasada ? '#fff5f5' : '#ffffff',
+        border: `1px solid ${isAtrasada ? '#fecaca' : '#e5e7eb'}`,
+        borderRadius: '12px',
+        padding: '14px 16px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          marginBottom: '8px',
+        }}
+      >
+        <div style={{ flex: 1, marginRight: '8px' }}>
+          <div style={{ fontWeight: 600, fontSize: '14px', color: '#111827' }}>
+            {conta.descricao}
+          </div>
+          {conta.recorrencia && (
+            <div
+              style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}
+            >
+              {conta.recorrencia === 'mensal' ? 'Fixa' : 'Variável'}
+            </div>
+          )}
+        </div>
+        <StatusBadge status={conta.status} />
+      </div>
+
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          marginBottom: '8px',
+        }}
+      >
+        <div>
+          <div style={{ fontSize: '11px', color: '#6b7280' }}>Vencimento</div>
+          <div
+            style={{
+              fontSize: '13px',
+              fontWeight: 500,
+              color: isAtrasada ? '#dc2626' : '#374151',
+            }}
+          >
+            {formatDate(conta.data_vencimento)}
+            {isAtrasada && (
+              <span style={{ fontSize: '11px', fontWeight: 600 }}>
+                {' '}
+                · vencida
+              </span>
+            )}
+          </div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: '11px', color: '#6b7280' }}>Valor</div>
+          <div style={{ fontSize: '15px', fontWeight: 700, color: '#111827' }}>
+            {formatBRL(conta.valor_a_pagar ?? conta.valor)}
+          </div>
+        </div>
+      </div>
+
+      {(conta.conta?.nome || conta.categoria?.nome) && (
+        <div
+          style={{
+            display: 'flex',
+            gap: '12px',
+            marginBottom: '10px',
+            flexWrap: 'wrap',
+          }}
+        >
+          {conta.conta?.nome && (
+            <span
+              style={{
+                fontSize: '12px',
+                color: '#6b7280',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+            >
+              <FontAwesomeIcon icon={faBuilding} style={{ fontSize: '11px' }} />
+              {conta.conta.nome}
+            </span>
+          )}
+          {conta.categoria?.nome && (
+            <span
+              style={{
+                fontSize: '12px',
+                color: '#6b7280',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+            >
+              <FontAwesomeIcon icon={faTag} style={{ fontSize: '11px' }} />
+              {conta.categoria.nome}
+            </span>
+          )}
+        </div>
+      )}
+
+      <div
+        style={{
+          display: 'flex',
+          gap: '8px',
+          justifyContent: 'flex-end',
+          alignItems: 'center',
+          borderTop: '1px solid #f3f4f6',
+          paddingTop: '10px',
+          marginTop: '4px',
+        }}
+      >
+        {conta.status === 'pago' ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span
+              title="Comprovante"
+              style={{ cursor: 'pointer', fontSize: '16px', color: '#6b7280' }}
+            >
+              <FontAwesomeIcon icon={faPaperclip} />
+            </span>
+            <span style={{ fontSize: '12px', color: '#6b7280' }}>
+              Pago em {formatDate(conta.data_pagamento)}
+            </span>
+          </div>
+        ) : (
+          <>
+            <button
+              style={{
+                background: 'none',
+                border: 'none',
+                fontSize: '15px',
+                cursor: 'pointer',
+                padding: '4px 6px',
+                borderRadius: '6px',
+                color: '#6b7280',
+              }}
+              onClick={() => abrirModalEdicao(conta)}
+              title="Editar"
+            >
+              <FontAwesomeIcon icon={faPenToSquare} />
+            </button>
+            <span
+              title="Comprovante"
+              style={{
+                cursor: 'pointer',
+                fontSize: '16px',
+                color: '#6b7280',
+                padding: '4px 6px',
+              }}
+            >
+              <FontAwesomeIcon icon={faPaperclip} />
+            </span>
+            {conta.status === 'pendente' && (
+              <button
+                style={{
+                  padding: '6px 14px',
+                  background: '#16a34a',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+                onClick={() => abrirModalPagar(conta)}
+                title={
+                  !isOnline ? 'Disponível apenas online' : 'Registrar pagamento'
+                }
+                disabled={!isOnline}
+              >
+                <FontAwesomeIcon icon={faCheck} /> Pagar
+              </button>
+            )}
+            <div style={{ position: 'relative' }}>
+              <button
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '15px',
+                  cursor: 'pointer',
+                  padding: '4px 6px',
+                  borderRadius: '6px',
+                  color: '#6b7280',
+                }}
+                title="Mais opções"
+                onClick={() =>
+                  setMenuAbertoId((id) => (id === conta.id ? null : conta.id))
+                }
+              >
+                <FontAwesomeIcon icon={faEllipsis} />
+              </button>
+              {menuAbertoId === conta.id && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    right: 0,
+                    top: '100%',
+                    marginTop: '4px',
+                    minWidth: '160px',
+                    background: '#fff',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    zIndex: 100,
+                    overflow: 'hidden',
+                  }}
+                >
+                  <button
+                    style={{
+                      display: 'block',
+                      width: '100%',
+                      padding: '10px 14px',
+                      textAlign: 'left',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      color: '#374151',
+                    }}
+                    disabled={!isOnline}
+                    title={!isOnline ? 'Disponível apenas online' : undefined}
+                    onClick={() => {
+                      if (!isOnline) return;
+                      setMenuAbertoId(null);
+                      handleCancelar(conta);
+                    }}
+                  >
+                    Cancelar conta
+                  </button>
+                  <button
+                    style={{
+                      display: 'block',
+                      width: '100%',
+                      padding: '10px 14px',
+                      textAlign: 'left',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      color: '#dc2626',
+                    }}
+                    disabled={!isOnline}
+                    title={!isOnline ? 'Disponível apenas online' : undefined}
+                    onClick={() => {
+                      if (!isOnline) return;
+                      setMenuAbertoId(null);
+                      handleExcluir(conta);
+                    }}
+                  >
+                    Excluir
+                  </button>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function ContasPagarPage() {
   const { usuario, logout } = useAuth();
   const navigate = useNavigate();
@@ -209,7 +488,8 @@ export default function ContasPagarPage() {
   const [excluindoCatId, setExcluindoCatId] = useState(null);
 
   // Modal Nova conta financeira
-  const [modalContaFinanceiraAberto, setModalContaFinanceiraAberto] = useState(false);
+  const [modalContaFinanceiraAberto, setModalContaFinanceiraAberto] =
+    useState(false);
   const [formContaFinanceira, setFormContaFinanceira] = useState({
     nome: '',
     tipo: 'corrente',
@@ -242,7 +522,11 @@ export default function ContasPagarPage() {
       setLista(result.data);
       setTotalPages(result.totalPages);
       setTotal(result.total ?? 0);
-      saveCache('contas-pagar', { data: result.data, totalPages: result.totalPages, total: result.total ?? 0 });
+      saveCache('contas-pagar', {
+        data: result.data,
+        totalPages: result.totalPages,
+        total: result.total ?? 0,
+      });
       setCacheInfo(null);
     } catch (err) {
       if (!isOnline) {
@@ -347,12 +631,15 @@ export default function ContasPagarPage() {
     try {
       const params = { format: 'csv', ...filtrosAtivos };
       Object.keys(params).forEach((k) => {
-        if (params[k] === '' || params[k] === null || params[k] === undefined) delete params[k];
+        if (params[k] === '' || params[k] === null || params[k] === undefined)
+          delete params[k];
       });
       const blob = await contasPagarService.exportar(params);
       const now = new Date();
       const mesRef = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-      const periodo = filtrosAtivos.data_vencimento_de ? filtrosAtivos.data_vencimento_de.substring(0, 7) : mesRef;
+      const periodo = filtrosAtivos.data_vencimento_de
+        ? filtrosAtivos.data_vencimento_de.substring(0, 7)
+        : mesRef;
       downloadBlob(blob, `contas-pagar-${periodo}.csv`);
       toast.success('Exportação CSV concluída!');
     } catch {
@@ -367,12 +654,15 @@ export default function ContasPagarPage() {
     try {
       const params = { format: 'pdf', ...filtrosAtivos };
       Object.keys(params).forEach((k) => {
-        if (params[k] === '' || params[k] === null || params[k] === undefined) delete params[k];
+        if (params[k] === '' || params[k] === null || params[k] === undefined)
+          delete params[k];
       });
       const blob = await contasPagarService.exportar(params);
       const now = new Date();
       const mesRef = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-      const periodo = filtrosAtivos.data_vencimento_de ? filtrosAtivos.data_vencimento_de.substring(0, 7) : mesRef;
+      const periodo = filtrosAtivos.data_vencimento_de
+        ? filtrosAtivos.data_vencimento_de.substring(0, 7)
+        : mesRef;
       downloadBlob(blob, `contas-pagar-${periodo}.pdf`);
       toast.success('Exportação PDF concluída!');
     } catch {
@@ -532,34 +822,36 @@ export default function ContasPagarPage() {
     setComprovante(null);
   }
 
-  const handleConfirmarPagamento = requireOnline(async function handleConfirmarPagamento(e) {
-    e.preventDefault();
-    if (!contaParaPagar) return;
-    setPagando(true);
-    try {
-      const payload = { data_pagamento: dataPagamento };
-      if (contaIdPagamento) payload.conta_id = contaIdPagamento;
-      if (observacoesPagamento) payload.observacoes = observacoesPagamento;
+  const handleConfirmarPagamento = requireOnline(
+    async function handleConfirmarPagamento(e) {
+      e.preventDefault();
+      if (!contaParaPagar) return;
+      setPagando(true);
+      try {
+        const payload = { data_pagamento: dataPagamento };
+        if (contaIdPagamento) payload.conta_id = contaIdPagamento;
+        if (observacoesPagamento) payload.observacoes = observacoesPagamento;
 
-      await contasPagarService.pagar(contaParaPagar.id, payload);
+        await contasPagarService.pagar(contaParaPagar.id, payload);
 
-      if (comprovante) {
-        toast.success(
-          `Conta marcada como paga! Comprovante "${comprovante.name}" salvo localmente.`
-        );
-      } else {
-        toast.success('Conta marcada como paga!');
+        if (comprovante) {
+          toast.success(
+            `Conta marcada como paga! Comprovante "${comprovante.name}" salvo localmente.`
+          );
+        } else {
+          toast.success('Conta marcada como paga!');
+        }
+        fecharModalPagar();
+        carregarLista();
+      } catch (err) {
+        const msg =
+          err?.response?.data?.message || 'Erro ao registrar pagamento.';
+        toast.error(msg);
+      } finally {
+        setPagando(false);
       }
-      fecharModalPagar();
-      carregarLista();
-    } catch (err) {
-      const msg =
-        err?.response?.data?.message || 'Erro ao registrar pagamento.';
-      toast.error(msg);
-    } finally {
-      setPagando(false);
     }
-  });
+  );
 
   const handleCancelar = requireOnline(async function handleCancelar(conta) {
     if (!window.confirm(`Cancelar a conta "${conta.descricao}"?`)) return;
@@ -656,20 +948,24 @@ export default function ContasPagarPage() {
     };
   }, [lista, hoje, total]);
 
-  const handleCancelarGrupo = requireOnline(async function handleCancelarGrupo(grupoId, descricao) {
-    if (
-      !window.confirm(`Cancelar todas as parcelas pendentes de "${descricao}"?`)
-    )
-      return;
-    try {
-      const result = await contasPagarService.cancelarGrupo(grupoId);
-      toast.success(`${result.canceladas} parcela(s) cancelada(s)!`);
-      carregarLista();
-    } catch (err) {
-      const msg = err?.response?.data?.message || 'Erro ao cancelar grupo.';
-      toast.error(msg);
+  const handleCancelarGrupo = requireOnline(
+    async function handleCancelarGrupo(grupoId, descricao) {
+      if (
+        !window.confirm(
+          `Cancelar todas as parcelas pendentes de "${descricao}"?`
+        )
+      )
+        return;
+      try {
+        const result = await contasPagarService.cancelarGrupo(grupoId);
+        toast.success(`${result.canceladas} parcela(s) cancelada(s)!`);
+        carregarLista();
+      } catch (err) {
+        const msg = err?.response?.data?.message || 'Erro ao cancelar grupo.';
+        toast.error(msg);
+      }
     }
-  });
+  );
 
   async function carregarCategoriasModal() {
     setLoadingCategoriasModal(true);
@@ -700,7 +996,13 @@ export default function ContasPagarPage() {
   }
 
   function abrirModalContaFinanceira() {
-    setFormContaFinanceira({ nome: '', tipo: 'corrente', banco: '', codigo_banco: '', saldo_inicial: '' });
+    setFormContaFinanceira({
+      nome: '',
+      tipo: 'corrente',
+      banco: '',
+      codigo_banco: '',
+      saldo_inicial: '',
+    });
     setModalContaFinanceiraAberto(true);
   }
 
@@ -722,13 +1024,16 @@ export default function ContasPagarPage() {
         tipo: formContaFinanceira.tipo,
         banco: formContaFinanceira.banco.trim() || null,
         codigo_banco: formContaFinanceira.codigo_banco.trim() || null,
-        saldo_inicial: formContaFinanceira.saldo_inicial ? parseFloat(formContaFinanceira.saldo_inicial) : 0,
+        saldo_inicial: formContaFinanceira.saldo_inicial
+          ? parseFloat(formContaFinanceira.saldo_inicial)
+          : 0,
       });
       toast.success('Conta financeira criada com sucesso!');
       fecharModalContaFinanceira();
       carregarSelects();
     } catch (err) {
-      const msg = err?.response?.data?.message || 'Erro ao criar conta financeira.';
+      const msg =
+        err?.response?.data?.message || 'Erro ao criar conta financeira.';
       toast.error(msg);
     } finally {
       setSalvandoContaFinanceira(false);
@@ -809,7 +1114,11 @@ export default function ContasPagarPage() {
             ...(isMobile
               ? contentStyle
               : {
-                  marginLeft: !sidebarOpen ? '0px' : sidebarExpanded ? '236px' : '108px',
+                  marginLeft: !sidebarOpen
+                    ? '0px'
+                    : sidebarExpanded
+                      ? '236px'
+                      : '108px',
                   transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 }),
           }}
@@ -836,7 +1145,13 @@ export default function ContasPagarPage() {
               </div>
             </div>
             <div style={s.topBarRight}>
-              <Button onClick={abrirModalNovo} disabled={!isOnline} title={!isOnline ? 'Disponível apenas online' : undefined}>+ Nova conta</Button>
+              <Button
+                onClick={abrirModalNovo}
+                disabled={!isOnline}
+                title={!isOnline ? 'Disponível apenas online' : undefined}
+              >
+                + Nova conta
+              </Button>
               <Button variant="outline" onClick={abrirModalContaFinanceira}>
                 <FontAwesomeIcon icon={faBuilding} /> Nova conta financeira
               </Button>
@@ -1313,6 +1628,32 @@ export default function ContasPagarPage() {
                   <div style={s.errorBox}>{error}</div>
                 ) : lista.length === 0 ? (
                   <div style={s.centered}>Nenhuma conta encontrada.</div>
+                ) : isMobile ? (
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '10px',
+                      padding: '12px',
+                    }}
+                  >
+                    {grupos.map(([, contas]) =>
+                      contas.map((conta) => (
+                        <ContaMobileCard
+                          key={conta.id}
+                          conta={conta}
+                          isOnline={isOnline}
+                          hoje={hoje}
+                          menuAbertoId={menuAbertoId}
+                          setMenuAbertoId={setMenuAbertoId}
+                          abrirModalEdicao={abrirModalEdicao}
+                          abrirModalPagar={abrirModalPagar}
+                          handleCancelar={handleCancelar}
+                          handleExcluir={handleExcluir}
+                        />
+                      ))
+                    )}
+                  </div>
                 ) : (
                   <div style={s.tableWrapper}>
                     <table style={s.table}>
@@ -1528,7 +1869,11 @@ export default function ContasPagarPage() {
                                         <button
                                           style={s.btnPagar}
                                           onClick={() => abrirModalPagar(conta)}
-                                          title={!isOnline ? 'Disponível apenas online' : 'Registrar pagamento'}
+                                          title={
+                                            !isOnline
+                                              ? 'Disponível apenas online'
+                                              : 'Registrar pagamento'
+                                          }
                                           disabled={!isOnline}
                                         >
                                           <FontAwesomeIcon icon={faCheck} />{' '}
@@ -1552,7 +1897,11 @@ export default function ContasPagarPage() {
                                             <button
                                               style={s.dropdownItem}
                                               disabled={!isOnline}
-                                              title={!isOnline ? 'Disponível apenas online' : undefined}
+                                              title={
+                                                !isOnline
+                                                  ? 'Disponível apenas online'
+                                                  : undefined
+                                              }
                                               onClick={() => {
                                                 if (!isOnline) return;
                                                 setMenuAbertoId(null);
@@ -1567,7 +1916,11 @@ export default function ContasPagarPage() {
                                                 color: '#dc2626',
                                               }}
                                               disabled={!isOnline}
-                                              title={!isOnline ? 'Disponível apenas online' : undefined}
+                                              title={
+                                                !isOnline
+                                                  ? 'Disponível apenas online'
+                                                  : undefined
+                                              }
                                               onClick={() => {
                                                 if (!isOnline) return;
                                                 setMenuAbertoId(null);
@@ -1903,7 +2256,11 @@ export default function ContasPagarPage() {
                                                 onClick={() =>
                                                   abrirModalPagar(conta)
                                                 }
-                                                title={!isOnline ? 'Disponível apenas online' : 'Registrar pagamento'}
+                                                title={
+                                                  !isOnline
+                                                    ? 'Disponível apenas online'
+                                                    : 'Registrar pagamento'
+                                                }
                                                 disabled={!isOnline}
                                               >
                                                 <FontAwesomeIcon
@@ -1935,7 +2292,11 @@ export default function ContasPagarPage() {
                                                   <button
                                                     style={s.dropdownItem}
                                                     disabled={!isOnline}
-                                                    title={!isOnline ? 'Disponível apenas online' : undefined}
+                                                    title={
+                                                      !isOnline
+                                                        ? 'Disponível apenas online'
+                                                        : undefined
+                                                    }
                                                     onClick={() => {
                                                       if (!isOnline) return;
                                                       setMenuAbertoId(null);
@@ -1950,7 +2311,11 @@ export default function ContasPagarPage() {
                                                       color: '#dc2626',
                                                     }}
                                                     disabled={!isOnline}
-                                                    title={!isOnline ? 'Disponível apenas online' : undefined}
+                                                    title={
+                                                      !isOnline
+                                                        ? 'Disponível apenas online'
+                                                        : undefined
+                                                    }
                                                     onClick={() => {
                                                       if (!isOnline) return;
                                                       setMenuAbertoId(null);
@@ -2702,89 +3067,91 @@ export default function ContasPagarPage() {
                     {(cat.filhos ?? [])
                       .filter((filho) => filho.nome && filho.nome.trim() !== '')
                       .map((filho) => (
-                      <tr
-                        key={filho.id}
-                        style={{
-                          borderBottom: '1px solid #f1f5f9',
-                          background: '#fafbfc',
-                        }}
-                      >
-                        <td
+                        <tr
+                          key={filho.id}
                           style={{
-                            padding: '10px 12px 10px 28px',
-                            color: '#334155',
+                            borderBottom: '1px solid #f1f5f9',
+                            background: '#fafbfc',
                           }}
                         >
-                          ↳ {filho.nome}
-                        </td>
-                        <td style={{ padding: '10px 12px' }}>
-                          <span
+                          <td
                             style={{
-                              display: 'inline-block',
-                              padding: '2px 8px',
-                              borderRadius: '999px',
-                              fontSize: '11px',
-                              fontWeight: 600,
-                              background: '#e2e8f0',
-                              color: '#64748b',
+                              padding: '10px 12px 10px 28px',
+                              color: '#334155',
                             }}
                           >
-                            Subcategoria
-                          </span>
-                        </td>
-                        <td
-                          style={{ padding: '10px 12px', textAlign: 'right' }}
-                        >
-                          {!filho.is_sistema && (
-                            <>
-                              <button
-                                onClick={() => {
-                                  setCatEmEdicao(filho);
-                                  setFormCat({
-                                    nome: filho.nome,
-                                    icone: filho.icone || '',
-                                    cor: filho.cor || '#33528a',
-                                    pai_id: filho.pai_id || '',
-                                  });
-                                }}
-                                style={{
-                                  background: '#e0f2fe',
-                                  color: '#0369a1',
-                                  border: 'none',
-                                  borderRadius: '6px',
-                                  padding: '4px 10px',
-                                  fontSize: '12px',
-                                  fontWeight: 600,
-                                  cursor: 'pointer',
-                                  marginRight: '6px',
-                                }}
-                              >
-                                <FontAwesomeIcon icon={faPenToSquare} />
-                              </button>
-                              <button
-                                onClick={() => handleExcluirCategoria(filho)}
-                                disabled={excluindoCatId === filho.id}
-                                style={{
-                                  background: '#fee2e2',
-                                  color: '#991b1b',
-                                  border: 'none',
-                                  borderRadius: '6px',
-                                  padding: '4px 10px',
-                                  fontSize: '12px',
-                                  fontWeight: 600,
-                                  cursor: 'pointer',
-                                }}
-                              >
-                                🗑️
-                              </button>
-                            </>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
+                            ↳ {filho.nome}
+                          </td>
+                          <td style={{ padding: '10px 12px' }}>
+                            <span
+                              style={{
+                                display: 'inline-block',
+                                padding: '2px 8px',
+                                borderRadius: '999px',
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                background: '#e2e8f0',
+                                color: '#64748b',
+                              }}
+                            >
+                              Subcategoria
+                            </span>
+                          </td>
+                          <td
+                            style={{ padding: '10px 12px', textAlign: 'right' }}
+                          >
+                            {!filho.is_sistema && (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    setCatEmEdicao(filho);
+                                    setFormCat({
+                                      nome: filho.nome,
+                                      icone: filho.icone || '',
+                                      cor: filho.cor || '#33528a',
+                                      pai_id: filho.pai_id || '',
+                                    });
+                                  }}
+                                  style={{
+                                    background: '#e0f2fe',
+                                    color: '#0369a1',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    padding: '4px 10px',
+                                    fontSize: '12px',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    marginRight: '6px',
+                                  }}
+                                >
+                                  <FontAwesomeIcon icon={faPenToSquare} />
+                                </button>
+                                <button
+                                  onClick={() => handleExcluirCategoria(filho)}
+                                  disabled={excluindoCatId === filho.id}
+                                  style={{
+                                    background: '#fee2e2',
+                                    color: '#991b1b',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    padding: '4px 10px',
+                                    fontSize: '12px',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  🗑️
+                                </button>
+                              </>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
                   </React.Fragment>
                 ))}
-              {listaCategoriasModal.filter((c) => !c.pai_id && c.nome && c.nome.trim() !== '').length === 0 && (
+              {listaCategoriasModal.filter(
+                (c) => !c.pai_id && c.nome && c.nome.trim() !== ''
+              ).length === 0 && (
                 <tr key="empty">
                   <td
                     colSpan={3}
@@ -2892,8 +3259,19 @@ export default function ContasPagarPage() {
               onBlur={handleInputBlur}
             />
           </div>
-          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '24px' }}>
-            <Button type="button" variant="secondary" onClick={fecharModalContaFinanceira}>
+          <div
+            style={{
+              display: 'flex',
+              gap: '10px',
+              justifyContent: 'flex-end',
+              marginTop: '24px',
+            }}
+          >
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={fecharModalContaFinanceira}
+            >
               Cancelar
             </Button>
             <Button type="submit" loading={salvandoContaFinanceira}>
