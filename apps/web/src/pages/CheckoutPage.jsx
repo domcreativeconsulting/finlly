@@ -286,8 +286,7 @@ paymentPollRef.current =  window.setInterval(async () => {
       paymentPollRef.current = null;
       setWaitingPayment(false);
       toast.success('Pagamento confirmado — entrando no sistema...');
-      // redireciona para login (ou para a rota que preferir)
-      navigate('/login');
+      navigate('/dashboard', { replace: true });
       return;
     }
 
@@ -775,7 +774,7 @@ function StepConfirmacao({ paymentLink, pixQrCode, pixCopiaECola, method, plan, 
       {/* ALTERAÇÃO: redireciona para /login (não /dashboard).
           O acesso ao sistema só é liberado após PAYMENT_CONFIRMED via webhook Asaas. */}
       <button
-        onClick={() => navigate('/login')}
+        onClick={() => navigate('/dashboard', { replace: true })}
         style={{
           width: '100%', padding: '14px 20px', borderRadius: '999px', border: 'none',
           cursor: 'pointer',
@@ -789,7 +788,7 @@ function StepConfirmacao({ paymentLink, pixQrCode, pixCopiaECola, method, plan, 
       </button>
 
       <p style={{ fontSize: '11px', color: C.inkSoft, margin: 0 }}>
-        O acesso ao sistema é liberado após confirmação do pagamento.
+        Você será redirecionado automaticamente após o pagamento.
       </p>
     </div>
   );
