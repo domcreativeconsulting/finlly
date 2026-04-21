@@ -1,4 +1,4 @@
-import { createHash, createHmac, timingSafeEqual } from 'crypto';
+import { createHash, timingSafeEqual } from 'crypto';
 import { Buffer } from 'buffer';
 import prisma from '../utils/database.js';
 import { AppError } from '../errors/AppError.js';
@@ -34,31 +34,16 @@ function computePayloadHash(payload) {
  */
 function verificarAssinatura(rawBody, signatureHeader) {
   const secret = config.ASAAS_WEBHOOK_SECRET;
-  if (!secret) return; // verification disabled in env
+  if (!secret) return;
 
-  const payload = Buffer.isBuffer(rawBody) ? rawBody : Buffer.from(String(rawBody));
-  const expectedHex = createHmac('sha256', secret).update(payload).digest('hex');
-  const expectedBuf = Buffer.from(expectedHex, 'hex');
+  // Asaas envia o token diretamente no header 'asaas-access-token' (não é HMAC)
+  const expected = Buffer.from(secret.trim());
+  const received = Buffer.from(String(signatureHeader || '').trim());
 
-  // Normalize header: remove common prefix 'sha256=' and whitespace
-  const sigCandidate = String(signatureHeader || '').trim().replace(/^sha256=/i, '');
-
-  const tryCompare = (s, encoding) => {
-    try {
-      const buf = Buffer.from(s, encoding);
-      if (buf.length === expectedBuf.length && timingSafeEqual(buf, expectedBuf)) return true;
-    } catch (e) {
-      // ignore parse error
-    }
-    return false;
-  };
-
-  if (tryCompare(sigCandidate, 'hex')) return;
-  if (tryCompare(sigCandidate, 'base64')) return;
-
-  // Log a short sample to help debugging (no secret)
-  logger.warn({ sigSample: String(signatureHeader).slice(0, 24) }, 'Webhook Asaas: assinatura inválida (formato inesperado)');
-  throw AppError.unauthorized('Assinatura inválida');
+  if (expected.length !== received.length || !timingSafeEqual(expected, received)) {
+    logger.warn({ sigSample: String(signatureHeader || '').slice(0, 8) }, 'Webhook Asaas: token inválido');
+    throw AppError.unauthorized('Assinatura inválida');
+  }
 }
 /**
  * Handles PAYMENT_CONFIRMED and PAYMENT_RECEIVED events.
@@ -275,11 +260,9 @@ async function handleDeleted(payment) {
  */
 export async function processarWebhookAsaas(payload, rawBody, signatureHeader) {
   // Verify HMAC signature if secret is configured
-  if (config.ASAAS_WEBHOOK_SECRET && signatureHeader) {
+if (config.ASAAS_WEBHOOK_SECRET) {
     verificarAssinatura(rawBody, signatureHeader);
-  } else if (config.ASAAS_WEBHOOK_SECRET && !signatureHeader) {
-    throw AppError.unauthorized('Assinatura inválida');
-  }
+}
 
   // Idempotency: findFirst + create/update with retry-on-failure support
   const payloadHash = computePayloadHash(payload);
