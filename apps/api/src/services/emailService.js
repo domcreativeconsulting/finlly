@@ -20,14 +20,23 @@ function createTransporter() {
 export async function sendEmail({ to, subject, html }) {
   const transporter = createTransporter();
   if (!transporter) {
-    logger.warn({ msg: 'Email not sent — MAIL_HOST/MAIL_USER/MAIL_PASSWORD not configured', to, subject });
+    logger.warn({
+      msg: 'Email not sent — MAIL_HOST/MAIL_USER/MAIL_PASSWORD not configured',
+      to,
+      subject,
+    });
     return;
   }
   try {
     await transporter.sendMail({ from: config.MAIL_FROM, to, subject, html });
     logger.info({ msg: 'Email sent', to, subject });
   } catch (err) {
-    logger.error({ msg: 'Failed to send email', to, subject, err: err.message });
+    logger.error({
+      msg: 'Failed to send email',
+      to,
+      subject,
+      err: err.message,
+    });
     throw err;
   }
 }
@@ -43,7 +52,7 @@ function emailLayout(conteudo) {
       <table width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;">
         <tr>
           <td style="background:#1a3a5c;padding:28px 40px;text-align:center;">
-            <img src="https://app.finlly.com.br/finlly.png" alt="Finlly" height="40" style="display:inline-block;">
+            <span style="color:#ffffff;font-size:22px;font-weight:700;letter-spacing:0.04em;">Finlly</span>
           </td>
         </tr>
         <tr>
