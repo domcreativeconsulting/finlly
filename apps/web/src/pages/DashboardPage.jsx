@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import AppSidebar from '../components/AppSidebar.jsx';
@@ -26,7 +32,12 @@ import {
   faBullseye,
   faChartPie,
 } from '@fortawesome/free-solid-svg-icons';
-import { colors, typography, radius, shadows } from '../design-system/tokens.js';
+import {
+  colors,
+  typography,
+  radius,
+  shadows,
+} from '../design-system/tokens.js';
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
@@ -99,7 +110,7 @@ function formatDate(dateLike) {
       const s = JSON.stringify(dateLike);
       const m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
       if (m) return `${m[3]}/${m[2]}/${m[1]}`;
-      return (s.length > 20 ? s.slice(0, 20) + '...' : s);
+      return s.length > 20 ? s.slice(0, 20) + '...' : s;
     } catch (e) {
       return '-';
     }
@@ -108,7 +119,6 @@ function formatDate(dateLike) {
   // fallback genérico
   return '-';
 }
-
 
 function toISODate(date) {
   return date.toISOString().split('T')[0];
@@ -186,7 +196,8 @@ function LineChart({ data }) {
   const maxVal = Math.max(...data.flatMap((d) => [d.pagar, d.receber]), 1);
   const n = data.length;
 
-  const scaleX = (i) => PAD.left + (n > 1 ? (i / (n - 1)) * innerW : innerW / 2);
+  const scaleX = (i) =>
+    PAD.left + (n > 1 ? (i / (n - 1)) * innerW : innerW / 2);
   const scaleY = (val) => PAD.top + innerH - (val / maxVal) * innerH;
 
   const pagarPath = data
@@ -227,13 +238,39 @@ function LineChart({ data }) {
           {formatBRLShort(maxVal * f)}
         </text>
       ))}
-      <path d={pagarPath} fill="none" stroke={colors.error} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-      <path d={receberPath} fill="none" stroke={colors.success} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+      <path
+        d={pagarPath}
+        fill="none"
+        stroke={colors.error}
+        strokeWidth="2"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+      <path
+        d={receberPath}
+        fill="none"
+        stroke={colors.success}
+        strokeWidth="2"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
       {data.map((d, i) => (
-        <circle key={`p-${i}`} cx={scaleX(i)} cy={scaleY(d.pagar)} r="3" fill={colors.error} />
+        <circle
+          key={`p-${i}`}
+          cx={scaleX(i)}
+          cy={scaleY(d.pagar)}
+          r="3"
+          fill={colors.error}
+        />
       ))}
       {data.map((d, i) => (
-        <circle key={`r-${i}`} cx={scaleX(i)} cy={scaleY(d.receber)} r="3" fill={colors.success} />
+        <circle
+          key={`r-${i}`}
+          cx={scaleX(i)}
+          cy={scaleY(d.receber)}
+          r="3"
+          fill={colors.success}
+        />
       ))}
       {data.map((d, i) => (
         <text
@@ -262,9 +299,27 @@ function DonutChart({ aplicado, saldoAtual }) {
 
   if (total === 0) {
     return (
-      <svg width="140" height="140" viewBox="0 0 140 140" aria-label="Donut chart vazio">
-        <circle cx={cx} cy={cy} r={r} fill="none" stroke={colors.neutral200} strokeWidth="20" />
-        <text x={cx} y={cy + 5} textAnchor="middle" fontSize="11" fill={colors.neutral500}>
+      <svg
+        width="140"
+        height="140"
+        viewBox="0 0 140 140"
+        aria-label="Donut chart vazio"
+      >
+        <circle
+          cx={cx}
+          cy={cy}
+          r={r}
+          fill="none"
+          stroke={colors.neutral200}
+          strokeWidth="20"
+        />
+        <text
+          x={cx}
+          y={cy + 5}
+          textAnchor="middle"
+          fontSize="11"
+          fill={colors.neutral500}
+        >
           Sem dados
         </text>
       </svg>
@@ -278,16 +333,40 @@ function DonutChart({ aplicado, saldoAtual }) {
   const saldoStartDeg = aplicadoPct * 360;
 
   return (
-    <svg width="140" height="140" viewBox="0 0 140 140" aria-label="Donut chart investimentos">
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke={colors.neutral200} strokeWidth="20" />
+    <svg
+      width="140"
+      height="140"
+      viewBox="0 0 140 140"
+      aria-label="Donut chart investimentos"
+    >
       <circle
-        cx={cx} cy={cy} r={r} fill="none" stroke="#16a34a" strokeWidth="20"
-        strokeDasharray={`${saldoLen} ${circ}`} strokeDashoffset={0}
+        cx={cx}
+        cy={cy}
+        r={r}
+        fill="none"
+        stroke={colors.neutral200}
+        strokeWidth="20"
+      />
+      <circle
+        cx={cx}
+        cy={cy}
+        r={r}
+        fill="none"
+        stroke="#16a34a"
+        strokeWidth="20"
+        strokeDasharray={`${saldoLen} ${circ}`}
+        strokeDashoffset={0}
         transform={`rotate(${saldoStartDeg - 90} ${cx} ${cy})`}
       />
       <circle
-        cx={cx} cy={cy} r={r} fill="none" stroke="#2563eb" strokeWidth="20"
-        strokeDasharray={`${aplicadoLen} ${circ}`} strokeDashoffset={0}
+        cx={cx}
+        cy={cy}
+        r={r}
+        fill="none"
+        stroke="#2563eb"
+        strokeWidth="20"
+        strokeDasharray={`${aplicadoLen} ${circ}`}
+        strokeDashoffset={0}
         transform={`rotate(-90 ${cx} ${cy})`}
       />
     </svg>
@@ -296,7 +375,18 @@ function DonutChart({ aplicado, saldoAtual }) {
 
 // ─── KPI Card ─────────────────────────────────────────────────────────────────
 
-function KPICard({ label, value, subtitle, borderColor, icon, loading, btnLabel, btnColor, onBtnClick, valueColor }) {
+function KPICard({
+  label,
+  value,
+  subtitle,
+  borderColor,
+  icon,
+  loading,
+  btnLabel,
+  btnColor,
+  onBtnClick,
+  valueColor,
+}) {
   return (
     <div
       style={{
@@ -311,8 +401,19 @@ function KPICard({ label, value, subtitle, borderColor, icon, loading, btnLabel,
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        {icon && <FontAwesomeIcon icon={icon} style={{ color: borderColor, fontSize: '14px' }} />}
-        <span style={{ fontSize: typography.sizes.sm, color: colors.neutral500, fontWeight: typography.weights.medium }}>
+        {icon && (
+          <FontAwesomeIcon
+            icon={icon}
+            style={{ color: borderColor, fontSize: '14px' }}
+          />
+        )}
+        <span
+          style={{
+            fontSize: typography.sizes.sm,
+            color: colors.neutral500,
+            fontWeight: typography.weights.medium,
+          }}
+        >
           {label}
         </span>
       </div>
@@ -323,19 +424,42 @@ function KPICard({ label, value, subtitle, borderColor, icon, loading, btnLabel,
         </>
       ) : (
         <>
-          <span style={{ fontSize: typography.sizes['4xl'], fontWeight: typography.weights.bold, color: valueColor || colors.neutral800, lineHeight: 1.2 }}>
+          <span
+            style={{
+              fontSize: typography.sizes['4xl'],
+              fontWeight: typography.weights.bold,
+              color: valueColor || colors.neutral800,
+              lineHeight: 1.2,
+            }}
+          >
             {value}
           </span>
-          {subtitle && <span style={{ fontSize: typography.sizes.xs, color: colors.neutral500 }}>{subtitle}</span>}
+          {subtitle && (
+            <span
+              style={{
+                fontSize: typography.sizes.xs,
+                color: colors.neutral500,
+              }}
+            >
+              {subtitle}
+            </span>
+          )}
         </>
       )}
       {btnLabel && (
         <button
           onClick={onBtnClick}
           style={{
-            marginTop: '6px', padding: '5px 12px', fontSize: typography.sizes.xs,
-            fontWeight: typography.weights.medium, background: btnColor || borderColor,
-            color: colors.white, border: 'none', borderRadius: radius.sm, cursor: 'pointer', alignSelf: 'flex-start',
+            marginTop: '6px',
+            padding: '5px 12px',
+            fontSize: typography.sizes.xs,
+            fontWeight: typography.weights.medium,
+            background: btnColor || borderColor,
+            color: colors.white,
+            border: 'none',
+            borderRadius: radius.sm,
+            cursor: 'pointer',
+            alignSelf: 'flex-start',
           }}
         >
           {btnLabel}
@@ -350,8 +474,23 @@ function KPICard({ label, value, subtitle, borderColor, icon, loading, btnLabel,
 function ProgressBar({ pct }) {
   const clamped = Math.min(100, Math.max(0, pct || 0));
   return (
-    <div style={{ height: '6px', background: colors.neutral200, borderRadius: radius.full, overflow: 'hidden' }}>
-      <div style={{ width: `${clamped}%`, height: '100%', background: colors.primaryLight, borderRadius: radius.full, transition: 'width 0.4s ease' }} />
+    <div
+      style={{
+        height: '6px',
+        background: colors.neutral200,
+        borderRadius: radius.full,
+        overflow: 'hidden',
+      }}
+    >
+      <div
+        style={{
+          width: `${clamped}%`,
+          height: '100%',
+          background: colors.primaryLight,
+          borderRadius: radius.full,
+          transition: 'width 0.4s ease',
+        }}
+      />
     </div>
   );
 }
@@ -366,7 +505,16 @@ function PrioridadeBadge({ prioridade }) {
   };
   const style = map[prioridade] || map.media;
   return (
-    <span style={{ padding: '1px 7px', borderRadius: radius.full, fontSize: typography.sizes.xs, fontWeight: typography.weights.medium, background: style.bg, color: style.color }}>
+    <span
+      style={{
+        padding: '1px 7px',
+        borderRadius: radius.full,
+        fontSize: typography.sizes.xs,
+        fontWeight: typography.weights.medium,
+        background: style.bg,
+        color: style.color,
+      }}
+    >
       {style.label}
     </span>
   );
@@ -421,19 +569,67 @@ export default function DashboardPage() {
     try {
       const todayStr = getTodayStr();
       const yesterdayStr = getYesterdayStr();
-      const [pagarHojeRes, receberHojeRes, atrasadasRes, contasRes] = await Promise.all([
-        contasPagarService.listar({ status: 'pendente', data_vencimento_de: todayStr, data_vencimento_ate: todayStr, limit: 100 }).catch((err) => { if (!isSemAssinatura(err)) toast.error('Erro ao carregar contas a pagar de hoje.'); return { data: [] }; }),
-        contasReceberService.listar({ status: 'pendente', data_vencimento_de: todayStr, data_vencimento_ate: todayStr, limit: 100 }).catch((err) => { if (!isSemAssinatura(err)) toast.error('Erro ao carregar contas a receber de hoje.'); return { data: [] }; }),
-        contasPagarService.listar({ status: 'pendente', data_vencimento_ate: yesterdayStr, limit: 100 }).catch((err) => { if (!isSemAssinatura(err)) toast.error('Erro ao carregar contas atrasadas.'); return { data: [] }; }),
-        dashboardService.getSaldoPorConta().catch((err) => { if (!isSemAssinatura(err)) toast.error('Erro ao carregar saldo das contas.'); return []; }),
-      ]);
+      const [pagarHojeRes, receberHojeRes, atrasadasRes, contasRes] =
+        await Promise.all([
+          contasPagarService
+            .listar({
+              status: 'pendente',
+              data_vencimento_de: todayStr,
+              data_vencimento_ate: todayStr,
+              limit: 100,
+            })
+            .catch((err) => {
+              if (!isSemAssinatura(err))
+                toast.error('Erro ao carregar contas a pagar de hoje.');
+              return { data: [] };
+            }),
+          contasReceberService
+            .listar({
+              status: 'pendente',
+              data_vencimento_de: todayStr,
+              data_vencimento_ate: todayStr,
+              limit: 100,
+            })
+            .catch((err) => {
+              if (!isSemAssinatura(err))
+                toast.error('Erro ao carregar contas a receber de hoje.');
+              return { data: [] };
+            }),
+          contasPagarService
+            .listar({
+              status: 'pendente',
+              data_vencimento_ate: yesterdayStr,
+              limit: 100,
+            })
+            .catch((err) => {
+              if (!isSemAssinatura(err))
+                toast.error('Erro ao carregar contas atrasadas.');
+              return { data: [] };
+            }),
+          dashboardService.getSaldoPorConta().catch((err) => {
+            if (!isSemAssinatura(err))
+              toast.error('Erro ao carregar saldo das contas.');
+            return [];
+          }),
+        ]);
       const pagarHojeData = pagarHojeRes?.data ?? [];
-      setPagarHoje({ valor: pagarHojeData.reduce((s, c) => s + (c.valor ?? 0), 0), count: pagarHojeData.length });
+      setPagarHoje({
+        valor: pagarHojeData.reduce((s, c) => s + (c.valor ?? 0), 0),
+        count: pagarHojeData.length,
+      });
       const receberHojeData = receberHojeRes?.data ?? [];
-      setReceberHoje({ valor: receberHojeData.reduce((s, c) => s + (c.valor ?? 0), 0), count: receberHojeData.length });
+      setReceberHoje({
+        valor: receberHojeData.reduce((s, c) => s + (c.valor ?? 0), 0),
+        count: receberHojeData.length,
+      });
       const atrasadasData = atrasadasRes?.data ?? [];
-      setAtrasadas({ valor: atrasadasData.reduce((s, c) => s + (c.valor ?? 0), 0), count: atrasadasData.length });
-      const contasArr = Array.isArray(contasRes) ? contasRes : (contasRes?.data ?? []);
+      setAtrasadas({
+        valor: atrasadasData.reduce((s, c) => s + (c.valor ?? 0), 0),
+        count: atrasadasData.length,
+      });
+      const contasArr = Array.isArray(contasRes)
+        ? contasRes
+        : (contasRes?.data ?? []);
       setTotalSaldo(contasArr.reduce((s, c) => s + (c.saldo ?? 0), 0));
     } catch (err) {
       if (!isSemAssinatura(err)) toast.error('Erro ao carregar KPIs.');
@@ -445,10 +641,10 @@ export default function DashboardPage() {
   const loadInvestimentos = useCallback(async () => {
     setLoadingInvestimentos(true);
     try {
-// pedir 100 itens (perPage) — limite do servidor é 100
-const res = await investimentosService.listar({ perPage: 100 });
-// response shape: { items, total, page, totalPages }
-setInvestimentos(Array.isArray(res) ? res : (res?.items ?? []));
+      // pedir 100 itens (perPage) — limite do servidor é 100
+      const res = await investimentosService.listar({ perPage: 100 });
+      // response shape: { items, total, page, totalPages }
+      setInvestimentos(Array.isArray(res) ? res : (res?.items ?? []));
     } catch (err) {
       if (!isSemAssinatura(err)) toast.error('Erro ao carregar investimentos.');
     } finally {
@@ -456,18 +652,18 @@ setInvestimentos(Array.isArray(res) ? res : (res?.items ?? []));
     }
   }, []);
 
-const loadMetas = useCallback(async () => {
-  setLoadingMetas(true);
-  try {
-    const res = await metasService.listar({ status: 'ativa', limit: 3 });
-    // endpoint retorna { items, page, total, ... }
-    setMetas(Array.isArray(res) ? res : (res?.items ?? res?.data ?? []));
-  } catch (err) {
-    if (!isSemAssinatura(err)) toast.error('Erro ao carregar metas.');
-  } finally {
-    setLoadingMetas(false);
-  }
-}, []);
+  const loadMetas = useCallback(async () => {
+    setLoadingMetas(true);
+    try {
+      const res = await metasService.listar({ status: 'ativa', limit: 3 });
+      // endpoint retorna { items, page, total, ... }
+      setMetas(Array.isArray(res) ? res : (res?.items ?? res?.data ?? []));
+    } catch (err) {
+      if (!isSemAssinatura(err)) toast.error('Erro ao carregar metas.');
+    } finally {
+      setLoadingMetas(false);
+    }
+  }, []);
 
   const loadFluxo = useCallback(async () => {
     setLoadingFluxo(true);
@@ -475,21 +671,58 @@ const loadMetas = useCallback(async () => {
       const todayStr = getTodayStr();
       const endStr = getDaysAheadStr(6);
       const [pagarRes, receberRes] = await Promise.all([
-        contasPagarService.listar({ status: 'pendente', data_vencimento_de: todayStr, data_vencimento_ate: endStr, limit: 100 }).catch((err) => { if (!isSemAssinatura(err)) toast.error('Erro ao carregar fluxo de caixa.'); return { data: [] }; }),
-        contasReceberService.listar({ status: 'pendente', data_vencimento_de: todayStr, data_vencimento_ate: endStr, limit: 100 }).catch((err) => { if (!isSemAssinatura(err)) toast.error('Erro ao carregar fluxo de caixa.'); return { data: [] }; }),
+        contasPagarService
+          .listar({
+            status: 'pendente',
+            data_vencimento_de: todayStr,
+            data_vencimento_ate: endStr,
+            limit: 100,
+          })
+          .catch((err) => {
+            if (!isSemAssinatura(err))
+              toast.error('Erro ao carregar fluxo de caixa.');
+            return { data: [] };
+          }),
+        contasReceberService
+          .listar({
+            status: 'pendente',
+            data_vencimento_de: todayStr,
+            data_vencimento_ate: endStr,
+            limit: 100,
+          })
+          .catch((err) => {
+            if (!isSemAssinatura(err))
+              toast.error('Erro ao carregar fluxo de caixa.');
+            return { data: [] };
+          }),
       ]);
       const today = new Date();
-      const days = Array.from({ length: 7 }, (_, i) => { const d = new Date(today); d.setDate(today.getDate() + i); return toISODate(d); });
+      const days = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(today);
+        d.setDate(today.getDate() + i);
+        return toISODate(d);
+      });
       const pagarData = pagarRes?.data ?? [];
       const receberData = receberRes?.data ?? [];
-      setFluxo7Dias(days.map((dateStr) => {
-        const pagar = pagarData.filter((c) => String(c.data_vencimento).substring(0, 10) === dateStr).reduce((s, c) => s + (c.valor ?? 0), 0);
-        const receber = receberData.filter((c) => String(c.data_vencimento).substring(0, 10) === dateStr).reduce((s, c) => s + (c.valor ?? 0), 0);
-        const [, m, d] = dateStr.split('-');
-        return { label: `${d}/${m}`, pagar, receber };
-      }));
+      setFluxo7Dias(
+        days.map((dateStr) => {
+          const pagar = pagarData
+            .filter(
+              (c) => String(c.data_vencimento).substring(0, 10) === dateStr
+            )
+            .reduce((s, c) => s + (c.valor ?? 0), 0);
+          const receber = receberData
+            .filter(
+              (c) => String(c.data_vencimento).substring(0, 10) === dateStr
+            )
+            .reduce((s, c) => s + (c.valor ?? 0), 0);
+          const [, m, d] = dateStr.split('-');
+          return { label: `${d}/${m}`, pagar, receber };
+        })
+      );
     } catch (err) {
-      if (!isSemAssinatura(err)) toast.error('Erro ao carregar fluxo de caixa.');
+      if (!isSemAssinatura(err))
+        toast.error('Erro ao carregar fluxo de caixa.');
     } finally {
       setLoadingFluxo(false);
     }
@@ -500,15 +733,40 @@ const loadMetas = useCallback(async () => {
     try {
       const todayStr = getTodayStr();
       const [pagarRes, receberRes] = await Promise.all([
-        contasPagarService.listar({ status: 'pendente', data_vencimento_de: todayStr, limit: 50 }).catch((err) => { if (!isSemAssinatura(err)) toast.error('Erro ao carregar próximos vencimentos.'); return { data: [] }; }),
-        contasReceberService.listar({ status: 'pendente', data_vencimento_de: todayStr, limit: 50 }).catch((err) => { if (!isSemAssinatura(err)) toast.error('Erro ao carregar próximos vencimentos.'); return { data: [] }; }),
+        contasPagarService
+          .listar({
+            status: 'pendente',
+            data_vencimento_de: todayStr,
+            limit: 50,
+          })
+          .catch((err) => {
+            if (!isSemAssinatura(err))
+              toast.error('Erro ao carregar próximos vencimentos.');
+            return { data: [] };
+          }),
+        contasReceberService
+          .listar({
+            status: 'pendente',
+            data_vencimento_de: todayStr,
+            limit: 50,
+          })
+          .catch((err) => {
+            if (!isSemAssinatura(err))
+              toast.error('Erro ao carregar próximos vencimentos.');
+            return { data: [] };
+          }),
       ]);
       function normalizeDateField(c) {
         if (!c) return c;
         let v = c.data_vencimento ?? c.dataVencimento ?? c.data ?? null;
         if (!v) return c;
         if (typeof v === 'object') {
-          v = v.date || v.data || v.value || v.iso || (v.toString ? v.toString() : null);
+          v =
+            v.date ||
+            v.data ||
+            v.value ||
+            v.iso ||
+            (v.toString ? v.toString() : null);
         }
         // Se ainda for objeto, tentar extrair string JSON com uma data ISO interna
         if (typeof v === 'object') {
@@ -524,15 +782,26 @@ const loadMetas = useCallback(async () => {
         return { ...c, data_vencimento: v };
       }
 
-      const pagar = (pagarRes?.data ?? []).map((c) => ({ ...normalizeDateField(c), tipo: 'pagar' }));
-      const receber = (receberRes?.data ?? []).map((c) => ({ ...normalizeDateField(c), tipo: 'receber' }));
+      const pagar = (pagarRes?.data ?? []).map((c) => ({
+        ...normalizeDateField(c),
+        tipo: 'pagar',
+      }));
+      const receber = (receberRes?.data ?? []).map((c) => ({
+        ...normalizeDateField(c),
+        tipo: 'receber',
+      }));
       setProximosVencimentos(
         [...pagar, ...receber]
-          .sort((a, b) => String(a.data_vencimento ?? '').localeCompare(String(b.data_vencimento ?? '')))
+          .sort((a, b) =>
+            String(a.data_vencimento ?? '').localeCompare(
+              String(b.data_vencimento ?? '')
+            )
+          )
           .slice(0, 10)
       ); //
     } catch (err) {
-      if (!isSemAssinatura(err)) toast.error('Erro ao carregar próximos vencimentos.');
+      if (!isSemAssinatura(err))
+        toast.error('Erro ao carregar próximos vencimentos.');
     } finally {
       setLoadingVencimentos(false);
     }
@@ -544,7 +813,13 @@ const loadMetas = useCallback(async () => {
     loadMetas();
     loadFluxo();
     loadProximosVencimentos();
-  }, [loadKPIs, loadInvestimentos, loadMetas, loadFluxo, loadProximosVencimentos]);
+  }, [
+    loadKPIs,
+    loadInvestimentos,
+    loadMetas,
+    loadFluxo,
+    loadProximosVencimentos,
+  ]);
 
   async function handlePagar(item) {
     if (pagandoId) return;
@@ -559,46 +834,145 @@ const loadMetas = useCallback(async () => {
       }
       await Promise.all([loadKPIs(), loadProximosVencimentos(), loadFluxo()]);
     } catch (err) {
-      if (!isSemAssinatura(err)) toast.error(err?.response?.data?.message || 'Erro ao registrar pagamento.');
+      if (!isSemAssinatura(err))
+        toast.error(
+          err?.response?.data?.message || 'Erro ao registrar pagamento.'
+        );
     } finally {
       setPagandoId(null);
     }
   }
 
-  const { totalAplicado, totalSaldoAtual, ganhoEstimado, rentMedia } = useMemo(() => {
-    const aplicado = investimentos.reduce((s, inv) => s + (inv.valorInicial ?? inv.valor_aplicado ?? 0), 0);
-    const saldoAtual = investimentos.reduce((s, inv) => s + (inv.saldo_atual ?? inv.saldoAtual ?? inv.valorInicial ?? 0), 0);
-    const ganho = saldoAtual - aplicado;
-    const rent = aplicado > 0 ? ((ganho / aplicado) * 100).toFixed(2) : '0.00';
-    return { totalAplicado: aplicado, totalSaldoAtual: saldoAtual, ganhoEstimado: ganho, rentMedia: rent };
-  }, [investimentos]);
+  const { totalAplicado, totalSaldoAtual, ganhoEstimado, rentMedia } =
+    useMemo(() => {
+      const aplicado = investimentos.reduce(
+        (s, inv) => s + (inv.valorInicial ?? inv.valor_aplicado ?? 0),
+        0
+      );
+      const saldoAtual = investimentos.reduce(
+        (s, inv) =>
+          s + (inv.saldo_atual ?? inv.saldoAtual ?? inv.valorInicial ?? 0),
+        0
+      );
+      const ganho = saldoAtual - aplicado;
+      const rent =
+        aplicado > 0 ? ((ganho / aplicado) * 100).toFixed(2) : '0.00';
+      return {
+        totalAplicado: aplicado,
+        totalSaldoAtual: saldoAtual,
+        ganhoEstimado: ganho,
+        rentMedia: rent,
+      };
+    }, [investimentos]);
 
   const { metasTotalAlvo, metasTotalAtual } = useMemo(() => {
-    let alvo = 0; let atual = 0;
-    for (const m of metas) { const nm = normalizeMeta(m); alvo += nm.valorAlvo; atual += nm.valorAtual; }
+    let alvo = 0;
+    let atual = 0;
+    for (const m of metas) {
+      const nm = normalizeMeta(m);
+      alvo += nm.valorAlvo;
+      atual += nm.valorAtual;
+    }
     return { metasTotalAlvo: alvo, metasTotalAtual: atual };
   }, [metas]);
 
-  const cardStyle = { background: colors.white, borderRadius: radius.lg, boxShadow: shadows.sm, padding: '20px 24px' };
-  const cardHeaderStyle = { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px', gap: '8px', flexWrap: 'wrap' };
-  const cardTitleStyle = { fontSize: typography.sizes.xl, fontWeight: typography.weights.semibold, color: colors.neutral800, margin: 0 };
-  const cardSubtitleStyle = { fontSize: typography.sizes.xs, color: colors.neutral500, margin: '2px 0 0' };
-  const outlineBtnStyle = { padding: '6px 14px', fontSize: typography.sizes.xs, fontWeight: typography.weights.medium, background: 'transparent', color: colors.primaryLight, border: `1px solid ${colors.primaryLight}`, borderRadius: radius.sm, cursor: 'pointer' };
-  const primaryBtnStyle = { padding: '8px 16px', fontSize: typography.sizes.sm, fontWeight: typography.weights.medium, background: colors.primaryLight, color: colors.white, border: 'none', borderRadius: radius.sm, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' };
-  const kpiGrid = { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '16px', marginBottom: '16px' };
-  const kpiGrid2 = { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px', marginBottom: '24px' };
-  const mainGrid = { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '20px', marginBottom: '20px' };
+  const cardStyle = {
+    background: colors.white,
+    borderRadius: radius.lg,
+    boxShadow: shadows.sm,
+    padding: isMobile ? '14px 16px' : '20px 24px',
+  };
+  const cardHeaderStyle = {
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: '16px',
+    gap: '8px',
+    flexWrap: 'wrap',
+  };
+  const cardTitleStyle = {
+    fontSize: typography.sizes.xl,
+    fontWeight: typography.weights.semibold,
+    color: colors.neutral800,
+    margin: 0,
+  };
+  const cardSubtitleStyle = {
+    fontSize: typography.sizes.xs,
+    color: colors.neutral500,
+    margin: '2px 0 0',
+  };
+  const outlineBtnStyle = {
+    padding: '6px 14px',
+    fontSize: typography.sizes.xs,
+    fontWeight: typography.weights.medium,
+    background: 'transparent',
+    color: colors.primaryLight,
+    border: `1px solid ${colors.primaryLight}`,
+    borderRadius: radius.sm,
+    cursor: 'pointer',
+  };
+  const primaryBtnStyle = {
+    padding: '8px 16px',
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.medium,
+    background: colors.primaryLight,
+    color: colors.white,
+    border: 'none',
+    borderRadius: radius.sm,
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+  };
+  const kpiGrid = {
+    display: 'grid',
+    gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
+    gap: isMobile ? '10px' : '16px',
+    marginBottom: isMobile ? '10px' : '16px',
+  };
+  const kpiGrid2 = {
+    display: 'grid',
+    gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+    gap: isMobile ? '10px' : '16px',
+    marginBottom: isMobile ? '16px' : '24px',
+  };
+  const mainGrid = {
+    display: 'grid',
+    gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+    gap: isMobile ? '12px' : '20px',
+    marginBottom: '20px',
+  };
 
   return (
     <InadimplenteGuard>
-      <div style={{ display: 'flex', minHeight: '100vh', background: colors.bg }}>
-        <AppSidebar sidebarOpen={sidebarOpen} isExpanded={sidebarExpanded} onHoverChange={setSidebarExpanded} currentPath="/dashboard" />
+      <div
+        style={{ display: 'flex', minHeight: '100vh', background: colors.bg }}
+      >
+        <AppSidebar
+          sidebarOpen={sidebarOpen}
+          isExpanded={sidebarExpanded}
+          onHoverChange={setSidebarExpanded}
+          currentPath="/dashboard"
+        />
 
         <main style={{ flex: 1, ...contentStyle }}>
           {/* ── Top Bar ── */}
-          <div style={{ background: colors.white, borderBottom: `1px solid ${colors.border}`, padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', position: 'sticky', top: 0, zIndex: 100, flexWrap: 'wrap' }}>
+          <div
+            style={{
+              background: colors.white,
+              borderBottom: `1px solid ${colors.border}`,
+              padding: '12px 24px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+              position: 'sticky',
+              top: 0,
+              zIndex: 100,
+              flexWrap: 'wrap',
+            }}
+          >
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-
               {/* ✅ CORREÇÃO: lógica igual às outras páginas */}
               <button
                 onClick={() => {
@@ -609,44 +983,171 @@ const loadMetas = useCallback(async () => {
                     setSidebarExpanded((v) => !v);
                   }
                 }}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', color: colors.neutral600, fontSize: '16px' }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '4px 8px',
+                  color: colors.neutral600,
+                  fontSize: '16px',
+                }}
                 aria-label="Toggle sidebar"
               >
                 <FontAwesomeIcon icon={faBars} />
               </button>
 
               <div>
-                <p style={{ margin: 0, fontSize: typography.sizes.xl, fontWeight: typography.weights.semibold, color: colors.neutral800 }}>Dashboard</p>
-                <p style={{ margin: 0, fontSize: typography.sizes.xs, color: colors.neutral500 }}>Gestão financeira pessoal</p>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: typography.sizes.xl,
+                    fontWeight: typography.weights.semibold,
+                    color: colors.neutral800,
+                  }}
+                >
+                  Dashboard
+                </p>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: typography.sizes.xs,
+                    color: colors.neutral500,
+                  }}
+                >
+                  Gestão financeira pessoal
+                </p>
               </div>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              {!isOnline && <span style={{ fontSize: typography.sizes.xs, color: colors.warning, fontWeight: typography.weights.medium }}>Offline</span>}
-              <button onClick={() => navigate('/contas-pagar')} style={primaryBtnStyle}>Abrir planejamento</button>
+              {!isOnline && (
+                <span
+                  style={{
+                    fontSize: typography.sizes.xs,
+                    color: colors.warning,
+                    fontWeight: typography.weights.medium,
+                  }}
+                >
+                  Offline
+                </span>
+              )}
+              <button
+                onClick={() => navigate('/contas-pagar')}
+                style={primaryBtnStyle}
+              >
+                Abrir planejamento
+              </button>
 
               <div style={{ position: 'relative' }} ref={dropdownRef}>
                 <button
                   onClick={() => setDropdownOpen((v) => !v)}
                   title={usuario?.nome || ''}
                   aria-label={`Menu do usuário ${usuario?.nome || ''}`}
-                  style={{ width: '36px', height: '36px', borderRadius: radius.full, background: colors.primary, color: colors.white, border: 'none', cursor: 'pointer', fontSize: typography.sizes.sm, fontWeight: typography.weights.bold, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: radius.full,
+                    background: colors.primary,
+                    color: colors.white,
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: typography.sizes.sm,
+                    fontWeight: typography.weights.bold,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
                 >
                   {initials}
                 </button>
                 {dropdownOpen && (
-                  <div style={{ position: 'absolute', right: 0, top: '44px', background: colors.white, border: `1px solid ${colors.border}`, borderRadius: radius.md, boxShadow: shadows.md, minWidth: '160px', zIndex: 200 }}>
-                    <div style={{ padding: '8px 12px 6px', borderBottom: `1px solid ${colors.border}` }}>
-                      <p style={{ margin: 0, fontSize: typography.sizes.sm, fontWeight: typography.weights.semibold, color: colors.neutral800 }}>{usuario?.nome || 'Usuário'}</p>
-                      <p style={{ margin: '2px 0 0', fontSize: typography.sizes.xs, color: colors.neutral500 }}>{usuario?.email || ''}</p>
+                  <div
+                    style={{
+                      position: 'absolute',
+                      right: 0,
+                      top: '44px',
+                      background: colors.white,
+                      border: `1px solid ${colors.border}`,
+                      borderRadius: radius.md,
+                      boxShadow: shadows.md,
+                      minWidth: '160px',
+                      zIndex: 200,
+                    }}
+                  >
+                    <div
+                      style={{
+                        padding: '8px 12px 6px',
+                        borderBottom: `1px solid ${colors.border}`,
+                      }}
+                    >
+                      <p
+                        style={{
+                          margin: 0,
+                          fontSize: typography.sizes.sm,
+                          fontWeight: typography.weights.semibold,
+                          color: colors.neutral800,
+                        }}
+                      >
+                        {usuario?.nome || 'Usuário'}
+                      </p>
+                      <p
+                        style={{
+                          margin: '2px 0 0',
+                          fontSize: typography.sizes.xs,
+                          color: colors.neutral500,
+                        }}
+                      >
+                        {usuario?.email || ''}
+                      </p>
                     </div>
                     {[
-                      { icon: faCreditCard, label: 'Assinatura', onClick: () => { navigate('/assinatura'); setDropdownOpen(false); } },
-                      { icon: faCircleUser, label: 'Perfil', onClick: () => { navigate('/perfil'); setDropdownOpen(false); } },
-                      { icon: faDoorOpen, label: 'Sair', onClick: () => { logout(); setDropdownOpen(false); }, color: colors.error },
+                      {
+                        icon: faCreditCard,
+                        label: 'Assinatura',
+                        onClick: () => {
+                          navigate('/assinatura');
+                          setDropdownOpen(false);
+                        },
+                      },
+                      {
+                        icon: faCircleUser,
+                        label: 'Perfil',
+                        onClick: () => {
+                          navigate('/perfil');
+                          setDropdownOpen(false);
+                        },
+                      },
+                      {
+                        icon: faDoorOpen,
+                        label: 'Sair',
+                        onClick: () => {
+                          logout();
+                          setDropdownOpen(false);
+                        },
+                        color: colors.error,
+                      },
                     ].map((item) => (
-                      <button key={item.label} onClick={item.onClick} style={{ width: '100%', padding: '8px 12px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: typography.sizes.sm, color: item.color || colors.neutral700, textAlign: 'left' }}>
-                        <FontAwesomeIcon icon={item.icon} style={{ width: '14px' }} />
+                      <button
+                        key={item.label}
+                        onClick={item.onClick}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          fontSize: typography.sizes.sm,
+                          color: item.color || colors.neutral700,
+                          textAlign: 'left',
+                        }}
+                      >
+                        <FontAwesomeIcon
+                          icon={item.icon}
+                          style={{ width: '14px' }}
+                        />
                         {item.label}
                       </button>
                     ))}
@@ -658,27 +1159,103 @@ const loadMetas = useCallback(async () => {
 
           {/* ── Page Content ── */}
           <div style={{ padding: isMobile ? '16px' : '24px' }}>
-
             {/* KPI top row */}
             <div style={kpiGrid}>
-              <KPICard label="Pagar Hoje" value={formatBRL(pagarHoje.valor)} subtitle={`${pagarHoje.count} conta${pagarHoje.count !== 1 ? 's' : ''}`} borderColor={colors.warning} icon={faArrowDown} loading={loadingKPIs} btnLabel="Ver hoje" onBtnClick={() => navigate('/contas-pagar')} />
-              <KPICard label="Receber Hoje" value={formatBRL(receberHoje.valor)} subtitle={`${receberHoje.count} conta${receberHoje.count !== 1 ? 's' : ''}`} borderColor="#0369a1" icon={faArrowUp} loading={loadingKPIs} btnLabel="Ver hoje" onBtnClick={() => navigate('/contas-receber')} />
-              <KPICard label="Atrasadas" value={formatBRL(atrasadas.valor)} subtitle={`${atrasadas.count} conta${atrasadas.count !== 1 ? 's' : ''}`} borderColor={colors.error} icon={faExclamationTriangle} loading={loadingKPIs} btnLabel="Resolver" btnColor={colors.error} onBtnClick={() => navigate('/contas-pagar')} valueColor={colors.error} />
+              <KPICard
+                label="Pagar Hoje"
+                value={formatBRL(pagarHoje.valor)}
+                subtitle={`${pagarHoje.count} conta${pagarHoje.count !== 1 ? 's' : ''}`}
+                borderColor={colors.warning}
+                icon={faArrowDown}
+                loading={loadingKPIs}
+                btnLabel="Ver hoje"
+                onBtnClick={() => navigate('/contas-pagar')}
+              />
+              <KPICard
+                label="Receber Hoje"
+                value={formatBRL(receberHoje.valor)}
+                subtitle={`${receberHoje.count} conta${receberHoje.count !== 1 ? 's' : ''}`}
+                borderColor="#0369a1"
+                icon={faArrowUp}
+                loading={loadingKPIs}
+                btnLabel="Ver hoje"
+                onBtnClick={() => navigate('/contas-receber')}
+              />
+              <KPICard
+                label="Atrasadas"
+                value={formatBRL(atrasadas.valor)}
+                subtitle={`${atrasadas.count} conta${atrasadas.count !== 1 ? 's' : ''}`}
+                borderColor={colors.error}
+                icon={faExclamationTriangle}
+                loading={loadingKPIs}
+                btnLabel="Resolver"
+                btnColor={colors.error}
+                onBtnClick={() => navigate('/contas-pagar')}
+                valueColor={colors.error}
+              />
             </div>
 
             {/* KPI bottom row */}
             <div style={kpiGrid2}>
-              <KPICard label="Saldo do Mês" value={formatBRL(totalSaldo)} subtitle="Carteira atual" borderColor={colors.primaryLight} icon={faWallet} loading={loadingKPIs} btnLabel="Ver carteira" onBtnClick={() => navigate('/contas')} />
-              <KPICard label="Investimentos" value={loadingInvestimentos ? '...' : formatBRL(totalSaldoAtual)} subtitle={`Aplicado: ${formatBRL(totalAplicado)}`} borderColor={colors.success} icon={faChartLine} loading={loadingInvestimentos} btnLabel="Ver investimentos" btnColor={colors.success} onBtnClick={() => navigate('/investimentos')} />
+              <KPICard
+                label="Saldo do Mês"
+                value={formatBRL(totalSaldo)}
+                subtitle="Carteira atual"
+                borderColor={colors.primaryLight}
+                icon={faWallet}
+                loading={loadingKPIs}
+                btnLabel="Ver carteira"
+                onBtnClick={() => navigate('/contas')}
+              />
+              <KPICard
+                label="Investimentos"
+                value={
+                  loadingInvestimentos ? '...' : formatBRL(totalSaldoAtual)
+                }
+                subtitle={`Aplicado: ${formatBRL(totalAplicado)}`}
+                borderColor={colors.success}
+                icon={faChartLine}
+                loading={loadingInvestimentos}
+                btnLabel="Ver investimentos"
+                btnColor={colors.success}
+                onBtnClick={() => navigate('/investimentos')}
+              />
             </div>
 
             {/* Quick actions */}
-            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '24px' }}>
-              <button onClick={() => navigate('/contas-pagar', { state: { openModal: true } })} style={primaryBtnStyle}>
+            <div
+              style={{
+                display: 'flex',
+                gap: '12px',
+                flexWrap: 'wrap',
+                marginBottom: '24px',
+              }}
+            >
+              <button
+                onClick={() =>
+                  navigate('/contas-pagar', { state: { openModal: true } })
+                }
+                style={primaryBtnStyle}
+              >
                 <FontAwesomeIcon icon={faPlus} /> Nova conta a pagar
               </button>
-              <button onClick={() => navigate('/contas-receber', { state: { openModal: true } })} style={outlineBtnStyle}>+ Nova conta a receber</button>
-              <button onClick={() => navigate('/investimentos')} style={{ ...outlineBtnStyle, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <button
+                onClick={() =>
+                  navigate('/contas-receber', { state: { openModal: true } })
+                }
+                style={outlineBtnStyle}
+              >
+                + Nova conta a receber
+              </button>
+              <button
+                onClick={() => navigate('/investimentos')}
+                style={{
+                  ...outlineBtnStyle,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
                 <FontAwesomeIcon icon={faChartPie} /> Investimentos
               </button>
             </div>
@@ -689,64 +1266,359 @@ const loadMetas = useCallback(async () => {
                 <div style={cardHeaderStyle}>
                   <div>
                     <p style={cardTitleStyle}>Visão Geral</p>
-                    <p style={cardSubtitleStyle}>Fluxo (7 dias): pagar x receber</p>
+                    <p style={cardSubtitleStyle}>
+                      Fluxo (7 dias): pagar x receber
+                    </p>
                   </div>
-                  <button onClick={() => navigate('/contas-pagar')} style={outlineBtnStyle}>Abrir planejamento</button>
+                  <button
+                    onClick={() => navigate('/contas-pagar')}
+                    style={outlineBtnStyle}
+                  >
+                    Abrir planejamento
+                  </button>
                 </div>
-                <div style={{ display: 'flex', gap: '16px', marginBottom: '8px', fontSize: typography.sizes.xs }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span style={{ display: 'inline-block', width: '10px', height: '3px', background: colors.success, borderRadius: '2px' }} />
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: '16px',
+                    marginBottom: '8px',
+                    fontSize: typography.sizes.xs,
+                  }}
+                >
+                  <span
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        width: '10px',
+                        height: '3px',
+                        background: colors.success,
+                        borderRadius: '2px',
+                      }}
+                    />
                     <span style={{ color: colors.neutral600 }}>Entradas</span>
                   </span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span style={{ display: 'inline-block', width: '10px', height: '3px', background: colors.error, borderRadius: '2px' }} />
+                  <span
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        width: '10px',
+                        height: '3px',
+                        background: colors.error,
+                        borderRadius: '2px',
+                      }}
+                    />
                     <span style={{ color: colors.neutral600 }}>Saídas</span>
                   </span>
                 </div>
-                {loadingFluxo ? <Skeleton height="140px" /> : <LineChart data={fluxo7Dias} />}
+                {loadingFluxo ? (
+                  <Skeleton height="140px" />
+                ) : (
+                  <LineChart data={fluxo7Dias} />
+                )}
               </div>
 
               <div style={cardStyle}>
                 <div style={cardHeaderStyle}>
                   <div>
                     <p style={cardTitleStyle}>Próximos vencimentos</p>
-                    <p style={cardSubtitleStyle}>Pendências a partir de hoje (até 10 itens)</p>
+                    <p style={cardSubtitleStyle}>
+                      Pendências a partir de hoje (até 10 itens)
+                    </p>
                   </div>
                   <div style={{ display: 'flex', gap: '8px' }}>
-                    <button onClick={() => navigate('/contas-pagar')} style={outlineBtnStyle}>Pagar</button>
-                    <button onClick={() => navigate('/contas-receber')} style={outlineBtnStyle}>Receber</button>
+                    <button
+                      onClick={() => navigate('/contas-pagar')}
+                      style={outlineBtnStyle}
+                    >
+                      Pagar
+                    </button>
+                    <button
+                      onClick={() => navigate('/contas-receber')}
+                      style={outlineBtnStyle}
+                    >
+                      Receber
+                    </button>
                   </div>
                 </div>
                 {loadingVencimentos ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {[1, 2, 3, 4].map((i) => <Skeleton key={i} height="36px" />)}
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px',
+                    }}
+                  >
+                    {[1, 2, 3, 4].map((i) => (
+                      <Skeleton key={i} height="36px" />
+                    ))}
                   </div>
                 ) : proximosVencimentos.length === 0 ? (
-                  <p style={{ color: colors.neutral500, fontSize: typography.sizes.sm, textAlign: 'center', padding: '16px 0' }}>Nenhum vencimento pendente a partir de hoje.</p>
+                  <p
+                    style={{
+                      color: colors.neutral500,
+                      fontSize: typography.sizes.sm,
+                      textAlign: 'center',
+                      padding: '16px 0',
+                    }}
+                  >
+                    Nenhum vencimento pendente a partir de hoje.
+                  </p>
+                ) : isMobile ? (
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px',
+                    }}
+                  >
+                    {proximosVencimentos.map((item) => (
+                      <div
+                        key={`${item.tipo}-${item.id}`}
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          padding: '10px 12px',
+                          background:
+                            item.tipo === 'pagar'
+                              ? '#fef2f2'
+                              : colors.successBg,
+                          borderRadius: radius.md,
+                          gap: '8px',
+                        }}
+                      >
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              marginBottom: '2px',
+                              flexWrap: 'wrap',
+                            }}
+                          >
+                            <span
+                              style={{
+                                padding: '1px 6px',
+                                borderRadius: radius.full,
+                                fontSize: typography.sizes.xs,
+                                fontWeight: typography.weights.medium,
+                                background:
+                                  item.tipo === 'pagar' ? '#fecaca' : '#bbf7d0',
+                                color:
+                                  item.tipo === 'pagar'
+                                    ? colors.error
+                                    : colors.success,
+                              }}
+                            >
+                              {item.tipo === 'pagar' ? 'Pagar' : 'Receber'}
+                            </span>
+                            <span
+                              style={{
+                                fontSize: typography.sizes.xs,
+                                color: colors.neutral500,
+                              }}
+                            >
+                              {formatDate(item.data_vencimento)}
+                            </span>
+                          </div>
+                          <div
+                            style={{
+                              fontSize: typography.sizes.sm,
+                              color: colors.neutral700,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {item.descricao || item.nome || '-'}
+                          </div>
+                        </div>
+                        <div
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'flex-end',
+                            gap: '4px',
+                            flexShrink: 0,
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontWeight: typography.weights.semibold,
+                              fontSize: typography.sizes.sm,
+                              color:
+                                item.tipo === 'pagar'
+                                  ? colors.error
+                                  : colors.success,
+                            }}
+                          >
+                            {formatBRL(item.valor)}
+                          </span>
+                          <button
+                            onClick={() => handlePagar(item)}
+                            disabled={pagandoId === item.id}
+                            style={{
+                              padding: '4px 12px',
+                              fontSize: typography.sizes.xs,
+                              fontWeight: typography.weights.medium,
+                              background:
+                                item.tipo === 'pagar'
+                                  ? colors.error
+                                  : colors.success,
+                              color: colors.white,
+                              border: 'none',
+                              borderRadius: radius.sm,
+                              cursor:
+                                pagandoId === item.id ? 'wait' : 'pointer',
+                              opacity: pagandoId === item.id ? 0.6 : 1,
+                            }}
+                          >
+                            {pagandoId === item.id
+                              ? '...'
+                              : item.tipo === 'pagar'
+                                ? 'Pagar'
+                                : 'Receber'}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 ) : (
                   <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: typography.sizes.sm }}>
+                    <table
+                      style={{
+                        width: '100%',
+                        borderCollapse: 'collapse',
+                        fontSize: typography.sizes.sm,
+                      }}
+                    >
                       <thead>
                         <tr>
-                          {['Tipo', 'Vencimento', 'Descrição', 'Valor', 'Ação'].map((col) => (
-                            <th key={col} style={{ textAlign: 'left', padding: '6px 8px', fontSize: typography.sizes.xs, color: colors.neutral500, fontWeight: typography.weights.medium, borderBottom: `1px solid ${colors.border}`, whiteSpace: 'nowrap' }}>{col}</th>
+                          {[
+                            'Tipo',
+                            'Vencimento',
+                            'Descrição',
+                            'Valor',
+                            'Ação',
+                          ].map((col) => (
+                            <th
+                              key={col}
+                              style={{
+                                textAlign: 'left',
+                                padding: '6px 8px',
+                                fontSize: typography.sizes.xs,
+                                color: colors.neutral500,
+                                fontWeight: typography.weights.medium,
+                                borderBottom: `1px solid ${colors.border}`,
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {col}
+                            </th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         {proximosVencimentos.map((item) => (
-                          <tr key={`${item.tipo}-${item.id}`} style={{ borderBottom: `1px solid ${colors.neutral100}` }}>
+                          <tr
+                            key={`${item.tipo}-${item.id}`}
+                            style={{
+                              borderBottom: `1px solid ${colors.neutral100}`,
+                            }}
+                          >
                             <td style={{ padding: '6px 8px' }}>
-                              <span style={{ padding: '2px 8px', borderRadius: radius.full, fontSize: typography.sizes.xs, fontWeight: typography.weights.medium, background: item.tipo === 'pagar' ? '#fef2f2' : colors.successBg, color: item.tipo === 'pagar' ? colors.error : colors.success }}>
+                              <span
+                                style={{
+                                  padding: '2px 8px',
+                                  borderRadius: radius.full,
+                                  fontSize: typography.sizes.xs,
+                                  fontWeight: typography.weights.medium,
+                                  background:
+                                    item.tipo === 'pagar'
+                                      ? '#fef2f2'
+                                      : colors.successBg,
+                                  color:
+                                    item.tipo === 'pagar'
+                                      ? colors.error
+                                      : colors.success,
+                                }}
+                              >
                                 {item.tipo === 'pagar' ? 'Pagar' : 'Receber'}
                               </span>
                             </td>
-                            <td style={{ padding: '6px 8px', color: colors.neutral700, whiteSpace: 'nowrap' }}>{formatDate(item.data_vencimento)}</td>
-                            <td style={{ padding: '6px 8px', color: colors.neutral700, maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.descricao || item.nome || ''}>{item.descricao || item.nome || '-'}</td>
-                            <td style={{ padding: '6px 8px', fontWeight: typography.weights.medium, color: item.tipo === 'pagar' ? colors.error : colors.success, whiteSpace: 'nowrap' }}>{formatBRL(item.valor)}</td>
+                            <td
+                              style={{
+                                padding: '6px 8px',
+                                color: colors.neutral700,
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {formatDate(item.data_vencimento)}
+                            </td>
+                            <td
+                              style={{
+                                padding: '6px 8px',
+                                color: colors.neutral700,
+                                maxWidth: '120px',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}
+                              title={item.descricao || item.nome || ''}
+                            >
+                              {item.descricao || item.nome || '-'}
+                            </td>
+                            <td
+                              style={{
+                                padding: '6px 8px',
+                                fontWeight: typography.weights.medium,
+                                color:
+                                  item.tipo === 'pagar'
+                                    ? colors.error
+                                    : colors.success,
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {formatBRL(item.valor)}
+                            </td>
                             <td style={{ padding: '6px 8px' }}>
-                              <button onClick={() => handlePagar(item)} disabled={pagandoId === item.id} style={{ padding: '3px 10px', fontSize: typography.sizes.xs, fontWeight: typography.weights.medium, background: item.tipo === 'pagar' ? colors.error : colors.success, color: colors.white, border: 'none', borderRadius: radius.sm, cursor: pagandoId === item.id ? 'wait' : 'pointer', opacity: pagandoId === item.id ? 0.6 : 1 }}>
-                                {pagandoId === item.id ? '...' : item.tipo === 'pagar' ? 'Pagar' : 'Receber'}
+                              <button
+                                onClick={() => handlePagar(item)}
+                                disabled={pagandoId === item.id}
+                                style={{
+                                  padding: '3px 10px',
+                                  fontSize: typography.sizes.xs,
+                                  fontWeight: typography.weights.medium,
+                                  background:
+                                    item.tipo === 'pagar'
+                                      ? colors.error
+                                      : colors.success,
+                                  color: colors.white,
+                                  border: 'none',
+                                  borderRadius: radius.sm,
+                                  cursor:
+                                    pagandoId === item.id ? 'wait' : 'pointer',
+                                  opacity: pagandoId === item.id ? 0.6 : 1,
+                                }}
+                              >
+                                {pagandoId === item.id
+                                  ? '...'
+                                  : item.tipo === 'pagar'
+                                    ? 'Pagar'
+                                    : 'Receber'}
                               </button>
                             </td>
                           </tr>
@@ -764,37 +1636,131 @@ const loadMetas = useCallback(async () => {
                 <div style={cardHeaderStyle}>
                   <div>
                     <p style={cardTitleStyle}>Investimentos</p>
-                    <p style={cardSubtitleStyle}>Aplicado x saldo atual (estimado)</p>
+                    <p style={cardSubtitleStyle}>
+                      Aplicado x saldo atual (estimado)
+                    </p>
                   </div>
-                  <button onClick={() => navigate('/investimentos')} style={outlineBtnStyle}>Ver carteira</button>
+                  <button
+                    onClick={() => navigate('/investimentos')}
+                    style={outlineBtnStyle}
+                  >
+                    Ver carteira
+                  </button>
                 </div>
                 {loadingInvestimentos ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {[1, 2, 3, 4].map((i) => <Skeleton key={i} height="20px" />)}
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px',
+                    }}
+                  >
+                    {[1, 2, 3, 4].map((i) => (
+                      <Skeleton key={i} height="20px" />
+                    ))}
                   </div>
                 ) : (
-                  <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: '24px',
+                      alignItems: 'flex-start',
+                      flexWrap: 'wrap',
+                    }}
+                  >
                     <div style={{ flex: 1, minWidth: '140px' }}>
                       {[
-                        { label: 'Saldo atual', value: formatBRL(totalSaldoAtual) },
+                        {
+                          label: 'Saldo atual',
+                          value: formatBRL(totalSaldoAtual),
+                        },
                         { label: 'Aplicado', value: formatBRL(totalAplicado) },
-                        { label: 'Ganho estimado', value: formatBRL(ganhoEstimado), color: ganhoEstimado >= 0 ? colors.success : colors.error },
+                        {
+                          label: 'Ganho estimado',
+                          value: formatBRL(ganhoEstimado),
+                          color:
+                            ganhoEstimado >= 0 ? colors.success : colors.error,
+                        },
                         { label: 'Rent. média', value: `${rentMedia}%` },
                       ].map((row) => (
-                        <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: `1px solid ${colors.neutral100}`, fontSize: typography.sizes.sm }}>
-                          <span style={{ color: colors.neutral500 }}>{row.label}</span>
-                          <span style={{ fontWeight: typography.weights.semibold, color: row.color || colors.neutral800 }}>{row.value || '-'}</span>
+                        <div
+                          key={row.label}
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            padding: '7px 0',
+                            borderBottom: `1px solid ${colors.neutral100}`,
+                            fontSize: typography.sizes.sm,
+                          }}
+                        >
+                          <span style={{ color: colors.neutral500 }}>
+                            {row.label}
+                          </span>
+                          <span
+                            style={{
+                              fontWeight: typography.weights.semibold,
+                              color: row.color || colors.neutral800,
+                            }}
+                          >
+                            {row.value || '-'}
+                          </span>
                         </div>
                       ))}
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                      <DonutChart aplicado={totalAplicado} saldoAtual={totalSaldoAtual} />
-                      <div style={{ display: 'flex', gap: '12px', fontSize: typography.sizes.xs }}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <span style={{ width: '10px', height: '10px', background: '#2563eb', borderRadius: '2px', display: 'inline-block' }} /> Aplicado
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '8px',
+                      }}
+                    >
+                      <DonutChart
+                        aplicado={totalAplicado}
+                        saldoAtual={totalSaldoAtual}
+                      />
+                      <div
+                        style={{
+                          display: 'flex',
+                          gap: '12px',
+                          fontSize: typography.sizes.xs,
+                        }}
+                      >
+                        <span
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}
+                        >
+                          <span
+                            style={{
+                              width: '10px',
+                              height: '10px',
+                              background: '#2563eb',
+                              borderRadius: '2px',
+                              display: 'inline-block',
+                            }}
+                          />{' '}
+                          Aplicado
                         </span>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <span style={{ width: '10px', height: '10px', background: '#16a34a', borderRadius: '2px', display: 'inline-block' }} /> Saldo atual
+                        <span
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}
+                        >
+                          <span
+                            style={{
+                              width: '10px',
+                              height: '10px',
+                              background: '#16a34a',
+                              borderRadius: '2px',
+                              display: 'inline-block',
+                            }}
+                          />{' '}
+                          Saldo atual
                         </span>
                       </div>
                     </div>
@@ -808,38 +1774,139 @@ const loadMetas = useCallback(async () => {
                     <p style={cardTitleStyle}>Metas</p>
                     <p style={cardSubtitleStyle}>{metas.length} ativa(s)</p>
                   </div>
-                  <button onClick={() => navigate('/metas')} style={outlineBtnStyle}>Ver metas</button>
+                  <button
+                    onClick={() => navigate('/metas')}
+                    style={outlineBtnStyle}
+                  >
+                    Ver metas
+                  </button>
                 </div>
                 {loadingMetas ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {[1, 2, 3].map((i) => <Skeleton key={i} height="60px" />)}
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '10px',
+                    }}
+                  >
+                    {[1, 2, 3].map((i) => (
+                      <Skeleton key={i} height="60px" />
+                    ))}
                   </div>
                 ) : metas.length === 0 ? (
-                  <p style={{ color: colors.neutral500, fontSize: typography.sizes.sm, textAlign: 'center', padding: '16px 0' }}>Nenhuma meta ativa.</p>
+                  <p
+                    style={{
+                      color: colors.neutral500,
+                      fontSize: typography.sizes.sm,
+                      textAlign: 'center',
+                      padding: '16px 0',
+                    }}
+                  >
+                    Nenhuma meta ativa.
+                  </p>
                 ) : (
                   <>
-                    <div style={{ marginBottom: '12px', padding: '8px 12px', background: colors.neutral50, borderRadius: radius.md, fontSize: typography.sizes.sm, color: colors.neutral600 }}>
-                      Total: <strong>{formatBRL(metasTotalAtual)} / {formatBRL(metasTotalAlvo)}</strong>
+                    <div
+                      style={{
+                        marginBottom: '12px',
+                        padding: '8px 12px',
+                        background: colors.neutral50,
+                        borderRadius: radius.md,
+                        fontSize: typography.sizes.sm,
+                        color: colors.neutral600,
+                      }}
+                    >
+                      Total:{' '}
+                      <strong>
+                        {formatBRL(metasTotalAtual)} /{' '}
+                        {formatBRL(metasTotalAlvo)}
+                      </strong>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '14px',
+                      }}
+                    >
                       {metas.map((meta) => {
-                        const { valorAlvo, valorAtual, dataFim } = normalizeMeta(meta);
-                        const pct = valorAlvo > 0 ? Math.min(100, (valorAtual / valorAlvo) * 100) : 0;
+                        const { valorAlvo, valorAtual, dataFim } =
+                          normalizeMeta(meta);
+                        const pct =
+                          valorAlvo > 0
+                            ? Math.min(100, (valorAtual / valorAlvo) * 100)
+                            : 0;
                         return (
                           <div key={meta.id}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px', gap: '6px', flexWrap: 'wrap' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <FontAwesomeIcon icon={faBullseye} style={{ color: colors.primaryLight, fontSize: '12px' }} />
-                                <span style={{ fontSize: typography.sizes.sm, fontWeight: typography.weights.medium, color: colors.neutral800 }}>{meta.nome}</span>
-                                {meta.prioridade && <PrioridadeBadge prioridade={meta.prioridade} />}
+                            <div
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                marginBottom: '4px',
+                                gap: '6px',
+                                flexWrap: 'wrap',
+                              }}
+                            >
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                }}
+                              >
+                                <FontAwesomeIcon
+                                  icon={faBullseye}
+                                  style={{
+                                    color: colors.primaryLight,
+                                    fontSize: '12px',
+                                  }}
+                                />
+                                <span
+                                  style={{
+                                    fontSize: typography.sizes.sm,
+                                    fontWeight: typography.weights.medium,
+                                    color: colors.neutral800,
+                                  }}
+                                >
+                                  {meta.nome}
+                                </span>
+                                {meta.prioridade && (
+                                  <PrioridadeBadge
+                                    prioridade={meta.prioridade}
+                                  />
+                                )}
                               </div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: typography.sizes.xs, color: colors.neutral500 }}>
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  fontSize: typography.sizes.xs,
+                                  color: colors.neutral500,
+                                }}
+                              >
                                 {dataFim && <span>{formatDate(dataFim)}</span>}
-                                <span style={{ fontWeight: typography.weights.semibold, color: colors.primaryLight }}>{pct.toFixed(0)}%</span>
+                                <span
+                                  style={{
+                                    fontWeight: typography.weights.semibold,
+                                    color: colors.primaryLight,
+                                  }}
+                                >
+                                  {pct.toFixed(0)}%
+                                </span>
                               </div>
                             </div>
                             <ProgressBar pct={pct} />
-                            <p style={{ margin: '3px 0 0', fontSize: typography.sizes.xs, color: colors.neutral500 }}>{formatBRL(valorAtual)} / {formatBRL(valorAlvo)}</p>
+                            <p
+                              style={{
+                                margin: '3px 0 0',
+                                fontSize: typography.sizes.xs,
+                                color: colors.neutral500,
+                              }}
+                            >
+                              {formatBRL(valorAtual)} / {formatBRL(valorAlvo)}
+                            </p>
                           </div>
                         );
                       })}
@@ -863,15 +1930,65 @@ const loadMetas = useCallback(async () => {
               }}
             >
               <div>
-                <p style={{ margin: '0 0 2px', fontSize: typography.sizes.xl, fontWeight: typography.weights.semibold, color: colors.white }}>Finlly</p>
-                <p style={{ margin: '0 0 6px', fontSize: typography.sizes.xs, color: 'rgba(255,255,255,0.8)' }}>Seu consultor financeiro</p>
-                <p style={{ margin: 0, fontSize: typography.sizes.sm, color: 'rgba(255,255,255,0.9)' }}>Organize sua semana, revise vencimentos e ajuste metas com disciplina.</p>
+                <p
+                  style={{
+                    margin: '0 0 2px',
+                    fontSize: typography.sizes.xl,
+                    fontWeight: typography.weights.semibold,
+                    color: colors.white,
+                  }}
+                >
+                  Finlly
+                </p>
+                <p
+                  style={{
+                    margin: '0 0 6px',
+                    fontSize: typography.sizes.xs,
+                    color: 'rgba(255,255,255,0.8)',
+                  }}
+                >
+                  Seu consultor financeiro
+                </p>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: typography.sizes.sm,
+                    color: 'rgba(255,255,255,0.9)',
+                  }}
+                >
+                  Organize sua semana, revise vencimentos e ajuste metas com
+                  disciplina.
+                </p>
               </div>
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                <button onClick={() => navigate('/anexos')} style={{ padding: '8px 16px', fontSize: typography.sizes.sm, background: 'rgba(255,255,255,0.2)', color: colors.white, border: '1px solid rgba(255,255,255,0.4)', borderRadius: radius.sm, cursor: 'pointer', fontWeight: typography.weights.medium }}>
+                <button
+                  onClick={() => navigate('/anexos')}
+                  style={{
+                    padding: '8px 16px',
+                    fontSize: typography.sizes.sm,
+                    background: 'rgba(255,255,255,0.2)',
+                    color: colors.white,
+                    border: '1px solid rgba(255,255,255,0.4)',
+                    borderRadius: radius.sm,
+                    cursor: 'pointer',
+                    fontWeight: typography.weights.medium,
+                  }}
+                >
                   Enviar comprovante/extrato
                 </button>
-                <button onClick={() => navigate('/metas')} style={{ padding: '8px 16px', fontSize: typography.sizes.sm, background: colors.white, color: colors.primary, border: 'none', borderRadius: radius.sm, cursor: 'pointer', fontWeight: typography.weights.medium }}>
+                <button
+                  onClick={() => navigate('/metas')}
+                  style={{
+                    padding: '8px 16px',
+                    fontSize: typography.sizes.sm,
+                    background: colors.white,
+                    color: colors.primary,
+                    border: 'none',
+                    borderRadius: radius.sm,
+                    cursor: 'pointer',
+                    fontWeight: typography.weights.medium,
+                  }}
+                >
                   Revisar metas
                 </button>
               </div>
@@ -890,8 +2007,8 @@ const loadMetas = useCallback(async () => {
             >
               Finlly • painel financeiro pessoal — {CURRENT_YEAR}
             </div>
-
-          </div>{/* /page content */}
+          </div>
+          {/* /page content */}
         </main>
       </div>
     </InadimplenteGuard>
