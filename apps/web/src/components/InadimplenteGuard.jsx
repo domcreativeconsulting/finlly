@@ -43,11 +43,11 @@ export function InadimplenteGuard({ children }) {
       <div style={styles.wrapper}>
         <div style={styles.banner} role="alert">
           <p style={styles.message}>
-            <strong>Acesso indisponível — plano inativo.</strong> Assine um
-            plano para acessar todos os recursos do Finlly.
+            <strong>Acesso indisponível</strong> — ative sua conta para acessar
+            todas as funcionalidades.
           </p>
-          <Link to="/checkout" style={styles.link}>
-            Ver planos
+          <Link to="/assinatura" style={styles.link}>
+            Ativar conta
           </Link>
         </div>
         <div style={styles.placeholder}>

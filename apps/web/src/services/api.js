@@ -43,8 +43,19 @@ api.interceptors.response.use(
 
     const isAuthRoute = originalRequest?.url?.startsWith('/auth/');
 
-    if (_billingBlocked && [402, 403].includes(error.response?.status)) {
-      // User is billing-blocked: cancel silently so no toast.error fires
+    const isBillingError =
+      error.response?.status === 402 ||
+      error.response?.data?.code === 'SEM_ASSINATURA' ||
+      error.response?.data?.code === 'plan_inactive';
+
+    if (isBillingError) {
+      error.isPlanBlocked = true;
+    }
+
+    // Swallow silently: when the guard has already flagged the session as blocked,
+    // or when the server itself signals a billing error (handles the race where
+    // data-loading effects fire before InadimplenteGuard's effect sets the flag).
+    if (_billingBlocked || isBillingError) {
       return new Promise(() => {});
     }
 
