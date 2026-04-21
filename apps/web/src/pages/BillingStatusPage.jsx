@@ -311,7 +311,7 @@ export default function BillingStatusPage() {
                 >
                   Você não possui uma assinatura ativa.
                 </p>
-                <Button onClick={() => navigate('/checkout')}>
+                <Button onClick={() => navigate('/checkout?step=2')}>
                   Assinar um plano →
                 </Button>
               </div>
