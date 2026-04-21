@@ -3,7 +3,13 @@ import prisma from '../utils/database.js';
 import { AppError } from '../errors/AppError.js';
 import { registrarEvento } from './auditoria.service.js';
 
-const ALLOWED_SORT_FIELDS = new Set(['data_vencimento', 'valor', 'descricao', 'created_at', 'status']);
+const ALLOWED_SORT_FIELDS = new Set([
+  'data_vencimento',
+  'valor',
+  'descricao',
+  'created_at',
+  'status',
+]);
 
 /**
  * List contas a receber for a user with optional filters and pagination.
@@ -18,10 +24,21 @@ const ALLOWED_SORT_FIELDS = new Set(['data_vencimento', 'valor', 'descricao', 'c
  * }} filters
  */
 export async function listContasReceber(userId, filters = {}) {
-  const { status, categoria_id, conta_id, data_vencimento_de, data_vencimento_ate, busca, cursor, grupo_recorrencia_id } = filters;
+  const {
+    status,
+    categoria_id,
+    conta_id,
+    data_vencimento_de,
+    data_vencimento_ate,
+    busca,
+    cursor,
+    grupo_recorrencia_id,
+  } = filters;
   const page = filters.page ?? 1;
   const limit = Math.min(filters.limit ?? 20, 100);
-  const orderBy = ALLOWED_SORT_FIELDS.has(filters.order_by) ? filters.order_by : 'data_vencimento';
+  const orderBy = ALLOWED_SORT_FIELDS.has(filters.order_by)
+    ? filters.order_by
+    : 'data_vencimento';
   const orderDir = filters.order_dir === 'desc' ? 'desc' : 'asc';
 
   const where = {
@@ -37,8 +54,14 @@ export async function listContasReceber(userId, filters = {}) {
 
   if (data_vencimento_de || data_vencimento_ate) {
     where.data_vencimento = {};
-    if (data_vencimento_de) where.data_vencimento.gte = new Date(data_vencimento_de + 'T00:00:00.000Z');
-    if (data_vencimento_ate) where.data_vencimento.lte = new Date(data_vencimento_ate + 'T00:00:00.000Z');
+    if (data_vencimento_de)
+      where.data_vencimento.gte = new Date(
+        data_vencimento_de + 'T00:00:00.000Z'
+      );
+    if (data_vencimento_ate)
+      where.data_vencimento.lte = new Date(
+        data_vencimento_ate + 'T00:00:00.000Z'
+      );
   }
 
   // Cursor-based pagination
@@ -121,14 +144,46 @@ export async function getContaReceber(id, userId) {
 
 /** @type {Record<string, (d: Date, n: number) => Date>} */
 const RECORRENCIA_OFFSET = {
-  diario: (d, n) => { const r = new Date(d); r.setDate(r.getDate() + n); return r; },
-  semanal: (d, n) => { const r = new Date(d); r.setDate(r.getDate() + 7 * n); return r; },
-  quinzenal: (d, n) => { const r = new Date(d); r.setDate(r.getDate() + 15 * n); return r; },
-  mensal: (d, n) => { const r = new Date(d); r.setMonth(r.getMonth() + n); return r; },
-  bimestral: (d, n) => { const r = new Date(d); r.setMonth(r.getMonth() + 2 * n); return r; },
-  trimestral: (d, n) => { const r = new Date(d); r.setMonth(r.getMonth() + 3 * n); return r; },
-  semestral: (d, n) => { const r = new Date(d); r.setMonth(r.getMonth() + 6 * n); return r; },
-  anual: (d, n) => { const r = new Date(d); r.setMonth(r.getMonth() + 12 * n); return r; },
+  diario: (d, n) => {
+    const r = new Date(d);
+    r.setDate(r.getDate() + n);
+    return r;
+  },
+  semanal: (d, n) => {
+    const r = new Date(d);
+    r.setDate(r.getDate() + 7 * n);
+    return r;
+  },
+  quinzenal: (d, n) => {
+    const r = new Date(d);
+    r.setDate(r.getDate() + 15 * n);
+    return r;
+  },
+  mensal: (d, n) => {
+    const r = new Date(d);
+    r.setMonth(r.getMonth() + n);
+    return r;
+  },
+  bimestral: (d, n) => {
+    const r = new Date(d);
+    r.setMonth(r.getMonth() + 2 * n);
+    return r;
+  },
+  trimestral: (d, n) => {
+    const r = new Date(d);
+    r.setMonth(r.getMonth() + 3 * n);
+    return r;
+  },
+  semestral: (d, n) => {
+    const r = new Date(d);
+    r.setMonth(r.getMonth() + 6 * n);
+    return r;
+  },
+  anual: (d, n) => {
+    const r = new Date(d);
+    r.setMonth(r.getMonth() + 12 * n);
+    return r;
+  },
 };
 
 /**
@@ -138,7 +193,17 @@ const RECORRENCIA_OFFSET = {
  * @param {string} [requestId]
  */
 export async function createContaReceber(userId, data, requestId) {
-  const { descricao, valor, data_vencimento, categoria_id, conta_id, observacoes, recorrente, total_parcelas, recorrencia } = data;
+  const {
+    descricao,
+    valor,
+    data_vencimento,
+    categoria_id,
+    conta_id,
+    observacoes,
+    recorrente,
+    total_parcelas,
+    recorrencia,
+  } = data;
   const baseDate = new Date(data_vencimento + 'T00:00:00.000Z');
 
   if (total_parcelas) {
@@ -235,13 +300,20 @@ export async function updateContaReceber(id, userId, data, requestId) {
   });
 
   if (!existing) throw AppError.notFound('Conta a receber não encontrada');
-  if (existing.status === 'recebido') throw AppError.badRequest('Não é possível editar uma conta já recebida');
+  if (existing.status === 'pago')
+    throw AppError.badRequest(
+      'Não é possível editar uma conta já recebida (paga) (paga)'
+    );
 
   const updateData = {};
   if (data.descricao !== undefined) updateData.descricao = data.descricao;
   if (data.valor !== undefined) updateData.valor = data.valor;
-  if (data.data_vencimento !== undefined) updateData.data_vencimento = new Date(data.data_vencimento + 'T00:00:00.000Z');
-  if (data.categoria_id !== undefined) updateData.categoria_id = data.categoria_id;
+  if (data.data_vencimento !== undefined)
+    updateData.data_vencimento = new Date(
+      data.data_vencimento + 'T00:00:00.000Z'
+    );
+  if (data.categoria_id !== undefined)
+    updateData.categoria_id = data.categoria_id;
   if (data.conta_id !== undefined) updateData.conta_id = data.conta_id;
   if (data.observacoes !== undefined) updateData.observacoes = data.observacoes;
 
@@ -281,7 +353,10 @@ export async function deleteContaReceber(id, userId, requestId) {
   });
 
   if (!existing) throw AppError.notFound('Conta a receber não encontrada');
-  if (existing.status === 'recebido') throw AppError.badRequest('Não é possível excluir uma conta já recebida');
+  if (existing.status === 'pago')
+    throw AppError.badRequest(
+      'Não é possível excluir uma conta já recebida (paga) (paga)'
+    );
 
   await prisma.contaReceber.update({
     where: { id },
@@ -308,23 +383,38 @@ export async function deleteContaReceber(id, userId, requestId) {
  * @param {{ data_recebimento?: string, conta_id?: string, observacoes?: string }} options
  * @param {string} [requestId]
  */
-export async function receberContaReceber(id, userId, { data_recebimento, conta_id: contaIdOverride, observacoes } = {}, requestId) {
+export async function receberContaReceber(
+  id,
+  userId,
+  { data_recebimento, conta_id: contaIdOverride, observacoes } = {},
+  requestId
+) {
   const existing = await prisma.contaReceber.findFirst({
     where: { id, usuario_id: userId, deleted_at: null },
-    select: { id: true, status: true, valor: true, conta_id: true, categoria_id: true, descricao: true },
+    select: {
+      id: true,
+      status: true,
+      valor: true,
+      conta_id: true,
+      categoria_id: true,
+      descricao: true,
+    },
   });
 
   if (!existing) throw AppError.notFound('Conta a receber não encontrada');
-  if (existing.status === 'recebido') throw AppError.badRequest('Conta a receber já está recebida');
+  if (existing.status === 'pago')
+    throw AppError.badRequest('Conta a receber já está recebida');
 
-  const dataRecebimento = data_recebimento ? new Date(data_recebimento + 'T00:00:00.000Z') : new Date();
+  const dataRecebimento = data_recebimento
+    ? new Date(data_recebimento + 'T00:00:00.000Z')
+    : new Date();
   const contaIdParaMovimentacao = contaIdOverride ?? existing.conta_id;
 
   const [conta] = await prisma.$transaction(async (tx) => {
     const contaAtualizada = await tx.contaReceber.update({
       where: { id },
       data: {
-        status: 'recebido',
+        status: 'pago',
         data_recebimento: dataRecebimento,
         updated_at: new Date(),
       },
@@ -382,8 +472,12 @@ export async function cancelarContaReceber(id, userId, requestId) {
   });
 
   if (!existing) throw AppError.notFound('Conta a receber não encontrada');
-  if (existing.status === 'recebido') throw AppError.badRequest('Não é possível cancelar uma conta já recebida');
-  if (existing.status === 'cancelado') throw AppError.badRequest('Conta a receber já está cancelada');
+  if (existing.status === 'pago')
+    throw AppError.badRequest(
+      'Não é possível cancelar uma conta já recebida (paga) (paga)'
+    );
+  if (existing.status === 'cancelado')
+    throw AppError.badRequest('Conta a receber já está cancelada');
 
   const conta = await prisma.contaReceber.update({
     where: { id },
@@ -415,14 +509,19 @@ export async function cancelarContaReceber(id, userId, requestId) {
  */
 export async function getGrupoParcelasReceber(grupoId, userId) {
   const parcelas = await prisma.contaReceber.findMany({
-    where: { grupo_recorrencia_id: grupoId, usuario_id: userId, deleted_at: null },
+    where: {
+      grupo_recorrencia_id: grupoId,
+      usuario_id: userId,
+      deleted_at: null,
+    },
     include: {
       categoria: { select: { nome: true, cor: true, icone: true } },
       conta: { select: { nome: true } },
     },
     orderBy: { parcela_atual: 'asc' },
   });
-  if (parcelas.length === 0) throw AppError.notFound('Grupo de parcelas não encontrado');
+  if (parcelas.length === 0)
+    throw AppError.notFound('Grupo de parcelas não encontrado');
   return parcelas.map((c) => ({ ...c, valor: Number(c.valor) }));
 }
 
@@ -445,7 +544,11 @@ export async function cancelarGrupoParcelasReceber(grupoId, userId, requestId) {
 
   if (result.count === 0) {
     const existente = await prisma.contaReceber.findFirst({
-      where: { grupo_recorrencia_id: grupoId, usuario_id: userId, deleted_at: null },
+      where: {
+        grupo_recorrencia_id: grupoId,
+        usuario_id: userId,
+        deleted_at: null,
+      },
     });
     if (!existente) throw AppError.notFound('Grupo de parcelas não encontrado');
   }
