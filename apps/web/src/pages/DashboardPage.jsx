@@ -15,6 +15,7 @@ import { contasReceberService } from '../services/contasReceber.service.js';
 import { investimentosService } from '../services/investimentos.service.js';
 import { metasService } from '../services/metas.service.js';
 import { useAuth } from '../hooks/useAuth.js';
+import { hasActiveSubscription } from '../config/subscriptionPolicy.js';
 import { useOnlineStatus } from '../hooks/useOnlineStatus.js';
 import { useContentLayout } from '../hooks/useContentLayout.js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -808,12 +809,14 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
+    if (!hasActiveSubscription(usuario?.status)) return;
     loadKPIs();
     loadInvestimentos();
     loadMetas();
     loadFluxo();
     loadProximosVencimentos();
   }, [
+    usuario?.status,
     loadKPIs,
     loadInvestimentos,
     loadMetas,
