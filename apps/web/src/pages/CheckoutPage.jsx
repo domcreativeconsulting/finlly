@@ -285,9 +285,8 @@ paymentPollRef.current =  window.setInterval(async () => {
       window.clearInterval(paymentPollRef.current);
       paymentPollRef.current = null;
       setWaitingPayment(false);
-      toast.success('Pagamento confirmado — entrando no sistema...');
-      navigate('/dashboard', { replace: true });
-      return;
+toast.success('Pagamento confirmado! Faça login para acessar o sistema.');
+navigate('/login', { replace: true });
     }
 
     elapsed += POLL_INTERVAL;
