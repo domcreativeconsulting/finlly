@@ -50,6 +50,7 @@ import { downloadBlob } from '../utils/downloadBlob.js';
 import { OfflineDataBadge } from '../components/OfflineDataBadge.jsx';
 import AnexoUploader from '../components/AnexoUploader.jsx';
 import { anexosService } from '../services/anexos.service.js';
+import { hasActiveSubscription } from '../config/subscriptionPolicy.js';
 
 const TIPO_MODAL_CAT = 'entrada';
 const DEFAULT_FORM_CAT = { nome: '', icone: '', cor: '#33528a', pai_id: '' };
@@ -512,6 +513,7 @@ export default function ContasReceberPage() {
   const [cacheInfo, setCacheInfo] = useState(null);
 
   const carregarLista = useCallback(async () => {
+    if (!hasActiveSubscription(usuario?.status)) return;
     setLoading(true);
     setError(null);
     try {
@@ -553,7 +555,16 @@ export default function ContasReceberPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, filtrosAtivos, sortField, sortDir, isOnline, saveCache, readCache]);
+  }, [
+    page,
+    filtrosAtivos,
+    sortField,
+    sortDir,
+    isOnline,
+    saveCache,
+    readCache,
+    usuario?.status,
+  ]);
 
   useEffect(() => {
     carregarLista();
