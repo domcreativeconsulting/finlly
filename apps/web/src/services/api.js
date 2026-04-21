@@ -1,9 +1,21 @@
 import axios from 'axios';
+import { toast } from 'react-toastify';
 import { config } from '../config/env.js';
 
 let _accessToken = null;
 let _onLogout = null;
 let _billingBlocked = false;
+
+const _INACTIVE_TOAST_KEY = 'finlly_inactive_toast_shown';
+
+function _showAccountInactiveToast() {
+  if (sessionStorage.getItem(_INACTIVE_TOAST_KEY)) return;
+  sessionStorage.setItem(_INACTIVE_TOAST_KEY, 'true');
+  toast.warning(
+    'Algumas funcionalidades não estão disponíveis. Ative sua conta para ter acesso completo.',
+    { autoClose: 6000 }
+  );
+}
 
 export function setAccessToken(token) {
   _accessToken = token;
@@ -19,6 +31,7 @@ export function setLogoutHandler(fn) {
 
 export function setBillingBlocked(blocked) {
   _billingBlocked = blocked;
+  if (!blocked) sessionStorage.removeItem(_INACTIVE_TOAST_KEY);
 }
 
 const api = axios.create({
@@ -52,10 +65,11 @@ api.interceptors.response.use(
       error.isPlanBlocked = true;
     }
 
-    // Swallow silently: when the guard has already flagged the session as blocked,
-    // or when the server itself signals a billing error (handles the race where
-    // data-loading effects fire before InadimplenteGuard's effect sets the flag).
+    // Swallow: when the guard flagged the session as blocked or the server signals
+    // a billing error. Show a single warning toast (once per session) in place of
+    // the individual per-call error toasts that would otherwise fire.
     if (_billingBlocked || isBillingError) {
+      _showAccountInactiveToast();
       return new Promise(() => {});
     }
 
