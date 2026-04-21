@@ -7,6 +7,7 @@ import { PageHeader } from '../components/PageHeader.jsx';
 import { investimentosService } from '../services/investimentos.service.js';
 import { contasService } from '../services/contas.service.js';
 import { useAuth } from '../hooks/useAuth.js';
+import { useContentLayout } from '../hooks/useContentLayout.js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faChartLine,
@@ -114,6 +115,7 @@ function TipoEventoBadge({ tipo }) {
 export default function InvestimentosPage() {
   const { usuario } = useAuth();
   const navigate = useNavigate();
+  const { isMobile, contentStyle } = useContentLayout();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
 
@@ -457,12 +459,16 @@ export default function InvestimentosPage() {
         <div
           style={{
             ...s.mainArea,
-            marginLeft: !sidebarOpen
-              ? '0px'
-              : sidebarExpanded
-                ? '236px'
-                : '108px',
-            transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            ...(isMobile
+              ? contentStyle
+              : {
+                  marginLeft: !sidebarOpen
+                    ? '0px'
+                    : sidebarExpanded
+                      ? '236px'
+                      : '108px',
+                  transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                }),
           }}
         >
           <PageHeader
@@ -486,8 +492,8 @@ export default function InvestimentosPage() {
                 <div
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(3, 1fr)',
-                    gap: 16,
+                    gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
+                    gap: isMobile ? 10 : 16,
                     marginBottom: 24,
                   }}
                 >
@@ -571,7 +577,7 @@ export default function InvestimentosPage() {
                 <div
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: '1fr 1fr 1fr 1fr',
+                    gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr 1fr',
                     gap: 12,
                     marginBottom: 14,
                   }}
@@ -740,224 +746,396 @@ export default function InvestimentosPage() {
                       Controle por aplicação
                     </span>
                   </div>
-                  <div style={{ overflowX: 'auto' }}>
-                    <table
+                  {isMobile ? (
+                    <div
                       style={{
-                        width: '100%',
-                        borderCollapse: 'collapse',
-                        fontSize: 13,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 10,
+                        padding: '0 4px 4px',
                       }}
                     >
-                      <thead>
-                        <tr
-                          style={{ background: colors.neutral100 ?? '#f3f4f6' }}
-                        >
-                          {[
-                            'Data aplicação',
-                            'Conta / Banco',
-                            'Tipo',
-                            'Produto',
-                            'Aplicado (R$)',
-                            'Atual (R$)',
-                            'Ganho (R$)',
-                            'Rent. (%)',
-                            'Prazo',
-                            'Ações',
-                          ].map((col) => (
-                            <th
-                              key={col}
+                      {investimentosFiltrados.map((inv) => {
+                        const pos = posicoes[inv.id];
+                        const saldoAtual =
+                          pos?.saldoAtual ?? inv.valorInicial ?? 0;
+                        const ganho = saldoAtual - (inv.valorInicial ?? 0);
+                        const rentPct =
+                          (inv.valorInicial ?? 0) > 0
+                            ? (ganho / inv.valorInicial) * 100
+                            : 0;
+                        const ganhoColor =
+                          ganho > 0
+                            ? '#16a34a'
+                            : ganho < 0
+                              ? '#dc2626'
+                              : (colors.neutral600 ?? '#4b5563');
+                        return (
+                          <div
+                            key={inv.id}
+                            style={{
+                              background: '#fff',
+                              border: '1px solid #e5e7eb',
+                              borderRadius: 10,
+                              padding: '12px 14px',
+                              boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                            }}
+                          >
+                            <div
                               style={{
-                                padding: '10px 14px',
-                                textAlign: 'left',
-                                fontWeight: 600,
-                                color: colors.neutral700 ?? '#374151',
-                                borderBottom: '1px solid #e5e7eb',
-                                whiteSpace: 'nowrap',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'flex-start',
+                                marginBottom: 8,
                               }}
                             >
-                              {col}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {investimentosFiltrados.map((inv, idx) => {
-                          const pos = posicoes[inv.id];
-                          const saldoAtual =
-                            pos?.saldoAtual ?? inv.valorInicial ?? 0;
-                          const ganho = saldoAtual - (inv.valorInicial ?? 0);
-                          const rentPct =
-                            (inv.valorInicial ?? 0) > 0
-                              ? (ganho / inv.valorInicial) * 100
-                              : 0;
-                          const ganhoColor =
-                            ganho > 0
-                              ? '#16a34a'
-                              : ganho < 0
-                                ? '#dc2626'
-                                : (colors.neutral600 ?? '#4b5563');
-                          return (
-                            <tr
-                              key={inv.id}
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div
+                                  style={{
+                                    fontWeight: 600,
+                                    fontSize: 14,
+                                    color: '#111827',
+                                    marginBottom: 2,
+                                  }}
+                                >
+                                  {inv.nome}
+                                </div>
+                                <div style={{ fontSize: 12, color: '#6b7280' }}>
+                                  {[inv.tipoNome, inv.contaNome]
+                                    .filter(Boolean)
+                                    .join(' · ')}
+                                </div>
+                              </div>
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  gap: 2,
+                                  flexShrink: 0,
+                                  marginLeft: 8,
+                                }}
+                              >
+                                <button
+                                  title="Editar"
+                                  onClick={() => abrirModal(inv)}
+                                  style={iconBtn}
+                                >
+                                  <FontAwesomeIcon icon={faPenToSquare} />
+                                </button>
+                                <button
+                                  title="Eventos"
+                                  onClick={() => abrirEventos(inv)}
+                                  style={iconBtn}
+                                >
+                                  <FontAwesomeIcon icon={faChartLine} />
+                                </button>
+                                <button
+                                  title="Excluir"
+                                  onClick={() => handleExcluir(inv.id)}
+                                  style={{ ...iconBtn, color: '#dc2626' }}
+                                >
+                                  <FontAwesomeIcon icon={faTrash} />
+                                </button>
+                              </div>
+                            </div>
+                            <div
                               style={{
-                                background:
-                                  idx % 2 === 0
-                                    ? '#fff'
-                                    : (colors.neutral50 ?? '#f9fafb'),
-                                borderBottom: '1px solid #f3f4f6',
+                                display: 'grid',
+                                gridTemplateColumns: '1fr 1fr 1fr',
+                                gap: '6px 12px',
                               }}
                             >
-                              <td
+                              <div>
+                                <div
+                                  style={{
+                                    fontSize: 11,
+                                    color: '#6b7280',
+                                    marginBottom: 1,
+                                  }}
+                                >
+                                  Aplicado
+                                </div>
+                                <div style={{ fontSize: 13, fontWeight: 600 }}>
+                                  {formatBRL(inv.valorInicial)}
+                                </div>
+                              </div>
+                              <div>
+                                <div
+                                  style={{
+                                    fontSize: 11,
+                                    color: '#6b7280',
+                                    marginBottom: 1,
+                                  }}
+                                >
+                                  Saldo atual
+                                </div>
+                                <div style={{ fontSize: 13, fontWeight: 600 }}>
+                                  {pos !== undefined
+                                    ? formatBRL(saldoAtual)
+                                    : '—'}
+                                </div>
+                              </div>
+                              <div>
+                                <div
+                                  style={{
+                                    fontSize: 11,
+                                    color: '#6b7280',
+                                    marginBottom: 1,
+                                  }}
+                                >
+                                  Ganho
+                                </div>
+                                <div
+                                  style={{
+                                    fontSize: 13,
+                                    fontWeight: 600,
+                                    color: ganhoColor,
+                                  }}
+                                >
+                                  {pos !== undefined
+                                    ? `${formatBRL(ganho)} (${rentPct.toFixed(1)}%)`
+                                    : '—'}
+                                </div>
+                              </div>
+                            </div>
+                            {inv.dataVencimento && (
+                              <div
+                                style={{
+                                  marginTop: 6,
+                                  fontSize: 11,
+                                  color: '#6b7280',
+                                }}
+                              >
+                                Prazo: {calcularPrazo(inv.dataVencimento)}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div style={{ overflowX: 'auto' }}>
+                      <table
+                        style={{
+                          width: '100%',
+                          borderCollapse: 'collapse',
+                          fontSize: 13,
+                        }}
+                      >
+                        <thead>
+                          <tr
+                            style={{
+                              background: colors.neutral100 ?? '#f3f4f6',
+                            }}
+                          >
+                            {[
+                              'Data aplicação',
+                              'Conta / Banco',
+                              'Tipo',
+                              'Produto',
+                              'Aplicado (R$)',
+                              'Atual (R$)',
+                              'Ganho (R$)',
+                              'Rent. (%)',
+                              'Prazo',
+                              'Ações',
+                            ].map((col) => (
+                              <th
+                                key={col}
                                 style={{
                                   padding: '10px 14px',
+                                  textAlign: 'left',
+                                  fontWeight: 600,
+                                  color: colors.neutral700 ?? '#374151',
+                                  borderBottom: '1px solid #e5e7eb',
                                   whiteSpace: 'nowrap',
                                 }}
                               >
-                                {formatDate(inv.dataInicio)}
-                              </td>
-                              <td style={{ padding: '10px 14px' }}>
-                                <div style={{ fontWeight: 600, fontSize: 13 }}>
-                                  {inv.contaNome || '-'}
-                                </div>
-                                {inv.contaBanco && (
+                                {col}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {investimentosFiltrados.map((inv, idx) => {
+                            const pos = posicoes[inv.id];
+                            const saldoAtual =
+                              pos?.saldoAtual ?? inv.valorInicial ?? 0;
+                            const ganho = saldoAtual - (inv.valorInicial ?? 0);
+                            const rentPct =
+                              (inv.valorInicial ?? 0) > 0
+                                ? (ganho / inv.valorInicial) * 100
+                                : 0;
+                            const ganhoColor =
+                              ganho > 0
+                                ? '#16a34a'
+                                : ganho < 0
+                                  ? '#dc2626'
+                                  : (colors.neutral600 ?? '#4b5563');
+                            return (
+                              <tr
+                                key={inv.id}
+                                style={{
+                                  background:
+                                    idx % 2 === 0
+                                      ? '#fff'
+                                      : (colors.neutral50 ?? '#f9fafb'),
+                                  borderBottom: '1px solid #f3f4f6',
+                                }}
+                              >
+                                <td
+                                  style={{
+                                    padding: '10px 14px',
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                >
+                                  {formatDate(inv.dataInicio)}
+                                </td>
+                                <td style={{ padding: '10px 14px' }}>
                                   <div
-                                    style={{
-                                      fontSize: 12,
-                                      color: colors.neutral500 ?? '#6b7280',
-                                    }}
+                                    style={{ fontWeight: 600, fontSize: 13 }}
                                   >
-                                    {inv.contaBanco}
+                                    {inv.contaNome || '-'}
                                   </div>
-                                )}
-                              </td>
-                              <td
-                                style={{
-                                  padding: '10px 14px',
-                                  color: colors.neutral600 ?? '#4b5563',
-                                }}
-                              >
-                                {inv.tipoNome || '-'}
-                              </td>
-                              <td
-                                style={{
-                                  padding: '10px 14px',
-                                  fontWeight: 500,
-                                }}
-                              >
-                                {inv.nome}
-                              </td>
-                              <td
-                                style={{
-                                  padding: '10px 14px',
-                                  whiteSpace: 'nowrap',
-                                }}
-                              >
-                                {formatBRL(inv.valorInicial)}
-                              </td>
-                              <td
-                                style={{
-                                  padding: '10px 14px',
-                                  fontWeight: 600,
-                                  whiteSpace: 'nowrap',
-                                }}
-                              >
-                                {pos !== undefined ? (
-                                  formatBRL(saldoAtual)
-                                ) : (
-                                  <span
-                                    style={{
-                                      color: colors.neutral400 ?? '#9ca3af',
-                                    }}
-                                  >
-                                    —
-                                  </span>
-                                )}
-                              </td>
-                              <td
-                                style={{
-                                  padding: '10px 14px',
-                                  fontWeight: 600,
-                                  color: ganhoColor,
-                                  whiteSpace: 'nowrap',
-                                }}
-                              >
-                                {pos !== undefined ? (
-                                  formatBRL(ganho)
-                                ) : (
-                                  <span
-                                    style={{
-                                      color: colors.neutral400 ?? '#9ca3af',
-                                    }}
-                                  >
-                                    —
-                                  </span>
-                                )}
-                              </td>
-                              <td
-                                style={{
-                                  padding: '10px 14px',
-                                  fontWeight: 600,
-                                  color: ganhoColor,
-                                  whiteSpace: 'nowrap',
-                                }}
-                              >
-                                {pos !== undefined ? (
-                                  `${rentPct.toFixed(2)}%`
-                                ) : (
-                                  <span
-                                    style={{
-                                      color: colors.neutral400 ?? '#9ca3af',
-                                    }}
-                                  >
-                                    —
-                                  </span>
-                                )}
-                              </td>
-                              <td
-                                style={{
-                                  padding: '10px 14px',
-                                  whiteSpace: 'nowrap',
-                                  color: colors.neutral600 ?? '#4b5563',
-                                }}
-                              >
-                                {calcularPrazo(inv.dataVencimento)}
-                              </td>
-                              <td
-                                style={{
-                                  padding: '10px 14px',
-                                  whiteSpace: 'nowrap',
-                                }}
-                              >
-                                <div style={{ display: 'flex', gap: 4 }}>
-                                  <button
-                                    title="Editar"
-                                    onClick={() => abrirModal(inv)}
-                                    style={iconBtn}
-                                  >
-                                    <FontAwesomeIcon icon={faPenToSquare} />
-                                  </button>
-                                  <button
-                                    title="Eventos"
-                                    onClick={() => abrirEventos(inv)}
-                                    style={iconBtn}
-                                  >
-                                    <FontAwesomeIcon icon={faChartLine} />
-                                  </button>
-                                  <button
-                                    title="Excluir"
-                                    onClick={() => handleExcluir(inv.id)}
-                                    style={{ ...iconBtn, color: '#dc2626' }}
-                                  >
-                                    <FontAwesomeIcon icon={faTrash} />
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                                  {inv.contaBanco && (
+                                    <div
+                                      style={{
+                                        fontSize: 12,
+                                        color: colors.neutral500 ?? '#6b7280',
+                                      }}
+                                    >
+                                      {inv.contaBanco}
+                                    </div>
+                                  )}
+                                </td>
+                                <td
+                                  style={{
+                                    padding: '10px 14px',
+                                    color: colors.neutral600 ?? '#4b5563',
+                                  }}
+                                >
+                                  {inv.tipoNome || '-'}
+                                </td>
+                                <td
+                                  style={{
+                                    padding: '10px 14px',
+                                    fontWeight: 500,
+                                  }}
+                                >
+                                  {inv.nome}
+                                </td>
+                                <td
+                                  style={{
+                                    padding: '10px 14px',
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                >
+                                  {formatBRL(inv.valorInicial)}
+                                </td>
+                                <td
+                                  style={{
+                                    padding: '10px 14px',
+                                    fontWeight: 600,
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                >
+                                  {pos !== undefined ? (
+                                    formatBRL(saldoAtual)
+                                  ) : (
+                                    <span
+                                      style={{
+                                        color: colors.neutral400 ?? '#9ca3af',
+                                      }}
+                                    >
+                                      —
+                                    </span>
+                                  )}
+                                </td>
+                                <td
+                                  style={{
+                                    padding: '10px 14px',
+                                    fontWeight: 600,
+                                    color: ganhoColor,
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                >
+                                  {pos !== undefined ? (
+                                    formatBRL(ganho)
+                                  ) : (
+                                    <span
+                                      style={{
+                                        color: colors.neutral400 ?? '#9ca3af',
+                                      }}
+                                    >
+                                      —
+                                    </span>
+                                  )}
+                                </td>
+                                <td
+                                  style={{
+                                    padding: '10px 14px',
+                                    fontWeight: 600,
+                                    color: ganhoColor,
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                >
+                                  {pos !== undefined ? (
+                                    `${rentPct.toFixed(2)}%`
+                                  ) : (
+                                    <span
+                                      style={{
+                                        color: colors.neutral400 ?? '#9ca3af',
+                                      }}
+                                    >
+                                      —
+                                    </span>
+                                  )}
+                                </td>
+                                <td
+                                  style={{
+                                    padding: '10px 14px',
+                                    whiteSpace: 'nowrap',
+                                    color: colors.neutral600 ?? '#4b5563',
+                                  }}
+                                >
+                                  {calcularPrazo(inv.dataVencimento)}
+                                </td>
+                                <td
+                                  style={{
+                                    padding: '10px 14px',
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                >
+                                  <div style={{ display: 'flex', gap: 4 }}>
+                                    <button
+                                      title="Editar"
+                                      onClick={() => abrirModal(inv)}
+                                      style={iconBtn}
+                                    >
+                                      <FontAwesomeIcon icon={faPenToSquare} />
+                                    </button>
+                                    <button
+                                      title="Eventos"
+                                      onClick={() => abrirEventos(inv)}
+                                      style={iconBtn}
+                                    >
+                                      <FontAwesomeIcon icon={faChartLine} />
+                                    </button>
+                                    <button
+                                      title="Excluir"
+                                      onClick={() => handleExcluir(inv.id)}
+                                      style={{ ...iconBtn, color: '#dc2626' }}
+                                    >
+                                      <FontAwesomeIcon icon={faTrash} />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               )}
 
