@@ -5,6 +5,7 @@ import AppSidebar from '../components/AppSidebar.jsx';
 import { InadimplenteGuard } from '../components/InadimplenteGuard.jsx';
 import { metasService } from '../services/metas.service.js';
 import { useAuth } from '../hooks/useAuth.js';
+import { useContentLayout } from '../hooks/useContentLayout.js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { PageHeader } from '../components/PageHeader.jsx';
 import {
@@ -62,7 +63,6 @@ function formatDate(dateStr) {
   if (!dateStr) return '—';
   return new Date(dateStr + 'T00:00:00').toLocaleDateString('pt-BR');
 }
-
 
 const EMPTY_FORM = {
   nome: '',
@@ -210,6 +210,7 @@ function TipoBadge({ tipo }) {
 export default function MetasPage() {
   const { usuario, logout } = useAuth();
   const navigate = useNavigate();
+  const { isMobile, contentStyle } = useContentLayout();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
 
@@ -285,7 +286,6 @@ export default function MetasPage() {
   useEffect(() => {
     carregarMetas();
   }, [carregarMetas]);
-
 
   function abrirModal(meta = null) {
     setMetaEmEdicao(meta);
@@ -626,25 +626,27 @@ export default function MetasPage() {
         <div
           style={{
             ...s.mainArea,
-            marginLeft: !sidebarOpen
-              ? '0px'
-              : sidebarExpanded
-                ? '236px'
-                : '108px',
-            transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            ...(isMobile
+              ? contentStyle
+              : {
+                  marginLeft: !sidebarOpen
+                    ? '0px'
+                    : sidebarExpanded
+                      ? '236px'
+                      : '108px',
+                  transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                }),
           }}
         >
           {/* Top Bar — simplified */}
           <PageHeader
-  title="Metas"
-  subtitle="Defina metas, registre aportes e acompanhe progresso."
-  sidebarOpen={sidebarOpen}
-  setSidebarOpen={setSidebarOpen}
-  sidebarExpanded={sidebarExpanded}
-  setSidebarExpanded={setSidebarExpanded}
-/>
-
-
+            title="Metas"
+            subtitle="Defina metas, registre aportes e acompanhe progresso."
+            sidebarOpen={sidebarOpen}
+            setSidebarOpen={setSidebarOpen}
+            sidebarExpanded={sidebarExpanded}
+            setSidebarExpanded={setSidebarExpanded}
+          />
 
           {/* Main Content */}
           <InadimplenteGuard>
@@ -693,7 +695,7 @@ export default function MetasPage() {
                   <div
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: '2fr 1fr 1fr',
+                      gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr 1fr',
                       gap: 12,
                       marginBottom: 12,
                     }}
@@ -915,7 +917,7 @@ export default function MetasPage() {
                   <div
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: 'repeat(2, 1fr)',
+                      gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
                       gap: 20,
                       marginBottom: 16,
                     }}
