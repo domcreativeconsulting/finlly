@@ -59,10 +59,13 @@ api.interceptors.response.use(
     const isBillingError =
       error.response?.status === 402 ||
       error.response?.data?.code === 'SEM_ASSINATURA' ||
+      error.response?.data?.code === 'BILLING_REQUIRED' ||
       error.response?.data?.code === 'plan_inactive';
 
     if (isBillingError) {
       error.isPlanBlocked = true;
+      // Propagate the block so concurrent 500s from the same batch are also swallowed.
+      _billingBlocked = true;
     }
 
     // Swallow: when the guard flagged the session as blocked or the server signals

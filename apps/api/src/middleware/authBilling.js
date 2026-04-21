@@ -10,10 +10,15 @@ const ALLOWED_LOGIN = ['ativo', 'ativo_restrito', 'trial'];
  */
 export function ensureLoggedIn(req, res, next) {
   try {
-    if (!req.user) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Token ausente' });
+    if (!req.user)
+      return res
+        .status(401)
+        .json({ code: 'UNAUTHORIZED', message: 'Token ausente' });
 
     if (!ALLOWED_LOGIN.includes(String(req.user.status))) {
-      return res.status(403).json({ code: 'FORBIDDEN', message: 'Acesso negado' });
+      return res
+        .status(403)
+        .json({ code: 'FORBIDDEN', message: 'Acesso negado' });
     }
 
     return next();
@@ -53,7 +58,13 @@ export async function loadAssinante(req, res, next) {
  */
 export async function ensureBillingActive(req, res, next) {
   try {
-    const assinante = req.assinante ?? (req.user ? await prisma.assinantes.findUnique({ where: { usuario_id: req.user.id } }) : null);
+    const assinante =
+      req.assinante ??
+      (req.user
+        ? await prisma.assinante.findFirst({
+            where: { usuario_id: req.user.sub, deleted_at: null },
+          })
+        : null);
 
     if (!assinante || assinante.status !== 'ativo') {
       return res.status(403).json({
@@ -67,6 +78,11 @@ export async function ensureBillingActive(req, res, next) {
     return next();
   } catch (err) {
     logger.error({ err }, 'Erro em ensureBillingActive');
-    return res.status(500).json({ code: 'INTERNAL_ERROR' });
+    return res
+      .status(403)
+      .json({
+        code: 'BILLING_REQUIRED',
+        message: 'Funcionalidade disponível apenas para assinantes ativos',
+      });
   }
 }
