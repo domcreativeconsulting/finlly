@@ -6,6 +6,7 @@ import { InadimplenteGuard } from '../components/InadimplenteGuard.jsx';
 import { metasService } from '../services/metas.service.js';
 import { useAuth } from '../hooks/useAuth.js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { PageHeader } from '../components/PageHeader.jsx';
 import {
   faFlag,
   faBars,
@@ -221,8 +222,6 @@ export default function MetasPage() {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
 
   const [metas, setMetas] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -314,7 +313,6 @@ export default function MetasPage() {
     navigate(path);
   }
 
-  const initials = getInitials(usuario?.nome);
 
   function abrirModal(meta = null) {
     setMetaEmEdicao(meta);
@@ -664,38 +662,14 @@ export default function MetasPage() {
           }}
         >
           {/* Top Bar — simplified */}
-          <div style={s.topBar}>
-            <div style={s.topBarLeft}>
-              <button
-                style={s.hamburger}
-                aria-label="Menu"
-                onClick={() => {
-                  if (!sidebarOpen) {
-                    setSidebarOpen(true);
-                    setSidebarExpanded(true);
-                  } else {
-                    setSidebarExpanded(!sidebarExpanded);
-                  }
-                }}
-              >
-                <FontAwesomeIcon icon={faBars} />
-              </button>
-              <div>
-                <div
-                  style={{
-                    fontWeight: 700,
-                    fontSize: 18,
-                    color: '#111827',
-                    lineHeight: 1.2,
-                  }}
-                >
-                  Finlly
-                </div>
-                <div style={{ fontSize: 12, color: '#6b7280', marginTop: 1 }}>
-                  Gestão financeira pessoal
-                </div>
-              </div>
-            </div>
+          <PageHeader
+  title="Metas"
+  subtitle="Defina metas, registre aportes e acompanhe progresso."
+  sidebarOpen={sidebarOpen}
+  setSidebarOpen={setSidebarOpen}
+  sidebarExpanded={sidebarExpanded}
+  setSidebarExpanded={setSidebarExpanded}
+/>
 
             {/* Avatar / Dropdown */}
             <div
