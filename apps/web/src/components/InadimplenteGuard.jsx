@@ -1,11 +1,22 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
 import { ALLOWED_STATUSES } from '../config/subscriptionPolicy.js';
+import { setBillingBlocked } from '../services/api.js';
 
 export function InadimplenteGuard({ children }) {
   const { usuario } = useAuth();
 
-  if (usuario?.status === 'bloqueado_inadimplencia') {
+  const isBlocked =
+    usuario?.status === 'bloqueado_inadimplencia' ||
+    (usuario != null && !ALLOWED_STATUSES.includes(usuario.status));
+
+  useEffect(() => {
+    setBillingBlocked(isBlocked);
+    return () => setBillingBlocked(false);
+  }, [isBlocked]);
+
+  if (isBlocked && usuario?.status === 'bloqueado_inadimplencia') {
     return (
       <div style={styles.wrapper}>
         <div style={styles.banner} role="alert">
@@ -27,7 +38,7 @@ export function InadimplenteGuard({ children }) {
     );
   }
 
-  if (usuario && !ALLOWED_STATUSES.includes(usuario.status)) {
+  if (isBlocked) {
     return (
       <div style={styles.wrapper}>
         <div style={styles.banner} role="alert">

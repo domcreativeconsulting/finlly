@@ -3,6 +3,7 @@ import { config } from '../config/env.js';
 
 let _accessToken = null;
 let _onLogout = null;
+let _billingBlocked = false;
 
 export function setAccessToken(token) {
   _accessToken = token;
@@ -14,6 +15,10 @@ export function getAccessToken() {
 
 export function setLogoutHandler(fn) {
   _onLogout = fn;
+}
+
+export function setBillingBlocked(blocked) {
+  _billingBlocked = blocked;
 }
 
 const api = axios.create({
@@ -28,7 +33,7 @@ api.interceptors.request.use(
     }
     return cfg;
   },
-  (error) => Promise.reject(error),
+  (error) => Promise.reject(error)
 );
 
 api.interceptors.response.use(
@@ -38,7 +43,16 @@ api.interceptors.response.use(
 
     const isAuthRoute = originalRequest?.url?.startsWith('/auth/');
 
-    if (error.response?.status === 401 && !originalRequest._retry && !isAuthRoute) {
+    if (_billingBlocked && [402, 403].includes(error.response?.status)) {
+      // User is billing-blocked: cancel silently so no toast.error fires
+      return new Promise(() => {});
+    }
+
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !isAuthRoute
+    ) {
       originalRequest._retry = true;
 
       try {
@@ -61,7 +75,7 @@ api.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  },
+  }
 );
 
 export default api;
