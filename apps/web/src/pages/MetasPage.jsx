@@ -61,7 +61,9 @@ function formatBRL(valor) {
 
 function formatDate(dateStr) {
   if (!dateStr) return '—';
-  return new Date(dateStr + 'T00:00:00').toLocaleDateString('pt-BR');
+  const d = new Date(dateStr + 'T00:00:00');
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('pt-BR');
 }
 
 const EMPTY_FORM = {
@@ -651,24 +653,6 @@ export default function MetasPage() {
           {/* Main Content */}
           <InadimplenteGuard>
             <div style={s.content}>
-              {/* Page heading */}
-              <div style={{ marginBottom: 24 }}>
-                <h2
-                  style={{
-                    margin: '0 0 4px 0',
-                    fontSize: 28,
-                    fontWeight: 700,
-                    color: '#111827',
-                  }}
-                >
-                  Metas
-                </h2>
-                <p style={{ margin: 0, fontSize: 14, color: '#6b7280' }}>
-                  Defina metas, registre aportes e acompanhe progresso. Base do
-                  produto + base do agente.
-                </p>
-              </div>
-
               {/* Inline Create Form */}
               <div
                 style={{
