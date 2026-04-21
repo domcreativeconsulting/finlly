@@ -48,6 +48,8 @@ import {
 } from '../design-system/tokens.js';
 import { downloadBlob } from '../utils/downloadBlob.js';
 import { OfflineDataBadge } from '../components/OfflineDataBadge.jsx';
+import AnexoUploader from '../components/AnexoUploader.jsx';
+import { anexosService } from '../services/anexos.service.js';
 
 const TIPO_MODAL_CAT = 'entrada';
 const DEFAULT_FORM_CAT = { nome: '', icone: '', cor: '#33528a', pai_id: '' };
@@ -468,6 +470,10 @@ export default function ContasReceberPage() {
   const [contas, setContas] = useState([]);
   const [loadingSelects, setLoadingSelects] = useState(false);
 
+  // Modal de anexos
+  const [modalAnexoAberto, setModalAnexoAberto] = useState(false);
+  const [contaParaAnexo, setContaParaAnexo] = useState(null);
+
   // Modal de recebimento
   const [modalReceberAberto, setModalReceberAberto] = useState(false);
   const [contaParaReceber, setContaParaReceber] = useState(null);
@@ -812,6 +818,28 @@ export default function ContasReceberPage() {
     setContaIdRecebimento('');
     setObservacoesRecebimento('');
     setComprovante(null);
+  }
+
+  function abrirModalAnexo(conta) {
+    setContaParaAnexo(conta);
+    setModalAnexoAberto(true);
+  }
+
+  function fecharModalAnexo() {
+    setModalAnexoAberto(false);
+    setContaParaAnexo(null);
+  }
+
+  async function handleAnexoSuccess(anexo) {
+    try {
+      await anexosService.vincular(anexo.id, {
+        entidade_tipo: 'contas_receber',
+        entidade_id: contaParaAnexo.id,
+      });
+      toast.success('Anexo vinculado com sucesso.');
+    } catch {
+      toast.error('Anexo enviado, mas não foi possível vincular à conta.');
+    }
   }
 
   const handleConfirmarRecebimento = requireOnline(
@@ -1816,15 +1844,13 @@ export default function ContasReceberPage() {
                                         justifyContent: 'center',
                                       }}
                                     >
-                                      <span
+                                      <button
+                                        style={s.iconBtn}
                                         title="Comprovante"
-                                        style={{
-                                          cursor: 'pointer',
-                                          fontSize: '16px',
-                                        }}
+                                        onClick={() => abrirModalAnexo(conta)}
                                       >
                                         <FontAwesomeIcon icon={faPaperclip} />
-                                      </span>
+                                      </button>
                                       <span
                                         style={{
                                           fontSize: '12px',
@@ -1851,15 +1877,13 @@ export default function ContasReceberPage() {
                                       >
                                         <FontAwesomeIcon icon={faPenToSquare} />
                                       </button>
-                                      <span
+                                      <button
+                                        style={s.iconBtn}
                                         title="Comprovante"
-                                        style={{
-                                          cursor: 'pointer',
-                                          fontSize: '16px',
-                                        }}
+                                        onClick={() => abrirModalAnexo(conta)}
                                       >
                                         <FontAwesomeIcon icon={faPaperclip} />
-                                      </span>
+                                      </button>
                                       {conta.status === 'pendente' && (
                                         <button
                                           style={s.btnReceber}
@@ -2196,17 +2220,17 @@ export default function ContasReceberPage() {
                                               justifyContent: 'center',
                                             }}
                                           >
-                                            <span
+                                            <button
+                                              style={s.iconBtn}
                                               title="Comprovante"
-                                              style={{
-                                                cursor: 'pointer',
-                                                fontSize: '16px',
-                                              }}
+                                              onClick={() =>
+                                                abrirModalAnexo(conta)
+                                              }
                                             >
                                               <FontAwesomeIcon
                                                 icon={faPaperclip}
                                               />
-                                            </span>
+                                            </button>
                                             <span
                                               style={{
                                                 fontSize: '12px',
@@ -2239,17 +2263,17 @@ export default function ContasReceberPage() {
                                                 icon={faPenToSquare}
                                               />
                                             </button>
-                                            <span
+                                            <button
+                                              style={s.iconBtn}
                                               title="Comprovante"
-                                              style={{
-                                                cursor: 'pointer',
-                                                fontSize: '16px',
-                                              }}
+                                              onClick={() =>
+                                                abrirModalAnexo(conta)
+                                              }
                                             >
                                               <FontAwesomeIcon
                                                 icon={faPaperclip}
                                               />
-                                            </span>
+                                            </button>
                                             {conta.status === 'pendente' && (
                                               <button
                                                 style={s.btnReceber}
@@ -2706,6 +2730,19 @@ export default function ContasReceberPage() {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Modal de anexos */}
+      <Modal
+        open={modalAnexoAberto}
+        onClose={fecharModalAnexo}
+        title="Anexar comprovante"
+        maxWidth="480px"
+      >
+        <AnexoUploader
+          onSuccess={handleAnexoSuccess}
+          onError={(msg) => toast.error(msg)}
+        />
       </Modal>
 
       <Modal
