@@ -12,7 +12,7 @@ const BILLING_STATUS_CACHE_PREFIX = 'billing:status:';
 /** Base prices in BRL */
 // ✅ CORREÇÃO: preços atualizados para 39.90 mensal e 399.00 anual
 const PRECOS = {
-  mensal: 5.00,
+  mensal: 5.0,
   anual: 399.0,
 };
 
@@ -27,9 +27,7 @@ const CICLO_ASAAS = {
  * @returns {string}
  */
 function getNextDueDate() {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  return d.toISOString().slice(0, 10);
+  return new Date().toISOString().slice(0, 10);
 }
 
 /**
@@ -50,7 +48,7 @@ function mapAssinante(assinante) {
   if (!assinante) return null;
   return {
     ...assinante,
-    formaPagamento:        assinante.forma_pagamento ?? null,
+    formaPagamento: assinante.forma_pagamento ?? null,
     dataProximoVencimento: assinante.proxima_cobranca ?? null, // ajuste correto
     providerSubscriptionId: assinante.provider_subscription_id ?? null,
     providerCustomerId: assinante.provider_customer_id ?? null,
@@ -65,9 +63,24 @@ function mapAssinante(assinante) {
  * @param {{ plano: string, ciclo: string, formaPagamento: 'PIX'|'CREDIT_CARD', cupomCodigo?: string, cpf?: string, telefone?: string, creditCard?: object, creditCardHolderInfo?: object, remoteIp?: string }}
  * @returns {Promise<{ assinante: object, paymentLink: string|null, pixQrCode: string|null, pixCopiaECola: string|null }>}
  */
-export async function criarAssinatura(usuarioId, { plano, ciclo, formaPagamento, cupomCodigo, cpf, telefone, creditCard, creditCardHolderInfo, remoteIp }) {
+export async function criarAssinatura(
+  usuarioId,
+  {
+    plano,
+    ciclo,
+    formaPagamento,
+    cupomCodigo,
+    cpf,
+    telefone,
+    creditCard,
+    creditCardHolderInfo,
+    remoteIp,
+  }
+) {
   if (!CICLO_ASAAS[ciclo]) {
-    throw AppError.badRequest(`Ciclo inválido: ${ciclo}. Use 'mensal' ou 'anual'`);
+    throw AppError.badRequest(
+      `Ciclo inválido: ${ciclo}. Use 'mensal' ou 'anual'`
+    );
   }
 
   const usuario = await prisma.usuario.findFirst({
@@ -84,7 +97,9 @@ export async function criarAssinatura(usuarioId, { plano, ciclo, formaPagamento,
     },
   });
   if (assinaturaExistente) {
-    throw AppError.conflict('Usuário já possui uma assinatura ativa ou pendente');
+    throw AppError.conflict(
+      'Usuário já possui uma assinatura ativa ou pendente'
+    );
   }
 
   let valor = PRECOS[ciclo] ?? PRECOS.mensal;
@@ -102,7 +117,11 @@ export async function criarAssinatura(usuarioId, { plano, ciclo, formaPagamento,
       },
     });
 
-    if (!cupomValido || (cupomValido.uso_maximo !== null && cupomValido.uso_atual >= cupomValido.uso_maximo)) {
+    if (
+      !cupomValido ||
+      (cupomValido.uso_maximo !== null &&
+        cupomValido.uso_atual >= cupomValido.uso_maximo)
+    ) {
       throw AppError.badRequest('Cupom inválido ou expirado');
     }
 
@@ -121,56 +140,58 @@ export async function criarAssinatura(usuarioId, { plano, ciclo, formaPagamento,
   // Find or create Asaas customer
   let customer = await asaas.getCustomerByEmail(usuario.email);
   if (!customer) {
-    const cpfLimpo      = apenasDigitos(cpf);
+    const cpfLimpo = apenasDigitos(cpf);
     const telefoneLimpo = apenasDigitos(telefone ?? usuario.telefone);
 
     customer = await asaas.createCustomer({
-      nome:     usuario.nome,
-      email:    usuario.email,
-      cpfCnpj:  cpfLimpo,
+      nome: usuario.nome,
+      email: usuario.email,
+      cpfCnpj: cpfLimpo,
       telefone: telefoneLimpo,
     });
   }
 
   if (!customer || !customer.id) {
-    throw AppError.internal('Não foi possível criar o cliente no provedor de pagamento');
+    throw AppError.internal(
+      'Não foi possível criar o cliente no provedor de pagamento'
+    );
   }
 
   const nextDueDate = getNextDueDate();
   const subscription = await asaas.createSubscription({
-    customer:          customer.id,
-    billingType:       formaPagamento,
-    cycle:             CICLO_ASAAS[ciclo],
-    value:             valor,
+    customer: customer.id,
+    billingType: formaPagamento,
+    cycle: CICLO_ASAAS[ciclo],
+    value: valor,
     nextDueDate,
-    description:       `Plano ${plano} — ${ciclo}`,
+    description: `Plano ${plano} — ${ciclo}`,
     externalReference: usuarioId,
-    ...(creditCard           ? { creditCard }           : {}),
+    ...(creditCard ? { creditCard } : {}),
     ...(creditCardHolderInfo ? { creditCardHolderInfo } : {}),
-    ...(remoteIp             ? { remoteIp }             : {}),
+    ...(remoteIp ? { remoteIp } : {}),
   });
 
   const assinante = await prisma.assinante.upsert({
     where: { usuario_id: usuarioId },
     create: {
-      usuario_id:               usuarioId,
-      status:                   'pendente',
+      usuario_id: usuarioId,
+      status: 'pendente',
       plano,
       ciclo,
-forma_pagamento: formaPagamento,
-      provider:                 'asaas',
-      provider_customer_id:     customer.id,
+      forma_pagamento: formaPagamento,
+      provider: 'asaas',
+      provider_customer_id: customer.id,
       provider_subscription_id: subscription.id,
       ...(cupomId ? { cupom_id: cupomId } : {}),
     },
     update: {
-      status:                   'pendente',
+      status: 'pendente',
       plano,
       forma_pagamento: formaPagamento,
-      provider:                 'asaas',
-      provider_customer_id:     customer.id,
+      provider: 'asaas',
+      provider_customer_id: customer.id,
       provider_subscription_id: subscription.id,
-      deleted_at:               null,
+      deleted_at: null,
       ...(cupomId ? { cupom_id: cupomId } : {}),
     },
   });
@@ -178,45 +199,55 @@ forma_pagamento: formaPagamento,
   if (cupomId) {
     await prisma.cupom.update({
       where: { id: cupomId },
-      data:  { uso_atual: { increment: 1 } },
+      data: { uso_atual: { increment: 1 } },
     });
   }
 
-  logger.info({ usuarioId, subscriptionId: subscription.id, plano, ciclo }, 'Assinatura criada');
+  logger.info(
+    { usuarioId, subscriptionId: subscription.id, plano, ciclo },
+    'Assinatura criada'
+  );
 
   registrarEvento({
     usuarioId,
-    actorType:    'USER',
-    eventType:    'billing',
-    eventAction:  'assinatura_criada',
-    entityType:   'assinante',
-    entityId:     assinante.id,
-    metadata:     { plano, ciclo, subscriptionId: subscription.id },
-    sucesso:      true,
+    actorType: 'USER',
+    eventType: 'billing',
+    eventAction: 'assinatura_criada',
+    entityType: 'assinante',
+    entityId: assinante.id,
+    metadata: { plano, ciclo, subscriptionId: subscription.id },
+    sucesso: true,
   });
 
-  let paymentLink   = subscription.invoiceUrl ?? null;
-  let pixQrCode     = null;
+  let paymentLink = subscription.invoiceUrl ?? null;
+  let pixQrCode = null;
   let pixCopiaECola = null;
-  let paymentId     = null;
+  let paymentId = null;
 
   // Busca o primeiro payment da assinatura (com retry — Asaas gera de forma assíncrona)
   if (subscription.id) {
     for (let i = 0; i < 3; i++) {
       try {
-        await new Promise(r => setTimeout(r, 1000)); // aguarda 1s entre tentativas
+        await new Promise((r) => setTimeout(r, 1000)); // aguarda 1s entre tentativas
         const payments = await asaas.getPaymentsBySubscription(subscription.id);
         const firstPayment = payments?.data?.[0];
         if (firstPayment?.id) {
           paymentId = firstPayment.id;
           if (!paymentLink) {
-            paymentLink = firstPayment.invoiceUrl ?? firstPayment.bankSlipUrl ?? null;
+            paymentLink =
+              firstPayment.invoiceUrl ?? firstPayment.bankSlipUrl ?? null;
           }
-          logger.info({ subscriptionId: subscription.id, paymentId, attempt: i + 1 }, 'Payment encontrado');
+          logger.info(
+            { subscriptionId: subscription.id, paymentId, attempt: i + 1 },
+            'Payment encontrado'
+          );
           break;
         }
       } catch (err) {
-        logger.warn({ err, subscriptionId: subscription.id, attempt: i + 1 }, 'Tentativa de buscar payment falhou');
+        logger.warn(
+          { err, subscriptionId: subscription.id, attempt: i + 1 },
+          'Tentativa de buscar payment falhou'
+        );
       }
     }
   }
@@ -225,16 +256,22 @@ forma_pagamento: formaPagamento,
   if (formaPagamento === 'PIX' && paymentId) {
     for (let i = 0; i < 3; i++) {
       try {
-        await new Promise(r => setTimeout(r, 1000)); // aguarda 1s entre tentativas
+        await new Promise((r) => setTimeout(r, 1000)); // aguarda 1s entre tentativas
         const qrData = await asaas.getPixQrCode(paymentId);
         if (qrData?.encodedImage) {
-          pixQrCode     = qrData.encodedImage;
+          pixQrCode = qrData.encodedImage;
           pixCopiaECola = qrData.payload ?? null;
-          logger.info({ paymentId, attempt: i + 1 }, 'PIX QR Code obtido com sucesso');
+          logger.info(
+            { paymentId, attempt: i + 1 },
+            'PIX QR Code obtido com sucesso'
+          );
           break;
         }
       } catch (err) {
-        logger.warn({ err, paymentId, attempt: i + 1 }, 'Tentativa de buscar QR Code PIX falhou');
+        logger.warn(
+          { err, paymentId, attempt: i + 1 },
+          'Tentativa de buscar QR Code PIX falhou'
+        );
       }
     }
   }
@@ -267,11 +304,18 @@ export async function cancelarAssinatura(usuarioId) {
     try {
       await asaas.cancelSubscription(assinante.provider_subscription_id);
     } catch (err) {
-      logger.error({ err, usuarioId, subscriptionId: assinante.provider_subscription_id }, 'Erro ao cancelar assinatura no Asaas');
+      logger.error(
+        { err, usuarioId, subscriptionId: assinante.provider_subscription_id },
+        'Erro ao cancelar assinatura no Asaas'
+      );
     }
   }
 
-  await atualizarStatusAssinante(assinante.id, assinante.usuario_id, 'cancelado');
+  await atualizarStatusAssinante(
+    assinante.id,
+    assinante.usuario_id,
+    'cancelado'
+  );
 
   try {
     const redis = await getRedisClient();
@@ -284,13 +328,13 @@ export async function cancelarAssinatura(usuarioId) {
 
   registrarEvento({
     usuarioId,
-    actorType:   'USER',
-    eventType:   'billing',
+    actorType: 'USER',
+    eventType: 'billing',
     eventAction: 'assinatura_cancelada',
-    entityType:  'assinante',
-    entityId:    assinante.id,
-    metadata:    { plano: assinante.plano },
-    sucesso:     true,
+    entityType: 'assinante',
+    entityId: assinante.id,
+    metadata: { plano: assinante.plano },
+    sucesso: true,
   });
 }
 

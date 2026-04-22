@@ -4,7 +4,11 @@ import prisma from '../utils/database.js';
 import { AppError } from '../errors/AppError.js';
 import { config } from '../config/env.js';
 import logger from '../logger.js';
-import { atualizarStatusAssinante, mapAsaasStatusToLocal, invalidateBillingCache } from './assinanteStatusService.js';
+import {
+  atualizarStatusAssinante,
+  mapAsaasStatusToLocal,
+  invalidateBillingCache,
+} from './assinanteStatusService.js';
 import { registrarEvento } from './auditoria.service.js';
 
 /**
@@ -21,9 +25,7 @@ import { registrarEvento } from './auditoria.service.js';
  * @returns {string} 64-char hex string
  */
 function computePayloadHash(payload) {
-  return createHash('sha256')
-    .update(JSON.stringify(payload))
-    .digest('hex');
+  return createHash('sha256').update(JSON.stringify(payload)).digest('hex');
 }
 
 /**
@@ -40,8 +42,14 @@ function verificarAssinatura(rawBody, signatureHeader) {
   const expected = Buffer.from(secret.trim());
   const received = Buffer.from(String(signatureHeader || '').trim());
 
-  if (expected.length !== received.length || !timingSafeEqual(expected, received)) {
-    logger.warn({ sigSample: String(signatureHeader || '').slice(0, 8) }, 'Webhook Asaas: token inválido');
+  if (
+    expected.length !== received.length ||
+    !timingSafeEqual(expected, received)
+  ) {
+    logger.warn(
+      { sigSample: String(signatureHeader || '').slice(0, 8) },
+      'Webhook Asaas: token inválido'
+    );
     throw AppError.unauthorized('Assinatura inválida');
   }
 }
@@ -58,25 +66,44 @@ async function handlePaymentConfirmed(payment) {
       deleted_at: null,
       OR: [
         ...(usuarioId ? [{ usuario_id: usuarioId }] : []),
-        ...(subscriptionId ? [{ provider_subscription_id: subscriptionId }] : []),
+        ...(subscriptionId
+          ? [{ provider_subscription_id: subscriptionId }]
+          : []),
       ],
     },
   });
 
   if (!assinante) {
-    logger.warn({ usuarioId, subscriptionId }, 'Assinante não encontrado para PAYMENT_CONFIRMED');
+    logger.warn(
+      { usuarioId, subscriptionId },
+      'Assinante não encontrado para PAYMENT_CONFIRMED'
+    );
     return;
   }
 
-  const proximaCobranca = payment.dueDate ? new Date(payment.dueDate) : null;
+  let proximaCobranca = null;
+  if (payment.dueDate) {
+    const dueDate = new Date(payment.dueDate);
+    if (assinante.ciclo === 'anual') {
+      dueDate.setFullYear(dueDate.getFullYear() + 1);
+    } else {
+      dueDate.setMonth(dueDate.getMonth() + 1);
+    }
+    proximaCobranca = dueDate;
+  }
 
-  await atualizarStatusAssinante(assinante.id, assinante.usuario_id, 'ativo', { proxima_cobranca: proximaCobranca });
+  await atualizarStatusAssinante(assinante.id, assinante.usuario_id, 'ativo', {
+    proxima_cobranca: proximaCobranca,
+  });
   // Garantir invalidação de cache para o frontend (best-effort)
-try {
-  await invalidateBillingCache(assinante.usuario_id);
-} catch (err) {
-  logger.warn({ err, usuarioId: assinante.usuario_id }, 'Falha ao invalidar cache de billing após PAYMENT_CONFIRMED (continuando)');
-}
+  try {
+    await invalidateBillingCache(assinante.usuario_id);
+  } catch (err) {
+    logger.warn(
+      { err, usuarioId: assinante.usuario_id },
+      'Falha ao invalidar cache de billing após PAYMENT_CONFIRMED (continuando)'
+    );
+  }
 
   await prisma.assinantePagamento.upsert({
     where: {
@@ -93,19 +120,26 @@ try {
       provider: 'asaas',
       provider_payment_id: payment.id,
       descricao: payment.description ?? null,
-      data_pagamento: payment.paymentDate ? new Date(payment.paymentDate) : new Date(),
+      data_pagamento: payment.paymentDate
+        ? new Date(payment.paymentDate)
+        : new Date(),
       data_vencimento: payment.dueDate ? new Date(payment.dueDate) : null,
     },
     update: {
       status: 'pago',
       valor: payment.value ?? 0,
-      data_pagamento: payment.paymentDate ? new Date(payment.paymentDate) : new Date(),
+      data_pagamento: payment.paymentDate
+        ? new Date(payment.paymentDate)
+        : new Date(),
       data_vencimento: payment.dueDate ? new Date(payment.dueDate) : null,
       updated_at: new Date(),
     },
   });
 
-  logger.info({ usuarioId: assinante.usuario_id, paymentId: payment.id }, 'Pagamento confirmado');
+  logger.info(
+    { usuarioId: assinante.usuario_id, paymentId: payment.id },
+    'Pagamento confirmado'
+  );
 }
 
 /**
@@ -121,23 +155,35 @@ async function handlePaymentOverdue(payment) {
       deleted_at: null,
       OR: [
         ...(usuarioId ? [{ usuario_id: usuarioId }] : []),
-        ...(subscriptionId ? [{ provider_subscription_id: subscriptionId }] : []),
+        ...(subscriptionId
+          ? [{ provider_subscription_id: subscriptionId }]
+          : []),
       ],
     },
   });
 
   if (!assinante) {
-    logger.warn({ usuarioId, subscriptionId }, 'Assinante não encontrado para PAYMENT_OVERDUE');
+    logger.warn(
+      { usuarioId, subscriptionId },
+      'Assinante não encontrado para PAYMENT_OVERDUE'
+    );
     return;
   }
 
-  await atualizarStatusAssinante(assinante.id, assinante.usuario_id, 'inadimplente');
+  await atualizarStatusAssinante(
+    assinante.id,
+    assinante.usuario_id,
+    'inadimplente'
+  );
 
   try {
-  await invalidateBillingCache(assinante.usuario_id);
-} catch (err) {
-  logger.warn({ err, usuarioId: assinante.usuario_id }, 'Falha ao invalidar cache de billing após PAYMENT_OVERDUE (continuando)');
-}
+    await invalidateBillingCache(assinante.usuario_id);
+  } catch (err) {
+    logger.warn(
+      { err, usuarioId: assinante.usuario_id },
+      'Falha ao invalidar cache de billing após PAYMENT_OVERDUE (continuando)'
+    );
+  }
 
   await prisma.assinantePagamento.upsert({
     where: {
@@ -164,7 +210,10 @@ async function handlePaymentOverdue(payment) {
     },
   });
 
-  logger.info({ usuarioId: assinante.usuario_id, paymentId: payment.id }, 'Pagamento inadimplente');
+  logger.info(
+    { usuarioId: assinante.usuario_id, paymentId: payment.id },
+    'Pagamento inadimplente'
+  );
 }
 
 /**
@@ -181,26 +230,41 @@ async function handleSubscriptionUpdated(subscription) {
       deleted_at: null,
       OR: [
         ...(usuarioId ? [{ usuario_id: usuarioId }] : []),
-        ...(subscriptionId ? [{ provider_subscription_id: subscriptionId }] : []),
+        ...(subscriptionId
+          ? [{ provider_subscription_id: subscriptionId }]
+          : []),
       ],
     },
   });
 
   if (!assinante) {
-    logger.warn({ usuarioId, subscriptionId }, 'Assinante não encontrado para SUBSCRIPTION_UPDATED');
+    logger.warn(
+      { usuarioId, subscriptionId },
+      'Assinante não encontrado para SUBSCRIPTION_UPDATED'
+    );
     return;
   }
 
-  const proxima_cobranca = subscription.nextDueDate ? new Date(subscription.nextDueDate) : undefined;
+  const proxima_cobranca = subscription.nextDueDate
+    ? new Date(subscription.nextDueDate)
+    : undefined;
   const novoStatus = mapAsaasStatusToLocal(subscription.status);
 
   if (!novoStatus && proxima_cobranca === undefined) {
-    logger.info({ subscriptionId }, 'SUBSCRIPTION_UPDATED sem campos alteráveis');
+    logger.info(
+      { subscriptionId },
+      'SUBSCRIPTION_UPDATED sem campos alteráveis'
+    );
     return;
   }
 
   if (novoStatus) {
-    await atualizarStatusAssinante(assinante.id, assinante.usuario_id, novoStatus, { proxima_cobranca });
+    await atualizarStatusAssinante(
+      assinante.id,
+      assinante.usuario_id,
+      novoStatus,
+      { proxima_cobranca }
+    );
   } else {
     await prisma.assinante.update({
       where: { id: assinante.id },
@@ -208,12 +272,18 @@ async function handleSubscriptionUpdated(subscription) {
     });
   }
   try {
-  await invalidateBillingCache(assinante.usuario_id);
-} catch (err) {
-  logger.warn({ err, usuarioId: assinante.usuario_id }, 'Falha ao invalidar cache de billing após SUBSCRIPTION_UPDATED (continuando)');
-}
+    await invalidateBillingCache(assinante.usuario_id);
+  } catch (err) {
+    logger.warn(
+      { err, usuarioId: assinante.usuario_id },
+      'Falha ao invalidar cache de billing após SUBSCRIPTION_UPDATED (continuando)'
+    );
+  }
 
-  logger.info({ usuarioId: assinante.usuario_id, novoStatus, proxima_cobranca }, 'Assinante atualizado por SUBSCRIPTION_UPDATED');
+  logger.info(
+    { usuarioId: assinante.usuario_id, novoStatus, proxima_cobranca },
+    'Assinante atualizado por SUBSCRIPTION_UPDATED'
+  );
 }
 
 /**
@@ -229,25 +299,40 @@ async function handleDeleted(payment) {
       deleted_at: null,
       OR: [
         ...(usuarioId ? [{ usuario_id: usuarioId }] : []),
-        ...(subscriptionId ? [{ provider_subscription_id: subscriptionId }] : []),
+        ...(subscriptionId
+          ? [{ provider_subscription_id: subscriptionId }]
+          : []),
       ],
     },
   });
 
   if (!assinante) {
-    logger.warn({ usuarioId, subscriptionId }, 'Assinante não encontrado para evento de deleção');
+    logger.warn(
+      { usuarioId, subscriptionId },
+      'Assinante não encontrado para evento de deleção'
+    );
     return;
   }
 
-  await atualizarStatusAssinante(assinante.id, assinante.usuario_id, 'cancelado');
+  await atualizarStatusAssinante(
+    assinante.id,
+    assinante.usuario_id,
+    'cancelado'
+  );
 
   try {
-  await invalidateBillingCache(assinante.usuario_id);
-} catch (err) {
-  logger.warn({ err, usuarioId: assinante.usuario_id }, 'Falha ao invalidar cache de billing após evento de deleção (continuando)');
-}
+    await invalidateBillingCache(assinante.usuario_id);
+  } catch (err) {
+    logger.warn(
+      { err, usuarioId: assinante.usuario_id },
+      'Falha ao invalidar cache de billing após evento de deleção (continuando)'
+    );
+  }
 
-  logger.info({ usuarioId: assinante.usuario_id }, 'Assinatura cancelada por evento de deleção');
+  logger.info(
+    { usuarioId: assinante.usuario_id },
+    'Assinatura cancelada por evento de deleção'
+  );
 }
 
 /**
@@ -260,9 +345,9 @@ async function handleDeleted(payment) {
  */
 export async function processarWebhookAsaas(payload, rawBody, signatureHeader) {
   // Verify HMAC signature if secret is configured
-if (config.ASAAS_WEBHOOK_SECRET) {
+  if (config.ASAAS_WEBHOOK_SECRET) {
     verificarAssinatura(rawBody, signatureHeader);
-}
+  }
 
   // Idempotency: findFirst + create/update with retry-on-failure support
   const payloadHash = computePayloadHash(payload);
@@ -270,16 +355,13 @@ if (config.ASAAS_WEBHOOK_SECRET) {
   const existing = await prisma.webhookEvent.findFirst({
     where: {
       provider: 'asaas',
-      OR: [
-        { event_id: String(payload.id) },
-        { payload_hash: payloadHash },
-      ],
+      OR: [{ event_id: String(payload.id) }, { payload_hash: payloadHash }],
     },
   });
 
   if (existing) {
-    if (existing.processado) return { skipped: true };     // already processed successfully
-    if (existing.erro === null) return { skipped: true };  // in-flight, avoid concurrent reentry
+    if (existing.processado) return { skipped: true }; // already processed successfully
+    if (existing.erro === null) return { skipped: true }; // in-flight, avoid concurrent reentry
     // existing.erro != null → previous attempt failed, allow retry: reset error and refresh payload
     await prisma.webhookEvent.update({
       where: { id: existing.id },
@@ -307,7 +389,11 @@ if (config.ASAAS_WEBHOOK_SECRET) {
     eventAction: 'webhook_recebido',
     entityType: 'webhook_event',
     entityId: String(payload.id),
-    metadata: { provider: 'asaas', event_type: eventType, event_id: String(payload.id) },
+    metadata: {
+      provider: 'asaas',
+      event_type: eventType,
+      event_id: String(payload.id),
+    },
     sucesso: true,
   });
 
@@ -316,7 +402,10 @@ if (config.ASAAS_WEBHOOK_SECRET) {
       await handlePaymentConfirmed(payment);
     } else if (eventType === 'PAYMENT_OVERDUE') {
       await handlePaymentOverdue(payment);
-    } else if (eventType === 'PAYMENT_DELETED' || eventType === 'SUBSCRIPTION_DELETED') {
+    } else if (
+      eventType === 'PAYMENT_DELETED' ||
+      eventType === 'SUBSCRIPTION_DELETED'
+    ) {
       await handleDeleted(payment);
     } else if (eventType === 'SUBSCRIPTION_UPDATED') {
       await handleSubscriptionUpdated(payment);
@@ -336,7 +425,11 @@ if (config.ASAAS_WEBHOOK_SECRET) {
       eventAction: 'webhook_processado',
       entityType: 'webhook_event',
       entityId: String(payload.id),
-      metadata: { provider: 'asaas', event_type: eventType, event_id: String(payload.id) },
+      metadata: {
+        provider: 'asaas',
+        event_type: eventType,
+        event_id: String(payload.id),
+      },
       sucesso: true,
     });
   } catch (err) {
@@ -352,7 +445,11 @@ if (config.ASAAS_WEBHOOK_SECRET) {
       eventAction: 'webhook_falhou',
       entityType: 'webhook_event',
       entityId: String(payload.id),
-      metadata: { provider: 'asaas', event_type: eventType, event_id: String(payload.id) },
+      metadata: {
+        provider: 'asaas',
+        event_type: eventType,
+        event_id: String(payload.id),
+      },
       sucesso: false,
     });
 
