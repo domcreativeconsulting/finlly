@@ -40,8 +40,7 @@ export const billingService = {
    * @returns {{ assinante: object }}
    */
   async getStatus() {
-    // adiciona ts para evitar cache e força no-cache
-    const response = await api.get('/billing/status');
+    const response = await api.get(`/billing/status?_ts=${Date.now()}`);
     return response.data;
   },
 

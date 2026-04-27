@@ -368,9 +368,11 @@ export default function CheckoutPage() {
             paymentPollRef.current = null;
             setWaitingPayment(false);
             toast.success(
-              'Pagamento confirmado! Faça login para acessar o sistema.'
+              'Pagamento confirmado! Redirecionando para o sistema...'
             );
-            navigate('/login', { replace: true });
+            // Full reload forces o AuthContext a buscar dados frescos do banco
+            // com status 'ativo', liberando as funcionalidades corretamente.
+            window.location.href = '/dashboard';
           }
 
           elapsed += POLL_INTERVAL;
@@ -1472,7 +1474,7 @@ function StepConfirmacao({
       {/* ALTERAÇÃO: redireciona para /login (não /dashboard).
           O acesso ao sistema só é liberado após PAYMENT_CONFIRMED via webhook Asaas. */}
       <button
-        onClick={() => navigate('/dashboard', { replace: true })}
+        onClick={() => navigate('/login', { replace: true })}
         style={{
           width: '100%',
           padding: '14px 20px',
